@@ -1,5 +1,6 @@
 #------------------------------------------------------------------------------
-# Configuration file. For syntax help see:
+# Configuration file. Note color.ui = always required for piping output
+# to other commands e.g. parsing git-status output. For syntax help see:
 # https://stackoverflow.com/a/16136745/4970632
 # https://stackoverflow.com/q/2421011/4970632
 #------------------------------------------------------------------------------
@@ -31,6 +32,10 @@
 #   Fetch all branches, even ones that don't yet exist on local
 #   local (normally those are ignored with git fetch --all).
 #   See: https://stackoverflow.com/a/10312587/4970632
+# 'head1':
+#   Show stylized git branch head
+# 'head2':
+#   Show stylized git stash head
 # 'ignore':
 #   Stop tracking every single regex pattern in your .gitignore
 #   to ignore all subdirectories in another directory, use subdir/*/
@@ -66,12 +71,21 @@
 #   regular expression e.g. '*.mov'
 # 'root':
 #   Show the root directory.
+# 'search':
+#   Search entire histry for given regex.
+#   See: https://stackoverflow.com/a/2929502/4970632
 # 'set':
 #   Set upstream branch. Same as 'git branch -u'.
+# 'stat':
+#   Show arbitrary difference stats.
 # 'staged':
-#   List unstaged changes.
+#   Show staged difference stats.
+# 'stashed':
+#   Shows stashed difference stats.
 # 'stashes':
 #   List all git stashes.
+# 'stored':
+#   Show stashed pop difference.
 # 'tags':
 #   List all git tags.
 # 'top':
@@ -83,8 +97,6 @@
 # 'unset':
 #   Unset upstream branch. Needed after you change the name of a local branch
 #   with git branch -m name because git tracks the old remote branch name
-# 'unstaged':
-#   List staged changes.
 # 'upstream':
 #   Checkout master and pull upstream branch.
 # 'vim':
@@ -112,6 +124,8 @@
 	dictator = "!git-dictator \"$@\""
 	exec     = "!exec \"$@\""
 	get      = "!get-get \"$@\""
+	head1    = "!git status --short --branch | head -1"
+	head2    = "!git stashes | head -1 | sed 's/^/## /'"
 	ignore   = "!git-ignore \"$@\""
 	ls       = ls-tree -r HEAD --name-only :/
 	ll       = ls-tree -r HEAD --abbrev :/
@@ -125,26 +139,32 @@
 	refs     = reflog show --all
 	remotes  = remote --verbose
 	remove   = "!git-remove \"$@\""
+	reveal   = "!git stash show --name-status"
 	root     = rev-parse --show-toplevel
+	search   = "!f() { git grep \"$@\" $(git rev-list --all --abbrev-commit); }; f"
 	set      = branch --set-upstream-to
-	staged   = "!git --no-pager diff --stat --staged"
+	stat     = diff --stat=80
+	staged   = diff --stat=80 --staged
+	stashed  = diff stash@{0}^ stash@{0} --stat=80
 	stashes  = stash list
+	stored   = diff HEAD stash@{0} --stat=80
+	status1  = "!git head1 && git status --short"
+	status2  = "!git head2 && git diff HEAD stash@{0} --name-status"
 	tags     = tag --list
 	top      = rev-parse --show-toplevel
 	tree     = log --graph --abbrev-commit --date=relative --branches --stat --decorate --color
 	trunk    = log --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color
 	unset    = branch --unset-upstream
-	unstaged = "!git --no-pager diff --stat"
 	upstream = "!git checkout master && pull upstream master"
 	vim      = "!git-vim \"$@\""
 	wtf      = "!git-wtf \"$@\""
 [blame]
 	date = human
 	coloring = highlightRecent
-[color]
-	ui = on
 [color "blame"]
 	highlightRecent = 237, 20 month ago, 238, 19 month ago, 239, 18 month ago, 240, 17 month ago, 241, 16 month ago, 242, 15 month ago, 243, 14 month ago, 244, 13 month ago, 245, 12 month ago, 246, 11 month ago, 247, 10 month ago, 248, 9 month ago, 249, 8 month ago, 250, 7 month ago, 251, 6 month ago, 252, 5 month ago, 253, 4 month ago, 254, 3 month ago, 231, 2 month ago, 230, 1 month ago, 229, 3 weeks ago, 228, 2 weeks ago, 227, 1 week ago, 226
+[color]
+	ui = always
 [core]
 	attributesfile = ~/.gitattributes
 	excludesfile = ~/.gitignore
@@ -153,6 +173,8 @@
 	editor = command vim
 [credential]
 	helper = osxkeychain
+[diff]
+	renames = copies
 [diff "pdf"]
 	textconv = pdfinfo
 [diff "zip"]
@@ -165,23 +187,24 @@
 	required = true
 [interactive]
 	singleKey = true
-[merge]
-	tool = vimdiff
 [mergetool]
 	prompt = false
 [pager]
-	stash = false
 	branch = false
+	staged = false
+	stash = false
+	stashed = false
+	stat = false
 	status = false
+	status1 = false
+	status2 = false
+	stored = false
 	tag = false
 [push]
 	default = upstream
 	followTags = true
 [remote]
 	verbose = true
-[status]
-	branch = true
-	short = true
 [user]
 	name = Luke Davis
 	email = lukelbd@gmail.com

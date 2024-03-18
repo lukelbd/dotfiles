@@ -94,24 +94,21 @@ endfunction
 " is included with vim by default, and this is always used no matter the value of &tags
 " (try ':echo tagfiles()' when inside help page, shows various doc/tags files).
 function! vim#show_help(...) abort
-  if a:0
-    let item = a:1
-  else
-    let item = utils#input_default('Vim help', expand('<cword>'), 'help')
-  endif
-  if !empty(item)
-    exe 'vertical help ' . item
-  endif
-endfunction
-function! vim#setup_cmdwin() abort
-  inoremap <buffer> <expr> <CR> ""
-  exe 'nnoremap <buffer> <CR> <C-c><CR>'
-  exe 'nnoremap <buffer> <Plug>ExecuteFile1 <C-c><CR>'
+  let item = a:0 ? a:1 : utils#input_default('Vim help', expand('<cword>'), 'help')
+  if empty(item) | return | endif
+  exe 'vertical help ' . item
 endfunction
 function! vim#setup_help() abort
   wincmd L | vert resize 88 | nnoremap <buffer> <CR> <C-]>
   nnoremap <nowait> <buffer> <silent> [ <Cmd>pop<CR>
   nnoremap <nowait> <buffer> <silent> ] <Cmd>tag<CR>
+endfunction
+function! vim#setup_cmdwin() abort
+  nnoremap <buffer> <expr> <CR> (line('.') == line('$') ? '<Up>' : '' ) . '<C-c><CR>'
+  nnoremap <buffer> <expr> ; (line('.') == line('$') ? '<Up>' : '' ) . '<C-c><CR>'
+  nnoremap <buffer> <expr> / (line('.') == line('$') ? '<Up>' : '' ) . '<C-c><CR>'
+  nnoremap <buffer> <Plug>ExecuteFile1 <C-c><CR>
+  inoremap <buffer> <expr> <CR> "\<C-m>"
 endfunction
 
 " Source file, lines, or motion

@@ -224,8 +224,6 @@ augroup END
 augroup insert_repair
   au!
   au InsertLeave * exe 'keepjumps normal! `^'
-  au InsertEnter * let b:insert_mode = get(b:, 'insert_mode', '')
-  au CmdlineLeave * let b:show_message = 1
 augroup END
 
 " Configure escape codes to restore screen after exiting
@@ -360,13 +358,13 @@ endfor
 " use 'y' for mouse click location and 'z' for visual mode entrance location, then
 " start new visual selection between 'y' and 'z'. Generally 'y' should be temporary
 exe 'silent! vunmap o' | exe 'silent! vunmap O'
-nnoremap gv gv
-nnoremap gx gi
 nnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR>
 vnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
 vnoremap <CR> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
-vnoremap <expr> I mode() =~? '^v' ? '<Esc><Cmd>keepjumps normal! `<<CR>i' : 'I'
-vnoremap <expr> A mode() =~? '^v' ? '<Esc><Cmd>keepjumps normal! `><CR>a' : 'A'
+vnoremap <expr> I mode() =~? '^v'
+  \ ? '<Esc><Cmd>keepjumps normal! `<<CR>' . edit#insert_mode('i') : edit#insert_mode('I')
+vnoremap <expr> A mode() =~? '^v'
+  \ ? '<Esc><Cmd>keepjumps normal! `><CR>' . edit#insert_mode('a') : edit#insert_mode('A')
 
 " Improve basic mode behavior
 " Note: Toggling e.g. 'v' in 'v' mode normally turns off visual mode and e.g.
@@ -523,10 +521,10 @@ let g:tags_skip_filetypes = s:panel_filetypes
 let g:tabline_skip_filetypes = s:panel_filetypes
 augroup panel_setup
   au!
-  au TerminalWinOpen * call window#setup_panel(2)
-  au BufRead,BufEnter fugitive://* if &filetype !=# 'fugitive' | call window#setup_panel(1) | endif
-  au CmdwinEnter * call vim#setup_cmdwin() | call window#setup_panel(0)
-  au BufEnter *__Tag_List__* call iter#setup_taglist() | call window#setup_panel(0)
+  au CmdwinEnter * call vim#setup_cmdwin() | call window#setup_panel(1)
+  au TerminalWinOpen * call window#setup_panel(1)
+  au BufRead,BufEnter fugitive://* if &filetype !=# 'fugitive' | call window#setup_panel() | endif
+  au BufEnter *__Tag_List__* call iter#setup_taglist() | call window#setup_panel()
   au FileType help call vim#setup_help()
   au FileType qf call iter#setup_quickfix()
   au FileType taglist call iter#setup_taglist()
@@ -536,8 +534,8 @@ augroup panel_setup
   au FileType fugitiveblame call git#setup_blame() | call git#setup_fugitive()
   au FileType git,fugitive call git#setup_fugitive()
   for s:ftype in s:panel_filetypes
-    let s:level = s:ftype ==# 'gitcommit' ? 2 : s:ftype ==# 'git' ? 1 : 0
-    exe 'au FileType ' . s:ftype . ' call window#setup_panel(' . s:level . ')'
+    let s:modifiable = s:ftype ==# 'gitcommit'
+    exe 'au FileType ' . s:ftype . ' call window#setup_panel(' . s:modifiable . ')'
   endfor
 augroup END
 
@@ -554,12 +552,11 @@ nnoremap <Leader>\| <Cmd>Maps<CR>
 " Vim help and history windows
 " Note: For some reason even though :help :mes claims count N shows the N most recent
 " message, for some reason using 1 shows empty line and 2 shows previous plus newline.
-noremap <Leader><CR> @:
-noremap <Leader><Space> <Cmd>call switch#message()<CR>
-nnoremap <Leader>; <Cmd>History:<CR>
-nnoremap <Leader>: q:
-nnoremap <Leader>/ <Cmd>History/<CR>
-nnoremap <Leader>? q/
+noremap <Leader><CR> <Cmd>call switch#message()<CR>
+nnoremap <Leader>; q:
+nnoremap <Leader>/ q/
+nnoremap <Leader>: <Cmd>History:<CR>
+nnoremap <Leader>? <Cmd>History/<CR>
 nnoremap <Leader>v <Cmd>call vim#show_help()<CR>
 nnoremap <Leader>V <Cmd>Helptags<CR>
 
@@ -651,17 +648,22 @@ noremap } <Cmd>exe 'keepjumps normal! ' . v:count1 . '}'<CR>
 noremap gr /[^\x00-\x7F]<CR>
 noremap gR /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
 
-" Go to previous end-of-word or previous end-of-WORD
-" This makes ge/gE a single-keystroke motion alongside with e/E, w/W, and b/B
-noremap m ge
-noremap M gE
-
 " Go to start or end without opening folds
 " Useful for e.g. python files with docstring at top and function at bottom
 " Note: Mapped jumping commands do not open folds by default, hence the expr below
 " Note: Could use e.g. :1<CR> or :$<CR> but that would exclude them from jumplist
 noremap G G
 noremap <expr> gg 'gg' . (v:count ? 'zv' : '')
+
+" Go to the next or previous unconcealed character
+" This respect &concealcursor values
+noremap <expr> h syntax#next_char(-v:count1)
+noremap <expr> l syntax#next_char(v:count1)
+
+" Go to the previous end-of-word or end-of-WORD
+" This makes ge/gE a single-keystroke motion alongside with e/E, w/W, and b/B
+noremap m ge
+noremap M gE
 
 " Move between alphanumeric groups of characters (i.e. excluding dots, dashes,
 " underscores). This is consistent with tmux vim selection navigation
@@ -908,40 +910,70 @@ augroup END
 command! -nargs=? TabToggle call switch#expandtab(<args>)
 nnoremap <Leader><Tab> <Cmd>call switch#expandtab()<CR>
 
-" Increase and decrease indent to level v:count
-" Note: To avoid overwriting fugitive inline-diff mappings implement these as
-" buffer-local .vim/autoload/common.vim maps. Also map brackets.
-nnoremap <expr> > '<Esc>' . edit#indent_items_expr(0, v:count1)
-nnoremap <expr> < '<Esc>' . edit#indent_items_expr(1, v:count1)
-
-" Auto wrap the lines or items within motion
-" Note: Previously tried to make this operator map but not necessary, should
-" already work with 'g@<motion>' invocation of wrapping operator function.
-command! -range -nargs=? WrapLines <line1>,<line2>call edit#wrap_lines(<args>)
-command! -range -nargs=? WrapItems <line1>,<line2>call edit#wrap_items(<args>)
-noremap <expr> gq edit#wrap_lines_expr(v:count)
-noremap <expr> gQ edit#wrap_items_expr(v:count)
+" Copy conceal and caps lock toggle ('paste mode' accessible with 'g' insert mappings)
+" Turn on for filetypes containing raw possibly heavily wrapped data
+augroup copy_setup
+  au!
+  let s:filetypes = join(s:data_filetypes + s:copy_filetypes, ',')
+  exe 'au FileType ' . s:filetypes . ' call switch#copy(1, 1)'
+  let s:filetypes = 'tmux'  " file sub types that otherwise inherit copy toggling
+  exe 'au FileType ' . s:filetypes . ' call switch#copy(0, 1)'
+augroup END
+command! -nargs=? CopyToggle call switch#copy(<args>)
+command! -nargs=? ConcealToggle call switch#conceal(<args>)  " mainly just for tex
+nnoremap <Leader>c <Cmd>call switch#copy()<CR>
+nnoremap <Leader>C <Cmd>call switch#conceal()<CR>
+cnoremap <expr> <C-v> edit#lang_map()
+inoremap <expr> <C-v> edit#lang_map()
 
 " Undo behavior and insert-mode mappings
 " Note: Tried implementing insert-mode 'redo' previously and failed because
 " history lost after vim re-enters insert mode from the <C-o> command.
+augroup undo_setup
+  au!
+  au InsertEnter * let b:insert_undo = get(b:, 'insert_undo', '')
+augroup END
 nmap u <Cmd>call repeat#wrap('u', v:count)<CR>
 nmap U <Cmd>call repeat#wrap("\<C-r>", v:count)<CR>
-inoremap <F12> <Cmd>let b:insert_mode = 'a'<CR><C-g>u
+inoremap <F12> <Cmd>let b:insert_undo = 'i'<CR><C-g>u
 inoremap <expr> <F11> '<Cmd>undo<CR><Esc>' . edit#insert_mode()
-
-" Insert empty lines
-" Note: See 'vim-unimpaired' for original. This is similar to vim-succinct 'e' object
-call s:repeat_map('n', '[e', 'BlankUp', '<Cmd>put!=repeat(nr2char(10), v:count1) \| '']+1<CR>')
-call s:repeat_map('n', ']e', 'BlankDown', '<Cmd>put=repeat(nr2char(10), v:count1) \| ''[-1<CR>')
-nnoremap <expr> o edit#insert_mode('o')
-nnoremap <expr> O edit#insert_mode('O')
 
 " Register selection utilities
 " Note: For some reason cannot set g:peekaboo_ins_prefix = '' and simply have <C-r>
 " trigger the mapping. See https://vi.stackexchange.com/q/5803/8084
 imap <expr> <F10> peekaboo#peek(1, "\<C-r>", 0)
 nmap <expr> <F10> peekaboo#peek(1, '"', 0)
+
+" Insert empty lines
+" Note: See 'vim-unimpaired' for original. This is similar to vim-succinct 'e' object
+call s:repeat_map('n', '[e', 'BlankUp', '<Cmd>put!=repeat(nr2char(10), v:count1) \| '']+1<CR>')
+call s:repeat_map('n', ']e', 'BlankDown', '<Cmd>put=repeat(nr2char(10), v:count1) \| ''[-1<CR>')
+
+" Increase and decrease indent to level v:count
+" Note: To avoid overwriting fugitive inline-diff mappings implement these as
+" buffer-local .vim/autoload/common.vim maps. Also map brackets.
+nnoremap <expr> > '<Esc>' . edit#indent_items_expr(0, v:count1)
+nnoremap <expr> < '<Esc>' . edit#indent_items_expr(1, v:count1)
+
+" Enter insert mode and record keypress
+" Note: This is used for insert-mode undo behvior
+nnoremap <expr> i edit#insert_mode('i')
+nnoremap <expr> I edit#insert_mode('I')
+nnoremap <expr> a edit#insert_mode('a')
+nnoremap <expr> A edit#insert_mode('A')
+nnoremap <expr> o edit#insert_mode('o')
+nnoremap <expr> O edit#insert_mode('O')
+
+" Enter insert mode with paste toggle
+" Note: Switched easy-align mapping from ga for consistency here
+nnoremap <expr> ga edit#paste_mode() . edit#insert_mode('a')
+nnoremap <expr> gA edit#paste_mode() . edit#insert_mode('A')
+nnoremap <expr> gc edit#paste_mode() . edit#insert_mode('c')
+nnoremap <expr> gC edit#paste_mode() . edit#insert_mode('C')
+nnoremap <expr> gi edit#paste_mode() . edit#insert_mode('i')
+nnoremap <expr> gI edit#paste_mode() . edit#insert_mode('I')
+nnoremap <expr> go edit#paste_mode() . edit#insert_mode('o')
+nnoremap <expr> gO edit#paste_mode() . edit#insert_mode('O')
 
 " Record macro by pressing Q (we use lowercase for quitting popup windows)
 " and execute macro using ,. Also disable multi-window recordings.
@@ -963,10 +995,10 @@ vnoremap <expr> " utils#translate_name('q', '*')
 
 " Change text, specify registers with counts.
 " Note: Uppercase registers are same as lowercase but saved in viminfo.
-nnoremap <expr> c (v:count ? '<Esc>' : '') . utils#translate_name('') . 'c'
-nnoremap <expr> C (v:count ? '<Esc>' : '') . utils#translate_name('') . 'C'
-vnoremap <expr> c utils#translate_name('') . 'c'
-vnoremap <expr> C utils#translate_name('') . 'C'
+nnoremap <expr> c (v:count ? '<Esc>' : '') . utils#translate_name('') . edit#insert_mode('c')
+nnoremap <expr> C (v:count ? '<Esc>' : '') . utils#translate_name('') . edit#insert_mode('C')
+vnoremap <expr> c utils#translate_name('') . edit#insert_mode('c')
+vnoremap <expr> C utils#translate_name('') . edit#insert_mode('C')
 
 " Delete text, specify registers with counts (no more dd mapping)
 " Note: Visual counts are ignored, and cannot use <Esc> because that exits visual mode
@@ -1003,74 +1035,6 @@ call s:repeat_map('n', 'cl', 'SwapRight', '<Cmd>call edit#swap_chars(0)<CR>')
 call s:repeat_map('n', 'ck', 'SwapAbove', '<Cmd>call edit#swap_lines(1)<CR>')
 call s:repeat_map('n', 'cj', 'SwapBelow', '<Cmd>call edit#swap_lines(0)<CR>')
 call s:repeat_map('n', 'cL', 'SliceLine', 'myi<CR><Esc><Cmd>keepjumps normal! `y<Cmd>delmark y<CR>')
-
-" Single character mappings
-" Here prefer characterize since usually has more info
-map ` <Plug>(characterize)
-noremap ~ ga
-noremap + <C-a>
-noremap - <C-x>
-noremap x "_x
-noremap X "_X
-nnoremap cx "_s
-
-" Change case for word or motion
-for s:key in ['u', 'U'] | silent! exe 'unmap g' . s:key | silent! exe 'unmap z' . repeat(s:key, 2) | endfor
-call s:repeat_map('n', 'zu', 'CaseToggle', 'my~h`y<Cmd>delmark y<CR>')
-call s:repeat_map('n', 'zU', 'CaseTitle', 'myguiw~h`y<Cmd>delmark y<CR>')
-nnoremap guu guiw
-nnoremap gUU gUiw
-vnoremap zu g~
-vnoremap zU gu<Esc>`<~h
-
-" Toggle spell checking
-" Turn on for filetypes containing text destined for users
-augroup spell_setup
-  au!
-  let s:filetypes = join(s:lang_filetypes, ',')
-  exe 'au FileType ' . s:filetypes . ' setlocal spell'
-augroup END
-command! SpellToggle call switch#spellcheck(<args>)
-command! LangToggle call switch#spelllang(<args>)
-nnoremap <Leader>s <Cmd>call switch#spellcheck()<CR>
-nnoremap <Leader>S <Cmd>call switch#spelllang()<CR>
-
-" Replace misspelled words or define or identify words
-call s:repeat_map('', '[S', 'SpellBackward', '<Cmd>call edit#spell_next(-v:count1)<CR>')
-call s:repeat_map('', ']S', 'SpellForward', '<Cmd>call edit#spell_next(v:count1)<CR>')
-noremap [s <Cmd>keepjumps normal! [s<CR>
-noremap ]s <Cmd>keepjumps normal! ]s<CR>
-noremap gs <Cmd>call edit#spell_check()<CR>
-noremap gS <Cmd>call edit#spell_check(v:count)<CR>
-noremap zs zg
-noremap zS zug
-
-" Copy conceal and caps lock toggle ('paste mode' accessible with 'g' insert mappings)
-" Turn on for filetypes containing raw possibly heavily wrapped data
-augroup copy_setup
-  au!
-  let s:filetypes = join(s:data_filetypes + s:copy_filetypes, ',')
-  exe 'au FileType ' . s:filetypes . ' call switch#copy(1, 1)'
-  let s:filetypes = 'tmux'  " file sub types that otherwise inherit copy toggling
-  exe 'au FileType ' . s:filetypes . ' call switch#copy(0, 1)'
-augroup END
-command! -nargs=? CopyToggle call switch#copy(<args>)
-command! -nargs=? ConcealToggle call switch#conceal(<args>)  " mainly just for tex
-nnoremap <Leader>c <Cmd>call switch#copy()<CR>
-nnoremap <Leader>C <Cmd>call switch#conceal()<CR>
-cnoremap <expr> <C-v> edit#lang_map()
-inoremap <expr> <C-v> edit#lang_map()
-
-" Enter insert mode with paste toggle
-" Note: Switched easy-align mapping from ga for consistency here
-nnoremap <expr> ga edit#paste_mode() . edit#insert_mode('a')
-nnoremap <expr> gA edit#paste_mode() . edit#insert_mode('A')
-nnoremap <expr> gc edit#paste_mode() . edit#insert_mode('c')
-nnoremap <expr> gC edit#paste_mode() . edit#insert_mode('C')
-nnoremap <expr> gi edit#paste_mode() . edit#insert_mode('i')
-nnoremap <expr> gI edit#paste_mode() . edit#insert_mode('I')
-nnoremap <expr> go edit#paste_mode() . edit#insert_mode('o')
-nnoremap <expr> gO edit#paste_mode() . edit#insert_mode('O')
 
 " General and popup or preview window scrolling
 " Note: This requires setting let g:scrollwrapped_nomap = 1
@@ -1112,14 +1076,17 @@ function! s:complete_state(...) abort
 endfunction
 augroup complete_setup
   au!
+  au CmdlineLeave * let b:show_message = 1
   au CmdlineEnter,CmdlineLeave * call s:complete_state(0)
 augroup END
 cnoremap <Tab> <Cmd>call <sid>complete_state(1)<CR><Cmd>call feedkeys("\<Tab>", 'tn')<CR>
 cnoremap <F2> <Cmd>call <sid>complete_state(1)<CR><Cmd>call feedkeys("\<Tab>", 'tn')<CR>
 cnoremap <S-Tab> <Cmd>call <sid>complete_state(1)<CR><Cmd>call feedkeys("\<S-Tab>", 'tn')<CR>
 cnoremap <F1> <Cmd>call <sid>complete_state(1)<CR><Cmd>call feedkeys("\<S-Tab>", 'tn')<CR>
-cnoremap <expr> <Up> get(b:, 'complete_state', 0) ? '<C-c><Cmd>redraw<CR>:' . getcmdline() . '<C-p>' : '<C-p>'
-cnoremap <expr> <Down> get(b:, 'complete_state', 0) ? '<C-c><Cmd>redraw<CR>:' . getcmdline() . '<C-n>' : '<C-n>'
+cnoremap <expr> <Up> get(b:, 'complete_state', 0)
+  \ ? '<C-c><Cmd>redraw<CR>:' . getcmdline() . '<C-p>' : '<C-p>'
+cnoremap <expr> <Down> get(b:, 'complete_state', 0)
+  \ ? '<C-c><Cmd>redraw<CR>:' . getcmdline() . '<C-n>' : '<C-n>'
 
 " Insert mode general behavior
 " Note: Enter is 'accept' only if we scrolled down while tab always means 'accept'
@@ -1157,6 +1124,56 @@ call s:repeat_map('n', 'z.?', 'HeadEdit', '<Cmd>call comment#append_note(' . s:e
 call s:repeat_map('n', 'z.:', '', "<Cmd>call comment#header_line('-', 77, 1)<CR>")
 call s:repeat_map('n', "z.'", '', '<Cmd>call comment#header_inchar()<CR>')
 call s:repeat_map('n', 'z."', '', '<Cmd>call comment#header_inline(5)<CR>')
+
+" Auto wrap the lines or items within motion
+" Note: Previously tried to make this operator map but not necessary, should
+" already work with 'g@<motion>' invocation of wrapping operator function.
+command! -range -nargs=? WrapLines <line1>,<line2>call edit#wrap_lines(<args>)
+command! -range -nargs=? WrapItems <line1>,<line2>call edit#wrap_items(<args>)
+noremap <expr> gq edit#wrap_lines_expr(v:count)
+noremap <expr> gQ edit#wrap_items_expr(v:count)
+
+" Single character mappings
+" Here prefer characterize since usually has more info
+nnoremap <expr> cx '"_' . edit#insert_mode('s')
+nnoremap <expr> gx edit#insert_mode('gi')
+map ` <Plug>(characterize)
+noremap ~ ga
+noremap + <C-a>
+noremap - <C-x>
+noremap x "_x
+noremap X "_X
+
+" Change case for word or motion
+for s:key in ['u', 'U'] | silent! exe 'unmap g' . s:key | silent! exe 'unmap z' . repeat(s:key, 2) | endfor
+call s:repeat_map('n', 'zu', 'CaseToggle', 'my~h`y<Cmd>delmark y<CR>')
+call s:repeat_map('n', 'zU', 'CaseTitle', 'myguiw~h`y<Cmd>delmark y<CR>')
+nnoremap guu guiw
+nnoremap gUU gUiw
+vnoremap zu g~
+vnoremap zU gu<Esc>`<~h
+
+" Toggle spell checking
+" Turn on for filetypes containing text destined for users
+augroup spell_setup
+  au!
+  let s:filetypes = join(s:lang_filetypes, ',')
+  exe 'au FileType ' . s:filetypes . ' setlocal spell'
+augroup END
+command! SpellToggle call switch#spellcheck(<args>)
+command! LangToggle call switch#spelllang(<args>)
+nnoremap <Leader>s <Cmd>call switch#spellcheck()<CR>
+nnoremap <Leader>S <Cmd>call switch#spelllang()<CR>
+
+" Replace misspelled words or define or identify words
+call s:repeat_map('', '[S', 'SpellBackward', '<Cmd>call edit#spell_next(-v:count1)<CR>')
+call s:repeat_map('', ']S', 'SpellForward', '<Cmd>call edit#spell_next(v:count1)<CR>')
+noremap [s <Cmd>keepjumps normal! [s<CR>
+noremap ]s <Cmd>keepjumps normal! ]s<CR>
+noremap gs <Cmd>call edit#spell_check()<CR>
+noremap gS <Cmd>call edit#spell_check(v:count)<CR>
+noremap zs zg
+noremap zS zug
 
 
 "-----------------------------------------------------------------------------"
@@ -1566,6 +1583,7 @@ call plug#('tpope/vim-liquid')
 call plug#('cespare/vim-toml')
 call plug#('JuliaEditorSupport/julia-vim')
 let g:filetype_m = 'matlab'  " see $VIMRUNTIME/autoload/dist/ft.vim
+let g:latex_to_unicode_file_types = ['julia']  " julia-vim feature
 let g:vim_markdown_conceal = 1  " conceal stuff
 let g:vim_markdown_conceal_code_blocks = 0  " show code fences
 let g:vim_markdown_fenced_languages = ['html', 'python']
@@ -2390,9 +2408,9 @@ noremap <Leader>8 <Cmd>Colorize<CR>
 " Scroll color schemes and toggle colorize
 " Note: Here :Colorize is from colorizer.vim and :Colors from fzf.vim. Note coloring
 " hex strings can cause massive slowdowns so disable by default.
-command! -nargs=? -complete=color Scheme call syntax#update_scheme(<f-args>)
-command! -count=1 Sprev call syntax#update_scheme(-<count>)
-command! -count=1 Snext call syntax#update_scheme(<count>)
+command! -nargs=? -complete=color Scheme call syntax#next_scheme(<f-args>)
+command! -count=1 Sprev call syntax#next_scheme(-<count>)
+command! -count=1 Snext call syntax#next_scheme(<count>)
 call s:repeat_map('n', 'g[', 'Sprev', ':<C-u>Sprev<CR>')
 call s:repeat_map('n', 'g]', 'Snext', ':<C-u>Snext<CR>')
 noremap <Leader>9 <Cmd>Colors<CR>
@@ -2456,6 +2474,7 @@ augroup clear_jumps
   au!
   au VimEnter,BufWinEnter * if get(w:, 'clear_jumps', 1) | silent clearjumps | let w:clear_jumps = 0 | endif
 augroup END
+noremap <Leader><Leader> <Cmd>echo system('curl https://icanhazdadjoke.com/')<CR>
 exe 'runtime autoload/repeat.vim'
 call syntax#update_highlights()
 nohlsearch  " turn off highlighting at startup

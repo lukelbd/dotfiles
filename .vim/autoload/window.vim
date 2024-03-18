@@ -234,22 +234,17 @@ endfunction
 " immediately runs and closes as e.g. with non-tex BufNewFile template detection,
 " this causes vim to crash and breaks the terminal. Instead never auto-close windows
 " and simply get in habit of closing entire tabs with session#close_tab().
-function! window#setup_panel(level) abort
+function! window#setup_panel(...) abort
   setlocal nonumber norelativenumber nocursorline signcolumn=yes 
   let g:ft_man_folding_enable = 1  " see :help Man
   let [nleft, nright] = [window#count_panes('h'), window#count_panes('l')]
   nnoremap <buffer> q <Cmd>silent! call window#close_pane()<CR>
   nnoremap <buffer> <C-w> <Cmd>silent! call window#close_pane()<CR>
-  if a:level > 1  " e.g. gitcommit window
+  if a:0 && a:1  " editable window
     return
-  elseif a:level > 0
-    setlocal colorcolumn= nolist
-  else
-    setlocal colorcolumn= nolist nospell
+  else  " standard window
+    setlocal nolist colorcolumn=
   endif
-  " for char in 'du'  " always remap scrolling indicators
-  "   exe 'map <buffer> <nowait> ' . char . ' <C-' . char . '>'
-  " endfor
   for [char, frac] in [['d', 0.5], ['u', -0.5]]
     exe 'noremap <expr> <nowait> <buffer> ' . char . ' iter#scroll_normal(' . frac . ')'
   endfor

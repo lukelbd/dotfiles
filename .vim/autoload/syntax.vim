@@ -1,6 +1,94 @@
 "-----------------------------------------------------------------------------"
 " Utilities for syntax syncing
 "-----------------------------------------------------------------------------"
+" Jump to next conceal character
+" Note: This should work in arbitrary modes
+" See: https://stackoverflow.com/a/24224578/4970632
+function! syntax#next_char(count)
+  let [lnum, cnum, cmax] = [line('.'), col('.'), col('$')]
+  let [icnt, jcnt] = [a:count, 0]
+  let cmode = mode() ==# '' ? 'v' : mode()
+  let offset = a:count < 0 ? -1 : 0
+  let delta = a:count < 0 ? -1 : 1
+  let line = getline('.')
+  let matches = filter(getmatches(), "v:val.group ==# 'Conceal'")
+  let regexes = uniq(map(matches, 'v:val.pattern'))
+  while delta * icnt > 0
+    if a:count < 0 && cnum <= 1 || a:count > 0 && cnum >= cmax
+      let jcnt += icnt | break
+    endif
+    if cnum == 0 || &l:concealcursor !~? cmode[:0]
+      let concealed = 0
+    else
+      let [concealed, cchar, _] = synconcealed(lnum, cnum + offset)
+    endif
+    for regex in concealed ? [] : regexes
+      let idx = cnum + offset - 1
+      let jdx = match(line, regex, idx)
+      if idx == jdx | let concealed = 1 | break | endif
+    endfor
+    if !concealed
+      let icnt -= delta
+      let jcnt += delta
+      if a:count < 0
+        let cnum -= len(matchstr(line[:cnum - 2], '.$'))
+      else
+        let cnum += len(matchstr(line[cnum - 1:], '^.'))
+      endif
+    else
+      let icnt -= delta * strchars(cchar)
+      let inum = cnum
+      let cnum += delta
+      while cnum > 1 && cnum < cmax
+        let [concealed, ichar, _] = synconcealed(lnum, cnum + offset)
+        if !concealed || cchar !=# ichar | break | endif
+        let cnum += delta
+      endwhile
+      if a:count < 0
+        let jcnt -= strchars(line[max([cnum - 1, 0]):inum - 2])
+      else
+        let jcnt += delta * strchars(line[inum - 1:cnum - 2])
+      endif
+    endif
+  endwhile
+  let motion = jcnt > 0 ? jcnt . 'l' : jcnt < 0 ? -jcnt . 'h' : ''
+  return "\<Ignore>" . motion
+endfunction
+
+" Switch to next or previous colorschemes and print the name
+" See: https://stackoverflow.com/a/2419692/4970632
+" Note: Here getcompletion(..., 'color') will follow &wildignorecase which follows
+" &fileignorecase and filters out 'duplicate' color schemes with same case. This can
+" cause errors where we land on unknown schemes so add set nofileignorecase to vimrc.
+" Note: Have to trigger 'InsertLeave' so status line updates (for some reason only
+" works after timer when :colorscheme triggers ColorScheme autocommand). Also note
+" g:colors_name is convention shared by most color schemes, no official vim setting.
+function! s:echo_scheme(...) abort
+  let name = get(g:, 'colors_name', 'default')
+  echom 'Colorscheme: ' . name
+endfunction
+function! syntax#next_scheme(arg) abort
+  let default = get(g:, 'colors_default', 'default')
+  if !exists('g:colors_all')
+    let g:colors_all = getcompletion('', 'color')
+  endif
+  if type(a:arg)  " use input scheme
+    let name = a:arg
+  else  " iterate over schemes
+    let name = get(g:, 'colors_name', default)
+    let idx = indexof(g:colors_all, {idx, val -> val ==# name})
+    let idx = idx == -1 ? index(g:colors_all, default) : idx + a:arg
+    let idx = idx % len(g:colors_all)
+    let name = g:colors_all[idx]
+  endif
+  silent! exe 'colorscheme ' . name
+  silent call syntax#update_groups()  " override vim comments
+  silent call syntax#update_highlights()  " override highlight colors
+  silent! doautocmd BufEnter
+  call timer_start(1, 's:echo_scheme')
+  let g:colors_name = name  " in case differs
+endfunction
+
 " Show syntax highlight groups and info
 " Note: This adds header in same format as built-in command
 function! syntax#show_stack(...) abort
@@ -30,13 +118,13 @@ function! syntax#show_colors() abort
   silent call file#open_drop('colortest.vim')
   silent let path = $VIMRUNTIME . '/syntax/colortest.vim'
   exe 'source ' . path
-  call window#setup_panel(1)
+  call window#setup_panel()
 endfunction
 function! syntax#show_runtime(...) abort
   let path = a:0 ? a:1 : 'ftplugin'
   let path = $VIMRUNTIME . '/' . path . '/' . &l:filetype . '.vim'
   call file#open_drop(path)
-  call window#setup_panel(1)
+  call window#setup_panel()
 endfunction
 
 " Update syntax colors
@@ -52,40 +140,6 @@ function! syntax#update_lines(count, ...) abort
     let nlines = max([0, get(item, 1, line('w0')) - line('.')])
     exe 'syntax sync minlines=' . nlines . ' maxlines=0'
   endif
-endfunction
-
-" Switch to next or previous colorschemes and print the name
-" See: https://stackoverflow.com/a/2419692/4970632
-" Note: Here getcompletion(..., 'color') will follow &wildignorecase which follows
-" &fileignorecase and filters out 'duplicate' color schemes with same case. This can
-" cause errors where we land on unknown schemes so add set nofileignorecase to vimrc.
-" Note: Have to trigger 'InsertLeave' so status line updates (for some reason only
-" works after timer when :colorscheme triggers ColorScheme autocommand). Also note
-" g:colors_name is convention shared by most color schemes, no official vim setting.
-function! s:echo_scheme(...) abort
-  let name = get(g:, 'colors_name', 'default')
-  echom 'Colorscheme: ' . name
-endfunction
-function! syntax#update_scheme(arg) abort
-  let default = get(g:, 'colors_default', 'default')
-  if !exists('g:colors_all')
-    let g:colors_all = getcompletion('', 'color')
-  endif
-  if type(a:arg)  " use input scheme
-    let name = a:arg
-  else  " iterate over schemes
-    let name = get(g:, 'colors_name', default)
-    let idx = indexof(g:colors_all, {idx, val -> val ==# name})
-    let idx = idx == -1 ? index(g:colors_all, default) : idx + a:arg
-    let idx = idx % len(g:colors_all)
-    let name = g:colors_all[idx]
-  endif
-  silent! exe 'colorscheme ' . name
-  silent call syntax#update_groups()  " override vim comments
-  silent call syntax#update_highlights()  " override highlight colors
-  silent! doautocmd BufEnter
-  call timer_start(1, 's:echo_scheme')
-  let g:colors_name = name  " in case differs
 endfunction
 
 " Updaet syntax match groups. Could move to after/syntax but annoying
@@ -174,6 +228,7 @@ endfunction
 " workaround to apply bold gui syntax. See https://stackoverflow.com/a/73783079/4970632
 function! syntax#update_highlights() abort
   let pairs = []  " highlight links
+  call s:update_highlight('Normal', '', '', '')
   call s:update_highlight('LineNR', '', 'black', '')
   call s:update_highlight('Folded', '', 'white', 'Bold')
   call s:update_highlight('CursorLine', 'black', 0, '')

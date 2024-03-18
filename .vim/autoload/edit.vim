@@ -4,8 +4,9 @@
 " Helper function
 " Note: This helps restore insert mode after mapping
 function! edit#insert_mode(...) abort  " restore insert mode
-  let imode = a:0 ? a:1 : get(b:, 'insert_mode', '')
-  let b:insert_mode = imode | return imode
+  let imode = a:0 ? a:1 : get(b:, 'insert_undo', '')
+  let jmode = imode =~? '^o' ? imode : 'i'
+  let b:insert_undo = jmode | return imode
 endfunction
 
 " Call external plugins

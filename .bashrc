@@ -79,10 +79,10 @@
 #   See: https://github.com/asciinema/asciinema/
 # * Prefix key for issuing SSH-session commands is '~' ('exit' sometimes
 #   fails perhaps because it is aliased or some 'exit' is defined in $PATH).
-#   ~C-z -- Stop current SSH session
 #   exit -- Terminate SSH session (if available)
+#   ~c-z -- Stop current SSH session
+#   ~c -- Enter SSH command line
 #   ~. -- Terminate SSH session (always available)
-#   ~C -- Enter SSH command line
 #   ~& -- Send SSH session into background
 #   ~# -- Give list of forwarded connections in this session
 #   ~? -- Give list of these commands
@@ -105,7 +105,9 @@ _setup_message() { printf '%s' "${1}$(seq -s '.' $((30 - ${#1})) | tr -d 0-9)"; 
 # don't overwrite modifications by supercomputer modules, conda environments, etc.
 _setup_message 'General setup'
 _prompt_branch() {  # print parentheses around git branch similar to conda environment
-  git branch 2>/dev/null | sed -e '/^[^*]/d' -e 's/* (\?\([^)]*\))\? */(\1) /'
+  local branch
+  branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+  [ -n "$branch" ] && echo "($branch) "
 }
 _prompt_dirs() {  # show full dirs path from base to current instead of just current
   local paths

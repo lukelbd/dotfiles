@@ -283,6 +283,7 @@ function! s:translate_input(mode, ...) abort
         let result = '"' . name
       else  " pass default to operator or cancel selection
         let name = char =~? '^[dcyp]$' ? a:1 : ''
+        let char = char ==# 'Y' ? 'y$' : char
         let result = empty(name) ? char : '"' . name . char
       endif
       if name ==# '_'

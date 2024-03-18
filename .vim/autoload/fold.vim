@@ -5,7 +5,6 @@
 " Note: This concatenates python docstring lines and uses frame title
 " for beamer presentations. In future should expand for other filetypes.
 scriptencoding utf-8
-let s:hunktypes = 0  " whether to split hunk types
 let s:maxlines = 100  " maxumimum number of lines to search
 let s:docstring = '["'']\{3}'  " docstring expression
 function! fold#get_label(line, ...) abort
@@ -63,6 +62,7 @@ endfunction
 " in autoload/gitgutter/diff.vim. Hunks are stored in g:gitgutter['hunks'] list of
 " 4-item [from_start, from_count, to_start, to_count] lists i.e. the starting line
 " and counts before and after changes. Copy internal method here for fold statistics.
+let s:hunk_types = 0  " whether to split hunk types
 let s:delim_open = {']': '[', ')': '(', '}': '{', '>': '<'}
 let s:delim_close = {'[': ']', '(': ')', '{': '}', '<': '>'}
 function! s:close_label(label, ...)
@@ -95,7 +95,7 @@ function! fold#fold_text(...) abort
   let delim = s:close_label(label)
   let label = empty(delim) ? label : label . '···' . delim
   " Get git gutter statistics
-  let [hunks, idxs] = [[0, 0, 0], s:hunktypes ? [0, 1, 2] : [1, 1, 1]]
+  let [hunks, idxs] = [[0, 0, 0], s:hunk_types ? [0, 1, 2] : [1, 1, 1]]
   let [delta; signs] = ['', '+', '~', '-']
   for [hunk0, count0, hunk1, count1] in gitgutter#hunk#hunks(bufnr())
     let hunk2 = count1 ? hunk1 + count1 - 1 : hunk1
@@ -114,9 +114,14 @@ function! fold#fold_text(...) abort
     let delta .= signs[idx] . nline
   endfor
   " Combine label and statistics
+  let level = repeat('|', level)
+  " let level = get(s:dots_types, level, s:dots_types[-1])
   let nline = string(line2 - line1 + 1)
-  let level = repeat(':', level)
-  let stats = delta . level . nline . level
+  let nmax = len(string(line('$')))
+  let dots = repeat('·', nmax - len(nline))
+  let stats = delta . level . dots . nline
+  " let stats = delta . level . dots . nline . strcharpart(level, 0, 1)
+  " let stats = delta . nline
   let width = get(g:, 'linelength', 88) - 1 - strwidth(stats)
   if strwidth(label) > width - 1  " truncate fold text
     let dclose = trim(matchstr(label, '[\])}>]*:\?\s*$'))
