@@ -10,26 +10,6 @@ let s:use_signs = 1
 let s:gui_colors = ['DarkYellow', 'DarkCyan', 'DarkMagenta', 'DarkBlue', 'DarkRed', 'DarkGreen']
 let s:cterm_colors = ['DarkYellow', 'DarkCyan', 'DarkMagenta', 'DarkBlue', 'DarkRed', 'DarkGreen']
 
-" Push current location to top of jumplist
-" Note: This prevents resetting when navigating backwards and forwards through
-" jumplist or when navigating within paragraph of most recently set jump. Also remap
-" 'jumping' motions n/N/{/}/(/)/`/[[/]] by prepending :keepjumps to reduce entries.
-" Note: Jumplist is managed from the bottom-up by remapping normal-mode 'jumping'
-" motions and conditionally updating jumplist on CursorHold. Still navigate the
-" actual jumplist using <C-o>/<C-i> navigation keys. Compare to changelist below.
-function! mark#push_jump() abort
-  let jprev = line("''")  " line of previous jump
-  let jumps = jprev > 0 ? [jprev] : []
-  let [jlist, jloc] = getjumplist()
-  let [line1, line2] = fold#get_bounds()  " current cursor bounds
-  if !empty(jlist)  " previous jump from list
-    call add(jumps, get(jlist, jloc, jlist[-1])['lnum'])
-  endif
-  if empty(filter(jumps, {idx, val -> val >= line1 && val <= line2}))
-    call feedkeys("\<Cmd>normal! m'\<CR>", 'n')
-  endif
-endfunction
-
 " Generate jump and change lists
 " Note: Similar to how stack.vim 'floats' recent tab stack entries to the top of the
 " stack of the current tab is in the most recent five, this filters jump and change
@@ -153,6 +133,44 @@ function! s:list_source(changes) abort
     break
   endfor
   return table
+endfunction
+
+" Push current location to top of jumplist
+" Warning: The zk/zj/[z/]z motions update jumplist, found out via trial and error
+" even though not documented in :help jump-motions
+" Note: This prevents resetting when navigating backwards and forwards through
+" jumplist or when navigating within paragraph of most recently set jump. Also remap
+" 'jumping' motions n/N/{/}/(/)/`/[[/]] by prepending :keepjumps to reduce entries.
+" Note: Jumplist is managed from the bottom-up by remapping normal-mode 'jumping'
+" motions and conditionally updating jumplist on CursorHold. Still navigate the
+" actual jumplist using <C-o>/<C-i> navigation keys. Compare to changelist below.
+function! s:range_keepjumps() abort  " used to update jumplist on CursorHold
+  let line = line('.')  " cursor line
+  let winview = winsaveview()
+  let text1 = line == 1 ? 1 : line("'{'") + 1
+  let text2 = line == line('$') ? line('$') : line("'}")
+  exe 'keepjumps normal! [z' | let fold1 = line('.')
+  exe 'keepjumps normal! ]z' | let fold2 = line('.')
+  if fold1 == line && fold2 == line  " try outer folds
+    exe line | exe 'keepjumps normal! zk'
+    let fold1 = line('.') == line ? 1 : line('.') + 1
+    exe line | exe 'keepjumps normal! zj'
+    let fold2 = line('.') == line ? line('$') : line('.') - 1
+  endif
+  call winrestview(winview)
+  let line1 = max([text1, fold1])
+  let line2 = min([text2, fold2])
+  return [line1, line2]
+endfunction
+function! mark#update_jumps() abort
+  let [keep1, keep2] = s:range_keepjumps()  " current cursor bounds
+  let [items, idx] = getjumplist()
+  let jline = line("''")  " line of previous jump
+  let jlines = empty(jline) || empty(items) ? [] : [jline]
+  call extend(jlines, empty(jlines) ? [] : [get(items, idx, items[-1])['lnum']])
+  if empty(filter(jlines, {idx, val -> val >= keep1 && val <= keep2}))
+    call feedkeys("\<Cmd>normal! m'\<CR>", 'n')
+  endif
 endfunction
 
 " Overrides of FZF :Jumps and :Changes

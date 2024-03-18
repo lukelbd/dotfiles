@@ -1,60 +1,57 @@
 "-----------------------------------------------------------------------------"
 " Utilities for managing files
 "-----------------------------------------------------------------------------"
-" Helper functions and variables
+" Helper functions
 " Warning: For some reason including 'down' in fzf#run prevents fzf from returning
 " a list (version 0.29). However exluding it produces weird behavior that blacks
 " out rest of screen. Workaround is to factor out an unnecessary source function.
-let s:new_file = '[new file]'  " dummy entry for requesting new file in current directory
-function! file#echo_path(...) abort
+let s:new_dir = ''  " path completion base folder
+let s:new_file = '[new file]'  " fzf entry for requesting new file
+function! file#echo_path(head, ...) abort
   let path = expand(a:0 ? a:1 : '%')
-  if exists('*RelativePath')
-    let path = RelativePath(path)
-  else
-    let path = fnamemodify(path)
-  endif
-  echom 'Path: ' . path
+  let path = exists('*RelativePath') ? RelativePath(path) : fnamemodify(path, ':p:~:.')
+  echom '' . substitute(a:head, '^\(\a\)\(\a*\)$', '\u\1\l\2', '') . ': ' . path
 endfunction
-function! file#setup_netrw() abort
-  call utils#switch_maps(['<CR>', 't', 'n'], ['t', '<CR>', 'n'])
-  for char in 'fbFL' | silent! exe 'unmap <buffer> q' . char | endfor
+function! file#format_dir(path, ...) abort
+  let base = fnamemodify(a:path, ':p:~:.')  " note do not use RelativePath
+  let base = a:0 && a:1 && base !~# '^[~.]*/\|^\w\+:' ? './' . base : base
+  return substitute(base, '[^/]\@<=/*$', '/', '')
 endfunction
 
 " Generate list of files in directory
 " Warning: Critical that the list options match the prompt lead or else
 " when a single path is returned <Tab> during input() does not complete it.
-function! s:path_source(base, user) abort
-  let glob = fnamemodify(a:base, ':p')  " full directory name
-  let glob = substitute(glob, '/$', '', '')  " remove trailing slash
+function! file#glob_files(base, ...) abort
+  let glob = substitute(fnamemodify(a:base, ':p'), '^\@!/\?$', '', '')
   let paths = globpath(glob, '*', 0, 1) + globpath(glob, '.?*', 0, 1)
-  let paths = map(paths, "fnamemodify(v:val, ':t')")
-  if a:user  " user input
-    call add(paths, s:new_file)
-  endif
-  return paths
+  return extend(map(paths, "fnamemodify(v:val, ':t')"), a:0 && a:1 ? [s:new_file] : [])
 endfunction
-function! s:path_complete(lead) abort
-  let head = fnamemodify(a:lead, ':h')
+function! file#glob_paths(lead, ...) abort
+  let base = a:lead =~# '^[~.]*/\|^\~$' ? '' : file#format_dir(s:new_dir)
+  let head = base . file#format_dir(fnamemodify(a:lead, ':h'))
   let tail = fnamemodify(a:lead, ':t')
-  if empty(head) || head ==# '.'  " exclude leading component
+  if empty(head) || head ==# './'  " exclude leading component
     let paths = glob(tail . '*', 1, 1) + glob(tail . '.*', 1, 1)
   else  " include leading component
     let paths = globpath(head, tail . '*', 1, 1) + globpath(head, tail . '.*', 1, 1)
   endif
   let filt = 'fnamemodify(v:val, '':t'') !~# ''^\.\+$'''  " remove dots
-  let map0 = "fnamemodify(v:val, ':~:.')"  " abbreviate names
-  let map1 = 'isdirectory(v:val) ? v:val . ''/'' : v:val'  " append '/' to dirs
-  let map2 = 'substitute(v:val, ''^\.\/'', '''', '''')'  " remove current dir
-  let paths = map(map(map(filter(paths, filt), map0), map1), map2)
-  return paths
+  let map0 = 'fnamemodify(v:val, '':~:.'')'  " abbreviate names
+  let map1 = 'isdirectory(v:val) ? v:val . ''/'' : v:val'  " append '/' to folders
+  let map2 = 'substitute(v:val, ''^\.\/'', '''', '''')'  " remove current folder
+  let map3 = 'substitute(v:val, ''^'' . base, '''', '''')'  " remove base folder
+  return map(map(map(map(filter(paths, filt), map0), map1), map2), map3)
 endfunction
-function! file#complete_cwd(lead, line, cursor) abort
-  let head = exists('*RelativePath') ? RelativePath(expand('%:h')) : expand('%:h:~:.')
-  return s:path_complete(a:lead)
-endfunction
-function! file#complete_lwd(lead, line, cursor) abort
-  let head = exists('*RelativePath') ? RelativePath(expand('%:h')) : expand('%:h:~:.')
-  return s:path_complete(head =~# '^' . a:lead ? head : a:lead)
+function! file#input_path(prompt, default, ...) abort
+  let base1 = file#format_dir(a:0 ? a:1 : '', 0)
+  let base2 = file#format_dir(a:0 ? a:1 : '', 1)  " leading ./
+  let default1 = empty(a:default) ? base2 : a:default
+  let default2 = empty(a:default) ? base2 : base1 . a:default
+  let prompt = substitute(a:prompt, '^\(\a\)\(\a*\)$', '\u\1\l\2', '')
+  let prompt = prompt . ' (' . default2 . ')'  " prompt with base folder
+  let s:new_dir = base2  " glob using this folder
+  let path = utils#input_default(prompt, default1, 'file#glob_paths')
+  return path =~# '^[~.]*/\|^\~\?$' ? path : base1 . path
 endfunction
 
 " Print whether current file exists
@@ -98,12 +95,6 @@ endfunction
 " Open recently edited file
 " Note: This is companion to :History with nicer behavior. Files tracked
 " in ~/.vim_mru_files across different open vim sessions.
-function! s:open_prompt(path) abort
-  let prompt = fnamemodify(a:path, ':p:~:.')  " note do not use RelativePath
-  let prompt = prompt =~# '^[~/]\|^\w\+:' ? prompt : './' . prompt
-  let prompt = substitute(prompt, '/$', '', '') . '/'
-  return prompt
-endfunction
 function! file#open_used() abort
   let files = readfile(expand(g:MRU_file))
   if files[0] =~# '^#'
@@ -124,18 +115,21 @@ endfunction
 " Open from local or current directory (see also grep.vim)
 " Note: Using <expr> instead of this tiny helper function causes <C-c> to
 " display annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
-function! file#open_netrw(cmd, local) abort
+function! file#setup_dir() abort
+  call utils#switch_maps(['<CR>', 't', 'n'], ['t', '<CR>', 'n'])
+  for char in 'fbFL' | silent! exe 'unmap <buffer> q' . char | endfor
+endfunction
+function! file#open_dir(cmd, local) abort
   let base = a:local ? fnamemodify(resolve(@%), ':p:h') : tag#find_root(@%)
   exe a:cmd . ' ' . base
   exe 'vert resize ' . window#default_width(1)
   exe 'resize ' . window#default_height(1) | goto
 endfunction
 function! file#open_init(cmd, local) abort
-  let cmd = a:cmd ==# 'Drop' ? 'Open' : a:cmd  " recursive fzf or non-resucrive internal
+  let cmd = a:cmd ==# 'Drop' ? 'Open' : a:cmd  " alias 'Open' for 'Drop' command
   let path = resolve(expand('%:p'))
-  let folder = a:local ? fnamemodify(path, ':p:h') : tag#find_root(path)
-  let prompt = s:open_prompt(folder)
-  let init = utils#input_default(cmd, prompt, 'file#complete_cwd')
+  let base = a:local ? fnamemodify(path, ':p:h') : tag#find_root(path)
+  let init = file#input_path(cmd, '', base)
   if empty(init)
     return
   elseif cmd ==# 'Files'
@@ -151,7 +145,7 @@ endfunction
 " function. See https://github.com/junegunn/fzf/issues/1577#issuecomment-492107554
 function! file#open_continuous(cmd, ...) abort
   let paths = []
-  for glob in a:000
+  for glob in a:000  " iterate input
     let glob = substitute(glob, '^\s*\(.\{-}\)\s*$', '\1', '')  " strip spaces
     call extend(paths, expand(glob, 0, 1))
   endfor
@@ -174,33 +168,28 @@ function! s:open_continuous(cmd, ...) abort
   " Process paths input manually or from fzf
   let paths = []
   for item in items
-    let user = item ==# s:new_file
-    if user  " should be recursed at least one level
-      let [prompt, default] = [s:open_prompt(base), expand('<cfile>')]
+    if item ==# s:new_file  " should be recursed at least one level
       try
-        let item = utils#input_default(prompt, default, 'file#complete_cwd')
+        let item = file#input_path('File', expand('<cfile>'), base)
       catch /^Vim:Interrupt$/
         let item = ''  " avoid error message
+      finally
+        if !empty(item) | call add(paths, item) | endif
       endtry
-      if empty(item) | continue | endif
-    endif
-    let item = substitute(item, '\s', '\ ', 'g')
-    if item ==# '..'  " :p adds a slash so need two :h:h to remove then
+    elseif item ==# '..'  " :p adds trailing slash so need two :h:h for parent
       call add(paths, fnamemodify(base, ':p:h:h'))
     elseif !empty(item)
       call add(paths, empty(base) ? item : base . '/' . item)
-    elseif user
-      call add(paths, base)
     endif
   endfor
   " Possibly activate or re-activate fzf
   if empty(paths) && a:0 == 1 || len(paths) == 1 && isdirectory(paths[0])
-    let base = empty(paths) ? '.' : paths[0]
+    let base = get(paths, 0, '.')
     let paths = []  " only continue in recursion
     call fzf#run(fzf#wrap({
       \ 'sink*': function('s:open_continuous', [a:cmd, base]),
-      \ 'source': s:path_source(base, 1),
-      \ 'options': "--multi --no-sort --prompt='" . s:open_prompt(base) . "'",
+      \ 'source': file#glob_files(base, 1),
+      \ 'options': "--multi --no-sort --prompt='" . file#format_dir(base, 1) . "'",
       \ }))
   endif
   " Open file(s), or if it is already open just to that tab
@@ -253,7 +242,7 @@ function! file#open_drop(...) abort
       call feedkeys("\<Cmd>silent edit " . path . "\<CR>", 'n')
     end
     if !quiet && !blank && !panel && !fugitive && abspath !=# expand('%:p')
-      call timer_start(1, function('file#echo_path', [path]))
+      call timer_start(1, function('file#echo_path', ['path', path]))
     endif
   endfor
 endfunction

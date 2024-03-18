@@ -79,7 +79,6 @@ set nobackup  " no backups when overwriting files, use tabline/statusline featur
 set noerrorbells  " disable error bells (see also visualbell and t_vb)
 set nohidden  " unload buffers when not open in window
 set noinfercase  " do not replace insert-completion with case inferred from typed text
-set nospell  " disable spellcheck by default
 set nostartofline  " when switching buffers, doesn't move to start of line (weird default)
 set noswapfile " no more swap files, instead use session
 set notimeout  " wait forever when doing multi-key *mappings*
@@ -137,6 +136,7 @@ let &g:breakat = '  !*-+;:,./?'  " break lines following punctuation
 let &g:expandtab = 1  " global expand tab (respect tab toggling)
 let &g:foldenable = 1  " global fold enable (respect 'zn' toggling)
 let &g:shortmess .= &buftype ==# 'nofile' ? 'I' : ''  " no intro when starting vim
+let &g:spell = 0  " global spell disable (only use text files)
 let &g:wildignore = join(tag#parse_ignores(0, '~/.wildignore'), ',')
 
 " File types for different unified settings
@@ -261,7 +261,7 @@ for s:spellfile in glob('~/.vim/spell/*.add', 1, 1)
 endfor
 
 " Helper function for repeat#set (easier than copy-pasting repeat#set calls)
-" Todo: Figure out issues with repeating e.g. 'cgw' operator mappings
+" Note: Older vim versions prohibit combining <Plug> maps with <Cmd>
 function! s:repeat_head(mode) abort
   return a:mode ==# 'o' ? v:operator : ''
 endfunction
@@ -275,10 +275,10 @@ function! s:repeat_map(mode, lhs, name, rhs) abort
   let tail = ' . <sid>repeat_tail(' . string(a:mode) . ')'
   let iarg = head . '"\<Plug>' . a:name . '"' . tail
   if empty(a:name)  " disable repetition (e.g. require user input)
-    let repeat = '<Cmd>call repeat#set("\<Ignore>")<CR>'
+    let repeat = ':<C-u>call repeat#set("\<Ignore>")<CR>'
     exe noremap . ' ' . a:lhs . ' ' . a:rhs . repeat
   else
-    let repeat = '<Cmd>call repeat#set(' . iarg . ', v:prevcount)<CR>'
+    let repeat = ':<C-u>call repeat#set(' . iarg . ', v:prevcount)<CR>'
     exe noremap . ' ' . plug . ' ' . a:rhs . repeat | exe map . ' ' . a:lhs . ' ' . plug
   endif
 endfunction
@@ -425,10 +425,10 @@ nnoremap g, <Cmd>History<CR>
 nnoremap g< <Cmd>call file#open_used()<CR>
 
 " Tab and window jumping
-nnoremap <Tab>' <Cmd>silent! tabnext #<CR><Cmd>call file#echo_path()<CR>
+nnoremap <Tab>' <Cmd>silent! tabnext #<CR><Cmd>call file#echo_path('tab')<CR>
+nnoremap <Tab>; <Cmd>silent! wincmd p<CR><Cmd>call file#echo_path('window')<CR>
 nnoremap <Tab>, <Cmd>silent! exe 'tabnext -' . v:count1<CR>
 nnoremap <Tab>. <Cmd>silent! exe 'tabnext +' . v:count1<CR>
-nnoremap <Tab>; <Cmd>silent! wincmd p<CR>
 nnoremap <Tab>j <Cmd>silent! wincmd j<CR>
 nnoremap <Tab>k <Cmd>silent! wincmd k<CR>
 nnoremap <Tab>h <Cmd>silent! wincmd h<CR>
@@ -461,8 +461,8 @@ nnoremap <Tab>i <Cmd>call file#open_init('Drop', 1)<CR>
 nnoremap <Tab>y <Cmd>call file#open_init('Files', 1)<CR>
 nnoremap <Tab>- <Cmd>call file#open_init('Split', 1)<CR>
 nnoremap <Tab>= <Cmd>call file#open_init('Split', 0)<CR>
-nnoremap <Tab>/ <Cmd>call file#open_netrw('topleft vsplit', 1)<CR>
-nnoremap <Tab>\ <Cmd>call file#open_netrw('topleft vsplit', 0)<CR>
+nnoremap <Tab>/ <Cmd>call file#open_dir('topleft vsplit', 1)<CR>
+nnoremap <Tab>\ <Cmd>call file#open_dir('topleft vsplit', 0)<CR>
 
 " Open file in current directory or some input directory
 " Note: Anything that is not :Files gets passed to :Drop command
@@ -483,9 +483,9 @@ nnoremap <C-g> <Cmd>GFiles<CR>
 " Note: Here :Rename is adapted from the :Rename2 plugin. Usage is :Rename! <dest>
 command! -nargs=* -complete=file -bang Rename call file#rename(<q-args>, '<bang>')
 command! -nargs=? Paths call file#print_paths(<f-args>)
-command! -nargs=? Localdir call switch#localdir(<args>)
+command! -nargs=? Local call switch#localdir(<args>)
 noremap zp <Cmd>Paths<CR>
-noremap zP <Cmd>Localdir<CR>
+noremap zP <Cmd>Local<CR>
 noremap gp <Cmd>call file#print_exists()<CR>
 noremap gP <Cmd>call file#open_drop(expand('<cfile>'))<CR>
 
@@ -529,7 +529,7 @@ augroup panel_setup
   au FileType help call vim#setup_help()
   au FileType qf call iter#setup_quickfix()
   au FileType taglist call iter#setup_taglist()
-  au FileType netrw call file#setup_netrw()
+  au FileType netrw call file#setup_dir()
   au FileType man call shell#setup_man()
   au FileType gitcommit call git#setup_commit()
   au FileType fugitiveblame call git#setup_blame() | call git#setup_fugitive()
@@ -612,7 +612,7 @@ noremap <F2> <Cmd>call stack#scroll_tabs(v:count1)<CR>
 " See: https://stackoverflow.com/a/27194972/4970632
 augroup jumplist_setup
   au!
-  au CursorHold,TextChanged,InsertLeave * call mark#push_jump()
+  au CursorHold,TextChanged,InsertLeave * call mark#update_jumps()
 augroup END
 command! -bang -nargs=0 Jumps call mark#fzf_jumps(<bang>0)
 noremap z; <Cmd>BLines<CR>
@@ -742,14 +742,14 @@ noremap zM <Cmd>call fold#update_level('M')<CR>
 noremap zR <Cmd>call fold#update_level('R')<CR>
 
 " Jump to next or previous fold or inside fold
-" Note: This is more consistent with other bracket maps
+" Note: The bracket maps fail without silent! when inside first fold in file
 " Note: Recursive map required for [Z or ]Z or else way more complicated
-call s:repeat_map('', '[Z', 'FoldBackward', 'zkza')
-call s:repeat_map('', ']Z', 'FoldForward', 'zjza')
-noremap [z zk
-noremap ]z zj
-noremap zk [z
-noremap zj ]z
+call s:repeat_map('', '[Z', 'FoldBackward', '<Cmd>keepjumps normal! zkza<CR>')
+call s:repeat_map('', ']Z', 'FoldForward', '<Cmd>keepjumps normal! zjza<CR>')
+noremap [z <Cmd>keepjumps normal! zk<CR><Cmd>keepjumps normal! [z<CR>
+noremap ]z <Cmd>keepjumps normal! zj<CR><Cmd>keepjumps normal! [z<CR>
+noremap zk <Cmd>keepjumps normal! [z<CR>
+noremap zj <Cmd>keepjumps normal! ]z<CR>
 
 " Jump to marks and declare alphabetic marks using counts (navigate with ]` and [`)
 " Note: :Marks does not handle file switching and :Jumps has an fzf error so override.
@@ -1037,6 +1037,8 @@ nnoremap <Leader>S <Cmd>call switch#spelllang()<CR>
 " Replace misspelled words or define or identify words
 call s:repeat_map('', '[S', 'SpellBackward', '<Cmd>call edit#spell_next(-v:count1)<CR>')
 call s:repeat_map('', ']S', 'SpellForward', '<Cmd>call edit#spell_next(v:count1)<CR>')
+noremap [s <Cmd>keepjumps normal! [s<CR>
+noremap ]s <Cmd>keepjumps normal! ]s<CR>
 noremap gs <Cmd>call edit#spell_check()<CR>
 noremap gS <Cmd>call edit#spell_check(v:count)<CR>
 noremap zs zg
@@ -1090,13 +1092,13 @@ augroup popup_setup
   au InsertEnter * set noignorecase | call s:scroll_state(0)
   au InsertLeave * set ignorecase | call s:scroll_state(0)
 augroup END
-inoremap <expr> <Delete> <sid>scroll_state() . edit#forward_delete(1)
-inoremap <expr> <S-Tab> <sid>scroll_state() . edit#forward_delete(0)
-inoremap <expr> <F1> <sid>scroll_state() . edit#forward_delete(0)
 inoremap <expr> <Tab> pumvisible() && get(b:, 'scroll_state', 0) ? '<C-y>' . <sid>scroll_state()
   \ : pumvisible() ? '<C-n><C-y>' . <sid>scroll_state() : '<C-]><Tab>'
 inoremap <expr> <F2> pumvisible() && get(b:, 'scroll_state', 0) ? '<C-y>' . <sid>scroll_state()
   \ : pumvisible() ? '<C-n><C-y>' . <sid>scroll_state() : ddc#map#manual_complete()
+inoremap <expr> <S-Tab> <sid>scroll_state() . (pumvisible() ? '<C-e>' : edit#forward_delete(0))
+inoremap <expr> <F1> <sid>scroll_state() . (pumvisible() ? '<C-e>' : edit#forward_delete(0))
+inoremap <expr> <Delete> <sid>scroll_state() . edit#forward_delete(1)
 inoremap <expr> <Up> iter#scroll_infer(-1)
 inoremap <expr> <Down> iter#scroll_infer(1)
 inoremap <expr> <C-k> iter#scroll_infer(-1)
@@ -1111,10 +1113,10 @@ augroup complete_setup
   au!
   au CmdlineEnter,CmdlineLeave * call s:complete_state(0)
 augroup END
-cnoremap <F1> <Cmd>call <sid>complete_state(1)<CR><Cmd>call feedkeys("\<S-Tab>", 'tn')<CR>
+cnoremap <Tab> <Cmd>call <sid>complete_state(1)<CR><Cmd>call feedkeys("\<Tab>", 'tn')<CR>
 cnoremap <F2> <Cmd>call <sid>complete_state(1)<CR><Cmd>call feedkeys("\<Tab>", 'tn')<CR>
 cnoremap <S-Tab> <Cmd>call <sid>complete_state(1)<CR><Cmd>call feedkeys("\<S-Tab>", 'tn')<CR>
-cnoremap <Tab> <Cmd>call <sid>complete_state(1)<CR><Cmd>call feedkeys("\<Tab>", 'tn')<CR>
+cnoremap <F1> <Cmd>call <sid>complete_state(1)<CR><Cmd>call feedkeys("\<S-Tab>", 'tn')<CR>
 cnoremap <expr> <Up> get(b:, 'complete_state', 0) ? '<C-c><Cmd>redraw<CR>:' . getcmdline() . '<C-p>' : '<C-p>'
 cnoremap <expr> <Down> get(b:, 'complete_state', 0) ? '<C-c><Cmd>redraw<CR>:' . getcmdline() . '<C-n>' : '<C-n>'
 
@@ -1122,16 +1124,13 @@ cnoremap <expr> <Down> get(b:, 'complete_state', 0) ? '<C-c><Cmd>redraw<CR>:' . 
 " Note: Enter is 'accept' only if we scrolled down while tab always means 'accept'
 inoremap <expr> <C-w> <sid>scroll_state() . '<C-]><Cmd>pclose<CR>'
 inoremap <expr> <C-q> <sid>scroll_state() . '<C-]><Cmd>pclose<CR>'
-inoremap <expr> <C-g><CR> <sid>scroll_state()
-  \ . (pumvisible() ? '<C-e>' : '') . '<CR>'
-inoremap <expr> <C-g><Space> <sid>scroll_state()
-  \ . (pumvisible() ? '<C-e>' : '') . '<Space>'
-inoremap <expr> <C-g><BackSpace> <sid>scroll_state()
-  \ . (pumvisible() ? '<C-e>' : '') . '<BackSpace>'
+inoremap <expr> <C-g><CR> <sid>scroll_state() . (pumvisible() ? '<C-e>' : '') . '<CR>'
+inoremap <expr> <C-g><Space> <sid>scroll_state() . (pumvisible() ? '<C-e>' : '') . '<Space>'
+inoremap <expr> <C-g><BackSpace> <sid>scroll_state() . (pumvisible() ? '<C-e>' : '') . '<BackSpace>'
 inoremap <expr> <CR> pumvisible() && get(b:, 'scroll_state', 0) ? '<C-y>' . <sid>scroll_state()
   \ : (pumvisible() ? '<C-e>' : '') . '<C-]><C-g>u<C-r>=edit#delimit_mate("r")<CR>'
 inoremap <expr> <Space> <sid>scroll_state() . (pumvisible() ? '<C-e>' : '')
-  \ . '<C-]><C-R>=edit#delimit_mate("s")<CR>'
+  \ . '<C-]><C-r>=edit#delimit_mate("s")<CR>'
 inoremap <expr> <Backspace> <sid>scroll_state() . (pumvisible() ? '<C-e>' : '')
   \ . '<C-r>=edit#delimit_mate("b")<CR>'
 
@@ -1462,6 +1461,7 @@ call plug#('tkhren/vim-textobj-numeral')  " numerals, e.g. 1.1234e-10
 call plug#('preservim/vim-textobj-sentence')  " sentence objects
 let g:textobj_numeral_no_default_key_mappings = 1  " defined in vim-succinct block
 let g:loaded_textobj_comment = 1  " avoid default mappings (see below)
+let g:loaded_textobj_entire = 1  " avoid default mappings (see below)
 
 " Formatting stuff. Conjoin plugin removes line continuation characters and is awesome.
 " Use vim-easy-align because tabular API is fugly and requires separate maps and does
@@ -1706,8 +1706,13 @@ if s:plug_active('vim-textobj-user')
     \ 'select-i': 'iC', 'select-i-function': 'textobj#comment#select_i',
     \ 'select-a': 'aC', 'select-a-function': 'textobj#comment#select_a',
   \ }
+  let s:textobj_entire = {
+    \ 'select-a': 'aE',  'select-a-function': 'textobj#entire#select_a',
+    \ 'select-i': 'iE',  'select-i-function': 'textobj#entire#select_i'
+  \ }
   call succinct#add_objects('alpha', s:textobj_alpha, 0, 1, 1)
   call textobj#user#plugin('comment', {'textobj_comment': s:textobj_comment})
+  call textobj#user#plugin('entire', {'textobj_entire': s:textobj_entire})
 endif
 
 " Toggle comments and whatnot
@@ -1748,8 +1753,8 @@ if s:plug_active('vim-tags')
   command! -bang -nargs=* ShowTable
     \ echo call('tags#table_kinds', <bang>0 ? ['all'] : [<f-args>])
     \ | echo call('tags#table_tags', <bang>0 ? ['all'] : [<f-args>])
-  noremap g[ <Cmd>pop<CR>
-  noremap g] <Cmd>tag<CR>
+  noremap <F3> <Cmd>pop<CR>
+  noremap <F4> <Cmd>tag<CR>
   nnoremap gy <Cmd>BTags<CR>
   nnoremap gY <Cmd>Tags<CR>
   nnoremap <Leader>t <Cmd>ShowTable<CR>
@@ -2352,64 +2357,15 @@ endif
 "-----------------------------------------------------------------------------"
 " Final tasks
 "-----------------------------------------------------------------------------"
-" Color schcmes from flazz/vim-colorschemes
-" Warning: This has to come after color schemes are loaded
-let s:colorscheme = 'badwolf'
-let s:colorscheme = 'fahrenheit'
-let s:colorscheme = 'gruvbox'
-let s:colorscheme = 'molokai'
-let s:colorscheme = 'monokain'
-let s:colorscheme = 'oceanicnext'
-let s:colorscheme = 'papercolor'  " default
-
-" Apply color scheme
-" Note: Avoid triggering 'colorscheme'
-if get(g:, 'colors_name', 'default') ==? 'default'
-  noautocmd set background=dark  " standardize colors
-endif
-if has('gui_running') && get(g:, 'colors_name', '') !=? s:colorscheme
-  exe 'noautocmd colorscheme ' . s:colorscheme
-endif
-if has('gui_running')  " revisit these?
-  highlight! link vimMap Statement
-  highlight! link vimNotFunc Statement
-  highlight! link vimFuncKey Statement
-  highlight! link vimCommand Statement
-endif
-
-" Repair highlighting. Leveraging ctags integration almost always works.
-" Note: This says get the closest tag to the first line in the window, all tags
-" rather than top-level only, searching backward, and without circular wrapping.
-command! -nargs=1 SyncLines syntax sync minlines=<args> maxlines=0  " maxlines is an *offset*
-command! SyncStart syntax sync fromstart
-command! SyncSmart exe 'Sync ' . max([0, line('.') - get(tags#close_tag(line('w0'), 0, 0, 0), 1, 0)])
-noremap zy <Cmd>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR><Cmd>echom 'Syncing from closest tag'<CR>
-noremap zY <Cmd>SyncStart<CR><Cmd>echom 'Syncing from first line'<CR>
-
-" Scroll color schemes and toggle colorize
-" Note: Here :Colorize is from colorizer.vim and :Colors from fzf.vim. Note coloring
-" hex strings can cause massive slowdowns so disable by default.
-" Todo: Finish terminal vim support. Currently sign column gets messed up. Some ideas:
-" https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
-augroup colorscheme_setup
-  au!
-  exe 'au ColorScheme default,' . s:colorscheme . ' Refresh'
-augroup END
-command! -count=1 Sprev call iter#next_scheme(<count>)
-command! -count=1 Snext call iter#next_scheme(<count>)
-noremap <Leader>( <Cmd>Sprev<CR>
-noremap <Leader>) <Cmd>Snext<CR>
-noremap <Leader>0 <Cmd>Colors<CR>
-noremap <Leader>8 <Cmd>Colorize<CR>
-
 " Show syntax under cursor and syntax types
-" Note: This shows syntax highlight groups and colors.
-command! -nargs=? ShowStack call vim#show_stack(<f-args>)
-command! -nargs=0 ShowPlugin call vim#show_runtime('ftplugin')
-command! -nargs=0 ShowSyntax call vim#show_runtime('syntax')
+" Note: The first map prints information, the second two maps open windows, the
+" other maps open tabs.
+command! -nargs=? ShowStack call syntax#show_stack(<f-args>)
+command! -nargs=0 ShowPlugin call syntax#show_runtime('ftplugin')
+command! -nargs=0 ShowSyntax call syntax#show_runtime('syntax')
 command! -nargs=0 ShowGroups exe 'help highlight-groups' | exe 'normal! zt'
 command! -nargs=0 ShowBases exe 'help group-name' | exe 'normal! zt'
-command! -nargs=0 ShowColors call vim#show_colors()
+command! -nargs=0 ShowColors call syntax#show_colors()
 noremap <Leader>` <Cmd>ShowStack<CR>
 noremap <Leader>1 <Cmd>ShowGroups<CR>
 noremap <Leader>2 <Cmd>ShowBases<CR>
@@ -2417,65 +2373,66 @@ noremap <Leader>3 <Cmd>ShowColors<CR>
 noremap <Leader>4 <Cmd>ShowSyntax<CR>
 noremap <Leader>5 <Cmd>ShowPlugin<CR>
 
-" Matching parentheses
-highlight Todo ctermbg=Red ctermfg=NONE
-highlight MatchParen ctermbg=Blue ctermfg=NONE
+" Repair syntax highlighting
+" Note: :Colorize is from hex-colorizer plugin. Expensive so disable at start
+" Note: Here :set background triggers colorscheme autocmd so must avoid infinite loop
+augroup color_setup
+  au!
+  au VimEnter * exe 'runtime after/common.vim' | call mark#init_marks()
+augroup END
+command! -bang -range -count=0 Syntax
+  \ call syntax#update_lines(<range> == 2 ? abs(<line2> - <line1>) : <count>, <bang>0)
+call s:repeat_map('', 'zy', 'SyncSmart', ':Syntax<CR>')
+call s:repeat_map('', 'zY', 'SyncStart', '<Cmd>Syntax!<CR>')
+noremap <Leader>8 <Cmd>Colorize<CR>
 
-" Sneak and search highlighting
-highlight Sneak ctermbg=DarkMagenta ctermfg=NONE
-highlight Search ctermbg=Magenta ctermfg=NONE
+" Scroll color schemes and toggle colorize
+" Note: Here :Colorize is from colorizer.vim and :Colors from fzf.vim. Note coloring
+" hex strings can cause massive slowdowns so disable by default.
+command! -nargs=? -complete=color Scheme call syntax#update_scheme(<f-args>)
+command! -count=1 Sprev call syntax#update_scheme(-<count>)
+command! -count=1 Snext call syntax#update_scheme(<count>)
+call s:repeat_map('n', 'g[', 'Sprev', ':<C-u>Sprev<CR>')
+call s:repeat_map('n', 'g]', 'Snext', ':<C-u>Snext<CR>')
+noremap <Leader>9 <Cmd>Colors<CR>
+noremap <Leader>0 <Cmd>exe 'Scheme ' . g:colors_default<CR>
 
-" Color and sign column stuff
-highlight ColorColumn ctermbg=Gray cterm=NONE
-highlight SignColumn ctermbg=NONE ctermfg=Black cterm=NONE
+" Apply color scheme from flazz/vim-colorschemes
+" Note: This has to come after color schemes are loaded.
+" https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
+let s:colorscheme = 'badwolf'
+let s:colorscheme = 'fahrenheit'
+let s:colorscheme = 'gruvbox'
+let s:colorscheme = 'oceanicnext'
+let s:colorscheme = 'molokai'
+if has('gui_running') && empty(get(g:, 'colors_name', ''))
+  exe 'noautocmd colorscheme ' . s:colorscheme
+endif
+if !exists('g:colors_default')
+  let g:colors_default = get(g:, 'colors_name', 'default')
+endif
 
-" Cursor line and fold lines
-highlight Folded ctermbg=NONE ctermfg=White cterm=Bold
-highlight CursorLine ctermbg=Black cterm=NONE
-
-" Line number highlighting
-highlight LineNR ctermbg=NONE ctermfg=Black cterm=NONE
-highlight CursorLineNR ctermbg=None ctermfg=Black cterm=NONE
-
-" Comments and special characters
-" Only works in iTerm with minimum contrast enabled (else use gray)
-highlight Comment ctermfg=Black cterm=NONE
-highlight NonText ctermfg=Black cterm=NONE
-highlight SpecialKey ctermfg=Black cterm=NONE
-
-" Popup menu highlighting
-" Use same background as theme
-highlight Pmenu ctermbg=NONE ctermfg=White cterm=NONE
-highlight PmenuSel ctermbg=Magenta ctermfg=NONE cterm=NONE
-highlight PmenuSbar ctermbg=DarkGray ctermfg=NONE cterm=NONE
-
-" Fugitive difference highlighting
-" Use same background as cursorline background
-highlight DiffText cterm=Inverse gui=Inverse
-highlight DiffAdd ctermbg=Black ctermfg=NONE cterm=Bold
-highlight DiffChange ctermbg=Black ctermfg=NONE cterm=NONE
-highlight DiffDelete ctermbg=NONE ctermfg=Black cterm=NONE
-
-" Highlighting disabled
-" Use signs for error messages instead
-highlight Conceal ctermbg=NONE ctermfg=NONE
-highlight Terminal ctermbg=NONE ctermfg=NONE
-highlight ALEErrorLine ctermfg=NONE ctermbg=NONE cterm=NONE
-highlight ALEWarningLine ctermfg=NONE ctermbg=NONE cterm=NONE
-
-" General highlighting
+" General highlight defaults
 " Use main colors instead of light and dark colors instead of main
-highlight Type ctermbg=NONE ctermfg=DarkGreen
-highlight Constant ctermbg=NONE ctermfg=Red
-highlight Special ctermbg=NONE ctermfg=DarkRed
-highlight PreProc ctermbg=NONE ctermfg=DarkCyan
-highlight Indentifier ctermbg=NONE ctermfg=Cyan cterm=Bold
-
-" Synchronize fold and sign columns
-" Critical for color scheme cyling and macvim
-highlight! link SignColumn LineNR
-highlight! link FoldColumn LineNR
-highlight! link CursorLineFold LineNR
+" Note: The bulk operations are in autoload/syntax.vim
+augroup colorscheme_setup
+  au!
+  exe 'au ColorScheme ' . g:colors_default . ' so ~/.vimrc'
+augroup END
+if !has('gui_running') && get(g:, 'colors_name', 'default') ==? 'default'
+  noautocmd set background=dark  " standardize colors
+  highlight Todo ctermbg=Red ctermfg=NONE
+  highlight MatchParen ctermbg=Blue ctermfg=NONE
+  highlight Sneak ctermbg=DarkMagenta ctermfg=NONE
+  highlight Search ctermbg=Magenta ctermfg=NONE
+  highlight PmenuSel ctermbg=Magenta ctermfg=NONE cterm=NONE
+  highlight PmenuSbar ctermbg=DarkGray ctermfg=NONE cterm=NONE
+  highlight Type ctermbg=NONE ctermfg=DarkGreen
+  highlight Constant ctermbg=NONE ctermfg=Red
+  highlight Special ctermbg=NONE ctermfg=DarkRed
+  highlight PreProc ctermbg=NONE ctermfg=DarkCyan
+  highlight Indentifier ctermbg=NONE ctermfg=Cyan cterm=Bold
+endif
 
 " Clear jumps for new tabs and to ignore stuff from vimrc and plugin files. Note
 " that feedkeys required or else this fails for e.g.
@@ -2483,9 +2440,9 @@ highlight! link CursorLineFold LineNR
 " See: http://vim.1045645.n5.nabble.com/Clearing-Jumplist-td1152727.html
 augroup clear_jumps
   au!
-  au VimEnter * runtime after/common.vim | call mark#init_marks()
   au VimEnter,BufWinEnter * if get(w:, 'clear_jumps', 1) | silent clearjumps | let w:clear_jumps = 0 | endif
 augroup END
-runtime autoload/repeat.vim
+exe 'runtime autoload/repeat.vim'
+call syntax#update_highlights()
 nohlsearch  " turn off highlighting at startup
 redraw!  " prevent statusline error

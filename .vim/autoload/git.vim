@@ -129,19 +129,28 @@ endfunction
 " committing with no staged changes, issues a warning instead of showing the message.
 function! git#safe_commit(editor, ...) abort
   let cmd = a:0 ? a:1 : 'commit'  " commit version
-  let msg = a:editor ? '' : utils#input_default('Git ' . cmd, '', '')
-  if empty(msg) && !a:editor | return | endif
   let args = ['diff', '--staged', '--quiet']
   let result = FugitiveExecute(args)  " see: https://stackoverflow.com/a/1587877/4970632
   let status = get(result, 'exit_status', 1)
   if status == 0  " exits 0 if there are no staged changes
     echohl WarningMsg
     echom 'Error: No staged changes'
-    echohl None | call git#run_command(0, line('.'), -1, 0, 0, '', 'status')
-  else  " exits 1 if there are staged changes
-    let msg = empty(msg) ? '' : ' --message ' . shellescape(msg)
-    call git#run_command(1, line('.'), -1, 0, 0, '', cmd . msg)
+    echohl None
+    if !a:editor | return | endif
+    return git#run_command(0, line('.'), -1, 0, 0, '', 'status')
   endif
+  if !a:editor
+    let msg = utils#input_default('Git ' . cmd, '', '')
+    while !empty(msg) && len(msg) > 50  " see .bashrc git()
+      redraw | echohl WarningMsg
+      echom 'Error: Message has length ' . len(msg) . '. Must be less than or equal to 50.'
+      echohl None
+      let msg = utils#input_default('Git ' . cmd, msg[:49], '')
+    endwhile
+    if empty(msg) | return | endif
+    let cmd .= ' --message ' . shellescape(msg)
+  endif
+  call git#run_command(1, line('.'), -1, 0, 0, '', cmd)
 endfunction
 function! git#safe_edit() abort
   let type = get(b:, 'fugitive_type', '')
@@ -226,7 +235,8 @@ function! git#hunk_show() abort
 endfunction
 function! git#hunk_jump(count, stage) abort
   call s:hunk_process()
-  let cmd = 'GitGutter' . (a:count < 0 ? 'Prev' : 'Next') . 'Hunk'
+  let str = a:count < 0 ? 'Prev' : 'Next'
+  let cmd = 'keepjumps GitGutter' . str . 'Hunk'
   for _ in range(abs(a:count))
     exe cmd | exe a:stage ? 'GitGutterStageHunk' : ''
   endfor

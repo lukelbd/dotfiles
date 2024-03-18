@@ -72,6 +72,8 @@ function! utils#get_scripts(...) abort
 endfunction
 
 " Get user input with requested default
+" Warning: For some reason [''] required instead of [''] after pressing backspace
+" or else subsequent tab-completion requests do nothing. Not sure why.
 " Note: Force option forces return after single key press (used for registers). Try
 " to feed the result with feedkeys() instead of adding to opts to reduce screen flash.
 " Note: This is currently used with grep and file mappings. Specifies a default value
@@ -79,8 +81,8 @@ endfunction
 " replaces it when user starts typing text or backspace. This is a bit nicer than
 " filling input prompt with default value, simply start typing to drop the default
 function! utils#input_complete(lead, line, cursor)
-  let [initial, default, complete; force] = s:complete_opts
-  let force = !empty(force) && force[0]
+  let [initial, default, complete; rest] = s:complete_opts
+  let force = get(rest, 0, 0)
   if !initial  " get complete options
     if empty(complete)
       let opts = []
@@ -97,22 +99,22 @@ function! utils#input_complete(lead, line, cursor)
       let char = "\<C-c>"
     endtry
     if char ==# "\<Esc>" || char ==# "\<C-c>"  " cancellation
-      let opts = []
+      let opts = ['']
       call feedkeys("\<CR>", 't')
     elseif char ==# "\<CR>"  " confirm default
-      let opts = []
-      call feedkeys(default ."\<CR>", 't')
-    elseif char ==# "\<Tab>"  " expand default
-      let opts = force ? [] : [default]
+      let opts = ['']
+      call feedkeys(default . "\<CR>", 't')
+    elseif char ==# "\<Tab>" || char ==# "\<F2>"  " expand default
+      let opts = force ? [''] : [default]
       call feedkeys(force ? default . "\<CR>" : '', 't')
     elseif char ==# "\<PasteStart>"  " clipboard paste
-      let opts = [] | call feedkeys(char, 'it')
+      let opts = [''] | call feedkeys(char, 'it')
       call feedkeys(force ? "\<CR>" : '', 't')
-    elseif char !~# '^\p\+$'  " non-printables and multi-byte escpaes e.g. \<BS>
-      let opts = force ? [char] : []
-      call feedkeys(force ? "\<CR>" : '', 't')
+    elseif char !~# '^\p\+$'  " non-printables and multi-byte escapes e.g. \<BS>
+      let opts = force ? [char] : ['']
+      call feedkeys(force ? "\<CR>" : '', 'it')
     else  " printable input characters
-      let opts = force ? [] : [char]
+      let opts = force ? [''] : [char]
       call feedkeys(force ? char . "\<CR>" : '', 't')
     endif
   endif
@@ -121,12 +123,11 @@ endfunction
 function! utils#input_default(prompt, ...) abort
   let complete = a:0 > 1 ? a:2 : ''
   let default = a:0 > 0 ? a:1 : ''
-  let result = a:prompt
-  let result .= empty(default) ? '' : ' (' . default . ')'
-  let result .= result =~# '\w$\|)$' ? ': ' : ' '
+  let paren = a:prompt =~# ')$' || empty(default) ? '' : ' (' . default . ')'
+  let prompt = a:prompt . paren . ': '
   let s:complete_opts = [1, default, complete] + a:000[2:]
-  call feedkeys("\<Tab>", 't')
-  return input(result, '', 'customlist,utils#input_complete')
+  call feedkeys("\<Tab>", 't')  " auto-complete getchar() results
+  return input(prompt, '', 'customlist,utils#input_complete')
 endfunction
 
 " Call over the visual line range or user motion line range (see e.g. python.vim)

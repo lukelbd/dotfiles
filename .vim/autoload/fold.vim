@@ -5,7 +5,8 @@
 " Note: This concatenates python docstring lines and uses frame title
 " for beamer presentations. In future should expand for other filetypes.
 scriptencoding utf-8
-let s:maxlines = 100  " maxumimum number of lines
+let s:hunktypes = 0  " whether to split hunk types
+let s:maxlines = 100  " maxumimum number of lines to search
 let s:docstring = '["'']\{3}'  " docstring expression
 function! fold#get_label(line, ...) abort
   let regex = a:0 && a:1 ? '\(^\s*\|\s*$\)' : '\s*$'
@@ -64,6 +65,17 @@ endfunction
 " and counts before and after changes. Copy internal method here for fold statistics.
 let s:delim_open = {']': '[', ')': '(', '}': '{', '>': '<'}
 let s:delim_close = {'[': ']', '(': ')', '{': '}', '<': '>'}
+function! s:close_label(label, ...)
+  let regex = '\([[({<]*\)\s*$'
+  let items = call('matchlist', [a:label, regex] + a:000)
+  let delim = split(get(items, 1, ''), '\zs')
+  let delim = join(map(delim, {idx, val -> s:delim_close[val]}), '')
+  if delim =~# ')$' && &l:filetype ==# 'python'
+    return a:label =~# '^\s*\(def\|class\)\>' ? delim . ':' : delim
+  else  " closing delimiters
+    return delim
+  endif
+endfunction
 function! fold#fold_text(...) abort
   " Get standard fold label
   if a:0 && a:0 != 3
@@ -80,14 +92,11 @@ function! fold#fold_text(...) abort
   else  " default formatting
     let label = fold#get_label(line1)
   endif
-  if label =~# '[[({<]$'  " append closing delimiter
-    let label .= '···' . s:delim_close[label[-1:]]  " vint: -ProhibitAbbreviationOption
-    let label .= &ft ==# 'python' && label =~# '^\s*\(def\|class\)\>' ? ':' : ''
-  endif
+  let delim = s:close_label(label)
+  let label = empty(delim) ? label : label . '···' . delim
   " Get git gutter statistics
-  let delta = ''
-  let signs = ['+', '~', '-']
-  let hunks = [0, 0, 0]
+  let [hunks, idxs] = [[0, 0, 0], s:hunktypes ? [0, 1, 2] : [1, 1, 1]]
+  let [delta; signs] = ['', '+', '~', '-']
   for [hunk0, count0, hunk1, count1] in gitgutter#hunk#hunks(bufnr())
     let hunk2 = count1 ? hunk1 + count1 - 1 : hunk1
     let [clip1, clip2] = [max([hunk1, line1]), min([hunk2, line2])]
@@ -95,27 +104,26 @@ function! fold#fold_text(...) abort
     let offset = (hunk2 - clip2) + (clip1 - hunk1)  " count change
     let count0 = max([count0 - offset, 0])
     let count1 = max([count1 - offset, 0])
-    let hunks[0] += max([count1 - count0, 0])  " added
-    let hunks[1] += min([count0, count1])  " modified
-    let hunks[2] += max([count0 - count1, 0])  " removed
+    let hunks[idxs[0]] += max([count1 - count0, 0])  " added
+    let hunks[idxs[1]] += min([count0, count1])  " modified
+    let hunks[idxs[2]] += max([count0 - count1, 0])  " removed
   endfor
-  for htype in range(3)
-    if hunks[htype]
-      let nline = string(hunks[htype])
-      let delta .= signs[htype] . nline
-    endif
+  for idx in range(len(hunks))
+    if !hunks[idx] | continue | endif
+    let nline = string(hunks[idx])
+    let delta .= signs[idx] . nline
   endfor
   " Combine label and statistics
   let nline = string(line2 - line1 + 1)
   let level = repeat(':', level)
-  let stats = delta . level . nline
+  let stats = delta . level . nline . level
   let width = get(g:, 'linelength', 88) - 1 - strwidth(stats)
   if strwidth(label) > width - 1  " truncate fold text
-    let dend = trim(matchstr(label, '[\])}>]:\?\s*$'))
-    let dstr = empty(dend) ? '' : s:delim_open[dend[0]]
-    let dend = strpart(label, width - 4 - strwidth(dend)) =~# dstr ? '' : dend
-    let label = strpart(label, 0, width - 5 - strwidth(dend))
-    let label = label . '···' . dend . '  '
+    let dclose = trim(matchstr(label, '[\])}>]*:\?\s*$'))
+    let dcheck = get(s:delim_open, strpart(dclose, 0, 1), '')  " handle edge case
+    let dclose = strpart(label, width - 4 - strwidth(dclose)) =~# dcheck ? '' : dclose
+    let label = strpart(label, 0, width - 5 - strwidth(dclose))
+    let label = label . '···' . dclose . '  '
   endif
   let space = repeat(' ', width - strwidth(label))
   let text = label . space . stats
@@ -126,11 +134,10 @@ endfunction
 " Return line of fold under cursor matching &l:foldlevel + 1
 " Warning: Critical to record foldlevel('.') after pressing [z instead of ]z since
 " calling foldlevel('.') on the end of a fold could return the level of its child.
+" Warning: The zk/zj/[z/]z motions update jumplist, found out via trial and error
+" even though not documented in :help jump-motions
 " Note: No native vimscript way to do this if fold is open so we use simple algorithm
 " improved from https://stackoverflow.com/a/4776436/4970632 (note [z never raises error)
-" Note: This is based on workflow of setting standard minimum fold level then manually
-" opening other folds. Previously tried ad hoc method using foldlevel() and scrolling
-" up lines preceding line is lower-level but this fails for adjacent same-level folds.
 let s:regex_levels = [
   \ ['python', '^class\>', '', 1],
   \ ['fortran', '^\s*\(module\|program\)\>', '', 1],
@@ -139,20 +146,6 @@ let s:regex_levels = [
   \ ['tex', '^\s*\\begin{frame}', '^\s*\\begin{block}', 2],
   \ ['tex', '^\s*\\\(sub\)*section\>', '^\s*\\begin{frame}', 2],
 \ ]
-function! fold#get_bounds() abort  " used to update jumplist on CursorHold
-  let line = line('.')  " cursor line
-  let winview = winsaveview()
-  let [line1, line2, level] = fold#get_current(0)
-  if level > 0 && line1 != line2 | return [line1, line2] | endif
-  let pline1 = line == 1 ? 1 : line("'{'") + 1
-  let pline2 = line == line('$') ? line('$') : line("'}")
-  exe line | keepjumps normal! zk
-  let fline1 = line('.') == line ? 1 : line('.') + 1
-  exe line | keepjumps normal! zj
-  let fline2 = line('.') == line ? line('$') : line('.') - 1
-  call winrestview(winview)
-  return [max([pline1, fline1]), min([pline2, fline2])]
-endfunction
 function! fold#get_current(...) abort  " current &foldlevel fold
   let toplevel = a:0 ? a:1 : &l:foldlevel
   let winview = winsaveview()  " save view

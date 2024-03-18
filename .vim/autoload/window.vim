@@ -163,7 +163,7 @@ function! s:parse_tab(item) abort
   let path = join(path, ':')
   let path = substitute(path, flags . stats . '$', '', 'g')
   let path = substitute(path, '\(^\s\+\|\s\+$\)', '', 'g')
-  call file#echo_path(path)
+  call file#echo_path('tab', path)
   return [str2nr(tnr), path]  " returns zero on error
 endfunction
 function! s:jump_tab(item) abort

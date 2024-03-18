@@ -88,41 +88,6 @@ function! vim#init_session(...)
   endif
 endfunction
 
-" Show runtime color and plugin information
-" Note: Consistent with other utilities this uses separate tabs
-function! vim#show_colors() abort
-  call file#open_drop('colortest.vim')
-  let path = $VIMRUNTIME . '/syntax/colortest.vim'
-  exe 'source ' . path
-  call window#setup_panel(1)
-endfunction
-function! vim#show_runtime(...) abort
-  let path = a:0 ? a:1 : 'ftplugin'
-  let path = $VIMRUNTIME . '/' . path . '/' . &l:filetype . '.vim'
-  call file#open_drop(path)
-  call window#setup_panel(1)
-endfunction
-function! vim#show_stack(...) abort
-  let sids = a:0 ? map(copy(a:000), 'hlID(v:val)') : synstack(line('.'), col('.'))
-  let [names, labels] = [[], []]
-  for sid in sids
-    let name = synIDattr(sid, 'name')
-    let group = synIDattr(synIDtrans(sid), 'name')
-    let label = empty(group) ? name : name . ' (' . group . ')'
-    call add(names, name)
-    call add(labels, label)
-  endfor
-  if !empty(names)
-    echohl Title | echom '--- Syntax names ---' | echohl None
-    for label in labels | echom label | endfor
-    exe 'syntax list ' . join(names, ' ')
-  else  " no syntax
-    echohl WarningMsg
-    echom 'Warning: No syntax under cursor.'
-    echohl None
-  endif
-endfunction
-
 " Show and setup vim help page
 " Note: All vim tag utilities including <C-]>, :pop, :tag work by searching 'tags' files
 " and updating the tag 'stack' (effectively a cache). Seems that $VIMRUNTIME/docs/tags

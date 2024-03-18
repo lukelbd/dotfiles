@@ -64,9 +64,9 @@ function! calc#start_codi(...) abort
   if a:0 && !empty(a:1)
     let path = a:1
   else
-    let path = fnamemodify(resolve(@%), ':p:h')
-    let default = fnamemodify(path, ':p:~:.') . 'calc.py'
-    let path = utils#input_default(prompt, default, 'file#complete_lwd')
+    let base = fnamemodify(resolve(@%), ':p:h')
+    let base = file#format_dir(base, 1)  " trailing slash
+    let path = file#input_path('Calculator', 'calc.py', base)
   endif
   if !empty(path)
     let path = fnamemodify(path, ':r') . '.py'

@@ -166,9 +166,7 @@ endfunction
 function! edit#spell_next(count) abort
   let keys = a:count < 0 ? '[s' : ']s'
   for _ in range(abs(a:count))
-    if !edit#spell_bad()
-      exe 'normal! ' . keys
-    endif
+    exe edit#spell_bad() ? '' : 'keepjumps normal! ' . keys
     call edit#spell_check(1)
   endfor
 endfunction

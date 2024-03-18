@@ -91,32 +91,12 @@ function! iter#next_match(count) abort
   endif
 endfunction
 
-" Switch to next or previous colorschemes and print the name
-" See: https://stackoverflow.com/a/2419692/4970632
-" Note: Have to trigger 'BufEnter' so status line updates. Also note g:colors_name
-" is convention shared by most color schemes, otherwise there is no vim setting.
-function! iter#next_scheme(count) abort
-  if !exists('g:all_colorschemes')
-    let g:all_colorschemes = getcompletion('', 'color')
-  endif
-  let active_colorscheme = get(g:, 'colors_name', 'default')
-  let idx = index(g:all_colorschemes, active_colorscheme)
-  let idx = idx == -1 ? 0 : idx + a:count   " set to zero if not present
-  let idx = idx % len(g:all_colorschemes)
-  let scheme = g:all_colorschemes[idx]
-  echom 'Colorscheme: ' . scheme
-  exe 'colorscheme ' . scheme
-  let g:colors_name = scheme
-  doautocmd BufEnter
-endfunction
-
 " Insert complete menu items and scroll complete or preview windows (whichever open).
 " Note: Used 'verb function! lsp#scroll' to figure out how to detect preview windows
 " (also verified lsp#scroll l:window.find does not return popup completion windows)
 function! s:scroll_popup(scroll, ...) abort
   let size = a:0 ? a:1 : get(pum_getpos(), 'size', 1)
   let state = get(b:, 'scroll_state', 0)
-  echom 'Popup!!! ' . size
   let cnt = type(a:scroll) ? float2nr(a:scroll * size) : a:scroll
   let cnt = a:scroll > 0 ? max([cnt, 1]) : min([cnt, -1])
   if type(a:scroll) && state != 0   " disable circular scroll
@@ -127,7 +107,6 @@ function! s:scroll_popup(scroll, ...) abort
   let state += cnt + cmax * (1 + abs(cnt) / cmax)
   let state %= cmax  " only works with positive integers
   let keys = repeat(cnt > 0 ? "\<C-n>" : "\<C-p>", abs(cnt))
-  echom 'Keys: ' . keys . ' ' . state
   let b:scroll_state = state | return keys
 endfunction
 function! s:scroll_preview(scroll, ...) abort
@@ -164,13 +143,10 @@ function! iter#scroll_infer(scroll, ...) abort
   if a:0 && a:1 || !empty(popup_pos)  " automatically returns empty if not present
     return call('s:scroll_popup', [a:scroll])
   elseif !empty(preview_ids)
-    echom 'Preview!!!'
     return call('s:scroll_preview', [a:scroll] + preview_ids)
   elseif a:0 && !a:1
-    echom 'Normal!!!'
     return call('iter#scroll_normal', [a:scroll])
   else  " default fallback is arrow press
-    echom 'Arrow!!!'
     return a:scroll > 0 ? "\<Down>" : a:scroll < 0 ? "\<Up>" : ''
   endif
 endfunction
