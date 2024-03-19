@@ -1020,24 +1020,30 @@ vnoremap <expr> A mode() =~# '^[vV]'
   \ ? '<Esc><Cmd>keepjumps normal! `><CR>' . edit#insert_mode('a') : edit#insert_mode('A')
 
 " Command mode selection and completion
-" Note: Could also use wildmenumode() but would not work after first tab
+" Note: This prevents annoyance where multiple old completion options can be shown
+" on top of each other if triggered more than once, and permits workflow where hitting
+" e.g. <Right> after scrolling will descend into subfolder and show further options.
+" Note: This enforces paradigm where <F1>/<F2> is tab-like (horizontally scroll options)
+" and <Up>/<Down> is scroll-like (vertically scroll history after clearing options).
 augroup complete_setup
   au!
   au CmdlineLeave * let b:show_message = 1
   au CmdlineEnter,CmdlineLeave * let b:complete_state = 0
 augroup END
-cnoremap <expr> <Tab> iter#expr_complete("\<Tab>", 1)
-cnoremap <expr> <F2> iter#expr_complete("\<Tab>", 1)
-cnoremap <expr> <S-Tab> iter#expr_complete("\<S-Tab>", 1)
-cnoremap <expr> <F1> iter#expr_complete("\<S-Tab>", 1)
-cnoremap <expr> <Up> iter#expr_complete("\<C-p>")
-cnoremap <expr> <Down> iter#expr_complete("\<C-n>")
-cnoremap <expr> <Left> iter#expr_complete("\<Left>")
-cnoremap <expr> <Right> iter#expr_complete("\<Right>")
-cnoremap <expr> <C-k> iter#expr_complete("\<C-p>")
-cnoremap <expr> <C-j> iter#expr_complete("\<C-n>")
-cnoremap <expr> <C-h> iter#expr_complete("\<Left>")
-cnoremap <expr> <C-l> iter#expr_complete("\<Right>")
+cnoremap <expr> <Tab> iter#complete_cmdline("\<Tab>", 1)
+cnoremap <expr> <S-Tab> iter#complete_cmdline("\<S-Tab>", 1)
+cnoremap <expr> <F2> iter#complete_cmdline("\<Tab>", 1)
+cnoremap <expr> <F1> iter#complete_cmdline("\<S-Tab>", 1)
+cnoremap <expr> <C-k> iter#complete_cmdline("\<C-p>")
+cnoremap <expr> <C-j> iter#complete_cmdline("\<C-n>")
+cnoremap <expr> <Up> iter#complete_cmdline("\<C-p>")
+cnoremap <expr> <Down> iter#complete_cmdline("\<C-n>")
+cnoremap <expr> <C-h> iter#complete_cmdline("\<Left>")
+cnoremap <expr> <C-l> iter#complete_cmdline("\<Right>")
+cnoremap <expr> <Right> iter#complete_cmdline("\<Right>")
+cnoremap <expr> <Left> iter#complete_cmdline("\<Left>")
+cnoremap <expr> <Delete> iter#complete_cmdline("\<Delete>")
+cnoremap <expr> <BS> iter#complete_cmdline("\<BS>")
 
 " Insert mode selection and completion
 " Todo: Consider using Shuougo pum.vim but hard to implement <CR>/<Tab> features.
@@ -1047,19 +1053,19 @@ augroup popup_setup
   au InsertEnter * set noignorecase | let b:scroll_state = 0
   au InsertLeave * set ignorecase | let b:scroll_state = 0
 augroup END
-inoremap <expr> <C-w> iter#expr_popup('<Cmd>pclose<CR>')
-inoremap <expr> <C-q> iter#expr_popup('<Cmd>pclose<CR>')
-inoremap <expr> <S-Tab> iter#expr_popup(edit#forward_delete(0), 0, 1)
-inoremap <expr> <F1> iter#expr_popup(edit#forward_delete(0), 0, 1)
-inoremap <expr> <Tab> iter#expr_popup('<C-]><Tab>', 2, 1)
-inoremap <expr> <F2> iter#expr_popup(ddc#map#manual_complete(), 2, 1)
-inoremap <expr> <Delete> iter#expr_popup(edit#forward_delete(1), 1)
-inoremap <expr> <CR> iter#expr_popup('<C-]><C-r>=edit#delimit_mate("r")<CR>', 1, 1)
-inoremap <expr> <Space> iter#expr_popup('<C-]><C-r>=edit#delimit_mate("s")<CR>', 1)
-inoremap <expr> <Backspace> iter#expr_popup('<C-r>=edit#delimit_mate("b")<CR>', 1)
-inoremap <expr> <C-g><CR> iter#expr_popup('<CR>')
-inoremap <expr> <C-g><Space> iter#expr_popup('<Space>')
-inoremap <expr> <C-g><BackSpace> iter#expr_popup('<BackSpace>')
+inoremap <expr> <C-q> iter#complete_popup('<Cmd>pclose<CR>')
+inoremap <expr> <C-w> iter#complete_popup('<Cmd>pclose<CR>')
+inoremap <expr> <Tab> iter#complete_popup('<C-]><Tab>', 2, 1)
+inoremap <expr> <S-Tab> iter#complete_popup(edit#forward_delete(0), 0, 1)
+inoremap <expr> <F2> iter#complete_popup(ddc#map#manual_complete(), 2, 1)
+inoremap <expr> <F1> iter#complete_popup(edit#forward_delete(0), 0, 1)
+inoremap <expr> <Delete> iter#complete_popup(edit#forward_delete(1), 1)
+inoremap <expr> <CR> iter#complete_popup('<C-]><C-r>=edit#delimit_mate("r")<CR>', 1, 1)
+inoremap <expr> <Space> iter#complete_popup('<C-]><C-r>=edit#delimit_mate("s")<CR>', 1)
+inoremap <expr> <Backspace> iter#complete_popup('<C-r>=edit#delimit_mate("b")<CR>', 1)
+inoremap <expr> <C-g><CR> iter#complete_popup('<CR>')
+inoremap <expr> <C-g><Space> iter#complete_popup('<Space>')
+inoremap <expr> <C-g><BackSpace> iter#complete_popup('<BackSpace>')
 
 " General and popup or preview window scrolling
 " Note: This requires setting let g:scrollwrapped_nomap = 1

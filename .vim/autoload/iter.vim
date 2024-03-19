@@ -14,20 +14,7 @@ endfunction
 " Perform action conditional on insert-mode popup or cmdline complete state
 " Note: This supports hiding complete-mode options or insert-mode popup menu
 " before proceeding with other actions. See vimrc for details
-function! iter#expr_complete(map, ...) abort
-  let pos = getcmdpos()
-  let text = getcmdline()
-  let state = get(b:, 'complete_state', 0)
-  let recmd = "\<C-c>\<Cmd>redraw\<CR>:" . text
-  if a:0 && a:1  " e.g. tab command
-    let b:complete_state = 1
-    call feedkeys(a:map, 'tn') | return ''
-  else  " e.g. cursor motions
-    let b:complete_state = 0
-    return state ? recmd . a:map : a:map
-  endif
-endfunction
-function! iter#expr_popup(map, ...) abort
+function! iter#complete_popup(map, ...) abort
   let s = a:0 > 1 && a:2 ? '' : a:map
   if a:0 && a:1 > 1  " select item or perform action
     let [map1, map2, map3] = ["\<C-y>" . s, "\<C-n>\<C-y>" . s, a:map]
@@ -38,6 +25,21 @@ function! iter#expr_popup(map, ...) abort
   endif
   let state = get(b:, 'scroll_state', 0) | let b:scroll_state = 0
   return state && pumvisible() ? map1 : pumvisible() ? map2 : map3
+endfunction
+function! iter#complete_cmdline(map, ...) abort
+  if a:0 && a:1  " e.g. tab command
+    let [keys1, keys2] = ['', a:map]
+  else  " e.g. cursor motions
+    let [pos, line] = [getcmdpos(), getcmdline()]  " pos 1 is string index 0
+    let state = get(b:, 'complete_state', 0)
+    let head = "\<C-c>\<Cmd>redraw\<CR>:" . line
+    let tail = pos >= len(line) && a:map ==# "\<Right>" ? "\<Tab>" : ''
+    let keys1 = state ? head . a:map : a:map
+    let keys2 = state ? tail : ''  " possibly re-trigger complete
+  endif
+  call feedkeys(keys1, 'n')
+  call feedkeys(keys2, 'tn')
+  let b:complete_state = a:0 && a:1 | return ''
 endfunction
 
 " Navigate conflict markers cyclically
