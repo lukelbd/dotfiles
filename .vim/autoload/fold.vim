@@ -114,7 +114,7 @@ function! fold#fold_text(...) abort
     let delta .= signs[idx] . nline
   endfor
   " Combine label and statistics
-  let level = repeat('|', level)  " identical to foldcolumn
+  let level = repeat('⟨', level)  " identical to foldcolumn
   let nline = string(line2 - line1 + 1)
   let nmax = len(string(line('$')))
   let dots = repeat('·', nmax - len(nline))
