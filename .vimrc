@@ -885,20 +885,6 @@ inoremap <expr> <F12> edit#insert_undo()
 nmap u <Cmd>call repeat#wrap('u', v:count)<CR>
 nmap U <Cmd>call repeat#wrap("\<C-r>", v:count)<CR>
 
-" Stop cursor from moving after undo or leaving insert mode
-" Note: Otherwise repeated i<Esc>i<Esc> will drift cursor to left. Also
-" critical to keep jumplist or else populated after every single insertion.
-augroup insert_repair
-  au!
-  au InsertLeave * exe 'keepjumps normal! `^'
-augroup END
-nnoremap <expr> i edit#insert_mode('i')
-nnoremap <expr> I edit#insert_mode('I')
-nnoremap <expr> a edit#insert_mode('a')
-nnoremap <expr> A edit#insert_mode('A')
-nnoremap <expr> o edit#insert_mode('o')
-nnoremap <expr> O edit#insert_mode('O')
-
 " Increase and decrease indent to level v:count
 " Note: To avoid overwriting fugitive inline-diff mappings implement these as
 " buffer-local .vim/autoload/common.vim maps. Also map brackets.
@@ -978,32 +964,19 @@ call s:repeat_map('n', 'ck', 'SwapAbove', '<Cmd>call edit#swap_lines(1)<CR>')
 call s:repeat_map('n', 'cj', 'SwapBelow', '<Cmd>call edit#swap_lines(0)<CR>')
 call s:repeat_map('n', 'cL', 'SliceLine', 'myi<CR><Esc><Cmd>keepjumps normal! `y<Cmd>delmark y<CR>')
 
-" Copy conceal and caps lock toggle ('paste mode' accessible with 'g' insert mappings)
-" Turn on for filetypes containing raw possibly heavily wrapped data
-augroup copy_setup
+" Stop cursor from moving after undo or leaving insert mode
+" Note: Otherwise repeated i<Esc>i<Esc> will drift cursor to left. Also
+" critical to keep jumplist or else populated after every single insertion.
+augroup insert_repair
   au!
-  let s:filetypes = join(s:data_filetypes + s:copy_filetypes, ',')
-  exe 'au FileType ' . s:filetypes . ' call switch#copy(1, 1)'
-  let s:filetypes = 'tmux'  " file sub types that otherwise inherit copy toggling
-  exe 'au FileType ' . s:filetypes . ' call switch#copy(0, 1)'
+  au InsertLeave * exe 'keepjumps normal! `^'
 augroup END
-command! -nargs=? CopyToggle call switch#copy(<args>)
-command! -nargs=? ConcealToggle call switch#conceal(<args>)  " mainly just for tex
-nnoremap <Leader>c <Cmd>call switch#copy()<CR>
-nnoremap <Leader>C <Cmd>call switch#conceal()<CR>
-cnoremap <expr> <C-v> edit#lang_map()
-inoremap <expr> <C-v> edit#lang_map()
-
-" Enter insert mode with paste toggle
-" Note: Switched easy-align mapping from ga for consistency here
-nnoremap <expr> ga edit#paste_mode() . edit#insert_mode('a')
-nnoremap <expr> gA edit#paste_mode() . edit#insert_mode('A')
-nnoremap <expr> gi edit#paste_mode() . edit#insert_mode('i')
-nnoremap <expr> gI edit#paste_mode() . edit#insert_mode('I')
-nnoremap <expr> go edit#paste_mode() . edit#insert_mode('o')
-nnoremap <expr> gO edit#paste_mode() . edit#insert_mode('O')
-nnoremap <expr> gc edit#paste_mode() . utils#translate_name('') . edit#insert_mode('c')
-nnoremap <expr> gC edit#paste_mode() . utils#translate_name('') . edit#insert_mode('C')
+nnoremap <expr> i edit#insert_mode('i')
+nnoremap <expr> I edit#insert_mode('I')
+nnoremap <expr> a edit#insert_mode('a')
+nnoremap <expr> A edit#insert_mode('A')
+nnoremap <expr> o edit#insert_mode('o')
+nnoremap <expr> O edit#insert_mode('O')
 
 " Enter insert mode from visual mode
 " Note: Here 'I' goes to start of selection and 'A' end of selection
@@ -1018,6 +991,33 @@ vnoremap <expr> I mode() =~# '^[vV]'
   \ ? '<Esc><Cmd>keepjumps normal! `<<CR>' . edit#insert_mode('i') : edit#insert_mode('I')
 vnoremap <expr> A mode() =~# '^[vV]'
   \ ? '<Esc><Cmd>keepjumps normal! `><CR>' . edit#insert_mode('a') : edit#insert_mode('A')
+
+" Enter insert mode with paste toggle
+" Note: Switched easy-align mapping from ga for consistency here
+nnoremap <expr> ga edit#paste_mode() . edit#insert_mode('a')
+nnoremap <expr> gA edit#paste_mode() . edit#insert_mode('A')
+nnoremap <expr> gi edit#paste_mode() . edit#insert_mode('i')
+nnoremap <expr> gI edit#paste_mode() . edit#insert_mode('I')
+nnoremap <expr> go edit#paste_mode() . edit#insert_mode('o')
+nnoremap <expr> gO edit#paste_mode() . edit#insert_mode('O')
+nnoremap <expr> gc edit#paste_mode() . utils#translate_name('') . edit#insert_mode('c')
+nnoremap <expr> gC edit#paste_mode() . utils#translate_name('') . edit#insert_mode('C')
+
+" Toggle caps lock, copy mode, and conceal mode
+" Turn on for filetypes containing raw possibly heavily wrapped data
+augroup copy_setup
+  au!
+  let s:filetypes = join(s:data_filetypes + s:copy_filetypes, ',')
+  exe 'au FileType ' . s:filetypes . ' call switch#copy(1, 1)'
+  let s:filetypes = 'tmux'  " file sub types that otherwise inherit copy toggling
+  exe 'au FileType ' . s:filetypes . ' call switch#copy(0, 1)'
+augroup END
+command! -nargs=? CopyToggle call switch#copy(<args>)
+command! -nargs=? ConcealToggle call switch#conceal(<args>)  " mainly just for tex
+nnoremap <Leader>c <Cmd>call switch#copy()<CR>
+nnoremap <Leader>C <Cmd>call switch#conceal()<CR>
+cnoremap <expr> <C-v> edit#lang_map()
+inoremap <expr> <C-v> edit#lang_map()
 
 " Command mode selection and completion
 " Note: This prevents annoyance where multiple old completion options can be shown
