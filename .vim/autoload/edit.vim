@@ -1,14 +1,6 @@
 "-----------------------------------------------------------------------------"
 " Utilities for formatting text
 "-----------------------------------------------------------------------------"
-" Helper function
-" Note: This helps restore insert mode after mapping
-function! edit#insert_mode(...) abort  " restore insert mode
-  let imode = a:0 ? a:1 : get(b:, 'insert_undo', '')
-  let jmode = imode =~? '^o' ? imode : 'i'
-  let b:insert_undo = jmode | return imode
-endfunction
-
 " Call external plugins
 " Note: Native delimitMate#ExpandReturn() issues <Esc> then fails to split brackets due
 " to InsertLeave autocommand that repositions cursor. Use <C-c> to avoid InsertLeave.
@@ -21,6 +13,20 @@ endfunction
 " For <expr> map accepting motion
 function! edit#how_much(...) abort
   return utils#motion_func('HowMuch#HowMuch', a:000)
+endfunction
+
+" Forward delete by indent whitespace in insert mode
+" Note: Remove single tab or up to &tabstop spaces to the right of cursor. This
+" enforces consistency with 'softtab' backspace-by-tabs behavior.
+function! edit#forward_delete(...) abort
+  let icol = col('.') - 1  " vint: -ProhibitUsingUndeclaredVariable
+  let line = getline('.')
+  let line = line[icol:icol + &tabstop - 1]
+  let regex = '^\(\t\| \{,' . &tabstop . '}\).*$'
+  let pad = substitute(line, regex, '\1', '')
+  let cnt = empty(pad) ? a:0 && a:1 : len(pad)
+  let head = cnt && pumvisible() ? "\<C-e>" : ''
+  return repeat("\<Delete>", cnt)
 endfunction
 
 " Indent lines by count
@@ -36,19 +42,24 @@ function! edit#indent_items_expr(...) abort
   return utils#motion_func('edit#indent_items', a:000)
 endfunction
 
-" Forward delete by indent whitespace in insert mode
-" Note: Remove single tab or up to &tabstop spaces to the right of cursor. This
-" enforces consistency with 'softtab' backspace-by-tabs behavior.
-function! edit#forward_delete(...) abort
-  let icol = col('.') - 1  " vint: -ProhibitUsingUndeclaredVariable
-  let line = getline('.')
-  let line = line[icol:icol + &tabstop - 1]
-  let regex = '^\(\t\| \{,' . &tabstop . '}\).*$'
-  let pad = substitute(line, regex, '\1', '')
-  let cnt = empty(pad) ? a:0 && a:1 : len(pad)
-  let head = cnt && pumvisible() ? "\<C-e>" : ''
-  let tail = repeat("\<Delete>", cnt)
-  return head . "\<C-]>" . tail
+" Restore insert mode after undo
+" Note: This restores cursor position after insert-mode undo. First queue translation
+" with edit#insert_mode() then run edit#insert_undo() on InsertLeave (e.g. after 'ciw')
+function! edit#insert_mode(...) abort
+  let imode = a:0 ? a:1 : get(b:, 'insert_mode', '')  " default to previous
+  let b:insert_mode = imode | return imode
+endfunction
+function! edit#insert_undo(...) abort
+  let imode = a:0 ? a:1 : get(b:, 'insert_mode', '')  " default to queued
+  if imode =~# 'o\|O'
+    let iundo = imode
+  elseif col('.') < col('$') - 1  " standard restore
+    let iundo = 'i'
+  else  " end-of-line restore
+    let iundo = 'a'
+  endif
+  let b:insert_mode = iundo
+  return "\<C-g>u"
 endfunction
 
 " Join v:count next lines
@@ -87,11 +98,11 @@ endfunction
 " Set up temporary paste mode
 " Note: Removed automatically when insert mode is abandoned
 function! edit#paste_mode() abort
-  echom 'Paste mode enabled.'
   let s:paste = &paste
   let s:mouse = &mouse
   set paste
   set mouse=
+  echom 'Paste mode enabled.'
   augroup insert_paste
     au!
     au InsertLeave *
@@ -103,8 +114,7 @@ function! edit#paste_mode() abort
       \   echom 'Paste mode disabled' |
       \ endif |
       \ autocmd! insert_paste
-  augroup END
-  return ''
+  augroup END | return ''
 endfunction
 
 " Search replace without history

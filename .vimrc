@@ -203,84 +203,64 @@ let s:shellcheck_ignore =
   \ 'SC1090,SC1091,SC2002,SC2015,SC2016,SC2041,SC2043,SC2054,SC2076,SC2068,SC2086,'
   \ . 'SC2125,SC2139,SC2206,SC2207,SC2209,SC2230,SC2231'
 
-
-"-----------------------------------------------------------------------------"
-" Vim behavior and utilties
-"-----------------------------------------------------------------------------"
-" Stop cursor from changing when clicking on panes. Note this may no longer be
-" necessary since tmux handles FocusLost signal itself.
-" See: https://github.com/sjl/vitality.vim/issues/29
-" See: https://github.com/tmux/tmux/wiki/FAQ#what-is-the-passthrough-escape-sequence-and-how-do-i-use-it
-" au FocusLost * exe 'stopinsert'
-augroup cursor_repair
-  au!
-  au FocusLost * exe ''
-augroup END
-
-" Move cursor to end of insertion after leaving
-" Note: Otherwise repeated i<Esc>i<Esc> will drift cursor to left. Also critical to
-" keep jumplist or else populated after every single insertion. Use 'gx' or changelist
-" if you actually want to find the previous insertion point.
-augroup insert_repair
-  au!
-  au InsertLeave * exe 'keepjumps normal! `^'
-augroup END
-
-" Configure escape codes to restore screen after exiting
-" Also disable visual bell when errors triggered because annoying
-" See: :help restorescreen page
-let &t_vb = ''  " disable visual bell
-let &t_te = "\e[?47l\e8"
-let &t_ti = "\e7\e[r\e[?47h"
-
-" Support cursor shapes. Note neither Ptmux escape codes (e.g. through 'vitality'
-" plugin) or terminal overrides seem necessary in newer versions of tmux.
+" Configure cursor shape escapes and screen-restore escapes
+" Note: In tmux cursor shape support requires either Ptmux escape codes (e.g. through
+" 'vitality') or terminal overrides. Previously used FocusLost autocommand below.
+" See: https://github.com/sjl/vitality.vim/issues/29 (cursor changing in tmux panes)
 " See: https://stackoverflow.com/a/44473667/4970632 (outdated terminal overrides)
 " See: https://vi.stackexchange.com/a/14203/8084 (outdated Ptmux sequences)
 " See: https://github.com/tmux/tmux/wiki/FAQ#what-is-the-passthrough-escape-sequence-and-how-do-i-use-it
 " See: https://www.reddit.com/r/vim/comments/24g8r8/italics_in_terminal_vim_and_tmux/
-" call plug#('sjl/vitality.vim')  # outdated
-" let g:vitality_always_assume_iterm = 1
-let &t_SI = "\e[6 q"
-let &t_SR = "\e[4 q"
-let &t_EI = "\e[2 q"
-let &t_ZH = "\e[3m"
-let &t_ZR = "\e[23m"
+" call plug#('sjl/vitality.vim')  " outdated
+" autocmd FocusLost * exe 'stopinsert'  " outdated
+" let g:vitality_always_assume_iterm = 1  " outdated
+let &t_vb = ''  " disable visual bell
+let &t_ti = "\e7\e[r\e[?47h"  " termcap start (restore screen)
+let &t_te = "\e[?47l\e8"  " termcap end (restore screen)
+let &t_SI = "\e[6 q"  " insert start
+let &t_SR = "\e[4 q"  " replace start
+let &t_EI = "\e[2 q"  " insert/replace end
+let &t_ZH = "\e[3m"  " italics start
+let &t_ZR = "\e[23m"  " italics end
 
-" Automatically update binary spellfile
-" See: https://vi.stackexchange.com/a/5052/8084
-for s:spellfile in glob('~/.vim/spell/*.add', 1, 1)
-  if filereadable(s:spellfile) && (
-  \ !filereadable(s:spellfile . '.spl') ||
-  \ getftime(s:spellfile) > getftime(s:spellfile . '.spl')
-  \ )
-    echom 'Update spellfile: ' . s:spellfile
-    silent! exec 'mkspell! ' . fnameescape(s:spellfile)
+" Disable normal mode stuff
+" * q and @ are for macros, instead reserve for quitting popup windows and tags map
+" * Q and K are weird modes never used
+" * Z is save and quit shortcut, use for executing
+" * ][ and [] can get hit accidentally
+" * Ctrl-r is undo, use u and U instead
+" * Ctrl-p and Ctrl-n used for menu items, use <C-,> and <C-.> or scroll instead
+" * Ctrl-a and Ctrl-x used for incrementing, use + and - instead
+" * Backspace scrolls to left and Delete removes character to right
+" * Enter and Underscore scrolls down on first non-blank character
+for s:key in [
+  \ '@', 'q', 'Q', 'K', 'ZZ', 'ZQ', '][', '[]',
+  \ '<C-p>', '<C-n>', '<C-a>', '<C-x>', '<C-t>',
+  \ '<Delete>', '<Backspace>', '<CR>', '_',
+\ ]
+  if empty(maparg(s:key, 'n'))
+    exe 'nnoremap ' . s:key . ' <Nop>'
   endif
 endfor
 
-" Helper function for repeat#set (easier than copy-pasting repeat#set calls)
-" Note: Older vim versions prohibit combining <Plug> maps with <Cmd>
-function! s:repeat_head(mode) abort
-  return a:mode ==# 'o' ? v:operator : ''
-endfunction
-function! s:repeat_tail(mode) abort
-  return a:mode ==# 'o' && v:operator ==# 'c' ? "\<C-r>.\<Esc>" : ''
-endfunction
-function! s:repeat_map(mode, lhs, name, rhs) abort
-  let [map, noremap] = [a:mode . 'map', a:mode . 'noremap <silent>']
-  let plug = '<Plug>' . a:name  " input mapping name
-  let head = '<sid>repeat_head(' . string(a:mode) . ') . '
-  let tail = ' . <sid>repeat_tail(' . string(a:mode) . ')'
-  let iarg = head . '"\<Plug>' . a:name . '"' . tail
-  if empty(a:name)  " disable repetition (e.g. require user input)
-    let repeat = ':<C-u>call repeat#set("\<Ignore>")<CR>'
-    exe noremap . ' ' . a:lhs . ' ' . a:rhs . repeat
-  else
-    let repeat = ':<C-u>call repeat#set(' . iarg . ', v:prevcount)<CR>'
-    exe noremap . ' ' . plug . ' ' . a:rhs . repeat | exe map . ' ' . a:lhs . ' ' . plug
+" Disable insert mode stuff
+" * Ctrl-, and Ctrl-. do nothing, use for previous and next delimiter jumping
+" * Ctrl-x scrolls or toggles insert-mode completion, use autocomplete instead
+" * Ctrl-n, Ctrl-p cycles through menu options, use e.g. Ctrl-j and Ctrl-k instead
+" * Ctrl-d, Ctrl-t deletes and inserts shiftwidths, use backspace and tab instead
+" * Ctrl-h deletes character before cursor, use backspace instead
+" * Ctrl-l used for special 'insertmode' always-insert-mode option
+" * Ctrl-b enabled reverse insert-mode entry in older vim, disable in case
+" * Ctrl-z sends vim to background, disable to prevent cursor change
+for s:key in [
+  \ '<F1>', '<F2>', '<F3>', '<F4>', '<F5>', '<F6>', '<F7>', '<F8>', '<F9>', '<F10>', '<F11>', '<F12>',
+  \ '<C-n>', '<C-p>', '<C-d>', '<C-t>', '<C-h>', '<C-l>', '<C-b>', '<C-z>',
+  \ '<C-x><C-n>', '<C-x><C-p>', '<C-x><C-e>', '<C-x><C-y>',
+\ ]
+  if empty(maparg(s:key, 'i'))
+    exe 'inoremap ' . s:key . ' <Nop>'
   endif
-endfunction
+endfor
 
 " Remove weird Cheyenne maps, not sure how to isolate/disable /etc/vimrc without
 " disabling other stuff we want e.g. synax highlighting
@@ -314,80 +294,38 @@ for s:pair in [
   endfor
 endfor
 
-" Disable insert mode stuff
-" * Ctrl-, and Ctrl-. do nothing, use for previous and next delimiter jumping
-" * Ctrl-x scrolls or toggles insert-mode completion, use autocomplete instead
-" * Ctrl-n, Ctrl-p cycles through menu options, use e.g. Ctrl-j and Ctrl-k instead
-" * Ctrl-d, Ctrl-t deletes and inserts shiftwidths, use backspace and tab instead
-" * Ctrl-h deletes character before cursor, use backspace instead
-" * Ctrl-l used for special 'insertmode' always-insert-mode option
-" * Ctrl-b enabled reverse insert-mode entry in older vim, disable in case
-" * Ctrl-z sends vim to background, disable to prevent cursor change
-for s:key in [
-  \ '<F1>', '<F2>', '<F3>', '<F4>', '<F5>', '<F6>', '<F7>', '<F8>', '<F9>', '<F10>', '<F11>', '<F12>',
-  \ '<C-n>', '<C-p>', '<C-d>', '<C-t>', '<C-h>', '<C-l>', '<C-b>', '<C-z>',
-  \ '<C-x><C-n>', '<C-x><C-p>', '<C-x><C-e>', '<C-x><C-y>',
-\ ]
-  if empty(maparg(s:key, 'i'))
-    exe 'inoremap ' . s:key . ' <Nop>'
+" Helper function for repeat#set (easier than copy-pasting repeat#set calls)
+" Note: GUI vim raises error when combining <Plug> maps with <Cmd> so have to disable
+" repeat for operator-pending maps e.g. 'cgw' in case they trigger insert mode.
+function! s:repeat_head(mode) abort
+  return a:mode ==# 'o' ? v:operator : ''
+endfunction
+function! s:repeat_tail(mode) abort
+  return a:mode ==# 'o' && v:operator ==# 'c' ? "\<C-r>.\<Esc>" : ''
+endfunction
+function! s:repeat_map(mode, lhs, name, rhs) abort
+  let [map, noremap] = [a:mode . 'map', a:mode . 'noremap <silent>']
+  let plug = '<Plug>' . a:name  " input mapping name
+  let head = '<sid>repeat_head(' . string(a:mode) . ')'
+  let tail = '<sid>repeat_tail(' . string(a:mode) . ')'
+  let iset = head . ' . "\<Plug>' . a:name . '" . ' . tail
+  let icmd = has('gui_running') ? a:mode ==? 'o' ? '' : ':<C-u>' : '<Cmd>'
+  if empty(a:name)  " disable repetition (e.g. require user input)
+    let repeat = empty(icmd) ? '' : icmd . 'call repeat#set("\<Ignore>")<CR>'
+    exe noremap . ' ' . a:lhs . ' ' . a:rhs . repeat
+  else
+    let repeat = empty(icmd) ? '' : icmd . 'call repeat#set(' . iset . ', v:prevcount)<CR>'
+    exe noremap . ' ' . plug . ' ' . a:rhs . repeat | exe map . ' ' . a:lhs . ' ' . plug
   endif
-endfor
-
-" Disable normal mode stuff
-" * q and @ are for macros, instead reserve for quitting popup windows and tags map
-" * Q and K are weird modes never used
-" * Z is save and quit shortcut, use for executing
-" * ][ and [] can get hit accidentally
-" * Ctrl-r is undo, use u and U instead
-" * Ctrl-p and Ctrl-n used for menu items, use <C-,> and <C-.> or scroll instead
-" * Ctrl-a and Ctrl-x used for incrementing, use + and - instead
-" * Backspace scrolls to left and Delete removes character to right
-" * Enter and Underscore scrolls down on first non-blank character
-for s:key in [
-  \ '@', 'q', 'Q', 'K', 'ZZ', 'ZQ', '][', '[]',
-  \ '<C-p>', '<C-n>', '<C-a>', '<C-x>', '<C-t>',
-  \ '<Delete>', '<Backspace>', '<CR>', '_',
-\ ]
-  if empty(maparg(s:key, 'n'))
-    exe 'nnoremap ' . s:key . ' <Nop>'
-  endif
-endfor
-
-" Improve basic mode navigation
-" Note: Throughout vimrc marks y and z are reserved for internal map utilities. Here
-" use 'y' for mouse click location and 'z' for visual mode entrance location, then
-" start new visual selection between 'y' and 'z'. Generally 'y' should be temporary
-exe 'silent! vunmap o' | exe 'silent! vunmap O'
-nnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR>
-vnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
-vnoremap <CR> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
-vnoremap <expr> I mode() =~? '^v'
-  \ ? '<Esc><Cmd>keepjumps normal! `<<CR>' . edit#insert_mode('i') : edit#insert_mode('I')
-vnoremap <expr> A mode() =~? '^v'
-  \ ? '<Esc><Cmd>keepjumps normal! `><CR>' . edit#insert_mode('a') : edit#insert_mode('A')
-
-" Improve basic mode behavior
-" Note: Toggling e.g. 'v' in 'v' mode normally turns off visual mode and e.g.
-" 'V' switches to line-visual mode with same starting position. Here use <CR>
-" to turn off visual mode and other keys to start that visual mode at cursor.
-nnoremap v mzv
-nnoremap V mzV
-vnoremap v <Esc>mzv
-vnoremap V <Esc>mzV
-nnoremap gn gE/<C-r>/<CR><Cmd>noh<CR>mzgn
-nnoremap gN W?<C-r>/<CR><Cmd>noh<CR>mzgN
-nnoremap <C-v> <Cmd>WrapToggle 0<CR>mz<C-v>
-vnoremap <C-v> <Esc><Cmd>WrapToggle 0<CR>mz<C-v>
-vnoremap <LeftMouse> <LeftMouse>my<Cmd>exe 'keepjumps normal! `z' . visualmode() . '`y' \| delmark y<CR>
+endfunction
 
 
 "-----------------------------------------------------------------------------"
 " File and window utilities
 "-----------------------------------------------------------------------------"
 " Save or quit the current session
-" Note: To avoid accidentally closing vim do not use mapped shortcuts.
-" require manual closure using :qall or :quitall.
-" nnoremap <C-q> <Cmd>quitall<CR>
+" Note: To avoid accidentally closing vim do not use mapped shortcuts. Instead
+" require manual closure with :qall or :quitall.
 command! -nargs=? Autosave call switch#autosave(<args>)
 noremap <Leader>W <Cmd>call switch#autosave()<CR>
 nnoremap <C-s> <Cmd>call file#update()<CR>
@@ -587,6 +525,21 @@ nnoremap <Leader>! <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTE
 "-----------------------------------------------------------------------------"
 " Navigation and searching
 "-----------------------------------------------------------------------------"
+" Navigate and toggle visual mode
+" Note: Throughout vimrc marks y and z are reserved for internal map utilities. Here
+" use 'y' for mouse click location and 'z' for visual mode entrance location, then
+" start new visual selection between 'y' and 'z'. Generally 'y' should be temporary
+for s:char in ['v', 'V']
+  exe 'noremap ' . s:char . ' <Esc>mz' . s:char
+endfor
+noremap <C-v> <Esc><Cmd>WrapToggle 0<CR>mz<C-v>
+nnoremap gn gE/<C-r>/<CR><Cmd>noh<CR>mzgn
+nnoremap gN W?<C-r>/<CR><Cmd>noh<CR>mzgN
+vnoremap <LeftMouse> <LeftMouse>my<Cmd>exe 'keepjumps normal! `z' . visualmode() . '`y' \| delmark y<CR>
+nnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR>
+vnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
+vnoremap <CR> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
+
 " Navigate recent tabs and wildmenu options with <C-,>/<C-.>
 " Warning: The g:tab_stack variable is used by tags#buffer_sort() to put recently
 " used tabs in stack at higher priority than others. Critical to keep variables.
@@ -832,40 +785,50 @@ noremap [A <Cmd>call comment#next_label(-v:count1, 1, 'note', 'warning')<CR>zv
 noremap ]A <Cmd>call comment#next_label(v:count1, 1, 'note', 'warning')<CR>zv
 
 " Run replacement on this line alone
-" Note: This works recursively with the below maps. Also map confusing \w
-" 'whitespace' mnemonic to most common/harmless whitespace replacement \t.
+" Note: Critical to have separate visual and normal maps
+" Note: This works recursively with the below maps.
 function! s:regex_line() abort
-  let map = '\' . getcharstr()
-  if !empty(maparg(map)) | call feedkeys(map . 'al', 'm') | endif
+  let char = getcharstr()
+  let rmap = '\' . char
+  if !empty(maparg(rmap))  " replacement exists
+    let motion = mode() !~? '^n' ? '' : char =~? '^[ar]' ? 'ip' : 'al'
+    call feedkeys(rmap . motion, 'm')
+  endif
 endfunction
-exe 'map \w \t' | nnoremap \\ <Cmd>call <sid>regex_line()<CR>
+noremap \\ <Cmd>call <sid>regex_line()<CR>
 
-" Sort and reverse lines
+" Sort selected or motion lines
 " See: https://superuser.com/a/189956/506762
+vnoremap <expr> \a edit#sort_lines_expr()
+nnoremap <expr> \a edit#sort_lines_expr()
+
+" Reverse selected or motion lines
 " See: https://vim.fandom.com/wiki/Reverse_order_of_lines
-noremap <expr> \a edit#sort_lines_expr()
-noremap <expr> \\a edit#sort_lines_expr() . 'ip'
-noremap <expr> \r edit#reverse_lines_expr()
-noremap <expr> \\r edit#reverse_lines_expr() . 'ip'
+vnoremap <expr> \r edit#reverse_lines_expr()
+nnoremap <expr> \r edit#reverse_lines_expr()
 
 " Retab lines and remove trailing whitespace
+" Note: Map ambiguous \w 'whitespace' mnemonic to most common whitespace regex
 " Note: Undo will move the cursor to the first line in the range of
 " lines that was changed: https://stackoverflow.com/a/52308371/4970632
-noremap <expr> \t edit#replace_regex_expr('Removed trailing spaces',
-  \ '\s\+\ze$', '')
-noremap <expr> \<Tab> edit#replace_regex_expr('Translated tabs',
-  \ '\t', repeat(' ', &tabstop))
+let s:regex_trail = '\s\+\ze$'
+nmap \w \t
+vmap \w \t
+nnoremap <expr> \t edit#replace_regex_expr('Removed trailing spaces', s:regex_trail, '')
+vnoremap <expr> \t edit#replace_regex_expr('Removed trailing spaces', s:regex_trail, '')
+nnoremap <expr> \<Tab> edit#replace_regex_expr('Translated tabs', '\t', repeat(' ', &tabstop))
+vnoremap <expr> \<Tab> edit#replace_regex_expr('Translated tabs', '\t', repeat(' ', &tabstop))
 
 " Replace consecutive spaces on current line with
 " one space only if they're not part of indentation
-noremap <expr> \s edit#replace_regex_expr('Squeezed consecutive spaces',
-  \ '\S\@<=\(^ \+\)\@<! \{2,}', ' ')
-noremap <expr> \S edit#replace_regex_expr('Stripped spaces',
-  \ '\S\@<=\(^ \+\)\@<! \+', '')
+nnoremap <expr> \s edit#replace_regex_expr('Squeezed consecutive spaces', '\S\@<=\(^ \+\)\@<! \{2,}', ' ')
+vnoremap <expr> \s edit#replace_regex_expr('Squeezed consecutive spaces', '\S\@<=\(^ \+\)\@<! \{2,}', ' ')
+nnoremap <expr> \S edit#replace_regex_expr('Stripped spaces', '\S\@<=\(^ \+\)\@<! \+', '')
+vnoremap <expr> \S edit#replace_regex_expr('Stripped spaces', '\S\@<=\(^ \+\)\@<! \+', '')
 
 " Remove empty lines
 " Replace consecutive newlines with single newline
-noremap <expr> \e edit#replace_regex_expr('Squeezed consecutive empty lines',
+nnoremap <expr> \e edit#replace_regex_expr('Squeezed consecutive empty lines',
   \ '\(\n\s*\n\)\(\s*\n\)\+', '\1')
 noremap <expr> \E edit#replace_regex_expr('Stripped empty lines',
   \ '^\s*$\n', '')
@@ -910,53 +873,25 @@ augroup END
 command! -nargs=? TabToggle call switch#expandtab(<args>)
 nnoremap <Leader><Tab> <Cmd>call switch#expandtab()<CR>
 
-" Copy conceal and caps lock toggle ('paste mode' accessible with 'g' insert mappings)
-" Turn on for filetypes containing raw possibly heavily wrapped data
-augroup copy_setup
-  au!
-  let s:filetypes = join(s:data_filetypes + s:copy_filetypes, ',')
-  exe 'au FileType ' . s:filetypes . ' call switch#copy(1, 1)'
-  let s:filetypes = 'tmux'  " file sub types that otherwise inherit copy toggling
-  exe 'au FileType ' . s:filetypes . ' call switch#copy(0, 1)'
-augroup END
-command! -nargs=? CopyToggle call switch#copy(<args>)
-command! -nargs=? ConcealToggle call switch#conceal(<args>)  " mainly just for tex
-nnoremap <Leader>c <Cmd>call switch#copy()<CR>
-nnoremap <Leader>C <Cmd>call switch#conceal()<CR>
-cnoremap <expr> <C-v> edit#lang_map()
-inoremap <expr> <C-v> edit#lang_map()
-
 " Undo behavior and insert-mode mappings
-" Note: Tried implementing insert-mode 'redo' previously and failed because
-" history lost after vim re-enters insert mode from the <C-o> command.
+" Note: Here edit#insert_undo() returns undo-resetting <C-g>u and resets b:insert_mode
+" based on cursor position. Also run this on InsertEnter e.g. after 'ciw' operator map
 augroup undo_setup
   au!
-  au InsertEnter * let b:insert_undo = get(b:, 'insert_undo', '')
+  au InsertEnter * call edit#insert_undo()
 augroup END
+inoremap <expr> <F11> '<Cmd>undo<CR><Esc>' . edit#insert_mode()
+inoremap <expr> <F12> edit#insert_undo()
 nmap u <Cmd>call repeat#wrap('u', v:count)<CR>
 nmap U <Cmd>call repeat#wrap("\<C-r>", v:count)<CR>
-inoremap <F12> <Cmd>let b:insert_undo = 'i'<CR><C-g>u
-inoremap <expr> <F11> '<Cmd>undo<CR><Esc>' . edit#insert_mode()
 
-" Register selection utilities
-" Note: For some reason cannot set g:peekaboo_ins_prefix = '' and simply have <C-r>
-" trigger the mapping. See https://vi.stackexchange.com/q/5803/8084
-imap <expr> <F10> peekaboo#peek(1, "\<C-r>", 0)
-nmap <expr> <F10> peekaboo#peek(1, '"', 0)
-
-" Insert empty lines
-" Note: See 'vim-unimpaired' for original. This is similar to vim-succinct 'e' object
-call s:repeat_map('n', '[e', 'BlankUp', '<Cmd>put!=repeat(nr2char(10), v:count1) \| '']+1<CR>')
-call s:repeat_map('n', ']e', 'BlankDown', '<Cmd>put=repeat(nr2char(10), v:count1) \| ''[-1<CR>')
-
-" Increase and decrease indent to level v:count
-" Note: To avoid overwriting fugitive inline-diff mappings implement these as
-" buffer-local .vim/autoload/common.vim maps. Also map brackets.
-nnoremap <expr> > '<Esc>' . edit#indent_items_expr(0, v:count1)
-nnoremap <expr> < '<Esc>' . edit#indent_items_expr(1, v:count1)
-
-" Enter insert mode and record keypress
-" Note: This is used for insert-mode undo behvior
+" Stop cursor from moving after undo or leaving insert mode
+" Note: Otherwise repeated i<Esc>i<Esc> will drift cursor to left. Also
+" critical to keep jumplist or else populated after every single insertion.
+augroup insert_repair
+  au!
+  au InsertLeave * exe 'keepjumps normal! `^'
+augroup END
 nnoremap <expr> i edit#insert_mode('i')
 nnoremap <expr> I edit#insert_mode('I')
 nnoremap <expr> a edit#insert_mode('a')
@@ -964,20 +899,27 @@ nnoremap <expr> A edit#insert_mode('A')
 nnoremap <expr> o edit#insert_mode('o')
 nnoremap <expr> O edit#insert_mode('O')
 
-" Enter insert mode with paste toggle
-" Note: Switched easy-align mapping from ga for consistency here
-nnoremap <expr> ga edit#paste_mode() . edit#insert_mode('a')
-nnoremap <expr> gA edit#paste_mode() . edit#insert_mode('A')
-nnoremap <expr> gc edit#paste_mode() . edit#insert_mode('c')
-nnoremap <expr> gC edit#paste_mode() . edit#insert_mode('C')
-nnoremap <expr> gi edit#paste_mode() . edit#insert_mode('i')
-nnoremap <expr> gI edit#paste_mode() . edit#insert_mode('I')
-nnoremap <expr> go edit#paste_mode() . edit#insert_mode('o')
-nnoremap <expr> gO edit#paste_mode() . edit#insert_mode('O')
+" Increase and decrease indent to level v:count
+" Note: To avoid overwriting fugitive inline-diff mappings implement these as
+" buffer-local .vim/autoload/common.vim maps. Also map brackets.
+nnoremap <expr> > '<Esc>' . edit#indent_items_expr(0, v:count1)
+nnoremap <expr> < '<Esc>' . edit#indent_items_expr(1, v:count1)
+
+" Insert empty lines around cursor
+" Note: See 'vim-unimpaired' for original. This is similar to vim-succinct 'e' object
+call s:repeat_map('n', '[e', 'BlankUp', '<Cmd>put!=repeat(nr2char(10), v:count1) \| '']+1<CR>')
+call s:repeat_map('n', ']e', 'BlankDown', '<Cmd>put=repeat(nr2char(10), v:count1) \| ''[-1<CR>')
+
+" Register selection utilities
+" Note: For some reason cannot set g:peekaboo_ins_prefix = '' and simply have <C-r>
+" trigger the mapping. See https://vi.stackexchange.com/q/5803/8084
+imap <expr> <F10> peekaboo#peek(1, "\<C-r>", 0)
+nmap <expr> <F10> peekaboo#peek(1, '"', 0)
 
 " Record macro by pressing Q (we use lowercase for quitting popup windows)
 " and execute macro using ,. Also disable multi-window recordings.
-" Note: Visual counts are ignored when starting recording
+" Note: Visual counts are ignored when followed by operations or recording
+" Warning: Critical to use 'nmap' and 'vmap' since do not want operator-mode
 nnoremap <expr> Q 'q' . (empty(reg_recording()) ? utils#translate_name('q') : '')
 nnoremap <expr> , '@' . utils#translate_name('@')
 vnoremap <expr> Q 'q' . (empty(reg_recording()) ? utils#translate_name('q') : '')
@@ -1015,11 +957,11 @@ vnoremap <expr> y utils#translate_name('') . 'y'
 vnoremap <expr> Y utils#translate_name('') . 'y'
 
 " Paste from the nth previously deleted or changed text.
-" Note: For visual paste without overwrite see https://stackoverflow.com/a/31411902/4970632
-nnoremap <expr> p (v:count ? '<Esc>' : '') . utils#translate_name('') . 'p'
-nnoremap <expr> P (v:count ? '<Esc>' : '') . utils#translate_name('') . 'P'
-vnoremap <expr> p (v:count ? '<Esc>' : '') . utils#translate_name('') . 'p<Cmd>let @+=@0 \| let @"=@0<CR>'
-vnoremap <expr> P (v:count ? '<Esc>' : '') . utils#translate_name('') . 'P<Cmd>let @+=@0 \| let @"=@0<CR>'
+" Note: This was adapated from https://stackoverflow.com/a/31411902/4970632
+nnoremap <expr> p utils#translate_name('') . 'p'
+nnoremap <expr> P utils#translate_name('') . 'P'
+vnoremap <expr> p utils#translate_name('') . 'p<Cmd>let @+=@0 \| let @"=@0<CR>'
+vnoremap <expr> P utils#translate_name('') . 'P<Cmd>let @+=@0 \| let @"=@0<CR>'
 
 " Join v:count lines with coinjoin.vim and keep cursor column
 " Note: Here e.g. '2J' joins 'next two lines' instead of 'current plus one'
@@ -1036,74 +978,106 @@ call s:repeat_map('n', 'ck', 'SwapAbove', '<Cmd>call edit#swap_lines(1)<CR>')
 call s:repeat_map('n', 'cj', 'SwapBelow', '<Cmd>call edit#swap_lines(0)<CR>')
 call s:repeat_map('n', 'cL', 'SliceLine', 'myi<CR><Esc><Cmd>keepjumps normal! `y<Cmd>delmark y<CR>')
 
-" General and popup or preview window scrolling
-" Note: This requires setting let g:scrollwrapped_nomap = 1
-function! s:scroll_state(...) abort
-  let b:scroll_state = a:0 ? a:1 : 0 | return ''
-endfunction
-noremap <expr> <C-u> iter#scroll_infer(-0.33, 0)
-noremap <expr> <C-d> iter#scroll_infer(0.33, 0)
-noremap <expr> <C-b> iter#scroll_infer(-0.66, 0)
-noremap <expr> <C-f> iter#scroll_infer(0.66, 0)
-inoremap <expr> <C-u> iter#scroll_infer(-0.33, 0)
-inoremap <expr> <C-d> iter#scroll_infer(0.33, 0)
-inoremap <expr> <C-b> iter#scroll_infer(-0.66, 0)
-inoremap <expr> <C-f> iter#scroll_infer(0.66, 0)
+" Copy conceal and caps lock toggle ('paste mode' accessible with 'g' insert mappings)
+" Turn on for filetypes containing raw possibly heavily wrapped data
+augroup copy_setup
+  au!
+  let s:filetypes = join(s:data_filetypes + s:copy_filetypes, ',')
+  exe 'au FileType ' . s:filetypes . ' call switch#copy(1, 1)'
+  let s:filetypes = 'tmux'  " file sub types that otherwise inherit copy toggling
+  exe 'au FileType ' . s:filetypes . ' call switch#copy(0, 1)'
+augroup END
+command! -nargs=? CopyToggle call switch#copy(<args>)
+command! -nargs=? ConcealToggle call switch#conceal(<args>)  " mainly just for tex
+nnoremap <Leader>c <Cmd>call switch#copy()<CR>
+nnoremap <Leader>C <Cmd>call switch#conceal()<CR>
+cnoremap <expr> <C-v> edit#lang_map()
+inoremap <expr> <C-v> edit#lang_map()
+
+" Enter insert mode with paste toggle
+" Note: Switched easy-align mapping from ga for consistency here
+nnoremap <expr> ga edit#paste_mode() . edit#insert_mode('a')
+nnoremap <expr> gA edit#paste_mode() . edit#insert_mode('A')
+nnoremap <expr> gi edit#paste_mode() . edit#insert_mode('i')
+nnoremap <expr> gI edit#paste_mode() . edit#insert_mode('I')
+nnoremap <expr> go edit#paste_mode() . edit#insert_mode('o')
+nnoremap <expr> gO edit#paste_mode() . edit#insert_mode('O')
+nnoremap <expr> gc edit#paste_mode() . utils#translate_name('') . edit#insert_mode('c')
+nnoremap <expr> gC edit#paste_mode() . utils#translate_name('') . edit#insert_mode('C')
+
+" Enter insert mode from visual mode
+" Note: Here 'I' goes to start of selection and 'A' end of selection
+exe 'silent! vunmap o' | exe 'silent! vunmap O'
+vnoremap <expr> gi '<Esc>' . edit#insert_mode('i')
+vnoremap <expr> gI '<Esc>' . edit#insert_mode('I')
+vnoremap <expr> ga '<Esc>' . edit#insert_mode('a')
+vnoremap <expr> gA '<Esc>' . edit#insert_mode('A')
+vnoremap <expr> go '<Esc>' . edit#insert_mode('o')
+vnoremap <expr> gO '<Esc>' . edit#insert_mode('O')
+vnoremap <expr> I mode() =~# '^[vV]'
+  \ ? '<Esc><Cmd>keepjumps normal! `<<CR>' . edit#insert_mode('i') : edit#insert_mode('I')
+vnoremap <expr> A mode() =~# '^[vV]'
+  \ ? '<Esc><Cmd>keepjumps normal! `><CR>' . edit#insert_mode('a') : edit#insert_mode('A')
+
+" Command mode selection and completion
+" Note: Could also use wildmenumode() but would not work after first tab
+augroup complete_setup
+  au!
+  au CmdlineLeave * let b:show_message = 1
+  au CmdlineEnter,CmdlineLeave * let b:complete_state = 0
+augroup END
+cnoremap <expr> <Tab> iter#expr_complete("\<Tab>", 1)
+cnoremap <expr> <F2> iter#expr_complete("\<Tab>", 1)
+cnoremap <expr> <S-Tab> iter#expr_complete("\<S-Tab>", 1)
+cnoremap <expr> <F1> iter#expr_complete("\<S-Tab>", 1)
+cnoremap <expr> <Up> iter#expr_complete("\<C-p>")
+cnoremap <expr> <Down> iter#expr_complete("\<C-n>")
+cnoremap <expr> <Left> iter#expr_complete("\<Left>")
+cnoremap <expr> <Right> iter#expr_complete("\<Right>")
+cnoremap <expr> <C-k> iter#expr_complete("\<C-p>")
+cnoremap <expr> <C-j> iter#expr_complete("\<C-n>")
+cnoremap <expr> <C-h> iter#expr_complete("\<Left>")
+cnoremap <expr> <C-l> iter#expr_complete("\<Right>")
 
 " Insert mode selection and completion
 " Todo: Consider using Shuougo pum.vim but hard to implement <CR>/<Tab> features.
+" Note: Enter is 'accept' only if we scrolled down while tab always means 'accept'
 augroup popup_setup
   au!
-  au InsertEnter * set noignorecase | call s:scroll_state(0)
-  au InsertLeave * set ignorecase | call s:scroll_state(0)
+  au InsertEnter * set noignorecase | let b:scroll_state = 0
+  au InsertLeave * set ignorecase | let b:scroll_state = 0
 augroup END
-inoremap <expr> <Tab> pumvisible() && get(b:, 'scroll_state', 0) ? '<C-y>' . <sid>scroll_state()
-  \ : pumvisible() ? '<C-n><C-y>' . <sid>scroll_state() : '<C-]><Tab>'
-inoremap <expr> <F2> pumvisible() && get(b:, 'scroll_state', 0) ? '<C-y>' . <sid>scroll_state()
-  \ : pumvisible() ? '<C-n><C-y>' . <sid>scroll_state() : ddc#map#manual_complete()
-inoremap <expr> <S-Tab> <sid>scroll_state() . (pumvisible() ? '<C-e>' : edit#forward_delete(0))
-inoremap <expr> <F1> <sid>scroll_state() . (pumvisible() ? '<C-e>' : edit#forward_delete(0))
-inoremap <expr> <Delete> <sid>scroll_state() . edit#forward_delete(1)
+inoremap <expr> <C-w> iter#expr_popup('<Cmd>pclose<CR>')
+inoremap <expr> <C-q> iter#expr_popup('<Cmd>pclose<CR>')
+inoremap <expr> <S-Tab> iter#expr_popup(edit#forward_delete(0), 0, 1)
+inoremap <expr> <F1> iter#expr_popup(edit#forward_delete(0), 0, 1)
+inoremap <expr> <Tab> iter#expr_popup('<C-]><Tab>', 2, 1)
+inoremap <expr> <F2> iter#expr_popup(ddc#map#manual_complete(), 2, 1)
+inoremap <expr> <Delete> iter#expr_popup(edit#forward_delete(1), 1)
+inoremap <expr> <CR> iter#expr_popup('<C-]><C-r>=edit#delimit_mate("r")<CR>', 1, 1)
+inoremap <expr> <Space> iter#expr_popup('<C-]><C-r>=edit#delimit_mate("s")<CR>', 1)
+inoremap <expr> <Backspace> iter#expr_popup('<C-r>=edit#delimit_mate("b")<CR>', 1)
+inoremap <expr> <C-g><CR> iter#expr_popup('<CR>')
+inoremap <expr> <C-g><Space> iter#expr_popup('<Space>')
+inoremap <expr> <C-g><BackSpace> iter#expr_popup('<BackSpace>')
+
+" General and popup or preview window scrolling
+" Note: This requires setting let g:scrollwrapped_nomap = 1
 inoremap <expr> <Up> iter#scroll_infer(-1)
 inoremap <expr> <Down> iter#scroll_infer(1)
 inoremap <expr> <C-k> iter#scroll_infer(-1)
 inoremap <expr> <C-j> iter#scroll_infer(1)
-
-" Command mode selection and completion
-" Note: Could also use wildmenumode() but would not work after first tab
-function! s:complete_state(...) abort
-  let b:complete_state = a:0 ? a:1 : 1 | return ''
-endfunction
-augroup complete_setup
-  au!
-  au CmdlineLeave * let b:show_message = 1
-  au CmdlineEnter,CmdlineLeave * call s:complete_state(0)
-augroup END
-cnoremap <Tab> <Cmd>call <sid>complete_state(1)<CR><Cmd>call feedkeys("\<Tab>", 'tn')<CR>
-cnoremap <F2> <Cmd>call <sid>complete_state(1)<CR><Cmd>call feedkeys("\<Tab>", 'tn')<CR>
-cnoremap <S-Tab> <Cmd>call <sid>complete_state(1)<CR><Cmd>call feedkeys("\<S-Tab>", 'tn')<CR>
-cnoremap <F1> <Cmd>call <sid>complete_state(1)<CR><Cmd>call feedkeys("\<S-Tab>", 'tn')<CR>
-cnoremap <expr> <Up> get(b:, 'complete_state', 0)
-  \ ? '<C-c><Cmd>redraw<CR>:' . getcmdline() . '<C-p>' : '<C-p>'
-cnoremap <expr> <Down> get(b:, 'complete_state', 0)
-  \ ? '<C-c><Cmd>redraw<CR>:' . getcmdline() . '<C-n>' : '<C-n>'
-
-" Insert mode general behavior
-" Note: Enter is 'accept' only if we scrolled down while tab always means 'accept'
-inoremap <expr> <C-w> <sid>scroll_state() . '<C-]><Cmd>pclose<CR>'
-inoremap <expr> <C-q> <sid>scroll_state() . '<C-]><Cmd>pclose<CR>'
-inoremap <expr> <C-g><CR> <sid>scroll_state() . (pumvisible() ? '<C-e>' : '') . '<CR>'
-inoremap <expr> <C-g><Space> <sid>scroll_state() . (pumvisible() ? '<C-e>' : '') . '<Space>'
-inoremap <expr> <C-g><BackSpace> <sid>scroll_state() . (pumvisible() ? '<C-e>' : '') . '<BackSpace>'
-inoremap <expr> <CR> pumvisible() && get(b:, 'scroll_state', 0) ? '<C-y>' . <sid>scroll_state()
-  \ : (pumvisible() ? '<C-e>' : '') . '<C-]><C-g>u<C-r>=edit#delimit_mate("r")<CR>'
-inoremap <expr> <Space> <sid>scroll_state() . (pumvisible() ? '<C-e>' : '')
-  \ . '<C-]><C-r>=edit#delimit_mate("s")<CR>'
-inoremap <expr> <Backspace> <sid>scroll_state() . (pumvisible() ? '<C-e>' : '')
-  \ . '<C-r>=edit#delimit_mate("b")<CR>'
+inoremap <expr> <C-u> iter#scroll_infer(-0.33, 0)
+inoremap <expr> <C-d> iter#scroll_infer(0.33, 0)
+inoremap <expr> <C-b> iter#scroll_infer(-0.66, 0)
+inoremap <expr> <C-f> iter#scroll_infer(0.66, 0)
+noremap <expr> <C-u> iter#scroll_infer(-0.33, 0)
+noremap <expr> <C-d> iter#scroll_infer(0.33, 0)
+noremap <expr> <C-b> iter#scroll_infer(-0.66, 0)
+noremap <expr> <C-f> iter#scroll_infer(0.66, 0)
 
 " ReST section comment headers
-" Warning: <Plug> name should not be subset of other name or results in delay!
+" Note: <Plug> name cannot be subset of other name or results in delay
 call s:repeat_map('n', 'g-', 'DashSingle', "<Cmd>call comment#append_line('-', 0)<CR>")
 call s:repeat_map('n', 'z-', 'DashDouble', "<Cmd>call comment#append_line('-', 1)<CR>")
 call s:repeat_map('n', 'g=', 'EqualSingle', "<Cmd>call comment#append_line('=', 0)<CR>")
@@ -1145,13 +1119,27 @@ noremap x "_x
 noremap X "_X
 
 " Change case for word or motion
-for s:key in ['u', 'U'] | silent! exe 'unmap g' . s:key | silent! exe 'unmap z' . repeat(s:key, 2) | endfor
+" Note: Here 'zu' is analgogous to 'zb' used for boolean toggle
+for s:key in ['u', 'U'] | silent! exe 'unmap g' . s:key | endfor
+for s:key in ['u', 'U'] | silent! exe 'unmap z' . repeat(s:key, 2) | endfor
 call s:repeat_map('n', 'zu', 'CaseToggle', 'my~h`y<Cmd>delmark y<CR>')
 call s:repeat_map('n', 'zU', 'CaseTitle', 'myguiw~h`y<Cmd>delmark y<CR>')
 nnoremap guu guiw
 nnoremap gUU gUiw
 vnoremap zu g~
 vnoremap zU gu<Esc>`<~h
+
+" Update binary spell file
+" See: https://vi.stackexchange.com/a/5052/8084
+for s:spellfile in glob('~/.vim/spell/*.add', 1, 1)
+  if filereadable(s:spellfile) && (
+  \ !filereadable(s:spellfile . '.spl') ||
+  \ getftime(s:spellfile) > getftime(s:spellfile . '.spl')
+  \ )
+    echom 'Update spellfile: ' . s:spellfile
+    silent! exec 'mkspell! ' . fnameescape(s:spellfile)
+  endif
+endfor
 
 " Toggle spell checking
 " Turn on for filetypes containing text destined for users
@@ -1772,8 +1760,6 @@ if s:plug_active('vim-tags')
   command! -bang -nargs=* ShowTable
     \ echo call('tags#table_kinds', <bang>0 ? ['all'] : [<f-args>])
     \ | echo call('tags#table_tags', <bang>0 ? ['all'] : [<f-args>])
-  noremap <F3> <Cmd>pop<CR>
-  noremap <F4> <Cmd>tag<CR>
   nnoremap gy <Cmd>BTags<CR>
   nnoremap gY <Cmd>Tags<CR>
   nnoremap <Leader>t <Cmd>ShowTable<CR>

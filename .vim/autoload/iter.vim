@@ -11,6 +11,35 @@ function! iter#setup_taglist() abort
   for char in 'ud' | silent! exe 'nunmap <buffer> ' . char | endfor
 endfunction
 
+" Perform action conditional on insert-mode popup or cmdline complete state
+" Note: This supports hiding complete-mode options or insert-mode popup menu
+" before proceeding with other actions. See vimrc for details
+function! iter#expr_complete(map, ...) abort
+  let pos = getcmdpos()
+  let text = getcmdline()
+  let state = get(b:, 'complete_state', 0)
+  let recmd = "\<C-c>\<Cmd>redraw\<CR>:" . text
+  if a:0 && a:1  " e.g. tab command
+    let b:complete_state = 1
+    call feedkeys(a:map, 'tn') | return ''
+  else  " e.g. cursor motions
+    let b:complete_state = 0
+    return state ? recmd . a:map : a:map
+  endif
+endfunction
+function! iter#expr_popup(map, ...) abort
+  let s = a:0 > 1 && a:2 ? '' : a:map
+  if a:0 && a:1 > 1  " select item or perform action
+    let [map1, map2, map3] = ["\<C-y>" . s, "\<C-n>\<C-y>" . s, a:map]
+  elseif a:0 && a:1 > 0  " select item only if scrolled
+    let [map1, map2, map3] = ["\<C-y>" . s, a:map, a:map]
+  else  " exit popup or perform action
+    let [map1, map2, map3] = ["\<C-e>" . s, "\<C-e>" . s, a:map]
+  endif
+  let state = get(b:, 'scroll_state', 0) | let b:scroll_state = 0
+  return state && pumvisible() ? map1 : pumvisible() ? map2 : map3
+endfunction
+
 " Navigate conflict markers cyclically
 " Note: This is adapted from conflict-marker.vim/autoload/conflict_marker.vim. Only
 " searches for complete blocks, ignores false-positive block matches e.g. markdown ===

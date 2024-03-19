@@ -303,7 +303,7 @@ function! s:translate_input(mode, ...) abort
   endif
   return result
 endfunction
-" Public function without autocommands
+" Return register without statusline flashes
 function! utils#translate_name(...) abort
   noautocmd return call('s:translate_input', a:000)
 endfunction
