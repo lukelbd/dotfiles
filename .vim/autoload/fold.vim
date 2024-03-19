@@ -95,8 +95,8 @@ function! fold#fold_text(...) abort
   let delim = s:close_label(label)
   let label = empty(delim) ? label : label . '···' . delim
   " Get git gutter statistics
-  let [hunks, idxs] = [[0, 0, 0], s:hunk_types ? [0, 1, 2] : [1, 1, 1]]
-  let [delta; signs] = ['', '+', '~', '-']
+  let [hunks, idxs] = [[0, 0, 0], s:hunk_types ? [0, 1, 2] : [0, 0, 0]]
+  let [delta, signs] = ['', s:hunk_types ? ['+', '~', '-'] : ['~']]
   for [hunk0, count0, hunk1, count1] in gitgutter#hunk#hunks(bufnr())
     let hunk2 = count1 ? hunk1 + count1 - 1 : hunk1
     let [clip1, clip2] = [max([hunk1, line1]), min([hunk2, line2])]
@@ -114,7 +114,7 @@ function! fold#fold_text(...) abort
     let delta .= signs[idx] . nline
   endfor
   " Combine label and statistics
-  let level = repeat('⟨', level)  " identical to foldcolumn
+  let level = repeat(':', level)  " identical to foldcolumn
   let nline = string(line2 - line1 + 1)
   let nmax = len(string(line('$')))
   let dots = repeat('·', nmax - len(nline))
