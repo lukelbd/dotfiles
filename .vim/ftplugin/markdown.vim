@@ -1,10 +1,14 @@
 "-----------------------------------------------------------------------------
 " Markdown settings
 "-----------------------------------------------------------------------------
-" Delimit-mate settings
+" Tab and delimiter settings
 let b:delimitMate_quotes = "\" ' $ ` * _"
+setlocal tabstop=4  " required for nested bullets
+setlocal shiftwidth=4
+setlocal softtabstop=4
 
 " Open markdown file in viewer
+" Note: This is designed for side-by-side terminal/viewer workflow. See also tex.vim
 function! s:open_markdown_file() abort
   update
   if $TERM_PROGRAM ==? ''
@@ -30,5 +34,5 @@ let s:delims = {
   \ 'e': '{==\r==}',
   \ 'd': '{--\r--}',
   \ '$': '$$\r$$',
-  \ }
+\ }
 call succinct#add_delims(s:delims, 1)

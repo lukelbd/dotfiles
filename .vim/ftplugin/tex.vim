@@ -6,18 +6,21 @@
 " speeds things up). Here omit comment regions 'c' to prevent them from getting folded.
 let g:tex_fast = 'bmMprsSvV'  " exclude 'c'
 
-" Only conceal accents symbols and math. Also allow @ in makeatletter
-" and 'math' outside of math zones (i.e. do not highlight [_^]).
+" Only conceal accents, symbols, and math
 let g:tex_conceal = 'agmdb'
+
+" Allow @ in makeatletter and e.g. [_^] outside math zones
 let g:tex_stylish = 1
 
-" Ignore error highlighting and disable spellcheck in verbatim and comments
+" Remove error highlights and allow spell check
 let g:tex_no_error = 1
 let g:tex_nospell = 0
+
+" Remove spell check from verbatim mode
 let g:tex_verbspell = 0
 let g:tex_comment_nospell = 1
 
-" DelimitMate integration
+" Delimiter settings
 let b:delimitMate_quotes = '$ |'
 let b:delimitMate_matchpairs = "(:),{:},[:],`:'"
 

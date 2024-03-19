@@ -1,12 +1,11 @@
 "-----------------------------------------------------------------------------
 " ReST settings
 "-----------------------------------------------------------------------------
-" Ensure primary headers open on startup
-" Note: Not possible to set foldlevelstart=1 for specific filetype
-if &l:foldlevel == 0 | let &l:foldlevel = 1 | endif
-
-" DelimitMate plugin
+" Tab and delimiter settings
 let b:delimitMate_quotes = "\" ' $ `"
+setlocal tabstop=4  " required for nested bullets
+setlocal shiftwidth=4
+setlocal softtabstop=4
 
 " Open rest file in viewer (install with 'pip install restview')
 " Warning: Use ! call so we can close the server when done, otherwise freezes window
