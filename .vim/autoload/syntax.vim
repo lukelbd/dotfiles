@@ -2,54 +2,65 @@
 " Utilities for syntax syncing
 "-----------------------------------------------------------------------------"
 " Jump to next conceal character
-" Note: This should work in arbitrary modes
 " See: https://stackoverflow.com/a/24224578/4970632
+" Note: This detects both columns concealed with matchadd(..., {'conceal': ''}) and
+" syntax 'conceal' or 'concealends'. In the former case leverage fact that matchadd
+" method is only used to make tex and markdown characters invisible, so no need to
+" compare replacement characters or check groups -- simply skip those columns.
+function! s:skip_cols(...) abort
+  let cols = []  " column numbers concealed with empty string
+  let line = getline(a:0 ? a:1 : '.')
+  let matches = filter(getmatches(), "v:val.group ==# 'Conceal'")
+  let regexes = uniq(map(matches, 'v:val.pattern'))
+  for regex in regexes
+    let idx = 0  " search start of string
+    while idx >= 0 && idx < len(line)
+      let [str, jdx, idx] = matchstrpos(line, regex, idx)
+      call extend(cols, empty(str) ? [] : range(jdx + 1, idx))
+    endwhile
+  endfor
+  return cols
+endfunction
 function! syntax#next_char(count)
   let [lnum, cnum, cmax] = [line('.'), col('.'), col('$')]
+  let [line, skip] = [getline(lnum), s:skip_cols(lnum)]
   let [icnt, jcnt] = [a:count, 0]
   let cmode = mode() ==# '' ? 'v' : mode()
   let offset = a:count < 0 ? -1 : 0
   let delta = a:count < 0 ? -1 : 1
-  let line = getline('.')
-  let matches = filter(getmatches(), "v:val.group ==# 'Conceal'")
-  let regexes = uniq(map(matches, 'v:val.pattern'))
   while delta * icnt > 0
+    let concealed = 0
+    let invisible = index(skip, cnum + offset) != -1
     if a:count < 0 && cnum <= 1 || a:count > 0 && cnum >= cmax
       let jcnt += icnt | break
     endif
-    if cnum == 0 || &l:concealcursor !~? cmode[:0]
-      let concealed = 0
-    else
+    if cnum && &l:concealcursor =~? cmode[:0]
       let [concealed, cchar, _] = synconcealed(lnum, cnum + offset)
     endif
-    for regex in concealed ? [] : regexes
-      let idx = cnum + offset - 1
-      let jdx = match(line, regex, idx)
-      if idx == jdx | let concealed = 1 | break | endif
-    endfor
-    if !concealed
-      let icnt -= delta
-      let jcnt += delta
+    if invisible || !concealed
       if a:count < 0
         let cnum -= len(matchstr(line[:cnum - 2], '.$'))
-      else
+      else  " vint: next-line -ProhibitUsingUndeclaredVariable
         let cnum += len(matchstr(line[cnum - 1:], '^.'))
       endif
+      let [sub, add] = [invisible ? 0 : 1, 1]
     else
-      let icnt -= delta * strchars(cchar)
-      let inum = cnum
-      let cnum += delta
+      let pnum = cnum  " previous colum number
+      let cnum += delta  " increment column number
       while cnum > 1 && cnum < cmax
         let [concealed, ichar, _] = synconcealed(lnum, cnum + offset)
         if !concealed || cchar !=# ichar | break | endif
-        let cnum += delta
+        let cnum += delta  " increment column number
       endwhile
+      let sub = strchars(cchar)
       if a:count < 0
-        let jcnt -= strchars(line[max([cnum - 1, 0]):inum - 2])
+        let add = strchars(line[max([cnum - 1, 0]):pnum - 2])
       else
-        let jcnt += delta * strchars(line[inum - 1:cnum - 2])
+        let add = strchars(line[pnum - 1:cnum - 2])
       endif
     endif
+    let icnt -= delta * sub  " iterate input count
+    let jcnt += delta * add  " iterate output count
   endwhile
   let motion = jcnt > 0 ? jcnt . 'l' : jcnt < 0 ? -jcnt . 'h' : ''
   return "\<Ignore>" . motion
@@ -83,6 +94,7 @@ function! syntax#next_scheme(arg) abort
   endif
   silent! exe 'colorscheme ' . name
   silent call syntax#update_groups()  " override vim comments
+  silent call syntax#update_matches()  " override vim comments
   silent call syntax#update_highlights()  " override highlight colors
   silent! doautocmd BufEnter
   call timer_start(1, 's:echo_scheme')
@@ -142,7 +154,28 @@ function! syntax#update_lines(count, ...) abort
   endif
 endfunction
 
-" Updaet syntax match groups. Could move to after/syntax but annoying
+" Update on-the-fly matchadd() matches.
+" Note: Unlike typical syntax highlighting these are window-local and do not
+" require explicit names (assigned automatic ids). They are managed separately
+" from :highlight and :syntax commands with getmatches() and setmatches()
+" Note: Critical to make 'priority' (third argument, default 10) same as :hlsearch
+" priority (0) or matches are weird. Note :syntax match fails since concealed backslash
+" overwrites any existing matches. See: https://vi.stackexchange.com/q/5696/8084
+function! syntax#update_matches() abort
+  let matches = filter(getmatches(), "v:val.group ==# 'Conceal'")
+  if !empty(matches) | return | endif
+  if &filetype ==# 'tex'  " backslashes (skips e.g. \cmd1\cmd2 but helpful anyway)
+    let regex = '\(%.*\|\\[a-zA-Z@]\+\|\\\)\@<!\zs\\\([a-zA-Z@]\+\)\@='
+    call matchadd('Conceal', regex, 0, -1, {'conceal': ''})
+  endif
+  if &filetype ==# 'markdown'  " strikethrough: https://www.reddit.com/r/vim/comments/g631im/any_way_to_enable_true_markdown_strikethrough/
+    call matchadd('StrikeThrough', '<s>\zs\_.\{-}\ze</s>')
+    call matchadd('Conceal', '<s>\ze\_.\{-}</s>', 10, -1, {'conceal': ''})
+    call matchadd('Conceal', '<s>\_.\{-}\zs</s>', 10, -1, {'conceal': ''})
+  endif
+endfunction
+
+" Update syntax match groups. Could move to after/syntax but annoying
 " Note: This tries to fix docstring highlighting issues but inconsistent, so also
 " have vimrc 'syntax sync' mappings. See: https://github.com/vim/vim/issues/2790
 " Note: The URL regex is from .tmux.conf and https://vi.stackexchange.com/a/11547/8084
@@ -150,30 +183,24 @@ endfunction
 " group names are for given filetype syntax schemes (use :Group for testing).
 function! syntax#update_groups() abort
   if &filetype ==# 'vim'  " repair comments: https://github.com/vim/vim/issues/11307
-    syntax match vimQuoteComment /^[ \t:]*".*$/ contains=vimComment.*,@Spell
+    syntax match vimQuoteComment '^[ \t:]*".*$' contains=vimComment.*,@Spell
     highlight link vimQuoteComment Comment
   endif
   if &filetype ==# 'html'  " no spell comments (here overwrite original group name)
-    syn region htmlComment start=+<!--+ end=+--\s*>+ contains=@NoSpell
+    syntax region htmlComment start='<!--' end='--\s*>' contains=@NoSpell
     highlight link htmlComment Comment
   endif
   if &filetype ==# 'json'  " json comments: https://stackoverflow.com/a/68403085/4970632
     syntax match jsonComment '^\s*\/\/.*$'
     highlight link jsonComment Comment
   endif
-  if &filetype ==# 'fortran'  " repair comments (ensure followed by space, skip c = value)
-    syn match fortranComment excludenl '^\s*[cC]\s\+=\@!.*$' contains=@spell,@fortranCommentGroup
+  if &filetype ==# 'fortran'  " repair comments (ensure space and skip c = value)
+    syntax match fortranComment excludenl '^\s*[cC]\s\+=\@!.*$' contains=@spell,@fortranCommentGroup
     highlight link fortranComment Comment
   endif
   if &filetype ==# 'python'  " fix syntax: https://stackoverflow.com/a/28114709/4970632
-    highlight BracelessIndent ctermfg=0 ctermbg=0 cterm=inverse
+    highlight BracelessIndent ctermfg=NONE ctermbg=NONE cterm=inverse
     if exists('*SetCellHighlighting') | call SetCellHighlighting() | endif | syntax sync minlines=100
-  endif
-  if &filetype ==# 'markdown'  " strikethrough: https://www.reddit.com/r/vim/comments/g631im/any_way_to_enable_true_markdown_strikethrough/
-    highlight MarkdownStrike cterm=strikethrough gui=strikethrough
-    call matchadd('MarkdownStrike', '<s>\zs.\{-}\ze</s>')
-    call matchadd('Conceal', '<s>\ze.\{-}</s>', 10, -1, {'conceal':''})
-    call matchadd('Conceal', '<s>.\{-}\zs</s>\ze', 10, -1, {'conceal':''})
   endif
   syntax match CommonShebang
     \ /^\%1l#!.*$/
@@ -230,13 +257,14 @@ function! syntax#update_highlights() abort
   let pairs = []  " highlight links
   call s:update_highlight('Normal', '', '', '')
   call s:update_highlight('LineNR', '', 'black', '')
-  call s:update_highlight('Folded', '', 'white', 'Bold')
+  call s:update_highlight('Folded', '', 'white', 'bold')
   call s:update_highlight('CursorLine', 'black', 0, '')
   call s:update_highlight('ColorColumn', 'gray', 0, '')
-  call s:update_highlight('DiffAdd', 'black', '', 'Bold')
+  call s:update_highlight('DiffAdd', 'black', '', 'bold')
   call s:update_highlight('DiffChange', 'black', '', '')
   call s:update_highlight('DiffDelete', '', 'black', '')
-  call s:update_highlight('DiffText', 0, 0, 'Inverse')
+  call s:update_highlight('DiffText', 0, 0, 'inverse')
+  call s:update_highlight('StrikeThrough', 0, 0, 'strikethrough')
   for group in ['Conceal', 'Pmenu', 'Terminal']
     call add(pairs, [group, 'Normal'])
   endfor

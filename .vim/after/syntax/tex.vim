@@ -21,17 +21,6 @@ syntax region texMatcherNM matchgroup=Delimiter
   \ start='{' skip='\\\|\[{}]' end="}"
   \ contains=@NoSpell,@texMatchNMGroup,texError
 
-" Conceal backslashes. Skips e.g. \cmd1\cmd2 but that is helpful for macros.
-" Note: Critical to make 'priority' (third argument, default 10) same as :hlsearch
-" priority (0) or matches are weird. Note :syntax match fails since concealed backslash
-" overwrites any existing matches. See: https://vi.stackexchange.com/q/5696/8084
-if !exists('b:conceal_backslash')
-  let id = matchadd('Conceal',
-    \ '\(%.*\|\\[a-zA-Z@]\+\|\\\)\@<!\zs\\\([a-zA-Z@]\+\)\@=',
-    \ 0, -1, {'conceal': ''})
-  let b:conceal_backslash = id
-endif
-
 " Enable syntax folding of comment blocks. Ignores empty and comment-character-only
 " lines when defining beginning and ends of folding regions. This is useful during
 " revisions or when using templates with huge commented-out instruction blocks.

@@ -55,6 +55,7 @@ silent! doautocmd CursorHold
 silent! doautocmd ConflictMarkerDetect BufReadPost
 silent! doautocmd conflict_marker_setup BufWinEnter
 call syntax#update_groups()
+call syntax#update_matches()
 call syntax#update_highlights()
 if s:closed <= 0 | exe 'silent! normal! zv' | endif
 for s:suffix in ['g', 's', 'S', '%']
