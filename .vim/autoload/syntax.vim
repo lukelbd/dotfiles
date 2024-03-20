@@ -145,12 +145,15 @@ endfunction
 function! syntax#update_lines(count, ...) abort
   if a:0 && a:1
     exe 'syntax sync fromstart'
+    echom 'Syntax sync: fromstart'
   elseif a:count  " input count
     exe 'syntax sync minlines=' . a:count . ' maxlines=0'
+    echom 'Syntax sync: minlines=' . a:count
   else  " sync from tag
     let item = tags#close_tag(line('w0'), 0, 0, 0)
     let nlines = max([0, get(item, 1, line('w0')) - line('.')])
     exe 'syntax sync minlines=' . nlines . ' maxlines=0'
+    echom 'Syntax sync: minlines=' . nlines
   endif
 endfunction
 

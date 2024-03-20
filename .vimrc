@@ -297,25 +297,27 @@ endfor
 " Helper function for repeat#set (easier than copy-pasting repeat#set calls)
 " Note: GUI vim raises error when combining <Plug> maps with <Cmd> so have to disable
 " repeat for operator-pending maps e.g. 'cgw' in case they trigger insert mode.
-function! s:repeat_head(mode) abort
-  return a:mode ==# 'o' ? v:operator : ''
-endfunction
-function! s:repeat_tail(mode) abort
-  return a:mode ==# 'o' && v:operator ==# 'c' ? "\<C-r>.\<Esc>" : ''
+function! s:repeat_op(name) abort
+  let feed = '"\<Esc>\<Cmd>let g:repeat_tick = b:changedtick\<CR>"'
+  let keys = v:operator . max([1, v:prevcount]) . "\<Plug>Repeat" . a:name
+  if v:operator ==# 'c'  " e.g. change
+    return keys . "\<Cmd>call feedkeys(getreg('.') . " . feed . ", 'n')\<CR>"
+  else  " e.g. delete
+    return keys . "\<Cmd>call feedkeys(" . feed . ", 'n')\<CR>"
+  endif
 endfunction
 function! s:repeat_map(mode, lhs, name, rhs) abort
   let [map, noremap] = [a:mode . 'map', a:mode . 'noremap <silent>']
-  let plug = '<Plug>' . a:name  " input mapping name
-  let head = '<sid>repeat_head(' . string(a:mode) . ')'
-  let tail = '<sid>repeat_tail(' . string(a:mode) . ')'
-  let iset = head . ' . "\<Plug>' . a:name . '" . ' . tail
+  let iset = a:mode ==# 'o' ? '<sid>repeat_op(' . string(a:name) . ')' : '"\<Plug>' . a:name . '"'
   let icmd = has('gui_running') ? a:mode ==? 'o' ? '' : ':<C-u>' : '<Cmd>'
   if empty(a:name)  " disable repetition (e.g. require user input)
     let repeat = empty(icmd) ? '' : icmd . 'call repeat#set("\<Ignore>")<CR>'
     exe noremap . ' ' . a:lhs . ' ' . a:rhs . repeat
   else
     let repeat = empty(icmd) ? '' : icmd . 'call repeat#set(' . iset . ', v:prevcount)<CR>'
-    exe noremap . ' ' . plug . ' ' . a:rhs . repeat | exe map . ' ' . a:lhs . ' ' . plug
+    exe noremap . ' <Plug>Repeat' . a:name . ' ' . a:rhs
+    exe noremap . ' <Plug>' . a:name . ' ' . a:rhs . repeat
+    exe map . ' ' . a:lhs . ' <Plug>' . a:name
   endif
 endfunction
 
