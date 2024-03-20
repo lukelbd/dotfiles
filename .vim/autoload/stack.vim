@@ -30,7 +30,7 @@ endfunction
 function! stack#show_stack(head) abort
   let [stack, idx; rest] = s:get_stack(a:head)
   let digits = len(string(len(stack)))
-  echom "Current '" . a:head . "' stack:"
+  redraw | echom "Current '" . a:head . "' stack:"
   for jdx in range(len(stack))
     let pad = idx == jdx ? '> ' : '  '
     let pad .= repeat(' ', digits - len(string(jdx)))
@@ -49,19 +49,18 @@ function! stack#show_item(head, name, ...) abort
   endif
   let prefix = toupper(a:head[0]) . a:head[1:] . ': '
   let suffix = a:0 > 1 ? ' (' . (a:1 + 1) . '/' . a:2 . ')' : ''
-  echom prefix . label . suffix
+  redraw | echom prefix . label . suffix
 endfunction
 
 " Update the requested buffer stack
 " Note: This is used for man/pydoc in shell.vim and window jumps in vimrc
-" Note: Use 1ms timer_start to prevent issue where echo hidden by buffer change
 function! stack#clear_stack(head) abort
   try
     call remove(g:, a:head . '_stack')
     call remove(g:, a:head . '_loc')
-    echom "Cleared '" . a:head . "' buffer stack"
+    redraw | echom "Cleared '" . a:head . "' buffer stack"
   catch
-    echohl WarningMsg
+    redraw | echohl WarningMsg
     echom "Error: Buffer stack '" . a:head . "' does not exist"
     echohl None
   endtry
@@ -81,7 +80,7 @@ function! stack#update_stack(head, scroll, ...) abort
   endif
   call s:set_stack(a:head, stack, jdx)
   if verbose && v:vim_did_enter && (verbose > 1 || jdx != idx || name != get(stack, idx, ''))
-    call timer_start(100, function('stack#show_item', [a:head, name, jdx, len(stack)]))
+    call stack#show_item(a:head, name, jdx, len(stack))
   endif
 endfunction
 
@@ -112,7 +111,7 @@ function! stack#push_stack(head, func, ...) abort
     let kdx = a:1 > 0 ? idx + 1 : a:1 < 0 ? idx - 1 : idx  " error condition
     if kdx < 0 || kdx >= len(stack)
       let direc = a:1 < 0 ? 'bottom' : 'top'
-      echohl WarningMsg
+      redraw | echohl WarningMsg
       echom 'Error: At ' . direc . ' of ' . a:head . ' stack'
       echohl None | return
     endif

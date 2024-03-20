@@ -137,7 +137,7 @@ endfunction
 
 " Push current location to top of jumplist
 " Warning: The zk/zj/[z/]z motions update jumplist, found out via trial and error
-" even though not documented in :help jump-motions
+" even though not in :help jump-motions. And note setpos() does not change jumplist
 " Note: This prevents resetting when navigating backwards and forwards through
 " jumplist or when navigating within paragraph of most recently set jump. Also remap
 " 'jumping' motions n/N/{/}/(/)/`/[[/]] by prepending :keepjumps to reduce entries.
@@ -164,11 +164,12 @@ function! s:range_keepjumps() abort  " used to update jumplist on CursorHold
 endfunction
 function! mark#update_jumps() abort
   let [keep1, keep2] = s:range_keepjumps()  " current cursor bounds
-  let [items, idx] = getjumplist()
-  let jline = line("''")  " line of previous jump
-  let jlines = empty(jline) || empty(items) ? [] : [jline]
-  call extend(jlines, empty(jlines) ? [] : [get(items, idx, items[-1])['lnum']])
-  if empty(filter(jlines, {idx, val -> val >= keep1 && val <= keep2}))
+  let [jline, jlines] = [line("''"), []]  " line of previous jump
+  let [items, iloc] = getjumplist()
+  if !empty(items) && !empty(jline)
+    call extend(jlines, [jline, get(items, iloc, items[-1])['lnum']])
+  endif
+  if empty(filter(jlines, {iloc, val -> val >= keep1 && val <= keep2}))
     call feedkeys("\<Cmd>normal! m'\<CR>", 'n')
   endif
 endfunction

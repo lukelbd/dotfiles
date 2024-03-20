@@ -13,10 +13,10 @@
 function! git#command_setup() abort
   command! -buffer
     \ -bar -bang -nargs=? -range=-1 -complete=customlist,fugitive#Complete
-    \ G call git#run_command(1, <line1>, <count>, +'<range>', <bang>0, '<mods>', <q-args>)
+    \ G call git#run_command(0, <line1>, <count>, +'<range>', <bang>0, '<mods>', <q-args>)
   command! -buffer
     \ -bar -bang -nargs=? -range=-1 -complete=customlist,fugitive#Complete
-    \ Git call git#run_command(1, <line1>, <count>, +"<range>", <bang>0, "<mods>", <q-args>)
+    \ Git call git#run_command(0, <line1>, <count>, +"<range>", <bang>0, "<mods>", <q-args>)
   command! -buffer
     \ -bar -bang -range=-1 -nargs=* -complete=customlist,fugitive#EditComplete
     \ Gtabedit exe fugitive#Open(<q-args> =~# '^+' ? 'edit' : 'Drop', <bang>0, '<mods>', <q-args>)
@@ -45,16 +45,17 @@ let s:git_aliases = {
   \ 'tree': 'log --stat ' . s:flags1 . ' ' . s:flags2,
   \ 'trunk': 'log --name-status ' . s:flags1 . ' ' . s:flags2,
 \ }
-function! s:echo_command(args, empty, ...) abort
-  if !a:empty
-    echom 'Git ' . a:args
-  else  " empty message
-    echohl WarningMsg
-    echom "Warning: 'Git " . a:args . "' was empty"
+function! s:echo_command(args, msg) abort
+  let cmd = 'Git ' . a:args
+  if empty(a:msg)
+    redraw | echom cmd
+  else  " warning message
+    redraw | echohl WarningMsg
+    echom 'Warning: ' . (type(a:msg) ? a:msg : string(cmd) . ' was empty')
     echohl None
   endif
 endfunction
-function! git#run_command(echo, line1, count, range, bang, mods, args, ...) abort range
+function! git#run_command(msg, line1, count, range, bang, mods, args, ...) abort range
   " Parse input arguments
   if empty(FugitiveGitDir())
     let args = [a:line1, a:count, a:range, a:bang, a:mods, ''] + a:000
@@ -74,16 +75,16 @@ function! git#run_command(echo, line1, count, range, bang, mods, args, ...) abor
   let opts = substitute(opts, '--color\>', '', 'g')  " fugitive uses its own colors
   let opts = [a:line1, a:count, a:range, a:bang, mods, opts] + a:000
   silent let cmd = call('fugitive#Command', opts)
-  if !user && bnum == bufnr() && cmd !~# '\<v\?split\>'
-    echo 'Git ' . a:args . (quiet ? ' ' : "\n") | exe cmd
-  else
-    silent exe cmd | let empty = line('$') <= 1
-    if !user
-      setlocal bufhidden=delete | if empty | call window#close_pane(1) | endif
-    endif
-    if a:echo  " ensure message shows
-      call timer_start(500, function('s:echo_command', [a:args, empty]))
-    endif
+  let pane = user || bnum != bufnr() || cmd =~# '\<v\?split\>'
+  if pane  " pane generated
+    silent exe cmd | let error = line('$') <= 1
+  else  " no pane generated
+    redraw | echo 'Git ' . a:args . (quiet ? ' ' : "\n") | exe cmd | let error = 0
+  endif
+  if pane && !user && error
+    call window#close_pane(1)
+  elseif pane && !user
+    setlocal bufhidden=delete
   endif
   " Configure resulting window
   if bnum == bufnr()  " pane not opened
@@ -99,8 +100,11 @@ function! git#run_command(echo, line1, count, range, bang, mods, args, ...) abor
   if a:args =~# '\s\+%' && bnum != bufnr()  " open single difference fold
     call feedkeys('zv', 'n')
   endif
-  if empty(name) && bnum != bufnr()  " open change statistics
-    global/^\(Staged\|Unstaged\)\>/normal =zxgg
+  if empty(name) && !empty(a:args) && bnum != bufnr()  " open change statistics
+    silent global/^\(Staged\|Unstaged\)\>/normal =zxgg
+  endif
+  if pane  " echo error or command message
+    call s:echo_command(a:args, empty(a:msg) ? error : a:msg)
   endif
 endfunction
 " For special range handling
@@ -111,9 +115,9 @@ function! git#run_map(range, ...) abort range
     let offset = 0 | let [line1, line2] = sort([a:firstline, a:lastline], 'n')
   endif
   if a:range || line1 != line2
-    call call('git#run_command', [1, line1, line2, a:range] + a:000)
+    call call('git#run_command', [0, line1, line2, a:range] + a:000)
   else
-    call call('git#run_command', [1, line1, -1, a:range] + a:000)
+    call call('git#run_command', [0, line1, -1, a:range] + a:000)
   endif
   call feedkeys(offset ? abs(offset) . (offset > 0 ? 'j' : 'k') : '', 'n')
 endfunction
@@ -127,30 +131,13 @@ endfunction
 " general do not apply resize to setup functions since could be panel or full-screen.
 " Note: This prevents annoying <press enter to continue> message showing up when
 " committing with no staged changes, issues a warning instead of showing the message.
-function! git#safe_commit(editor, ...) abort
-  let cmd = a:0 ? a:1 : 'commit'  " commit version
-  let args = ['diff', '--staged', '--quiet']
-  let result = FugitiveExecute(args)  " see: https://stackoverflow.com/a/1587877/4970632
-  let status = get(result, 'exit_status', 1)
-  if status == 0  " exits 0 if there are no staged changes
-    echohl WarningMsg
-    echom 'Error: No staged changes'
-    echohl None
-    if !a:editor | return | endif
-    return git#run_command(0, line('.'), -1, 0, 0, '', 'status')
-  endif
-  if !a:editor
-    let msg = utils#input_default('Git ' . cmd, '', '')
-    while !empty(msg) && len(msg) > 50  " see .bashrc git()
-      redraw | echohl WarningMsg
-      echom 'Error: Message has length ' . len(msg) . '. Must be less than or equal to 50.'
-      echohl None
-      let msg = utils#input_default('Git ' . cmd, msg[:49], '')
-    endwhile
-    if empty(msg) | return | endif
-    let cmd .= ' --message ' . shellescape(msg)
-  endif
-  call git#run_command(1, line('.'), -1, 0, 0, '', cmd)
+function! git#complete_msg(lead, line, cursor, ...) abort
+  let cnt = a:0 ? a:1 : 50  " default count
+  let result = FugitiveExecute(['log', '-n', string(cnt), '--pretty=%B'])
+  let lead = string('^' . escape(a:lead, '[]\/.*$~'))
+  let opts = filter(copy(result.stdout), 'len(v:val)')
+  let opts = filter(copy(opts), 'v:val =~# ' . lead)
+  return map(opts, 'substitute(v:val, "\s\+", "", "g")')
 endfunction
 function! git#safe_edit() abort
   let type = get(b:, 'fugitive_type', '')
@@ -159,8 +146,38 @@ function! git#safe_edit() abort
   elseif type ==# 'blob'  " return to file
     call git#safe_return() | normal! zv
   else  " unknown
-    echohl ErrorMsg | echom 'Error: Not in fugitive blob' | echohl None
+    redraw | echohl ErrorMsg | echom 'Error: Not in fugitive blob' | echohl None
   endif
+endfunction
+function! git#safe_commit(editor, ...) abort
+  let cmd = a:0 ? a:1 : 'commit'  " commit version
+  let flag = cmd =~# '^stash' ? [] : ['--staged']
+  let args = ['diff', '--quiet']  " see: https://stackoverflow.com/a/1587877/4970632
+  let result = FugitiveExecute(args + flag)
+  let status = get(result, 'exit_status', 1)
+  if status == 0 && cmd !~# '^oops'  " exits 0 if there are no staged changes
+    let msg = empty(flag) ? 'No unstaged changes' : 'No staged changes'
+    if !a:editor
+      redraw | echohl WarningMsg
+      echom 'Warning: ' . msg
+      echohl None | return
+    endif
+    return git#run_command(msg, line('.'), -1, 0, 0, '', 'status')
+  endif
+  if !a:editor
+    let default = get(git#complete_msg('', '', '', 1), 0, '')
+    let opts = FugitiveExecute(['log', '-n', '50', '--pretty=%B'])
+    let msg = utils#input_default('Git ' . cmd, default, 'git#complete_msg')
+    while !empty(msg) && len(msg) > 50  " see .bashrc git()
+      redraw | echohl WarningMsg
+      echom 'Error: Message has length ' . len(msg) . '. Must be less than or equal to 50.'
+      echohl None
+      let msg = utils#input_default('Git ' . cmd, msg[:49], 'git#complete_msg')
+    endwhile
+    if empty(msg) | return | endif
+    let cmd .= ' --message ' . shellescape(msg)
+  endif
+  call git#run_command(0, line('.'), -1, 0, 0, '', cmd)
 endfunction
 
 " Git panel window setup
@@ -231,7 +248,7 @@ function! git#hunk_show() abort
   GitGutterPreviewHunk
   silent wincmd j
   call window#setup_preview()
-  call timer_start(10, function('execute', ["echom 'Hunk difference'"]))
+  redraw | echom 'Hunk difference'
 endfunction
 function! git#hunk_jump(count, stage) abort
   call s:hunk_process()
@@ -280,7 +297,7 @@ function! git#hunk_action(stage) abort range
     call add(ranges, join(uniq(range), '-'))
   endfor
   if !empty(ranges)
-    call s:hunk_process()
+    call s:hunk_process() | redraw
     echom action . ' hunks: ' . join(ranges, ', ')
   endif
 endfunction

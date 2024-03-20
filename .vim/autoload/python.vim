@@ -298,30 +298,56 @@ function! python#doc_search() abort
     \ }))
 endfunction
 
-" Split docstrings over multiple lines
-" Note: This is used to adjust vim-pydocstring without using complicated template files.
-" Use 'timer_start' to avoid race condition with plugin job (see ftplugin/python.vim).
-" Note: This ensures correct indentation after line break. Below shows alternative
-" approach using 'gnd' and auto-indent by adding newline to @" match via @= and using
-" indent-preserving paste ]p. See https://stackoverflow.com/a/2783670/4970632
+" Insert pydocstring 'doq' docstrings and convert from single-line to multi-line
+" Note: This ensures correct indentation after line break. Could also use doq templates
+" or below alternative using 'gnd' and auto-indent by adding newline to @" match via
+" @= then indent-preserving ]p paste. See https://stackoverflow.com/a/2783670/4970632
 " exe 'global/' . regex . '/normal! gnd"="\n" . @"' . '\<CR>' . ']p'
-function! python#split_docstrings(...) abort
-  let regex = '["'']\{3}\n\@!\zs.*$'
-  let cmd = "normal! gnc\<CR>\<C-r>\""
-  exe 'global/' . regex . '/' . cmd
-  let regex = '\(\(^\|\_s\)[frub]*\)\@<!'
-  let regex = regex . '["'']\{3}\s*$'
-  exe 'global/' . regex . '/' . cmd
-endfunction
+let s:regex_doc = '["'']\{3}'
 function! python#next_docstring(count, ...) abort
   let flags = a:count >= 0 ? 'w' : 'wb'
   if a:0 && a:1
     let head = '^\(\|\t\| \{' . &tabstop . '\}\)'
-  else
+  else  " include comments
     let head = '\(' . comment#get_regex() . '.*\)\@<!'
   endif
-  let regex = head . '[frub]*["'']\{3}\_s*\zs'
+  let regex = head . '[frub]*' . s:regex_doc . '\_s*\zs'
   for _ in range(abs(a:count))
     call search(regex, flags, 0, 0, "!tags#get_inside(-1, 'Constant')")
   endfor
+endfunction
+function! python#insert_docstring() abort
+  let winview = winsaveview()
+  let itag = tags#close_tag(line('.') + 1)  " preceding tags
+  if empty(itag) || itag[2] !~# '[mfc]'
+    echohl ErrorMsg
+    echom 'Error: Cursor is not inside class or function'
+    echohl None
+    call winrestview(winview) | return
+  endif
+  let tline = str2nr(itag[1])  " definition line
+  call cursor(tline, 1)
+  let regex = escape(itag[0], '[]\/.*$~') . '('
+  let line1 = search(regex, 'e', tline)
+  let line2 = searchpair('(', '', ')', 'W')  " returns end (note 'c' and '):' fail)
+  if !line1 || !line2
+    echohl ErrorMsg
+    echom 'Error: Invalid object ' . string(itag[0]) . ' or position not found'
+    echohl None
+    call winrestview(winview) | return
+  endif
+  let dline = line2 + 1
+  call cursor(dline, col([dline, '$']))
+  silent let result = succinct#get_delims(s:regex_doc, s:regex_doc)
+  if !empty(get(result, 0, 0))
+    let [_, _, dline1, _, dline2, _] = result
+    call deletebufline(bufnr(), dline1, dline2)
+  endif
+  call cursor(line1, col([line1, '$']))
+  call pydocstring#insert('', 1, line1, line2)
+  sleep 500m | call cursor(dline, 1)
+  let doc0 = search(s:regex_doc, 'ce')
+  if doc0 && col('.') < col('$') - 1  " format if necessary
+    exe "normal! a\<CR>\<Esc>=="
+  endif
 endfunction

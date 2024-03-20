@@ -1,20 +1,12 @@
 "-----------------------------------------------------------------------------"
 " Utilities for switching stuff on and off
 "-----------------------------------------------------------------------------"
-" Helper functions
-" Toggle most recent :mes and echo (but optionally suppress) arbitrary toggles
-" Note: For some reason even though :help :mes claims count N shows the N most recent
-" message, for some reason using 1 shows empty line and 2 shows previous plus newline.
+" Helper function
 function! s:echo_state(prefix, toggle, ...)
   if !a:0 || !a:1
     let state = a:toggle ? 'enabled' : 'disabled'
     echom toupper(a:prefix[0]) . a:prefix[1:] . ' ' . state . '.'
   endif
-endfunction
-function! switch#message(...) abort
-  let state = get(b:, 'show_message', 1)
-  let b:show_message = a:0 > 0 ? a:1 : 1 - state
-  echo b:show_message ? join(split(execute('2mes'), "\n")[-1:], '') : ''
 endfunction
 
 " Toggle ALE syntax checking
@@ -78,10 +70,10 @@ function! switch#conceal(...) abort
   call call('s:echo_state', ['Conceal mode', toggle, suppress])
 endfunction
 
-" Eliminates special chars during copy
+" Tgogle special characters and columns on-off
 " Note: Hide switch message during autoload
 function! switch#copy(...) abort
-  let keys = ['list', 'number', 'scrolloff', 'relativenumber', 'signcolumn']
+  let keys = ['list', 'number', 'scrolloff', 'relativenumber', 'signcolumn', 'foldcolumn']
   let state = empty(filter(copy(keys), "eval('&l:' . v:val)"))
   let toggle = a:0 > 0 ? a:1 : 1 - state
   let suppress = a:0 > 1 ? a:2 : 0
@@ -233,21 +225,8 @@ function! switch#lsp(...) abort
   call call('s:echo_state', ['lsp integration', toggle, suppress])
 endfunction
 
-" Toggle spell check on and off
-function! switch#spellcheck(...) abort
-  let state = &l:spell
-  let toggle = a:0 > 0 ? a:1 : 1 - state
-  let suppress = a:0 > 1 ? a:2 : 0
-  if state == toggle
-    return
-  else
-    let &l:spell = toggle
-  endif
-  call call('s:echo_state', ['Spell check', toggle, suppress])
-endfunction
-
 " Toggle between UK and US English
-function! switch#spelllang(...) abort
+function! switch#lang(...) abort
   let state = &l:spelllang ==# 'en_gb'
   let toggle = a:0 > 0 ? a:1 : 1 - state
   let suppress = a:0 > 1 ? a:2 : 0
@@ -261,9 +240,78 @@ function! switch#spelllang(...) abort
   call call('s:echo_state', ['UK English', toggle, suppress])
 endfunction
 
+" Toggle most recent :mes and echo (but optionally suppress) arbitrary toggles
+" Note: For some reason even though :help :mes claims count N shows the N most recent
+" message, for some reason using 1 shows empty line and 2 shows previous plus newline.
+function! switch#message(...) abort
+  let state = get(b:, 'show_message', 1)
+  let toggle = a:0 > 0 ? a:1 : 1 - state
+  if toggle  " show message
+    let recent = split(execute('2mes'), "\n")
+    echo join(recent[-1:], '')
+  else  " dad joke
+    let url = 'curl https://icanhazdadjoke.com/'
+    echo system(url)
+  endif
+  let b:show_message = toggle
+endfunction
+
+" Toggle temporary paste mode
+" Note: Removed automatically when insert mode finishes
+function! s:paste_restore() abort
+  if exists('s:paste_options')
+    let [&l:paste, &l:mouse] = s:paste_options
+    echom 'Paste mode disabled'
+    exe 'unlet s:paste_options'
+  endif
+endfunction
+function! switch#paste() abort
+  echom 'Paste mode enabled.'
+  let s:paste_options = [&l:paste, &l:mouse]
+  setlocal paste mouse=
+  augroup paste_mode
+    au!
+    au InsertLeave * call s:paste_restore() | autocmd! paste_mode
+  augroup END | return ''
+endfunction
+
+" Toggle temporary conceal reveal
+" Note: This is similar to switch#conceal() but auto-restores
+function! s:reveal_restore() abort
+  if exists('s:reveal_option')
+    let &l:conceallevel = s:reveal_option
+    exe 'unlet s:reveal_option'
+  endif
+endfunction
+function! switch#reveal() abort
+  if exists('s:reveal_option')
+    doautocmd reveal_mode TextChanged
+  else
+    let s:reveal_option = &l:conceallevel
+    setlocal conceallevel=0  " incsearch only
+    augroup reveal_mode
+      au!
+      au TextChanged,InsertEnter,InsertLeave * call s:reveal_restore() | autocmd! reveal_mode
+    augroup END
+  endif | return ''
+endfunction
+
+" Toggle spell check on and off
+function! switch#spell(...) abort
+  let state = &l:spell
+  let toggle = a:0 > 0 ? a:1 : 1 - state
+  let suppress = a:0 > 1 ? a:2 : 0
+  if state == toggle
+    return
+  else
+    let &l:spell = toggle
+  endif
+  call call('s:echo_state', ['Spell check', toggle, suppress])
+endfunction
+
 " Toggle tags on and off
 function! switch#tags(...) abort
-  let names = ['tags_by_line', 'tags_by_name', 'tags_scope_by_line', 'tags_top_by_line', 'tags_update_time']
+  let names = ['tags_by_line', 'tags_by_name', 'tags_update_time']
   let state = get(g:, 'gutentags_enabled', 0) && !empty(tagfiles())
   let toggle = a:0 > 0 ? a:1 : 1 - state
   let suppress = a:0 > 1 ? a:2 : 0

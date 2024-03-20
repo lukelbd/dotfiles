@@ -143,7 +143,7 @@ endfunction
 let s:regex_levels = [
   \ ['python', '^class\>', '', 1],
   \ ['fortran', '^\s*\(module\|program\)\>', '', 1],
-  \ ['fugitive', '^\(Unstaged\|Staged\)\>', '', 1],
+  \ ['fugitive', '^\(Staged\|Unstaged\|Unpushed\)\>', '', 1],
   \ ['tex', '^\s*\\begin{document}', '', 1],
   \ ['tex', '^\s*\\begin{frame}', '^\s*\\begin{block}', 2],
   \ ['tex', '^\s*\\\(sub\)*section\>', '^\s*\\begin{frame}', 2],

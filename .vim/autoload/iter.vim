@@ -27,19 +27,17 @@ function! iter#complete_popup(map, ...) abort
   return state && pumvisible() ? map1 : pumvisible() ? map2 : map3
 endfunction
 function! iter#complete_cmdline(map, ...) abort
-  if a:0 && a:1  " e.g. tab command
+  let state = get(b:, 'complete_state', 0)  " tabbed through entries
+  if a:0 && a:1 || !state && !wildmenumode()
     let [keys1, keys2] = ['', a:map]
+    let b:complete_state = state
   else  " e.g. cursor motions
     let [pos, line] = [getcmdpos(), getcmdline()]  " pos 1 is string index 0
-    let state = get(b:, 'complete_state', 0)
-    let head = "\<C-c>\<Cmd>redraw\<CR>:" . line
-    let tail = pos >= len(line) && a:map ==# "\<Right>" ? "\<Tab>" : ''
-    let keys1 = state ? head . a:map : a:map
-    let keys2 = state ? tail : ''  " possibly re-trigger complete
+    let keys1 = "\<C-c>\<Cmd>redraw\<CR>:" . line . a:map
+    let keys2 = pos >= len(line) && a:map ==# "\<Right>" ? "\<Tab>" : ''
+    let b:complete_state = 0  " manually disabled
   endif
-  call feedkeys(keys1, 'n')
-  call feedkeys(keys2, 'tn')
-  let b:complete_state = a:0 && a:1 | return ''
+  call feedkeys(keys1, 'n') | call feedkeys(keys2, 'tn') | return ''
 endfunction
 
 " Navigate conflict markers cyclically
@@ -101,9 +99,16 @@ function! iter#next_loc(count, list, ...) abort
   endif
 endfunction
 
-" Navigate search matches without editing jumplist
-" Note: This implements indexed-search directional consistency and avoids
-" adding to the jumplist to prevent overpopulation
+" Navigate matches without editing jumplist and words with conservative iskeyword
+" Note: This implements indexed-search directional consistency
+" and avoids adding to the jumplist to prevent overpopulation
+function! iter#next_motion(motion, ...) abort
+  let cmd = 'setlocal iskeyword=' . &l:iskeyword
+  setlocal iskeyword=@,48-57,192-255
+  let action = a:0 ? a:1 ==# 'c' ? "\<Esc>c" : a:1 : ''
+  echom 'Go!!! ' . action . v:count1 . a:motion
+  call feedkeys(action . v:count1 . a:motion . "\<Cmd>" . cmd . "\<CR>", 'n')
+endfunction
 function! iter#next_match(count) abort
   let forward = get(g:, 'indexed_search_n_always_searches_forward', 0)  " default
   if forward && !v:searchforward

@@ -97,8 +97,8 @@ function! syntax#next_scheme(arg) abort
   silent call syntax#update_matches()  " override vim comments
   silent call syntax#update_highlights()  " override highlight colors
   silent! doautocmd BufEnter
-  call timer_start(1, 's:echo_scheme')
   let g:colors_name = name  " in case differs
+  redraw | echom 'Colorscheme: ' . name
 endfunction
 
 " Show syntax highlight groups and info
@@ -150,7 +150,7 @@ function! syntax#update_lines(count, ...) abort
     exe 'syntax sync minlines=' . a:count . ' maxlines=0'
     echom 'Syntax sync: minlines=' . a:count
   else  " sync from tag
-    let item = tags#close_tag(line('w0'), 0, 0, 0)
+    let item = tags#close_tag(line('w0'))
     let nlines = max([0, get(item, 1, line('w0')) - line('.')])
     exe 'syntax sync minlines=' . nlines . ' maxlines=0'
     echom 'Syntax sync: minlines=' . nlines

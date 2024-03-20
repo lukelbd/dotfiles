@@ -95,54 +95,35 @@ function! edit#lang_map() abort
   return "\<C-^>"
 endfunction
 
-" Set up temporary paste mode
-" Note: Removed automatically when insert mode is abandoned
-function! edit#paste_mode() abort
-  let s:paste = &paste
-  let s:mouse = &mouse
-  set paste
-  set mouse=
-  echom 'Paste mode enabled.'
-  augroup insert_paste
-    au!
-    au InsertLeave *
-      \ if exists('s:paste') |
-      \   let &paste = s:paste |
-      \   let &mouse = s:mouse |
-      \   unlet s:paste |
-      \   unlet s:mouse |
-      \   echom 'Paste mode disabled' |
-      \ endif |
-      \ autocmd! insert_paste
-  augroup END | return ''
-endfunction
-
 " Search replace without history
 " Note: Substitute 'n' would give exact count but then have to repeat twice, too slow
 " Note: Critical to replace reverse line-by-line in case substitution has newlines
-function! edit#replace_regex(msg, ...) range abort
+function! edit#sub_replace(msg, ...) range abort
   let nlines = 0  " pattern count
   let search = @/  " hlsearch pattern
   let winview = winsaveview()
+  let pairs = copy(a:000)
   for line in range(a:lastline, a:firstline, -1)
     for idx in range(0, a:0 - 2, 2)
-      let [regex, string] = a:000[idx:idx + 1]
-      let cmd = line . 's@' . regex . '@' . string . '@gel'
-      let nlines += !empty(execute('keepjumps ' . cmd))  " or exact count with 'n'?
-      call histdel('/', -1)
+      let jdx = idx + 1  " replacement index
+      let sub = type(pairs[idx]) == 2 ? pairs[idx]() : pairs[idx]
+      let rep = jdx >= a:0 ? '' : type(pairs[jdx]) == 2 ? pairs[jdx]() : pairs[jdx]
+      let cmd = line . 's@' . sub . '@' . rep . '@gel'
+      let nlines += !empty(execute('keepjumps ' . cmd))  " or exact with 'n'?
+      call histdel('/', -1)  " preserve history
     endfor
   endfor
   call edit#echo_range(a:msg, nlines)
   let @/ = search
   call winrestview(winview)
 endfunction
+" For <expr> map accepting motion
+function! edit#sub_replace_expr(...) abort
+  return utils#motion_func('edit#sub_replace', a:000)
+endfunction
 " Echo the number of matches
 function! edit#echo_range(msg, num) range abort
   echo a:msg . (a:msg =~# '\s' ? ' on' : '') . ' ' . a:num . ' line(s)'
-endfunction
-" For <expr> map accepting motion
-function! edit#replace_regex_expr(...) abort
-  return utils#motion_func('edit#replace_regex', a:000)
 endfunction
 
 " Reverse or retab or sort the input lines

@@ -40,7 +40,7 @@ function! vim#config_refresh(bang, ...) abort
   filetype detect
   doautocmd FileType
   runtime after/common.vim
-  if closed <= 0 | exe 'silent! normal! zv' | endif
+  if closed <= 0 | exe 'silent! normal! zv' | endif | redraw
   echom 'Loaded: ' . join(map(loaded, "fnamemodify(v:val, ':~')[2:]"), ', ') . '.'
   let g:refresh = localtime()
 endfunction
@@ -109,6 +109,7 @@ function! vim#setup_cmdwin() abort
   nnoremap <buffer> <expr> / (line('.') == line('$') ? '<Up>' : '' ) . '<C-c><CR>'
   nnoremap <buffer> <Plug>ExecuteFile1 <C-c><CR>
   inoremap <buffer> <expr> <CR> "\<C-m>"
+  nnoremap <buffer> <C-s> <Nop>
 endfunction
 
 " Source file, lines, or motion

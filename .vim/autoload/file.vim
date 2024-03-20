@@ -10,7 +10,7 @@ let s:new_file = '[new file]'  " fzf entry for requesting new file
 function! file#echo_path(head, ...) abort
   let path = expand(a:0 ? a:1 : '%')
   let path = exists('*RelativePath') ? RelativePath(path) : fnamemodify(path, ':p:~:.')
-  echom '' . substitute(a:head, '^\(\a\)\(\a*\)$', '\u\1\l\2', '') . ': ' . path
+  redraw | echom '' . substitute(a:head, '^\(\a\)\(\a*\)$', '\u\1\l\2', '') . ': ' . path
 endfunction
 function! file#format_dir(path, ...) abort
   let base = fnamemodify(a:path, ':p:~:.')  " note do not use RelativePath
@@ -214,6 +214,7 @@ endfunction
 " Warning: The default ':tab drop' seems to jump to the last tab on failure and
 " also takes forever. Also have run into problems with it on some vim versions.
 function! file#open_drop(...) abort
+  let current = expand('%:p')
   if a:0 && !type(a:1)
     let [quiet, paths] = [a:1, a:000[1:]]
   else
@@ -221,10 +222,10 @@ function! file#open_drop(...) abort
   endif
   for path in paths
     let nrs = []  " tab and window number
-    let abspath = fnamemodify(path, ':p')
+    let abs = fnamemodify(path, ':p')
     for tnr in range(1, tabpagenr('$'))  " iterate through each tab
       for bnr in tabpagebuflist(tnr)
-        if abspath ==# expand('#' . bnr . ':p')
+        if abs ==# expand('#' . bnr . ':p')
           let wnr = bufwinnr(bnr)
           let nrs = empty(nrs) ? [tnr, wnr] : nrs  " prefer first match
         endif
@@ -235,14 +236,14 @@ function! file#open_drop(...) abort
     let fugitive = bufname() =~# '^fugitive:'
     call stack#update_tabs()  " update before leaving
     if !empty(nrs)
-      exe nrs[0] . 'tabnext' | exe nrs[1] . 'wincmd w'
+      silent exe nrs[0] . 'tabnext' | silent exe nrs[1] . 'wincmd w'
     elseif !blank && !panel && !fugitive
-      exe 'tabnew ' . fnameescape(path)
+      silent exe 'tabnew ' . fnameescape(path)
     else  " create new tab
       call feedkeys("\<Cmd>silent edit " . path . "\<CR>", 'n')
     end
-    if !quiet && !blank && !panel && !fugitive && abspath !=# expand('%:p')
-      call timer_start(1, function('file#echo_path', ['path', path]))
+    if !quiet && !blank && !panel && !fugitive && abs !=# current
+      call file#echo_path('path', path)
     endif
   endfor
 endfunction

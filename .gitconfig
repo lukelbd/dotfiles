@@ -74,18 +74,18 @@
 # 'search':
 #   Search entire histry for given regex.
 #   See: https://stackoverflow.com/a/2929502/4970632
-# 'set':
-#   Set upstream branch. Same as 'git branch -u'.
 # 'stat':
 #   Show arbitrary difference stats.
 # 'staged':
 #   Show staged difference stats.
 # 'stashed':
-#   Shows stashed difference stats.
+#   Shows stash N stats relative to its parent (stash positive).
+# 'stored':
+#   Show stash N stats relative to HEAD (stash positive).
 # 'stashes':
 #   List all git stashes.
-# 'stored':
-#   Show stashed pop difference.
+# 'stream':
+#   Checkout master and pull upstream branch.
 # 'tags':
 #   List all git tags.
 # 'top':
@@ -98,7 +98,7 @@
 #   Unset upstream branch. Needed after you change the name of a local branch
 #   with git branch -m name because git tracks the old remote branch name
 # 'upstream':
-#   Checkout master and pull upstream branch.
+#   Set upstream branch. Same as 'git branch -u'.
 # 'vim':
 #   List the vim processes running inside directory
 # 'wtf':
@@ -141,21 +141,22 @@
 	remove   = "!git-remove \"$@\""
 	reveal   = "!git stash show --name-status"
 	root     = rev-parse --show-toplevel
+	save     = stash save
 	search   = "!f() { git grep \"$@\" $(git rev-list --all --abbrev-commit); }; f"
-	set      = branch --set-upstream-to
 	stat     = diff --stat=80
 	staged   = diff --stat=80 --staged
-	stashed  = diff stash@{0}^ stash@{0} --stat=80
+	stashed  = "!f() { git diff stash@{${1:-0}}^ stash@{${1:-0}} --stat=80 2>/dev/null; }; f"
+	stored   = "!f() { git diff HEAD stash@{${1:-0}} --stat=80 2>/dev/null; }; f"
 	stashes  = stash list
-	stored   = diff HEAD stash@{0} --stat=80
 	status1  = "!git head1 2>/dev/null && git status --short"
 	status2  = "!git head2 2>/dev/null && git stash show --name-status 2>/dev/null"
+	stream   = "!git checkout master && pull upstream master"
 	tags     = tag --list
 	top      = rev-parse --show-toplevel
 	tree     = log --graph --abbrev-commit --date=relative --branches --stat --decorate --color
 	trunk    = log --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color
 	unset    = branch --unset-upstream
-	upstream = "!git checkout master && pull upstream master"
+	upstream = branch --set-upstream-to
 	vim      = "!git-vim \"$@\""
 	wtf      = "!git-wtf \"$@\""
 [blame]
@@ -198,7 +199,7 @@
 	status = false
 	status1 = false
 	status2 = false
-	stored = false
+	saved = false
 	tag = false
 [push]
 	default = upstream

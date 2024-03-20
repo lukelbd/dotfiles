@@ -73,8 +73,6 @@ endfunction
 " custom '~/.ignore' file (e.g. in case want to search a .vim/plugged folder).
 " Note: Native commands include final !a:bang argument toggling fullscreen but we
 " use a:bang to indicate whether to search current buffer or global open buffers.
-" Note: Use 1ms 'timer_start' delay to prevent issue where echom is hidden by fzf
-" panel creation delayed function calls: https://vi.stackexchange.com/a/27032/8084
 " Fzf matches paths: https://github.com/junegunn/fzf.vim/issues/346
 " Ag ripgrep flags: https://github.com/junegunn/fzf.vim/issues/921#issuecomment-1577879849
 " Ag ignore file: https://github.com/ggreer/the_silver_searcher/issues/1097
@@ -88,7 +86,7 @@ function! grep#call_ag(global, level, ...) abort
   let [regex, paths, extra] = call('s:parse_grep', [a:global, a:level] + a:000)
   let opts = fzf#vim#with_preview()
   call fzf#vim#ag_raw(join([flags, extra, '--', regex, paths], ' '), opts, 0)  " 0 is no fullscreen
-  call timer_start(10, function('s:echo_grep', [regex]))
+  redraw | echom 'Grep ' . regex
 endfunction
 function! grep#call_rg(global, level, ...) abort
   let flags = '--hidden --ignore-file ~/.wildignore'
@@ -98,7 +96,7 @@ function! grep#call_rg(global, level, ...) abort
   let opts = fzf#vim#with_preview()
   let head = 'rg --column --line-number --no-heading --color=always'
   call fzf#vim#grep(join([head, flags, '--', regex, paths], ' '), opts, 0)  " 0 is no fullscreen
-  call timer_start(10, function('s:echo_grep', [regex]))
+  redraw | echom 'Grep ' . regex
 endfunction
 
 " Call Rg or Ag from mapping (see also file.vim)

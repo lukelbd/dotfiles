@@ -100,22 +100,22 @@ function! utils#input_complete(lead, line, cursor)
     endtry
     if char ==# "\<Esc>" || char ==# "\<C-c>"  " cancellation
       let opts = ['']
-      call feedkeys("\<CR>", 't')
+      call feedkeys("\<CR>", 'nt')
     elseif char ==# "\<CR>"  " confirm default
       let opts = ['']
-      call feedkeys(default . "\<CR>", 't')
+      call feedkeys(default . "\<CR>", 'nt')
     elseif char ==# "\<Tab>" || char ==# "\<F2>"  " expand default
       let opts = force ? [''] : [default]
-      call feedkeys(force ? default . "\<CR>" : '', 't')
+      call feedkeys(force ? default . "\<CR>" : '', 'nt')
     elseif char ==# "\<PasteStart>"  " clipboard paste
-      let opts = [''] | call feedkeys(char, 'it')
-      call feedkeys(force ? "\<CR>" : '', 't')
+      let opts = [''] | call feedkeys(char, 'int')
+      call feedkeys(force ? "\<CR>" : '', 'nt')
     elseif char !~# '^\p\+$'  " non-printables and multi-byte escapes e.g. \<BS>
       let opts = force ? [char] : ['']
-      call feedkeys(force ? "\<CR>" : '', 'it')
+      call feedkeys(force ? "\<CR>" : '', 'int')
     else  " printable input characters
       let opts = force ? [''] : [char]
-      call feedkeys(force ? char . "\<CR>" : '', 't')
+      call feedkeys(force ? char . "\<CR>" : '', 'nt')
     endif
   endif
   return opts
@@ -168,6 +168,35 @@ function! utils#operator_func(type) range abort
   let [line1, line2] = sort([line1, line2], 'n')
   exe line1 . ',' . line2 . 'call ' . s:operator_func
   return ''
+endfunction
+
+" Generate repeatable mappings for arbitrary modes
+" Note: This supports arbitrary operator-pending modifications, e.g. text changes
+" that prompt for user input, like vim-tags utility. Should try more ideas
+" Note: GUI vim raises error when combining <Plug> maps with <Cmd> so have to disable
+" repeat for operator-pending maps e.g. 'cgw' in case they trigger insert mode.
+function! utils#repeat_op(name, ...) abort
+  let feed = '"\<Esc>\<Cmd>let g:repeat_tick = b:changedtick\<CR>"'
+  let keys = v:operator . (a:0 && a:1 ? a:1 : 1) . "\<Plug>Repeat" . a:name
+  if v:operator ==# 'c'  " e.g. change
+    return keys . "\<Cmd>call feedkeys(getreg('.') . " . feed . ", 'n')\<CR>"
+  else  " e.g. delete
+    return keys . "\<Cmd>call feedkeys(" . feed . ", 'n')\<CR>"
+  endif
+endfunction
+function! utils#repeat_map(mode, lhs, name, rhs) abort
+  let [map, noremap] = [a:mode . 'map', a:mode . 'noremap <silent>']
+  let icmd = has('gui_running') ? a:mode ==? 'o' ? '' : ':<C-u>' : '<Cmd>'
+  let mrep = '"\<Plug>' . a:name . '", v:prevcount'
+  let orep = 'utils#repeat_op(' . string(a:name) . ', v:prevcount)'
+  let iset = empty(a:name) ? "\<Ignore>" : a:mode ==# 'o' ? orep : mrep
+  let repeat = empty(icmd) ? '' : icmd . 'call repeat#set(' . iset . ')<CR>'
+  if empty(a:name)  " disable repetition (e.g. require user input)
+    exe noremap . ' ' . a:lhs . ' ' . a:rhs . repeat
+  else | exe map . ' ' . a:lhs . ' <Plug>' . a:name
+    exe noremap . ' <Plug>' . a:name . ' ' . a:rhs . repeat
+    exe noremap . ' <Plug>Repeat' . a:name . ' ' . a:rhs
+  endif
 endfunction
 
 " Switch buffer-local panel mappings

@@ -151,15 +151,14 @@ let s:snippets = {
 \ }
 call succinct#add_snippets(s:snippets, 1, 1)  " escape regex characters
 
-" Add delimiters. Currently only overwrite 'r' and 'a' global bracket surrounds the
-" 'f', 'p', and 'A' surrounds, and the '(', '[', '{', and '<' surrounds.
+" Add delimiters. Currently only overwrite 'r' and 'a' global bracket surrounds, the
+" 'f' and 'A' succinct surrounds, and the '(', '[', '{', and '<' native surrounds.
 " Note: Internal utility translates \r\> and \1..\7 to literals before processing
 " Note: For ametsoc suffix is specified with \citep[suffix]{cite1,cite2} and prefix with
 " e.g. \citep[prefix][]{cite1,cite2}. In ams this is \cite[suffix]{cite1,cite2} and
 " \cite<prefix>{cite1,cite2} and commands are \cite and \citeA instead of \citep and
 " \citep. Solution is to add \renewcommand to preamble and do not auto-insert empty
 " brackets for filling later since synmtax is dependent on citation engine. Rejected:
-" \ 'E': '{\color{red}\r}',
 " \ 'F': '\begin{wrapfigure}{r}{0.5\textwidth}\n\centering\r\end{wrapfigure}',
 " \ 'G': '\hidecontent{\includegraphics{\r}}',
 " \ 'L': '\href{\1Link: \1}{\r}',
@@ -211,17 +210,19 @@ let s:delims = {
   \ '<': '\left\langle \r\right\rangle',
   \ '>': '\vec{\r}',
   \ 'A': '\captionof{figure}{\r}',
+  \ 'B': '\mathbb{\r}',
+  \ 'C': '\mathcal{\r}',
   \ 'D': '\ddot{\r}',
-  \ 'E': '\textcolor{red}{\r}',
   \ 'F': '\begin{figure}[h]\n\centering\r\end{figure}',
   \ 'G': '\makebox[\textwidth][c]{%\n\includegraphics{\r}\n}',
   \ 'I': '\texttt{\r}',
   \ 'J': '\underset{}{\r}',
   \ 'K': '\overset{}{\r}',
   \ 'L': '\1Link: \r..*\r\\href{&}{\1\r\1\r..*\r}\1',
-  \ 'M': '\mathbb{\r}',
+  \ 'M': '\textcolor{red}{\r}',
   \ 'N': '\pdfcomment{%\n\r\n}',
   \ 'O': '\mathbf{\r}',
+  \ 'P': '\text{\r}',
   \ 'R': '\citet{\r}',
   \ 'S': '\begingroup\n\usebackgroundtemplate{}\n\begin{frame}\r\end{frame}\n\endgroup',
   \ 'T': '\begin{table}\n\centering\r\end{table}',
@@ -231,17 +232,16 @@ let s:delims = {
   \ 'Z': '\begin{columns}\r\end{columns}',
   \ 'a': '\caption{\r}',
   \ 'd': '\dot{\r}',
-  \ 'e': '\emph{\r}',
   \ 'f': '\begin{figure}\n\centering\r\end{figure}',
   \ 'g': '\includegraphics{\r}',
   \ 'h': '\hat{\r}',
   \ 'i': '\textit{\r}',
   \ 'j': '_{\r}',
   \ 'k': '^{\r}',
-  \ 'l': '\mathcal{\r}',
-  \ 'm': '\mathrm{\r}',
+  \ 'm': '\emph{\r}',
   \ 'n': '\footcite{\r}',
   \ 'o': '\textbf{\r}',
+  \ 'p': '\mathrm{\r}',
   \ 'r': '\citep{\r}',
   \ 's': '\begin{frame}\r\end{frame}',
   \ 't': '\1Alignment: \r..*\r\\begin{tabular}{&}\1\r\1\r..*\r\\end{tabular}\1',

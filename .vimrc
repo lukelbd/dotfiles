@@ -65,7 +65,7 @@ set history=500  " remember 500 previous searches / commands and save in .viminf
 set hlsearch  " highlight as you search forward
 set ignorecase  " ignore case in search patterns
 set iminsert=0  " disable language maps (used for caps lock)
-set incsearch  " show match as typed so far
+set incsearch  " show matches incrementally when using e.g. :sub
 set lazyredraw  " skip redraws during macro and function calls
 set list  " show hidden characters
 set listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:·  " other characters: ▸, ·, ¬, ↳, ⤷, ⬎, ↘, ➝, ↦,⬊
@@ -105,6 +105,7 @@ set shortmess=atqcT  " snappy messages, 'a' does a bunch of common stuff
 set showtabline=1  " default 2 spaces
 set signcolumn=number  " show signs in number column
 set smartcase  " search case insensitive, unless has capital letter
+set smartindent  " additional indentation options
 set softtabstop=2  " default 2 spaces
 set spellcapcheck=  " disable checking for capital start of sentence
 set spelllang=en_us  " default to US english
@@ -114,7 +115,7 @@ set splitkeep=screen  " preserve relative position
 set switchbuf=useopen,usetab,newtab,uselast  " when switching buffers use open tab
 set tabpagemax=300  " allow opening shit load of tabs at once
 set tabstop=2  " default 2 spaces
-set tagcase=ignore  " ignore case when matching paths
+set tagcase=match  " match case when searching tags
 set tagrelative  " paths in tags file are relative to location
 set tags=.vimtags,./.vimtags  " home, working dir, or file dir
 set tagstack  " auto-add to tagstack with :tag commands
@@ -294,33 +295,6 @@ for s:pair in [
   endfor
 endfor
 
-" Helper function for repeat#set (easier than copy-pasting repeat#set calls)
-" Note: GUI vim raises error when combining <Plug> maps with <Cmd> so have to disable
-" repeat for operator-pending maps e.g. 'cgw' in case they trigger insert mode.
-function! s:repeat_op(name) abort
-  let feed = '"\<Esc>\<Cmd>let g:repeat_tick = b:changedtick\<CR>"'
-  let keys = v:operator . max([1, v:prevcount]) . "\<Plug>Repeat" . a:name
-  if v:operator ==# 'c'  " e.g. change
-    return keys . "\<Cmd>call feedkeys(getreg('.') . " . feed . ", 'n')\<CR>"
-  else  " e.g. delete
-    return keys . "\<Cmd>call feedkeys(" . feed . ", 'n')\<CR>"
-  endif
-endfunction
-function! s:repeat_map(mode, lhs, name, rhs) abort
-  let [map, noremap] = [a:mode . 'map', a:mode . 'noremap <silent>']
-  let iset = a:mode ==# 'o' ? '<sid>repeat_op(' . string(a:name) . ')' : '"\<Plug>' . a:name . '"'
-  let icmd = has('gui_running') ? a:mode ==? 'o' ? '' : ':<C-u>' : '<Cmd>'
-  if empty(a:name)  " disable repetition (e.g. require user input)
-    let repeat = empty(icmd) ? '' : icmd . 'call repeat#set("\<Ignore>")<CR>'
-    exe noremap . ' ' . a:lhs . ' ' . a:rhs . repeat
-  else
-    let repeat = empty(icmd) ? '' : icmd . 'call repeat#set(' . iset . ', v:prevcount)<CR>'
-    exe noremap . ' <Plug>Repeat' . a:name . ' ' . a:rhs
-    exe noremap . ' <Plug>' . a:name . ' ' . a:rhs . repeat
-    exe map . ' ' . a:lhs . ' <Plug>' . a:name
-  endif
-endfunction
-
 
 "-----------------------------------------------------------------------------"
 " File and window utilities
@@ -486,13 +460,14 @@ omap <F9> <Plug>(fzf-maps-o)
 xmap <F9> <Plug>(fzf-maps-x)
 imap <F9> <Plug>(fzf-maps-i)
 nnoremap <F9> <Cmd>Maps<CR>
-nnoremap <Leader>\ <Cmd>Commands<CR>
-nnoremap <Leader>\| <Cmd>Maps<CR>
+cnoremap <F9> <Esc><Cmd>Commands<CR>
 
 " Vim help and history windows
 " Note: For some reason even though :help :mes claims count N shows the N most recent
 " message, for some reason using 1 shows empty line and 2 shows previous plus newline.
-noremap <Leader><CR> <Cmd>call switch#message()<CR>
+for s:key in ['z', '<Leader>'] | silent! exe 'unmap! ' . s:key . '<CR>' | endfor
+noremap g<Space> <Cmd>call switch#reveal()<CR>
+noremap <Leader><Space> <Cmd>call switch#message()<CR>
 nnoremap <Leader>; q:
 nnoremap <Leader>/ q/
 nnoremap <Leader>: <Cmd>History:<CR>
@@ -565,7 +540,7 @@ noremap <F2> <Cmd>call stack#scroll_tabs(v:count1)<CR>
 " See: https://stackoverflow.com/a/27194972/4970632
 augroup jumplist_setup
   au!
-  au CursorHold,TextChanged,InsertLeave * call mark#update_jumps()
+  au CursorHold,TextChanged,InsertLeave * if mode() !~# '^no' | call mark#update_jumps() | endif
 augroup END
 command! -bang -nargs=0 Jumps call mark#fzf_jumps(<bang>0)
 noremap z' <Cmd>BLines<CR>
@@ -622,30 +597,23 @@ noremap M gE
 
 " Move between alphanumeric groups of characters (i.e. excluding dots, dashes,
 " underscores). This is consistent with tmux vim selection navigation
-function! s:move_alpha(keys, ...) abort
-  let cmd = 'setlocal iskeyword=' . &l:iskeyword
-  setlocal iskeyword=@,48-57,192-255
-  let action = a:0 ? a:1 ==# 'c' ? "\<Esc>c" : a:1 : ''
-  call feedkeys(action . v:count1 . a:keys . "\<Cmd>" . cmd . "\<CR>", 'n')
-endfunction
-noremap gw <Cmd>call <sid>move_alpha('w')<CR>
-noremap gb <Cmd>call <sid>move_alpha('b')<CR>
-noremap ge <Cmd>call <sid>move_alpha('e')<CR>
-noremap gm <Cmd>call <sid>move_alpha('ge')<CR>
-call s:repeat_map('o', 'gw', 'NextStart', "<Cmd>call <sid>move_alpha('w', v:operator)<CR>")
-call s:repeat_map('o', 'gb', 'PrevStart', "<Cmd>call <sid>move_alpha('b', v:operator)<CR>")
-call s:repeat_map('o', 'ge', 'NextEnd',   "<Cmd>call <sid>move_alpha('e', v:operator)<CR>")
-call s:repeat_map('o', 'gm', 'PrevEnd',   "<Cmd>call <sid>move_alpha('ge, v:operator)<CR>")
+exe 'silent! runtime autoload/utils.vim'
+noremap gw <Cmd>call iter#next_motion('w')<CR>
+noremap gb <Cmd>call iter#next_motion('b')<CR>
+noremap ge <Cmd>call iter#next_motion('e')<CR>
+noremap gm <Cmd>call iter#next_motion('ge')<CR>
+call utils#repeat_map('o', 'gw', 'NextStart', "<Cmd>call iter#next_motion('w', v:operator)<CR>")
+call utils#repeat_map('o', 'gb', 'PrevStart', "<Cmd>call iter#next_motion('b', v:operator)<CR>")
+call utils#repeat_map('o', 'ge', 'NextEnd',   "<Cmd>call iter#next_motion('e', v:operator)<CR>")
+call utils#repeat_map('o', 'gm', 'PrevEnd',   "<Cmd>call iter#next_motion('ge, v:operator)<CR>")
 
 " Screen motion mappings
 " Note: This is consistent with 'zl', 'zL', 'zh', 'zH' horizontal scrolling
 " and lets us use 'zt' for title case 'zb' for boolean toggle.
-silent! unmap zv
-noremap z<Space> zz
-noremap z<CR> zzze
-noremap z0 zs
+for s:key in ['z', '<CR>'] | silent! exe 'unmap! z' . s:key | endfor
+noremap z\ zzze
 noremap z9 ze
-noremap z\ zz
+noremap z0 zs
 noremap z( zt
 noremap z) zb
 
@@ -654,7 +622,7 @@ noremap z) zb
 " Note: Here fold#update_folds() re-enforces special expr fold settings for markdown
 " and python files then applies default toggle status that differs from buffer-wide
 " &foldlevel for fortran python and tex files (e.g. always open \begin{document}).
-for s:key in ['s', 'e', 'f', 'F', 'n', 'N'] | silent! exe 'unmap! z' . s:key | endfor
+for s:key in ['z', 's', 'e', 'f', 'F', 'n', 'N'] | silent! exe 'unmap! z' . s:key | endfor
 noremap gz <Cmd>Folds<CR>
 noremap zg <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>
 noremap zx <Cmd>call fold#update_folds()<CR>zx<Cmd>call fold#regex_levels()<CR>zv
@@ -664,7 +632,7 @@ noremap zX <Cmd>call fold#update_folds()<CR>zX<Cmd>call fold#regex_levels()<CR>
 " Note: Here fold#toggle_range_expr() calls fold#update_folds() before toggling.
 " Note: These will overwrite 'fastfold_fold_command_suffixes' generated fold-updating
 " maps. However now use even faster / more conservative fold#update_folds() method.
-noremap <expr> zz '<Cmd>call fold#update_folds()<CR>' . (foldclosed('.') > 0 ? 'zo' : 'zc')
+noremap <expr> z<Space> '<Cmd>call fold#update_folds()<CR>' . (foldclosed('.') > 0 ? 'zo' : 'zc')
 nnoremap zcc <Cmd>call fold#update_folds()<CR>zc
 nnoremap zoo <Cmd>call fold#update_folds()<CR>zo
 vnoremap <nowait> zc <Cmd>call fold#update_folds()<CR>zc
@@ -685,7 +653,6 @@ noremap zC <Cmd>call fold#toggle_current(1)<CR>
 noremap zO <Cmd>call fold#toggle_current(0)<CR>
 noremap z/ <Cmd>call switch#opensearch()<CR>
 noremap zN zN<Cmd>call fold#update_folds()<CR>
-silent! exe 'unmap zn' | silent! exe 'unmap zv'
 
 " Change fold level
 " Note: Here fold#update_level() without arguments calls fold#update_folds()
@@ -702,8 +669,8 @@ noremap zR <Cmd>call fold#update_level('R')<CR>
 " Jump to next or previous fold or inside fold
 " Note: The bracket maps fail without silent! when inside first fold in file
 " Note: Recursive map required for [Z or ]Z or else way more complicated
-call s:repeat_map('', '[Z', 'FoldBackward', '<Cmd>keepjumps normal! zkza<CR>')
-call s:repeat_map('', ']Z', 'FoldForward', '<Cmd>keepjumps normal! zjza<CR>')
+call utils#repeat_map('', '[Z', 'FoldBackward', '<Cmd>keepjumps normal! zkza<CR>')
+call utils#repeat_map('', ']Z', 'FoldForward', '<Cmd>keepjumps normal! zjza<CR>')
 noremap [z <Cmd>keepjumps normal! zk<CR><Cmd>keepjumps normal! [z<CR>
 noremap ]z <Cmd>keepjumps normal! zj<CR><Cmd>keepjumps normal! [z<CR>
 noremap zk <Cmd>keepjumps normal! [z<CR>
@@ -810,72 +777,85 @@ vnoremap <expr> \r edit#reverse_lines_expr()
 nnoremap <expr> \r edit#reverse_lines_expr()
 
 " Retab lines and remove trailing whitespace
-" Note: Map ambiguous \w 'whitespace' mnemonic to most common whitespace regex
-" Note: Undo will move the cursor to the first line in the range of
-" lines that was changed: https://stackoverflow.com/a/52308371/4970632
-let s:regex_trail = '\s\+\ze$'
-nmap \w \t
-vmap \w \t
-nnoremap <expr> \t edit#replace_regex_expr('Removed trailing spaces', s:regex_trail, '')
-vnoremap <expr> \t edit#replace_regex_expr('Removed trailing spaces', s:regex_trail, '')
-nnoremap <expr> \<Tab> edit#replace_regex_expr('Translated tabs', '\t', repeat(' ', &tabstop))
-vnoremap <expr> \<Tab> edit#replace_regex_expr('Translated tabs', '\t', repeat(' ', &tabstop))
+" Note: Here define g:regex variables analogous to 'g:surround' and 'g:snippet'
+" Note: Undo goes to first changed line: https://stackoverflow.com/a/52308371/4970632
+for s:mode in ['n', 'v'] | exe s:mode . 'map \w \t' | endfor  " ambiguous maps
+let g:sub_trail = ['Removed trailing spaces', '\s\+\ze$', '']  " analogous to surround
+let g:sub_tabs = ['Translated tabs', '\t', {-> repeat(' ', &l:tabstop)}]
+nnoremap <expr> \t call('edit#sub_replace_expr', g:sub_trail)
+vnoremap <expr> \t call('edit#sub_replace_expr', g:sub_trail)
+nnoremap <expr> \<Tab> call('edit#sub_replace_expr', g:sub_tabs)
+vnoremap <expr> \<Tab> call('edit#sub_replace_expr', g:sub_tabs)
 
 " Replace consecutive spaces on current line with
 " one space only if they're not part of indentation
-nnoremap <expr> \s edit#replace_regex_expr('Squeezed consecutive spaces', '\S\@<=\(^ \+\)\@<! \{2,}', ' ')
-vnoremap <expr> \s edit#replace_regex_expr('Squeezed consecutive spaces', '\S\@<=\(^ \+\)\@<! \{2,}', ' ')
-nnoremap <expr> \S edit#replace_regex_expr('Stripped spaces', '\S\@<=\(^ \+\)\@<! \+', '')
-vnoremap <expr> \S edit#replace_regex_expr('Stripped spaces', '\S\@<=\(^ \+\)\@<! \+', '')
+let g:sub_ssqueeze = ['Squeezed consecutive spaces', '\S\@<=\(^ \+\)\@<! \{2,}', '']
+let g:sub_sstrip = ['Stripped spaces', '\S\@<=\(^ \+\)\@<! \+', '']
+nnoremap <expr> \s call('edit#sub_replace_expr', g:sub_ssqueeze)
+nnoremap <expr> \S call('edit#sub_replace_expr', g:sub_sstrip)
+vnoremap <expr> \s call('edit#sub_replace_expr', g:sub_ssqueeze)
+vnoremap <expr> \S call('edit#sub_replace_expr', g:sub_sstrip)
 
 " Remove empty lines
 " Replace consecutive newlines with single newline
-nnoremap <expr> \e edit#replace_regex_expr('Squeezed consecutive empty lines',
-  \ '\(\n\s*\n\)\(\s*\n\)\+', '\1')
-noremap <expr> \E edit#replace_regex_expr('Stripped empty lines',
-  \ '^\s*$\n', '')
-
-" Fix unicode quotes and dashes, trailing dashes due to a pdf copy
-" Underscore is easiest one to switch if using that Karabiner map
-noremap <expr> \_ edit#replace_regex_expr('Converted dashed word breaks',
-  \ '\(\w\)[-–] ', '\1')
-noremap <expr> \- edit#replace_regex_expr('Converted unicode em dashes',
-  \ '–', '--')
-noremap <expr> \' edit#replace_regex_expr('Converted unicode single quotes',
-  \ '‘', '`', '’', "'")
-noremap <expr> \" edit#replace_regex_expr('Converted unicode double quotes',
-  \ '“', '``', '”', "''")
+let g:sub_esqueeze = ['Squeezed consecutive empty lines', '\(\n\s*\n\)\(\s*\n\)\+', '\1']
+let g:sub_estrip = ['Stripped empty lines', '^\s*$\n', '']
+nnoremap <expr> \e call('edit#sub_replace_expr', g:sub_esqueeze)
+vnoremap <expr> \e call('edit#sub_replace_expr', g:sub_esqueeze)
+nnoremap <expr> \E call('edit#sub_replace_expr', g:sub_estrip)
+vnoremap <expr> \E call('edit#sub_replace_expr', g:sub_estrip)
 
 " Delete first-level and second-level commented text
 " Critical to put in same group since these change the line count
-noremap <expr> \c edit#replace_regex_expr('Removed comments',
-  \ '\(^\s*' . comment#get_regex() . '.\+$\n\\|\s\+' . comment#get_regex() . '.\+$\)', '')
-noremap <expr> \C edit#replace_regex_expr('Removed second-level comments',
-  \ '\(^\s*' . comment#get_regex() . '\s*' . comment#get_regex() . '.\+$\n\\|\s\+' . comment#get_regex() . '\s*' . comment#get_regex() . '.\+$\)', '')
+let g:sub_comments = [
+  \ 'Removed comments', {->
+    \ '\(^\s*' . comment#get_regex() . '.\+$\n\|\s\+' . comment#get_regex() . '.\+$\)'
+  \ }, '']
+let g:sub_dcomments = [
+  \ 'Removed second-level comments', {->
+    \ '\(^\s*' . comment#get_regex() . '\s*' . comment#get_regex()
+    \ . '.\+$\n\|\s\+' . comment#get_regex() . '\s*' . comment#get_regex() . '.\+$\)'
+  \ }, '']
+nnoremap <expr> \c call('edit#sub_replace_expr', g:sub_comments)
+vnoremap <expr> \c call('edit#sub_replace_expr', g:sub_comments)
+nnoremap <expr> \C call('edit#sub_replace_expr', g:sub_dcomments)
+vnoremap <expr> \C call('edit#sub_replace_expr', g:sub_dcomments)
 
 " Replace useless bibtex entries
 " Previously localized to bibtex ftplugin but no major reason not to include here
-noremap <expr> \x edit#replace_regex_expr('Removed bibtex entries',
-  \ '^\s*\(abstract\|annotate\|copyright\|file\|keywords\|note\|shorttitle\|url\|urldate\)\s*=\s*{\_.\{-}},\?\n', '')
-noremap <expr> \X edit#replace_regex_expr('Removed bibtex entries',
-  \ '^\s*\(abstract\|annotate\|copyright\|doi\|file\|language\|keywords\|note\|shorttitle\|url\|urldate\)\s*=\s*{\_.\{-}},\?\n', '')
+let g:sub_bibtex = [
+  \ 'Removed unused bibtex entries', '^\s*'
+  \ . '\(abstract\|annotate\|copyright\|file\|keywords\|note\|shorttitle\|url\|urldate\)'
+  \ . '\s*=\s*{\_.\{-}},\?\n', '']
+let g:sub_dbibtex = [
+  \ 'Removed doi/unused bibtex entries', '^\s*'
+  \ . '\(abstract\|annotate\|copyright\|doi\|file\|language\|keywords\|note\|shorttitle\|url\|urldate\)'
+  \ . '\s*=\s*{\_.\{-}},\?\n', '']
+nnoremap <expr> \x call('edit#sub_replace_expr', g:sub_bibtex)
+vnoremap <expr> \x call('edit#sub_replace_expr', g:sub_bibtex)
+nnoremap <expr> \X call('edit#sub_replace_expr', g:sub_dbibtex)
+vnoremap <expr> \X call('edit#sub_replace_expr', g:sub_dbibtex)
+
+" Fix unicode quotes and dashes, trailing dashes due to a pdf copy
+" Underscore is easiest one to switch if using that Karabiner map
+let g:sub_breaks = ['Converted dashed word breaks', '\(\w\)[-–]\s\+', '\1']
+let g:sub_dashes = ['Converted unicode em dashes', '–', '--']
+let g:sub_dsingle = ['Converted unicode single quotes', '‘', '`', '’', "'"]
+let g:sub_ddouble = ['Converted unicode double quotes', '“', '``', '”', "''"]
+nnoremap <expr> \_ call('edit#sub_replace_expr', g:sub_breaks)
+vnoremap <expr> \_ call('edit#sub_replace_expr', g:sub_breaks)
+nnoremap <expr> \- call('edit#sub_replace_expr', g:sub_dashes)
+vnoremap <expr> \- call('edit#sub_replace_expr', g:sub_dashes)
+nnoremap <expr> \' call('edit#sub_replace_expr', g:sub_dsingle)
+vnoremap <expr> \' call('edit#sub_replace_expr', g:sub_dsingle)
+nnoremap <expr> \" call('edit#sub_replace_expr', g:sub_ddouble)
+vnoremap <expr> \" call('edit#sub_replace_expr', g:sub_ddouble)
 
 
 "-----------------------------------------------------------------------------"
 " Normal and insert-mode editing
 "-----------------------------------------------------------------------------"
-" Spaces and tabs for particular filetypes.
-" Note: For some reason must be manually enabled for vim and shell scripts. Not
-" sure why but should explore other plugins.
-augroup expandtab_setup
-  au!
-  au FileType vim,tex,sh call switch#expandtab(0, 1)
-  au FileType xml,make,text,gitconfig call switch#expandtab(1, 1)
-augroup END
-command! -nargs=? TabToggle call switch#expandtab(<args>)
-nnoremap <Leader><Tab> <Cmd>call switch#expandtab()<CR>
-
-" Undo behavior and insert-mode mappings
+" Undo behavior and mappings
 " Note: Here edit#insert_undo() returns undo-resetting <C-g>u and resets b:insert_mode
 " based on cursor position. Also run this on InsertEnter e.g. after 'ciw' operator map
 augroup undo_setup
@@ -887,22 +867,12 @@ inoremap <expr> <F12> edit#insert_undo()
 nmap u <Cmd>call repeat#wrap('u', v:count)<CR>
 nmap U <Cmd>call repeat#wrap("\<C-r>", v:count)<CR>
 
-" Increase and decrease indent to level v:count
-" Note: To avoid overwriting fugitive inline-diff mappings implement these as
-" buffer-local .vim/autoload/common.vim maps. Also map brackets.
-nnoremap <expr> > '<Esc>' . edit#indent_items_expr(0, v:count1)
-nnoremap <expr> < '<Esc>' . edit#indent_items_expr(1, v:count1)
-
-" Insert empty lines around cursor
-" Note: See 'vim-unimpaired' for original. This is similar to vim-succinct 'e' object
-call s:repeat_map('n', '[e', 'BlankUp', '<Cmd>put!=repeat(nr2char(10), v:count1) \| '']+1<CR>')
-call s:repeat_map('n', ']e', 'BlankDown', '<Cmd>put=repeat(nr2char(10), v:count1) \| ''[-1<CR>')
-
-" Register selection utilities
+" Operator register and display utilities
 " Note: For some reason cannot set g:peekaboo_ins_prefix = '' and simply have <C-r>
 " trigger the mapping. See https://vi.stackexchange.com/q/5803/8084
 imap <expr> <F10> peekaboo#peek(1, "\<C-r>", 0)
 nmap <expr> <F10> peekaboo#peek(1, '"', 0)
+vmap <expr> <F10> peekaboo#peek(1, '"', 0)
 
 " Record macro by pressing Q (we use lowercase for quitting popup windows)
 " and execute macro using ,. Also disable multi-window recordings.
@@ -960,18 +930,40 @@ noremap <silent> gK <Cmd>call edit#join_lines(1, 1)<CR>
 
 " Swap characters or lines
 " Mnemonic is 'cut line' at cursor, character under cursor will be deleted
-call s:repeat_map('n', 'ch', 'SwapLeft', '<Cmd>call edit#swap_chars(1)<CR>')
-call s:repeat_map('n', 'cl', 'SwapRight', '<Cmd>call edit#swap_chars(0)<CR>')
-call s:repeat_map('n', 'ck', 'SwapAbove', '<Cmd>call edit#swap_lines(1)<CR>')
-call s:repeat_map('n', 'cj', 'SwapBelow', '<Cmd>call edit#swap_lines(0)<CR>')
-call s:repeat_map('n', 'cL', 'SliceLine', 'myi<CR><Esc><Cmd>keepjumps normal! `y<Cmd>delmark y<CR>')
+call utils#repeat_map('n', 'ch', 'SwapLeft', '<Cmd>call edit#swap_chars(1)<CR>')
+call utils#repeat_map('n', 'cl', 'SwapRight', '<Cmd>call edit#swap_chars(0)<CR>')
+call utils#repeat_map('n', 'ck', 'SwapAbove', '<Cmd>call edit#swap_lines(1)<CR>')
+call utils#repeat_map('n', 'cj', 'SwapBelow', '<Cmd>call edit#swap_lines(0)<CR>')
+call utils#repeat_map('n', 'cL', 'SliceLine', 'myi<CR><Esc><Cmd>keepjumps normal! `y<Cmd>delmark y<CR>')
+
+" Spaces and tabs for particular filetypes.
+" Note: For some reason must be manually enabled for vim and shell scripts. Not
+" sure why but should explore other plugins.
+augroup expandtab_setup
+  au!
+  au FileType vim,tex,sh call switch#expandtab(0, 1)
+  au FileType xml,make,text,gitconfig call switch#expandtab(1, 1)
+augroup END
+command! -nargs=? TabToggle call switch#expandtab(<args>)
+nnoremap <Leader><Tab> <Cmd>call switch#expandtab()<CR>
+
+" Increase and decrease indent to level v:count
+" Note: To avoid overwriting fugitive inline-diff mappings implement these as
+" buffer-local .vim/autoload/common.vim maps. Also map brackets.
+nnoremap <expr> > '<Esc>' . edit#indent_items_expr(0, v:count1)
+nnoremap <expr> < '<Esc>' . edit#indent_items_expr(1, v:count1)
+
+" Insert empty lines around cursor
+" Note: See 'vim-unimpaired' for original. This is similar to vim-succinct 'e' object
+call utils#repeat_map('n', '[e', 'BlankUp', '<Cmd>put!=repeat(nr2char(10), v:count1) \| '']+1<CR>')
+call utils#repeat_map('n', ']e', 'BlankDown', '<Cmd>put=repeat(nr2char(10), v:count1) \| ''[-1<CR>')
 
 " Stop cursor from moving after undo or leaving insert mode
 " Note: Otherwise repeated i<Esc>i<Esc> will drift cursor to left. Also
 " critical to keep jumplist or else populated after every single insertion.
 augroup insert_repair
   au!
-  au InsertLeave * exe 'keepjumps normal! `^'
+  au InsertLeave * exe 'silent! keepjumps normal! `^'
 augroup END
 nnoremap <expr> i edit#insert_mode('i')
 nnoremap <expr> I edit#insert_mode('I')
@@ -996,14 +988,14 @@ vnoremap <expr> A mode() =~# '^[vV]'
 
 " Enter insert mode with paste toggle
 " Note: Switched easy-align mapping from ga for consistency here
-nnoremap <expr> ga edit#paste_mode() . edit#insert_mode('a')
-nnoremap <expr> gA edit#paste_mode() . edit#insert_mode('A')
-nnoremap <expr> gi edit#paste_mode() . edit#insert_mode('i')
-nnoremap <expr> gI edit#paste_mode() . edit#insert_mode('I')
-nnoremap <expr> go edit#paste_mode() . edit#insert_mode('o')
-nnoremap <expr> gO edit#paste_mode() . edit#insert_mode('O')
-nnoremap <expr> gc edit#paste_mode() . utils#translate_name('') . edit#insert_mode('c')
-nnoremap <expr> gC edit#paste_mode() . utils#translate_name('') . edit#insert_mode('C')
+nnoremap <expr> ga switch#paste() . edit#insert_mode('a')
+nnoremap <expr> gA switch#paste() . edit#insert_mode('A')
+nnoremap <expr> gi switch#paste() . edit#insert_mode('i')
+nnoremap <expr> gI switch#paste() . edit#insert_mode('I')
+nnoremap <expr> go switch#paste() . edit#insert_mode('o')
+nnoremap <expr> gO switch#paste() . edit#insert_mode('O')
+nnoremap <expr> gc switch#paste() . utils#translate_name('') . edit#insert_mode('c')
+nnoremap <expr> gC switch#paste() . utils#translate_name('') . edit#insert_mode('C')
 
 " Toggle caps lock, copy mode, and conceal mode
 " Turn on for filetypes containing raw possibly heavily wrapped data
@@ -1086,26 +1078,26 @@ noremap <expr> <C-f> iter#scroll_infer(0.66, 0)
 
 " ReST section comment headers
 " Note: <Plug> name cannot be subset of other name or results in delay
-call s:repeat_map('n', 'g-', 'DashSingle', "<Cmd>call comment#append_line('-', 0)<CR>")
-call s:repeat_map('n', 'z-', 'DashDouble', "<Cmd>call comment#append_line('-', 1)<CR>")
-call s:repeat_map('n', 'g=', 'EqualSingle', "<Cmd>call comment#append_line('=', 0)<CR>")
-call s:repeat_map('n', 'z=', 'EqualDouble', "<Cmd>call comment#append_line('=', 1)<CR>")
-call s:repeat_map('v', 'g-', 'VDashSingle', "<Cmd>call comment#append_line('-', 0, '''<', '''>')<CR>")
-call s:repeat_map('v', 'z-', 'VDashDouble', "<Cmd>call comment#append_line('-', 1, '''<', '''>')<CR>")
-call s:repeat_map('v', 'g=', 'VEqualSingle', "<Cmd>call comment#append_line('=', 0, '''<', '''>')<CR>")
-call s:repeat_map('v', 'z=', 'VEqualDouble', "<Cmd>call comment#append_line('=', 1, '''<', '''>')<CR>")
+call utils#repeat_map('n', 'g-', 'DashSingle', "<Cmd>call comment#append_line('-', 0)<CR>")
+call utils#repeat_map('n', 'z-', 'DashDouble', "<Cmd>call comment#append_line('-', 1)<CR>")
+call utils#repeat_map('n', 'g=', 'EqualSingle', "<Cmd>call comment#append_line('=', 0)<CR>")
+call utils#repeat_map('n', 'z=', 'EqualDouble', "<Cmd>call comment#append_line('=', 1)<CR>")
+call utils#repeat_map('v', 'g-', 'VDashSingle', "<Cmd>call comment#append_line('-', 0, '''<', '''>')<CR>")
+call utils#repeat_map('v', 'z-', 'VDashDouble', "<Cmd>call comment#append_line('-', 1, '''<', '''>')<CR>")
+call utils#repeat_map('v', 'g=', 'VEqualSingle', "<Cmd>call comment#append_line('=', 0, '''<', '''>')<CR>")
+call utils#repeat_map('v', 'z=', 'VEqualDouble', "<Cmd>call comment#append_line('=', 1, '''<', '''>')<CR>")
 
 " Insert various comment blocks
 " Note: No need to repeat any of other commands
 let s:author = "'Author: Luke Davis (lukelbd@gmail.com)'"
 let s:edited = "'Edited: ' . strftime('%Y-%m-%d')"
 for s:key in ';:/?''"' | silent! exe 'unmap gc' . s:key | endfor
-call s:repeat_map('n', 'z.;', 'HeadLine', "<Cmd>call comment#header_line('-', 77, 0)<CR>")
-call s:repeat_map('n', 'z./', 'HeadAuth', '<Cmd>call comment#append_note(' . s:author . ')<CR>')
-call s:repeat_map('n', 'z.?', 'HeadEdit', '<Cmd>call comment#append_note(' . s:edited . ')<CR>')
-call s:repeat_map('n', 'z.:', '', "<Cmd>call comment#header_line('-', 77, 1)<CR>")
-call s:repeat_map('n', "z.'", '', '<Cmd>call comment#header_inchar()<CR>')
-call s:repeat_map('n', 'z."', '', '<Cmd>call comment#header_inline(5)<CR>')
+call utils#repeat_map('n', 'z.;', 'HeadLine', "<Cmd>call comment#header_line('-', 77, 0)<CR>")
+call utils#repeat_map('n', 'z./', 'HeadAuth', '<Cmd>call comment#append_note(' . s:author . ')<CR>')
+call utils#repeat_map('n', 'z.?', 'HeadEdit', '<Cmd>call comment#append_note(' . s:edited . ')<CR>')
+call utils#repeat_map('n', 'z.:', '', "<Cmd>call comment#header_line('-', 77, 1)<CR>")
+call utils#repeat_map('n', "z.'", '', '<Cmd>call comment#header_inchar()<CR>')
+call utils#repeat_map('n', 'z."', '', '<Cmd>call comment#header_inline(5)<CR>')
 
 " Auto wrap the lines or items within motion
 " Note: Previously tried to make this operator map but not necessary, should
@@ -1130,8 +1122,8 @@ noremap X "_X
 " Note: Here 'zu' is analgogous to 'zb' used for boolean toggle
 for s:key in ['u', 'U'] | silent! exe 'unmap g' . s:key | endfor
 for s:key in ['u', 'U'] | silent! exe 'unmap z' . repeat(s:key, 2) | endfor
-call s:repeat_map('n', 'zu', 'CaseToggle', 'my~h`y<Cmd>delmark y<CR>')
-call s:repeat_map('n', 'zU', 'CaseTitle', 'myguiw~h`y<Cmd>delmark y<CR>')
+call utils#repeat_map('n', 'zu', 'CaseToggle', 'my~h`y<Cmd>delmark y<CR>')
+call utils#repeat_map('n', 'zU', 'CaseTitle', 'myguiw~h`y<Cmd>delmark y<CR>')
 nnoremap guu guiw
 nnoremap gUU gUiw
 vnoremap zu g~
@@ -1156,14 +1148,14 @@ augroup spell_setup
   let s:filetypes = join(s:lang_filetypes, ',')
   exe 'au FileType ' . s:filetypes . ' setlocal spell'
 augroup END
-command! SpellToggle call switch#spellcheck(<args>)
-command! LangToggle call switch#spelllang(<args>)
-nnoremap <Leader>s <Cmd>call switch#spellcheck()<CR>
-nnoremap <Leader>S <Cmd>call switch#spelllang()<CR>
+command! SpellToggle call switch#spell(<args>)
+command! LangToggle call switch#lang(<args>)
+nnoremap <Leader>s <Cmd>call switch#spell()<CR>
+nnoremap <Leader>S <Cmd>call switch#lang()<CR>
 
 " Replace misspelled words or define or identify words
-call s:repeat_map('', '[S', 'SpellBackward', '<Cmd>call edit#spell_next(-v:count1)<CR>')
-call s:repeat_map('', ']S', 'SpellForward', '<Cmd>call edit#spell_next(v:count1)<CR>')
+call utils#repeat_map('', '[S', 'SpellBackward', '<Cmd>call edit#spell_next(-v:count1)<CR>')
+call utils#repeat_map('', ']S', 'SpellForward', '<Cmd>call edit#spell_next(v:count1)<CR>')
 noremap [s <Cmd>keepjumps normal! [s<CR>
 noremap ]s <Cmd>keepjumps normal! ]s<CR>
 noremap gs <Cmd>call edit#spell_check()<CR>
@@ -1646,12 +1638,14 @@ silent! delcommand SplitjoinSplit
 " Note: Tried easy motion but way too complicated / slows everything down
 " See: https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
 if s:plug_active('vim-sneak') || s:plug_active('vim-indexed-search')
-  map s <Plug>Sneak_s
-  map S <Plug>Sneak_S
   map f <Plug>Sneak_f
   map F <Plug>Sneak_F
   map t <Plug>Sneak_t
   map T <Plug>Sneak_T
+  nmap s <Plug>Sneak_s
+  nmap S <Plug>Sneak_S
+  vmap s <Plug>Sneak_s
+  vmap S <Plug>Sneak_S
   let g:sneak#label = 1  " show labels on matches for quicker jumping
   let g:sneak#s_next = 1  " press s/f/t repeatedly to jump matches until next motion
   let g:sneak#f_reset = 0  " keep f search separate from s
@@ -1715,7 +1709,7 @@ if s:plug_active('vim-textobj-user')
   let g:vim_textobj_parameter_mapping = 'k'  " i.e. 'keyword' or 'keyword argument'
   let s:textobj_alpha = {
     \ 'g': '\_[^0-9A-Za-z]\r\_[^0-9A-Za-z]',
-    \ 'G': '\(\W\|^\|\%^\)\r\(\W\|$\|\%$\)',
+    \ 'G': '\_[^0-9A-Za-z]\r\_[^0-9a-z]',
   \ }
   let s:textobj_comment = {
     \ 'select-i': 'iC', 'select-i-function': 'textobj#comment#select_i',
@@ -1762,9 +1756,10 @@ endif
 " Note: Custom plugin is similar to :Btags, but does not create or manage tag files,
 " instead creating tags whenever buffer is loaded and tracking tags continuously. Also
 " note / and ? update jumplist but cannot override without keeping interactivity.
+" nnoremap <Leader>t <Cmd>CurrentTag<CR>
+" nnoremap <Leader>T <Cmd>call switch#tags()<CR>
 if s:plug_active('vim-tags')
-  command! -nargs=? TagToggle
-    \ call switch#tags(<args>)
+  command! -nargs=? TagToggle call switch#tags(<args>)
   command! -bang -nargs=* ShowTable
     \ echo call('tags#table_kinds', <bang>0 ? ['all'] : [<f-args>])
     \ | echo call('tags#table_tags', <bang>0 ? ['all'] : [<f-args>])
@@ -1772,8 +1767,6 @@ if s:plug_active('vim-tags')
   nnoremap gY <Cmd>Tags<CR>
   nnoremap <Leader>t <Cmd>ShowTable<CR>
   nnoremap <Leader>T <Cmd>ShowTable!<CR>
-  nnoremap <Leader>y <Cmd>CurrentTag<CR>
-  nnoremap <Leader>Y <Cmd>call switch#tags()<CR>
   let s:major = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
   let s:minor = {'fortran': 'ekltvEL', 'python': 'xviI', 'vim': 'vnC', 'tex': 'gioetBCN'}
   let g:tags_cursor_map = '<CR>'  " default is <Leader><CR>
@@ -2135,8 +2128,8 @@ if s:plug_active('conflict-marker.vim')
   augroup END
   command! -count=1 Cprev call iter#next_conflict(<count>, 1)
   command! -count=1 Cnext call iter#next_conflict(<count>, 0)
-  call s:repeat_map('', '[F', 'ConflictBackward', '<Cmd>exe v:count1 . "Cprev" \| ConflictMarkerThemselves<CR>')
-  call s:repeat_map('', ']F', 'ConflictForward', '<Cmd>exe v:count1 . "Cnext" \| ConflictMarkerThemselves<CR>')
+  call utils#repeat_map('', '[F', 'ConflictBackward', '<Cmd>exe v:count1 . "Cprev" \| ConflictMarkerThemselves<CR>')
+  call utils#repeat_map('', ']F', 'ConflictForward', '<Cmd>exe v:count1 . "Cnext" \| ConflictMarkerThemselves<CR>')
   noremap [f <Cmd>exe v:count1 . 'Cprev'<CR>zv
   noremap ]f <Cmd>exe v:count1 . 'Cnext'<CR>zv
   noremap gf <Cmd>ConflictMarkerOurselves<CR>
@@ -2165,12 +2158,18 @@ if s:plug_active('vim-fugitive')
     au!
     au BufEnter * call git#command_setup()
   augroup END
-  noremap <Leader>' <Cmd>call git#run_map(0, 0, '', 'status')<CR>
-  noremap <Leader>" <Cmd>call git#run_map(0, 0, '', 'tree')<CR>
+  noremap <Leader>' <Cmd>call git#run_map(0, 0, '', '')<CR>
+  noremap <Leader>" <Cmd>call git#run_map(0, 0, '', 'status')<CR>
+  noremap <Leader>y <Cmd>call git#run_map(0, 0, '', 'tree')<CR>
+  noremap <Leader>Y <Cmd>call git#run_map(0, 0, '', 'log')<CR>
+  noremap <Leader>u <Cmd>call git#run_map(0, 0, '', 'push origin')<CR>
+  noremap <Leader>U <Cmd>call git#run_map(0, 0, '', 'pull origin')<CR>
   noremap <Leader>i <Cmd>call git#safe_commit(0, 'oops')<CR>
   noremap <Leader>I <Cmd>call git#safe_commit(1, 'oops')<CR>
   noremap <Leader>o <Cmd>call git#safe_commit(0, 'commit')<CR>
   noremap <Leader>O <Cmd>call git#safe_commit(1, 'commit')<CR>
+  noremap <Leader>p <Cmd>call git#safe_commit(0, 'stash push --include-untracked')<CR>
+  noremap <Leader>P <Cmd>call git#safe_commit(1, 'stash push --include-untracked')<CR>
   noremap <Leader>h <Cmd>call git#run_map(0, 0, '', 'diff -- :/')<CR>
   noremap <Leader>H <Cmd>call git#run_map(0, 0, '', 'stage -- :/')<CR>
   noremap <Leader>j <Cmd>call git#run_map(0, 0, '', 'diff -- %')<CR>
@@ -2179,8 +2178,6 @@ if s:plug_active('vim-fugitive')
   noremap <Leader>K <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- %')<CR>
   noremap <Leader>l <Cmd>call git#run_map(0, 0, '', 'diff --staged -- :/')<CR>
   noremap <Leader>L <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- :/')<CR>
-  noremap <Leader>u <Cmd>call git#run_map(0, 0, '', 'push origin')<CR>
-  noremap <Leader>U <Cmd>call git#run_map(0, 0, '', 'pull origin')<CR>
   noremap <Leader>b <Cmd>call git#run_map(0, 0, '', 'branches')<CR>
   noremap <Leader>B <Cmd>call git#run_map(0, 0, '', 'switch -')<CR>
   noremap <expr> gl git#run_map_expr(2, 0, '', 'blame ')
@@ -2208,8 +2205,8 @@ if s:plug_active('vim-gitgutter')
   let g:gitgutter_max_signs = -1  " maximum number of signs
   let g:gitgutter_preview_win_floating = 1  " enable preview window
   let g:gitgutter_use_location_list = 0  " use for errors instead
-  call s:repeat_map('', '[G', 'HunkBackward', '<Cmd>call git#hunk_jump(-v:count1, 1)<CR>')
-  call s:repeat_map('', ']G', 'HunkForward', '<Cmd>call git#hunk_jump(v:count1, 1)<CR>')
+  call utils#repeat_map('', '[G', 'HunkBackward', '<Cmd>call git#hunk_jump(-v:count1, 1)<CR>')
+  call utils#repeat_map('', ']G', 'HunkForward', '<Cmd>call git#hunk_jump(v:count1, 1)<CR>')
   noremap [g <Cmd>call git#hunk_jump(-v:count1, 0)<CR>
   noremap ]g <Cmd>call git#hunk_jump(v:count1, 0)<CR>
   noremap <Leader>g <Cmd>call git#hunk_show()<CR>
@@ -2304,7 +2301,7 @@ if s:plug_active('undotree')
     noremap <buffer> <nowait> u <C-u>
     noremap <buffer> <nowait> d <C-d>
   endfunc
-  noremap <Tab>u <Cmd>UndotreeToggle<CR><Cmd>call Undotree_Augroup()<CR>
+  noremap g\ <Cmd>UndotreeToggle<CR><Cmd>call Undotree_Augroup()<CR>
   let g:undotree_DiffAutoOpen = 0
   let g:undotree_RelativeTimestamp = 0
   let g:undotree_SetFocusWhenToggle = 1
@@ -2318,7 +2315,7 @@ endif
 if s:plug_active('vim-test')
   let test#strategy = 'iterm'
   let g:test#python#pytest#options = '--mpl --verbose'
-  noremap g\ <Cmd>call utils#catch_errors('TestVisit')<CR>
+  noremap <Leader>\ <Cmd>call utils#catch_errors('TestVisit')<CR>
   noremap <Leader>, <Cmd>call utils#catch_errors('TestLast')<CR>
   noremap <Leader>. <Cmd>call utils#catch_errors('TestNearest')<CR>
   noremap <Leader>< <Cmd>call utils#catch_errors('TestLast --mpl-generate')<CR>
@@ -2395,8 +2392,8 @@ augroup color_setup
 augroup END
 command! -bang -range -count=0 Syntax
   \ call syntax#update_lines(<range> == 2 ? abs(<line2> - <line1>) : <count>, <bang>0)
-call s:repeat_map('', 'zy', 'SyncSmart', ':Syntax<CR>')
-call s:repeat_map('', 'zY', 'SyncStart', '<Cmd>Syntax!<CR>')
+call utils#repeat_map('', 'zy', 'SyncSmart', ':Syntax<CR>')
+call utils#repeat_map('', 'zY', 'SyncStart', '<Cmd>Syntax!<CR>')
 noremap <Leader>8 <Cmd>Colorize<CR>
 
 " Scroll color schemes and toggle colorize
@@ -2405,8 +2402,8 @@ noremap <Leader>8 <Cmd>Colorize<CR>
 command! -nargs=? -complete=color Scheme call syntax#next_scheme(<f-args>)
 command! -count=1 Sprev call syntax#next_scheme(-<count>)
 command! -count=1 Snext call syntax#next_scheme(<count>)
-call s:repeat_map('n', 'g[', 'Sprev', ':<C-u>Sprev<CR>')
-call s:repeat_map('n', 'g]', 'Snext', ':<C-u>Snext<CR>')
+call utils#repeat_map('n', 'g[', 'Sprev', ':<C-u>Sprev<CR>')
+call utils#repeat_map('n', 'g]', 'Snext', ':<C-u>Snext<CR>')
 noremap <Leader>9 <Cmd>Colors<CR>
 noremap <Leader>0 <Cmd>exe 'Scheme ' . g:colors_default<CR>
 
@@ -2467,8 +2464,8 @@ endif
 augroup clear_jumps
   au!
   au VimEnter,BufWinEnter * if get(w:, 'clear_jumps', 1) | silent clearjumps | let w:clear_jumps = 0 | endif
+  au VimEnter,BufWinEnter * exe 'normal! zvzz'
 augroup END
-noremap <Leader><Leader> <Cmd>echo system('curl https://icanhazdadjoke.com/')<CR>
 exe 'runtime autoload/repeat.vim'
 call syntax#update_highlights()
 nohlsearch  " turn off highlighting at startup
