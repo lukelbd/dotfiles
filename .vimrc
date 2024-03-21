@@ -1709,8 +1709,8 @@ if s:plug_active('vim-textobj-user')
   let g:textobj#sentence#move_n = ')'  " smarter sentence navigation
   let g:vim_textobj_parameter_mapping = 'k'  " i.e. 'keyword' or 'keyword argument'
   let s:textobj_alpha = {
-    \ 'g': '\_[^0-9A-Za-z]\r\_[^0-9A-Za-z]',
-    \ 'G': '\(\<\|[A-Z]\)\r\(\>\|[^0-9a-z]\)\@=',
+    \ 'g': '\(\<\|[^0-9A-Za-z]\)\r\(\>\|[^0-9A-Za-z]\)',
+    \ 'G': '\(\<\|[^0-9a-z]\)\r\ze[0-9a-z]\(\>\|[^0-9a-z]\)',
   \ }
   let s:textobj_comment = {
     \ 'select-i': 'iC', 'select-i-function': 'textobj#comment#select_i',
@@ -2149,8 +2149,8 @@ if s:plug_active('conflict-marker.vim')
 endif
 
 " Fugitive settings
-" Warning: Fugitive overwrites commands for some reason so re-declare them
-" whenever entering buffers and make them buffer-local.
+" Note: Fugitive overwrites commands for some reason so re-declare them
+" whenever entering buffers and make them buffer-local (see git.vim).
 " Note: All of the file-opening commands throughout fugitive funnel them through
 " commands like Gedit, Gtabedit, etc. So can prevent duplicate tabs by simply
 " overwriting this with custom tab-jumping :Drop command (see also git.vim).
@@ -2159,6 +2159,11 @@ if s:plug_active('vim-fugitive')
     au!
     au BufEnter * call git#command_setup()
   augroup END
+  noremap zl <Cmd>BCommits<CR>
+  noremap zL <Cmd>Commits<CR>
+  noremap <expr> gl git#run_map_expr(2, 0, '', 'blame ')
+  noremap gll <Cmd>call git#run_map(2, 0, '', 'blame ')<CR>
+  noremap gL <Cmd>call git#run_map(0, 0, '', 'blame')<CR>
   noremap <Leader>' <Cmd>call git#run_map(0, 0, '', '')<CR>
   noremap <Leader>" <Cmd>call git#run_map(0, 0, '', 'status')<CR>
   noremap <Leader>y <Cmd>call git#run_map(0, 0, '', 'tree')<CR>
@@ -2181,11 +2186,6 @@ if s:plug_active('vim-fugitive')
   noremap <Leader>L <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- :/')<CR>
   noremap <Leader>b <Cmd>call git#run_map(0, 0, '', 'branches')<CR>
   noremap <Leader>B <Cmd>call git#run_map(0, 0, '', 'switch -')<CR>
-  noremap <expr> gl git#run_map_expr(2, 0, '', 'blame ')
-  noremap gll <Cmd>call git#run_map(2, 0, '', 'blame ')<CR>
-  noremap gL <Cmd>call git#run_map(0, 0, '', 'blame')<CR>
-  noremap zl <Cmd>BCommits<CR>
-  noremap zL <Cmd>Commits<CR>
   let g:fugitive_legacy_commands = 1  " include deprecated :Git status to go with :Git
   let g:fugitive_dynamic_colors = 1  " fugitive has no HighlightRecent option
 endif
