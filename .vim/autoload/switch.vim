@@ -5,7 +5,7 @@
 function! s:echo_state(prefix, toggle, ...)
   if !a:0 || !a:1
     let state = a:toggle ? 'enabled' : 'disabled'
-    echom toupper(a:prefix[0]) . a:prefix[1:] . ' ' . state . '.'
+    redraw | echom toupper(a:prefix[0]) . a:prefix[1:] . ' ' . state . '.'
   endif
 endfunction
 
@@ -42,14 +42,12 @@ function! switch#autosave(...) abort
   if state == toggle
     return
   elseif toggle
-    exe 'augroup autosave_' . bufnr('%')
-      au!
-      exe 'autocmd InsertLeave,TextChanged <buffer> silent call file#update()'
-    augroup END
+    exe 'augroup autosave_' . bufnr()
+    exe 'au!' | exe 'autocmd InsertLeave,TextChanged <buffer> silent call file#update()'
+    exe 'augroup END'
   else
-    exe 'augroup autosave_' . bufnr('%')
-      au!
-    augroup END
+    exe 'augroup autosave_' . bufnr()
+    exe 'au!' | exe 'augroup END'
   endif
   let b:autosave_enabled = toggle
   call call('s:echo_state', ['Autosave', toggle, suppress])
@@ -182,25 +180,22 @@ endfunction
 " Toggle revealing matches in folds
 " Note: Auto disable whenever set nohlsearch is restore
 function! switch#opensearch(...) abort
-  let folds = get(b:, 'search_folds', [])
-  let state = !empty(folds)
+  let state = get(b:, 'open_search', 0)
   let toggle = a:0 > 0 ? a:1 : 1 - state
   let suppress = a:0 > 1 ? a:2 : 0
   let winview = winsaveview()
-  let b:search_folds = folds
-  if toggle
-    silent! global//call extend(folds, foldclosed('.') < 0 ? [] : [line('.')])
-    for line in folds
-      silent! exe line . 'foldopen'
-    endfor | call feedkeys("\<Cmd>set hlsearch\<CR>")
-  else
-    for line in folds
-      silent! exe line . 'foldclose'
-    endfor | let folds = []
+  if toggle  " :global previous search
+    silent! %foldclose!
+    global//silent! normal! zv
+    call feedkeys("\<Cmd>set hlsearch\<CR>", 'n')
+  else  " keep hlsearch enabled
+    silent! %foldclose!
+    silent! normal! zv
+    call feedkeys("\<Cmd>set hlsearch\<CR>", 'n')
   endif
-  let b:search_folds = folds
   call winrestview(winview)
   call call('s:echo_state', ['Open searches', toggle, suppress])
+  let b:open_search = toggle
 endfunction
 
 " Enable and disable LSP engines
@@ -261,7 +256,6 @@ endfunction
 function! s:paste_restore() abort
   if exists('s:paste_options')
     let [&l:paste, &l:mouse] = s:paste_options
-    echom 'Paste mode disabled'
     exe 'unlet s:paste_options'
   endif
 endfunction
@@ -287,6 +281,7 @@ function! switch#reveal() abort
   if exists('s:reveal_option')
     doautocmd reveal_mode TextChanged
   else
+    echom 'Reveal mode enabled.'
     let s:reveal_option = &l:conceallevel
     setlocal conceallevel=0  " incsearch only
     augroup reveal_mode

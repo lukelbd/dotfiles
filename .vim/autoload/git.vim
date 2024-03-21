@@ -39,8 +39,9 @@ let s:git_wide = ['', 'status', 'show', 'diff'] + s:git_user
 let s:git_quiet = ['add', 'stage', 'reset', 'push', 'pull', 'fetch', 'switch', 'restore', 'checkout']
 let s:git_aliases = {
   \ 'status': '',
-  \ 'blame': 'blame --show-email',
   \ 'show': 'show --abbrev-commit',
+  \ 'blame': 'blame --show-email',
+  \ 'commits': 'log --oneline ' . s:flags1 . ' ' . s:flags2,
   \ 'log': 'log ' . s:flags1,
   \ 'tree': 'log --stat ' . s:flags1 . ' ' . s:flags2,
   \ 'trunk': 'log --name-status ' . s:flags1 . ' ' . s:flags2,

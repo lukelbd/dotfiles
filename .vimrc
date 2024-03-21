@@ -99,14 +99,12 @@ set selectmode=  " disable 'select mode' slm, allow only visual mode for that st
 set sessionoptions=tabpages,terminal,winsize  " restrict session options for speed
 set shell=/usr/bin/env\ bash
 set shiftround  " round to multiple of shift width
-set shiftwidth=2  " default 2 spaces
 set showcmd  " show operator pending command
 set shortmess=atqcT  " snappy messages, 'a' does a bunch of common stuff
 set showtabline=1  " default 2 spaces
 set signcolumn=number  " show signs in number column
 set smartcase  " search case insensitive, unless has capital letter
 set smartindent  " additional indentation options
-set softtabstop=2  " default 2 spaces
 set spellcapcheck=  " disable checking for capital start of sentence
 set spelllang=en_us  " default to US english
 set splitbelow  " splitting behavior
@@ -114,7 +112,6 @@ set splitright  " splitting behavior
 set splitkeep=screen  " preserve relative position
 set switchbuf=useopen,usetab,newtab,uselast  " when switching buffers use open tab
 set tabpagemax=300  " allow opening shit load of tabs at once
-set tabstop=2  " default 2 spaces
 set tagcase=match  " match case when searching tags
 set tagrelative  " paths in tags file are relative to location
 set tags=.vimtags,./.vimtags  " home, working dir, or file dir
@@ -138,7 +135,10 @@ let &g:breakat = '  !*-+;:,./?'  " break lines following punctuation
 let &g:expandtab = 1  " global expand tab (respect tab toggling)
 let &g:foldenable = 1  " global fold enable (respect 'zn' toggling)
 let &g:shortmess .= &buftype ==# 'nofile' ? 'I' : ''  " no intro when starting vim
+let &g:shiftwidth = 2  " default 2 spaces
+let &g:softtabstop = 2  " default 2 spaces
 let &g:spell = 0  " global spell disable (only use text files)
+let &g:tabstop = 2  " default 2 spaces
 let &g:wildignore = join(tag#parse_ignores(0, '~/.wildignore'), ',')
 
 " File types for different unified settings
@@ -610,7 +610,8 @@ call utils#repeat_map('o', 'gm', 'PrevEnd',   "<Cmd>call iter#next_motion('ge, v
 " Screen motion mappings
 " Note: This is consistent with 'zl', 'zL', 'zh', 'zH' horizontal scrolling
 " and lets us use 'zt' for title case 'zb' for boolean toggle.
-for s:key in ['z', '<CR>'] | silent! exe 'unmap! z' . s:key | endfor
+for s:key in ['<CR>'] | silent! exe 'unmap! z' . s:key | endfor
+noremap z<Space> zz
 noremap z\ zzze
 noremap z9 ze
 noremap z0 zs
@@ -632,7 +633,7 @@ noremap zX <Cmd>call fold#update_folds()<CR>zX<Cmd>call fold#regex_levels()<CR>
 " Note: Here fold#toggle_range_expr() calls fold#update_folds() before toggling.
 " Note: These will overwrite 'fastfold_fold_command_suffixes' generated fold-updating
 " maps. However now use even faster / more conservative fold#update_folds() method.
-noremap <expr> z<Space> '<Cmd>call fold#update_folds()<CR>' . (foldclosed('.') > 0 ? 'zo' : 'zc')
+noremap <expr> zz '<Cmd>call fold#update_folds()<CR>' . (foldclosed('.') > 0 ? 'zo' : 'zc')
 nnoremap zcc <Cmd>call fold#update_folds()<CR>zc
 nnoremap zoo <Cmd>call fold#update_folds()<CR>zo
 vnoremap <nowait> zc <Cmd>call fold#update_folds()<CR>zc
@@ -1709,7 +1710,7 @@ if s:plug_active('vim-textobj-user')
   let g:vim_textobj_parameter_mapping = 'k'  " i.e. 'keyword' or 'keyword argument'
   let s:textobj_alpha = {
     \ 'g': '\_[^0-9A-Za-z]\r\_[^0-9A-Za-z]',
-    \ 'G': '\_[^0-9A-Za-z]\r\_[^0-9a-z]',
+    \ 'G': '\(\<\|[A-Z]\)\r\(\>\|[^0-9a-z]\)\@=',
   \ }
   let s:textobj_comment = {
     \ 'select-i': 'iC', 'select-i-function': 'textobj#comment#select_i',
@@ -1720,8 +1721,8 @@ if s:plug_active('vim-textobj-user')
     \ 'select-i': 'iE',  'select-i-function': 'textobj#entire#select_i'
   \ }
   call succinct#add_objects('alpha', s:textobj_alpha, 0, 1, 1)
-  call textobj#user#plugin('comment', {'textobj_comment': s:textobj_comment})
-  call textobj#user#plugin('entire', {'textobj_entire': s:textobj_entire})
+  call textobj#user#plugin('comment', {'-': s:textobj_comment})  " do not add <Plug> suffix
+  call textobj#user#plugin('entire', {'-': s:textobj_entire})  " do not add <Plug> suffix
 endif
 
 " Toggle comments and whatnot
