@@ -255,6 +255,7 @@ endfunction
 " Note: Removed automatically when insert mode finishes
 function! s:paste_restore() abort
   if exists('s:paste_options')
+    echom 'Paste mode disabled.'
     let [&l:paste, &l:mouse] = s:paste_options
     exe 'unlet s:paste_options'
   endif
@@ -277,10 +278,13 @@ function! s:reveal_restore() abort
     exe 'unlet s:reveal_option'
   endif
 endfunction
-function! switch#reveal() abort
-  if exists('s:reveal_option')
+function! switch#reveal(...) abort
+  let state = exists('s:reveal_option')
+  let toggle = a:0 > 0 ? a:1 : 1 - state
+  if !toggle && exists('s:reveal_option')
+    echom 'Reveal mode disabled.'
     doautocmd reveal_mode TextChanged
-  else
+  elseif toggle && !exists('s:reveal_option')
     echom 'Reveal mode enabled.'
     let s:reveal_option = &l:conceallevel
     setlocal conceallevel=0  " incsearch only

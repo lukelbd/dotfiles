@@ -99,6 +99,7 @@ function! comment#next_comment(count, ...) abort
   for _ in range(abs(a:count))
     call search(regex, flags, 0, 0, "!tags#get_inside('Comment')")
   endfor
+  if &foldopen =~# 'block' | exe 'normal! zv' | endif
 endfunction
 function! comment#next_header(count, ...) abort
   let head = a:0 && a:1 ? '' : '\s*'  " include indented
@@ -109,6 +110,7 @@ function! comment#next_header(count, ...) abort
   for _ in range(abs(a:count))
     call search(regex, flags, 0, 0, "!tags#get_inside('Comment')")
   endfor
+  if &foldopen =~# 'block' | exe 'normal! zv' | endif
 endfunction
 function! comment#next_label(count, ...) abort
   let [flag, opts] = a:0 && !type(a:1) ? [a:1, a:000[1:]] : [0, a:000]
@@ -119,6 +121,7 @@ function! comment#next_label(count, ...) abort
   for _ in range(abs(a:count))
     call search(regex, flags, 0, 0, "!tags#get_inside('Comment')")
   endfor
+  if &foldopen =~# 'quickfix' | exe 'normal! zv' | endif
 endfunction
 
 " Toggle comment under cursor accounting for folds

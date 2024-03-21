@@ -56,7 +56,8 @@ function! iter#next_conflict(count, ...) abort
     let pos0 = searchpos(g:conflict_marker_begin, 'bcW')
   endif
   if pos2[0] > pos1[0] && pos1[0] > pos0[0]
-    call cursor(pos0)
+    call cursor(pos0)  " always open folds (same as gitgutter)
+    exe 'normal! zv'
   else  " echo warning
     call winrestview(winview)
     echohl ErrorMsg
@@ -97,6 +98,7 @@ function! iter#next_loc(count, list, ...) abort
   else  " jump to error
     exe cmd . ' ' . idx
   endif
+  if &l:foldopen =~# 'quickfix' | exe 'normal! zv' | endif
 endfunction
 
 " Navigate matches without editing jumplist and words with conservative iskeyword

@@ -315,6 +315,7 @@ function! python#next_docstring(count, ...) abort
   for _ in range(abs(a:count))
     call search(regex, flags, 0, 0, "!tags#get_inside(-1, 'Constant')")
   endfor
+  if &foldopen =~# 'quickfix' | exe 'normal! zv' | endif
 endfunction
 function! python#insert_docstring() abort
   let winview = winsaveview()

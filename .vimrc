@@ -422,10 +422,10 @@ command! -count=1 Lprev call iter#next_loc(<count>, 'loc', 1)
 command! -count=1 Lnext call iter#next_loc(<count>, 'loc', 0)
 command! -count=1 Qprev call iter#next_loc(<count>, 'qf', 1)
 command! -count=1 Qnext call iter#next_loc(<count>, 'qf', 0)
-noremap [x <Cmd>exe v:count1 . 'Lprev'<CR>zv
-noremap ]x <Cmd>exe v:count1 . 'Lnext'<CR>zv
-noremap [X <Cmd>exe v:count1 . 'Qprev'<CR>zv
-noremap ]X <Cmd>exe v:count1 . 'Qnext'<CR>zv
+noremap [x <Cmd>exe v:count1 . 'Lprev'<CR>
+noremap ]x <Cmd>exe v:count1 . 'Lnext'<CR>
+noremap [X <Cmd>exe v:count1 . 'Qprev'<CR>
+noremap ]X <Cmd>exe v:count1 . 'Qnext'<CR>
 
 " Helper window style adjustments with less-like shortcuts
 " Note: Also
@@ -466,8 +466,9 @@ cnoremap <F9> <Esc><Cmd>Commands<CR>
 " Note: For some reason even though :help :mes claims count N shows the N most recent
 " message, for some reason using 1 shows empty line and 2 shows previous plus newline.
 for s:key in ['z', '<Leader>'] | silent! exe 'unmap! ' . s:key . '<CR>' | endfor
-noremap g<Space> <Cmd>call switch#reveal()<CR>
-noremap <Leader><Space> <Cmd>call switch#message()<CR>
+noremap g] <Cmd>call switch#reveal(1)<CR>
+noremap g[ <Cmd>call switch#reveal(0)<CR>
+noremap g<Space> <Cmd>call switch#message()<CR>
 nnoremap <Leader>; q:
 nnoremap <Leader>/ q/
 nnoremap <Leader>: <Cmd>History:<CR>
@@ -652,7 +653,8 @@ nnoremap <expr> zo fold#toggle_range_expr(0, 0)
 noremap zi <Cmd>call fold#toggle_nested()<CR>
 noremap zC <Cmd>call fold#toggle_current(1)<CR>
 noremap zO <Cmd>call fold#toggle_current(0)<CR>
-noremap z/ <Cmd>call switch#opensearch()<CR>
+noremap z/ <Cmd>call switch#opensearch(1)<CR>
+noremap z? <Cmd>call switch#opensearch(0)<CR>
 noremap zN zN<Cmd>call fold#update_folds()<CR>
 
 " Change fold level
@@ -727,32 +729,32 @@ noremap gM <Cmd>Warnings<CR>
 
 " Navigate docstrings and methods
 " Capital uses only non-variable-assignment zero-level or first-level docstrings
-noremap [d <Cmd>call python#next_docstring(-v:count1, 0)<CR>zv
-noremap ]d <Cmd>call python#next_docstring(v:count1, 0)<CR>zv
-noremap [D <Cmd>call python#next_docstring(-v:count1, 1)<CR>zv
-noremap ]D <Cmd>call python#next_docstring(v:count1, 1)<CR>zv
+noremap [d <Cmd>call python#next_docstring(-v:count1, 0)<CR>
+noremap ]d <Cmd>call python#next_docstring(v:count1, 0)<CR>
+noremap [D <Cmd>call python#next_docstring(-v:count1, 1)<CR>
+noremap ]D <Cmd>call python#next_docstring(v:count1, 1)<CR>
 
 " Navigate contiguous comment blocks and headers
 " Capital uses only top-level zero-indent comment blocks
-noremap [c <Cmd>call comment#next_comment(-v:count1, 0)<CR>zv
-noremap ]c <Cmd>call comment#next_comment(v:count1, 0)<CR>zv
-noremap [C <Cmd>call comment#next_comment(-v:count1, 1)<CR>zv
-noremap ]C <Cmd>call comment#next_comment(v:count1, 1)<CR>zv
-noremap [b <Cmd>call comment#next_header(-v:count1, 0)<CR>zv
-noremap ]b <Cmd>call comment#next_header(v:count1, 0)<CR>zv
-noremap [B <Cmd>call comment#next_header(-v:count1, 1)<CR>zv
-noremap ]B <Cmd>call comment#next_header(v:count1, 1)<CR>zv
+noremap [c <Cmd>call comment#next_comment(-v:count1, 0)<CR>
+noremap ]c <Cmd>call comment#next_comment(v:count1, 0)<CR>
+noremap [C <Cmd>call comment#next_comment(-v:count1, 1)<CR>
+noremap ]C <Cmd>call comment#next_comment(v:count1, 1)<CR>
+noremap [b <Cmd>call comment#next_header(-v:count1, 0)<CR>
+noremap ]b <Cmd>call comment#next_header(v:count1, 0)<CR>
+noremap [B <Cmd>call comment#next_header(-v:count1, 1)<CR>
+noremap ]B <Cmd>call comment#next_header(v:count1, 1)<CR>
 
 " Navigate notes and todos
 " Capital uses only top-level zero-indent headers
-noremap [q <Cmd>call comment#next_label(-v:count1, 0, 'todo', 'fixme')<CR>zv
-noremap ]q <Cmd>call comment#next_label(v:count1, 0, 'todo', 'fixme')<CR>zv
-noremap [Q <Cmd>call comment#next_label(-v:count1, 1, 'todo', 'fixme')<CR>zv
-noremap ]Q <Cmd>call comment#next_label(v:count1, 1, 'todo', 'fixme')<CR>zv
-noremap [a <Cmd>call comment#next_label(-v:count1, 0, 'note', 'warning')<CR>zv
-noremap ]a <Cmd>call comment#next_label(v:count1, 0, 'note', 'warning')<CR>zv
-noremap [A <Cmd>call comment#next_label(-v:count1, 1, 'note', 'warning')<CR>zv
-noremap ]A <Cmd>call comment#next_label(v:count1, 1, 'note', 'warning')<CR>zv
+noremap [q <Cmd>call comment#next_label(-v:count1, 0, 'todo', 'fixme')<CR>
+noremap ]q <Cmd>call comment#next_label(v:count1, 0, 'todo', 'fixme')<CR>
+noremap [Q <Cmd>call comment#next_label(-v:count1, 1, 'todo', 'fixme')<CR>
+noremap ]Q <Cmd>call comment#next_label(v:count1, 1, 'todo', 'fixme')<CR>
+noremap [a <Cmd>call comment#next_label(-v:count1, 0, 'note', 'warning')<CR>
+noremap ]a <Cmd>call comment#next_label(v:count1, 0, 'note', 'warning')<CR>
+noremap [A <Cmd>call comment#next_label(-v:count1, 1, 'note', 'warning')<CR>
+noremap ]A <Cmd>call comment#next_label(v:count1, 1, 'note', 'warning')<CR>
 
 " Run replacement on this line alone
 " Note: Critical to have separate visual and normal maps
@@ -1710,7 +1712,7 @@ if s:plug_active('vim-textobj-user')
   let g:vim_textobj_parameter_mapping = 'k'  " i.e. 'keyword' or 'keyword argument'
   let s:textobj_alpha = {
     \ 'g': '\(\<\|[^0-9A-Za-z]\)\r\(\>\|[^0-9A-Za-z]\)',
-    \ 'G': '\(\<\|[^0-9a-z]\)\r\ze[0-9a-z]\(\>\|[^0-9a-z]\)',
+    \ 'h': '\(\<\|[^0-9a-z]\)\r[0-9a-z]\(\>\|[^0-9a-z]\)\@=',
   \ }
   let s:textobj_comment = {
     \ 'select-i': 'iC', 'select-i-function': 'textobj#comment#select_i',
@@ -2131,8 +2133,8 @@ if s:plug_active('conflict-marker.vim')
   command! -count=1 Cnext call iter#next_conflict(<count>, 0)
   call utils#repeat_map('', '[F', 'ConflictBackward', '<Cmd>exe v:count1 . "Cprev" \| ConflictMarkerThemselves<CR>')
   call utils#repeat_map('', ']F', 'ConflictForward', '<Cmd>exe v:count1 . "Cnext" \| ConflictMarkerThemselves<CR>')
-  noremap [f <Cmd>exe v:count1 . 'Cprev'<CR>zv
-  noremap ]f <Cmd>exe v:count1 . 'Cnext'<CR>zv
+  noremap [f <Cmd>exe v:count1 . 'Cprev'<CR>
+  noremap ]f <Cmd>exe v:count1 . 'Cnext'<CR>
   noremap gf <Cmd>ConflictMarkerOurselves<CR>
   noremap gF <Cmd>ConflictMarkerThemselves<CR>
   noremap zf <Cmd>ConflictMarkerBoth<CR>
@@ -2403,8 +2405,8 @@ noremap <Leader>8 <Cmd>Colorize<CR>
 command! -nargs=? -complete=color Scheme call syntax#next_scheme(<f-args>)
 command! -count=1 Sprev call syntax#next_scheme(-<count>)
 command! -count=1 Snext call syntax#next_scheme(<count>)
-call utils#repeat_map('n', 'g[', 'Sprev', ':<C-u>Sprev<CR>')
-call utils#repeat_map('n', 'g]', 'Snext', ':<C-u>Snext<CR>')
+call utils#repeat_map('n', 'g(', 'Sprev', ':<C-u>Sprev<CR>')
+call utils#repeat_map('n', 'g)', 'Snext', ':<C-u>Snext<CR>')
 noremap <Leader>9 <Cmd>Colors<CR>
 noremap <Leader>0 <Cmd>exe 'Scheme ' . g:colors_default<CR>
 
