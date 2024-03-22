@@ -1,0 +1,68 @@
+#-----------------------------------------------------------------------------#
+# Terminal and ipython input configuration
+# Use nr2char(printf('%d', '0xN')) to convert iterm hex to sequences
+# Note these must be in .inputrc to work with ipython (not .bashrc)
+# See: https://stackoverflow.com/a/12191699/4970632
+#-----------------------------------------------------------------------------#
+# Vi-mode command line editing
+# bind 'set editing-mode vi'
+# Insert mode as line cursor
+# bind 'set vi-ins-mode-string "\1\e[6 q\2"'
+# Normal mode as block cursor
+# bind 'set vi-cmd-mode-string "\1\e[2 q\2"'
+
+# General key bindings
+# Complete forward without changing scroll history
+"\C-i": menu-complete
+# Complete backward without changing scroll history
+"\e[Z": menu-complete-backward
+# Tab-like complete forward with F2 = ctrl-. (see .vimrc)
+"\eOQ": menu-complete
+# Tab-like complete backward with F1 = ctrl-, (see .vimrc)
+"\eOP": menu-complete-backward
+# <End> key from sed -n l <Ctrl-Right> i.e. 0x1b 0x5b 0x46
+"\e[F": end-of-line
+# <Home> key from sed -n l <Ctrl-Left> i.e. 0x1b 0x5b 0x48
+"\e[H": beginning-of-line
+# # <Alt-Right> key from sed -n -l <Alt-Right>
+"\e[1;3C": forward-word
+# # <Alt-Left> key from sed -n l <Alt-Left>
+"\e[1;3D": backward-word
+# # <Alt-Up> key from sed -n l <Alt-Left>
+"\e[1;3A": shell-backward-word
+  # <Alt-Down> key from sed -n -l <Alt-Right>
+"\e[1;3B": shell-forward-word
+
+# Terminal settings
+# Turn off history expand so cn have '!' in strings: https://unix.stackexchange.com/a/33341/112647
+set +H
+# Never close terminal with ctrl-d
+set -o ignoreeof
+# Key sequence timeout: https://unix.stackexchange.com/a/318497/112647
+set keyseq-timeout 50
+# Exclude mode from prompt
+set show-mode-in-prompt on
+# Disable completion (use fzf instead)
+set disable-completion off
+# Enable ignorecase 
+set completion-ignore-case on
+# Treat hyphens and undescores the same
+set completion-map-case on
+# Use one tab press for fzf: https://unix.stackexchange.com/a/76625/112647
+set show-all-if-ambiguous on
+# Show string typed so far as member while cycling through completion options
+set menu-complete-display-prefix on
+# Easier to read
+set completion-display-width 1
+# Only let readlinke/shell do visual bell; use none to disable totally
+set bell-style visible
+# If there is text to right of cursor, make bash ignore it; only bash 4.0 readline
+set skip-completed-text on
+# Extra information, e.g. whether something is executable with *
+set visible-stats off
+# No more --more-- pager when list too big
+set page-completions off
+# Never ask for user confirmation if theres too much stuff
+set completion-query-items 0
+# Add trailing slash to directory symlink
+set mark-symlinked-directories on

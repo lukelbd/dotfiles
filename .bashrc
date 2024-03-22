@@ -87,230 +87,153 @@
 #   ~# -- Give list of forwarded connections in this session
 #   ~? -- Give list of these commands
 #-----------------------------------------------------------------------------
-# Bail out if not running interactively (e.g. when sending data packets over with
-# scp/rsync). Known bug: scp/rsync fail without this line due to greeting message:
-# 1. https://unix.stackexchange.com/questions/88602/scp-from-remote-host-fails-due-to-login-greeting-set-in-bashrc
-# 2. https://unix.stackexchange.com/questions/18231/scp-fails-without-error
-[[ $- != *i* ]] && return
-_setup_message() { printf '%s' "${1}$(seq -s '.' $((30 - ${#1})) | tr -d 0-9)"; }
-
-#-----------------------------------------------------------------------------
-# Configure shell behavior and key bindings
-#-----------------------------------------------------------------------------
+# Apply general shell settings
 # Prompt "<comp name>[<job count>]:<push dir N>:...:<push dir 1>:<work dir> <user>$"
-# Ensure the prompt is applied only once so that supercomputer modules, conda
-# environments, etc. can subsequently modify the prompt appearance.
+# Ensure the prompt is applied only once so modules, conda, etc. can modify it
 # See: https://stackoverflow.com/a/28938235/4970632
 # See: https://unix.stackexchange.com/a/124408/112647
-# don't overwrite modifications by supercomputer modules, conda environments, etc.
-_setup_message 'General setup'
-_prompt_branch() {  # print parentheses around git branch similar to conda environment
+# See: https://unix.stackexchange.com/a/420362/112647
+# See: https://unix.stackexchange.com/a/88605/112647
+[[ $- != *i* ]] && return  # not interactive (scp/rscync fail without this line)
+_setup_message() { printf '%s' "${1}$(seq -s '.' $((30 - ${#1})) | tr -d 0-9)"; }
+_prompt_branch() {  # print parentheses around git branch similar to conda environments
   local branch
   branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
   [ -n "$branch" ] && echo "($branch) "
 }
-_prompt_dirs() {  # show full dirs path from base to current instead of just current
+_prompt_dirs() {  # prompt string "<push dir N>:...:<push dir 1>:<work dir> <user>$"
   local paths
   IFS=$'\n' read -d '' -r -a paths < <(command dirs -p | tac)
   IFS=: eval 'echo "${paths[*]##*/}"'
 }
-[ -n "$_prompt_set" ] \
-  || export PS1='$(_prompt_branch)\[\033[1;37m\]\h[\j]:$(_prompt_dirs)\$ \[\033[0m\]'
-_prompt_set=1
-
-# Readline settings and bingins (could also put strings in .inputrc)
-# Use nr2char(printf('%d', '0xN')) to convert iterm hex to sequences used below
-# See: https://stackoverflow.com/a/12191699/4970632
-# bind 'set editing-mode vi'
-# bind 'set vi-cmd-mode-string "\1\e[2 q\2"' # insert mode as line cursor
-# bind 'set vi-ins-mode-string "\1\e[6 q\2"' # normal mode as block curso
-_setup_bindings() {
-  complete -r        # remove previous completions
-  bind -r '"\C-d"'   # enable ctrl-d and ctrl-u in Vim
-  bind -r '"\C-s"'   # enable ctrl-s in Vim (normally caught as start/stop signal)
-  stty werase undef  # disable ctrl-w word delete function
-  stty stop undef    # disable ctrl-s start/stop binding
-  stty eof undef     # disable ctrl-d end-of-file binding
-  bind 'set keyseq-timeout 50'                # see: https://unix.stackexchange.com/a/318497/112647
-  bind 'set show-mode-in-prompt off'          # do not show mode
-  bind 'set disable-completion off'           # ensure on
-  bind 'set completion-ignore-case on'        # want dat
-  bind 'set completion-map-case on'           # treat hyphens and underscores as same
-  bind 'set show-all-if-ambiguous on'         # one tab press for fzf: https://unix.stackexchange.com/a/76625/112647
-  bind 'set menu-complete-display-prefix on'  # show string typed so far as 'member' while cycling through completion options
-  bind 'set completion-display-width 1'       # easier to read
-  bind 'set bell-style visible'               # only let readlinke/shell do visual bell; use 'none' to disable totally
-  bind 'set skip-completed-text on'           # if there is text to right of cursor, make bash ignore it; only bash 4.0 readline
-  bind 'set visible-stats off'                # extra information, e.g. whether something is executable with *
-  bind 'set page-completions off'             # no more --more-- pager when list too big
-  bind 'set completion-query-items 0'         # never ask for user confirmation if there's too much stuff
-  bind 'set mark-symlinked-directories on'    # add trailing slash to directory symlink
-  bind '"\C-i": menu-complete'                # complete forward without changing scroll history
-  bind '"\e[Z": menu-complete-backward'       # complete backward without changing scroll history
-  bind '"\eOQ": menu-complete'                # tab-like complete forward with F2 = ctrl-. (see .vimrc)
-  bind '"\eOP": menu-complete-backward'       # tab-like complete backward with F1 = ctrl-, (see .vimrc)
-  bind '"\e[F": end-of-line'                  # <End> key from sed -n l <Ctrl-Right> i.e. 0x1b 0x5b 0x46
-  bind '"\e[H": beginning-of-line'            # <Home> key from sed -n l <Ctrl-Left> i.e. 0x1b 0x5b 0x48
-  bind '"\e[1;3D" backward-word'              # <Alt-Left> key from sed -n l <Alt-Up>
-  bind '"\e[1;3C" forward-word'               # <Alt-Right> key from sed -n -l <Alt-Down>
-  bind '"\e[1;2D": backward-word'             # <Shift-Left> key from sed -n l <Shift-Up>
-  bind '"\e[1;2C": forward-word'              # <Shift-Right> key from sed -n -l <Shift-Down>
-}
-_setup_bindings 2>/dev/null  # ignore an errors
-
-# Shell Options
-# Check out 'shopt -p' to see possibly iteresting shell options
-# Note diff between .inputrc and .bashrcsettings: https://unix.stackexchange.com/a/420362/112647
-_setup_opts() {
-  set +H  # turn off history expand so cn have '!' in strings: https://unix.stackexchange.com/a/33341/112647
-  set -o ignoreeof  # never close terminl with ctrl-d
-  stty -ixon  # disable start stop outpu control to alloew ctrl-s
-  shopt -s autocd  # typing naked directry name will cd into it
-  shopt -s cdspell  # attempt spelling crrection of cd arguments
-  shopt -s cdable_vars  # cd into shell ariable directories, no $ necessary
+_setup_shell() {         # apply shell options (list available with shopt -p)
+  stty werase undef      # disable ctrl-w word delete function
+  stty stop undef        # disable ctrl-s start/stop binding
+  stty eof undef         # disable ctrl-d end-of-file binding
+  stty -ixon             # disable start stop outpu control to alloew ctrl-s
+  bind -i -f ~/.inputrc  # apply inputrc overrides
+  shopt -s autocd        # typing naked directry name will cd into it
+  shopt -s cdspell       # attempt spelling crrection of cd arguments
+  shopt -s cdable_vars   # cd into shell ariable directories, no $ necessary
   shopt -s checkwinsize  # allow window esizing
-  shopt -s cmdhist  # save multi-line comands as one command in history
-  shopt -s direxpand  # expand directoris
-  shopt -s dirspell  # attempt spelling orrection of dirname
-  shopt -s globstar  # **/ matches all sbdirectories, searches recursively
-  shopt -s histappend  # append to the hstory file, don't overwrite it
-  shopt -u dotglob  # include dot patters in glob matches
-  shopt -u extglob  # extended globbing;allows use of ?(), *(), +(), +(), @(), and !() with separation "|" for OR options
-  shopt -u failglob  # no error message f expansion is empty
-  shopt -u nocaseglob  # match case in gob expressions
-  shopt -u nocasematch  # match case in ase/esac and [[ =~ ]] instances
-  shopt -u nullglob  # turn off nullglob so e.g. no null-expansion of string with ?, * if no matches
+  shopt -s cmdhist       # save multi-line comands as one command in history
+  shopt -s direxpand     # expand directoris
+  shopt -s dirspell      # attempt spelling orrection of dirname
+  shopt -s globstar      # **/ matches all sbdirectories, searches recursively
+  shopt -s histappend    # append to the hstory file, don't overwrite it
+  shopt -u dotglob       # include dot patters in glob matches
+  shopt -u extglob       # extended globbing;allows use of ?(), *(), +(), +(), @(), and !() with separation "|" for OR options
+  shopt -u failglob      # no error message f expansion is empty
+  shopt -u nocaseglob    # match case in gob expressions
+  shopt -u nocasematch   # match case in ase/esac and [[ =~ ]] instances
+  shopt -u nullglob      # turn off nullglob so e.g. no null-expansion of string with ?, * if no matches
   shopt -u no_empty_cmd_completion  # enble empty command completion
-  export PROMPT_DIRTRIM=2  # trim long pths in prompt
   export HISTSIZE=5000  # enable huge hitory
   export HISTFILESIZE=5000  # enable hug history
   export HISTIGNORE='&:bg:fg:exit:clear' # don't record some commands
   export HISTCONTROL=''  # note ignoreboh = ignoredups + ignorespace
+  export PROMPT_DIRTRIM=2  # trim long pths in prompt
+  bind '"\e[1;3A": shell-backward-word'
+  bind '"\e[1;3B": shell-forward-word'
+  bind '"\e[1;3C": forward-word'
+  bind '"\e[1;3D": backward-word'
 }
-_setup_opts 2>/dev/null  # ignore if opton unavailable
+_setup_message 'General setup'
+[ -n "$_prompt_set" ] \
+  || export PS1='$(_prompt_branch)\[\033[1;37m\]\h[\j]:$(_prompt_dirs)\$ \[\033[0m\]'
+_prompt_set=1  # avoid overwriting e.g. conda environment
+_setup_shell 2>/dev/null  # ignore if opton unavailable
+unalias -a  # critical (also use declare -F for definitions)
 
-#----------------------------------------------------------------------------
-# Settings for particular machines
-#----------------------------------------------------------------------------
-# Reset all aliases and functions
-# Very important! Sometimes we wrap new aliases around existing ones e.g. ncl!
-unalias -a
-# declare -F  # to view current ones
-
-# Helper function to load modules automatically
-_load_unloaded() {
+# Apply machine dependent settings
+# * List homebrew installs with 'brew list' (narrow with --formulae or --casks).
+#   Show package info with 'brew info package'. Use 'brew install trash' for trash cmd
+# * List macport installs with 'port installed requested'.
+#   Show package info with 'port installed [package]'.
+# * Installed vim using: conda install vim. Also must incall ncurses with
+#   conda install -y conda-forge::ncurses. See: https://github.com/conda-forge/rabbitmq-server-feedstock/issues/14
+# * Installed tex using: brew install --cask mactex
+#   See: https://tex.stackexchange.com/q/97183/73149
+# * Installed ffmpeg using: sudo port install ffmpeg +nonfree
+#   See: https://stackoverflow.com/q/55092608/4970632
+# * Installed universal ctags with (not in main repo becauase no versions yet):
+#   brew install --HEAD universal-ctags/universal-ctags/universal-ctags
+# * Installed cdo, nco, and R with conda. Installed ncl by installing compilers
+#   with homebrew and downloading pre-compiled binary from ncar.
+# * Installed gnu utils with 'brew install coreutils findutils gnu-sed gnutls grep
+#   gnu-tar gawk'. Found paths with: https://apple.stackexchange.com/q/69223/214359
+#   Also installed access to macOS 'trash' using 'brew install trash'.
+# NOTE: Logging into network WiFi sometimes converts hostname to automatic names, e.g.
+# DESKTOP-NNN.ColoState.EDU or eduroam-NNN-NNN. Repair with 'sudo hostname HOST'
+# See: https://apple.stackexchange.com/q/40734/214359
+# NOTE: Fix permission issues after migrating macbooks with following command:
+# sudo chown -R $(whoami):admin /usr/local/* && sudo chmod -R g+rwx /usr/local/*
+# See: https://stackoverflow.com/a/50219099/4970631
+# NOTE: Use rvm below for scripting. Make sure this is the last PATH variable change.
+# Critical to install with rvm or get endless issues with MacPorts versus Homebrew
+# versions:: https://stackoverflow.com/a/3464303/4970632
+# NOTE: Tried exporting DYLD_FALLBACK_LIBRARY_PATH but it screwed up some python
+# modules so instead just always invoke ncl with temporarily set DYLD_LIBRARY_PATH.
+# Note ncl is realiased below and are careful to preserve any leading paths.
+# NOTE: Used to install gcc and gfortran with 'port install libgcc7' then 'port select
+# --set gcc mp-gcc7' (needed for ncl) (try 'port select --list gcc') but latest
+# versions had issues. Now use 'brew install gcc@7' then add aliases to definitions.
+# NOTE: Should not need to edit $MANPATH since man is intelligent and should detect
+# 'man' folders automatically even for custom utilities. However if the resuilt of
+# 'manpath' is missing something follow these notes: https://unix.stackexchange.com/q/344603/112647
+# NOTE: HDF5 setting is for cdo: 'Mac users may need to set the environment variable
+# "HDF5_USE_FILE_LOCKING" to the five-character string "FALSE" when accessing network
+# mounted files. This is an application run-time setting, not a build setting. Otherwise
+# errors such as "unable to open file" or "HDF5 error" may be encountered.'
+_macos=false
+_load_modules() {
+  # module purge 2>/dev/null
   local module   # but _loaded_modules is global
   read -r -a _loaded_modules < <(module --terse list 2>&1)
-  # module purge 2>/dev/null
-  for module in "$@"; do
-    if ! [[ " ${_loaded_modules[*]} " =~ " $module " ]]; then
-      module load "$module"
-    fi
-  done
+  for module in "$@"; do [[ " ${_loaded_modules[*]} " =~ " $module " ]] || module load "$module"; done
 }
-
-# Flag for if in macos
-# First, the path management
-_macos=false
 case "${HOSTNAME%%.*}" in
-  # Macbook settings
-  # NOTE: Logging into network WiFi sometimes changes hostname to strange names, e.g.
-  # DESKTOP-NNN.ColoState.EDU or eduroam-NNN-NNN. Repair with 'sudo hostname HOST'.
-  # See: https://apple.stackexchange.com/q/40734/214359
-  vortex*|velouria*|maelstrom*|uriah*)
-    # Defaults, LaTeX, X11, Homebrew, Macports, PGI compilers, and local compilations
-    # * List homebrew installs with 'brew list' (narrow with --formulae or --casks).
-    #   Show package info with 'brew info package'.
-    # * List macport installs with 'port installed requested'.
-    #   Show package info with 'port installed [package]'.
-    # * Installed vim using: conda install vim. Also must incall ncurses with
-    #   conda install -y conda-forge::ncurses. See: https://github.com/conda-forge/rabbitmq-server-feedstock/issues/14
-    # * Installed tex using: brew install --cask mactex
-    #   See: https://tex.stackexchange.com/q/97183/73149
-    # * Installed ffmpeg using: sudo port install ffmpeg +nonfree
-    #   See: https://stackoverflow.com/q/55092608/4970632
-    # * Installed universal ctags with (not in main repo becauase no versions yet):
-    #   brew install --HEAD universal-ctags/universal-ctags/universal-ctags
-    # * Installed cdo, nco, and R with conda. Installed ncl by installing compilers
-    #   with homebrew and downloading pre-compiled binary from ncar.
-    # * Installed gnu utils with 'brew install coreutils findutils gnu-sed gnutls grep
-    #   gnu-tar gawk'. Found paths with: https://apple.stackexchange.com/q/69223/214359
-    #   Also installed access to macOS 'trash' using 'brew install trash'.
-    # * Fix permission issues after migrating macs with following command:
-    #   sudo chown -R $(whoami):admin /usr/local/* && sudo chmod -R g+rwx /usr/local/*
-    #   https://stackoverflow.com/a/50219099/4970631
+  vortex*|velouria*|maelstrom*|uriah*)  # macbook
     _macos=true
     unset MANPATH  # reset man path
     alias locate='/usr/bin/locate'  # coreutils version fails
-    export PATH=/usr/bin:/bin:/usr/sbin:/sbin
-    export PATH=/Library/TeX/texbin:$PATH
-    export PATH=/opt/X11/bin:$PATH
-    export PATH=/usr/local/bin:/opt/local/bin:/opt/local/sbin:$PATH
-    export PATH=/usr/local/opt/grep/libexec/gnubin:$PATH
+    export PATH=/usr/bin:/bin:/usr/sbin:/sbin  # defaults
+    export PATH=/Library/TeX/texbin:$PATH  # latex
+    export PATH=/opt/X11/bin:$PATH  # X11
+    export PATH=/usr/local/bin:/opt/local/bin:/opt/local/sbin:$PATH  # homebrew
+    export PATH=/usr/local/opt/grep/libexec/gnubin:$PATH  # macports
     export PATH=/usr/local/opt/gnu-tar/libexec/gnubin:$PATH
     export PATH=/usr/local/opt/gnu-sed/libexec/gnubin:$PATH
     export PATH=/usr/local/opt/findutils/libexec/gnubin:$PATH
     export PATH=/usr/local/opt/coreutils/libexec/gnubin:$PATH
-    export PATH=/opt/pgi/osx86-64/2018/bin:$PATH
-    export PATH=$HOME/builds/matlab-r2019a/bin:$PATH
+    export PATH=/opt/pgi/osx86-64/2018/bin:$PATH  # pgi compilers
+    export PATH=$HOME/builds/matlab-r2019a/bin:$PATH  # local builds
     export PATH=$HOME/builds/ncl-6.6.2/bin:$PATH
-    export PATH=/Applications/Skim.app/Contents/MacOS:$PATH
+    export PATH=/Applications/Skim.app/Contents/MacOS:$PATH  # skim utilities
     export PATH=/Applications/Skim.app/Contents/SharedSupport:$PATH
     export PATH=/Applications/Calibre.app/Contents/MacOS:$PATH
+    export NCARG_ROOT=$HOME/builds/ncl-6.6.2  # or macports: /opt/local/lib/libgcc
+    alias ncl='DYLD_LIBRARY_PATH=/usr/local/lib/gcc/7/ ncl'  # brew libraries
+    alias c++='/usr/local/bin/c++-11'  # point to verion (see above)
+    alias cpp='/usr/local/bin/cpp-11'  # point to verion (see above)
+    alias gcc='/usr/local/bin/gcc-11'  # point to verion (see above)
+    alias gfortran='/usr/local/bin/gfortran-11'  # alias already present but why not
     export LM_LICENSE_FILE=/opt/pgi/license.dat-COMMUNITY-18.10
     export PKG_CONFIG_PATH=/opt/local/bin/pkg-config
-
-    # Add RVM to PATH for scripting. Make sure this is the last PATH variable change.
-    # WARNING: Need to install with rvm! Get endless issues with MacPorts/Homebrew
-    # versions! See: https://stackoverflow.com/a/3464303/4970632
-    # Test with: ruby -ropen-uri -e 'eval open("https://git.io/vQhWq").read'
-    # Install rvm with: \curl -sSL https://get.rvm.io | bash -s stable --ruby
-    # export PATH=$PATH:$HOME/.rvm/bin
-    if [ -d ~/.rvm/bin ]; then
+    export HDF5_USE_FILE_LOCKING=FALSE  # required for cdo (see above)
+    if [ -d ~/.rvm/bin ]; then  # install with: \curl -sSL https://get.rvm.io | bash -s stable --ruby
       [ -s ~/.rvm/scripts/rvm ] && source ~/.rvm/scripts/rvm  # load RVM into a shell session *as a function*
       export PATH=$PATH:$HOME/.rvm/bin:$HOME/.rvm/gems/default/bin
       export rvm_silence_path_mismatch_check_flag=1
-      rvm use ruby 1>/dev/null
+      rvm use ruby 1>/dev/null  # test with ruby -ropen-uri -e 'eval open("https://git.io/vQhWq").read'
     fi
-
-    # NCL NCAR command language, had trouble getting it to work on Mac with conda
-    # NOTE: Tried exporting DYLD_FALLBACK_LIBRARY_PATH but it screwed up some python
-    # modules so instead just always invoke ncl with temporarily set DYLD_LIBRARY_PATH.
-    # Note ncl is realiased below and are careful to preserve any leading paths.
-    # alias ncl='DYLD_LIBRARY_PATH="/opt/local/lib/libgcc" ncl'  # port libraries
-    alias ncl='DYLD_LIBRARY_PATH=/usr/local/lib/gcc/7/ ncl'  # brew libraries
-    export NCARG_ROOT=$HOME/builds/ncl-6.6.2  # critically to run ncl
-
-    # C and fortran compilers
-    # Used to install gcc and gfortran with 'port install libgcc7' then 'port select
-    # --set gcc mp-gcc7' (needed for ncl) (try 'port select --list gcc') but latest
-    # versions had issues... so now use 'brew install gcc@7'. Also homebrew keeps
-    # version prefix on compilers so add aliases to destinations.
-    alias c++='/usr/local/bin/c++-11'
-    alias cpp='/usr/local/bin/cpp-11'
-    alias gcc='/usr/local/bin/gcc-11'
-    alias gfortran='/usr/local/bin/gfortran-11'  # alias already present but why not
-
-    # CDO HDF5 setting. See the following note after port install cdo:
-    # Mac users may need to set the environment variable "HDF5_USE_FILE_LOCKING" to the
-    # five-character string "FALSE" when accessing network mounted files. This is an
-    # application run-time setting, not a configure or build setting. Otherwise errors
-    # such as "unable to open file" or "HDF5 error" may be encountered.
-    export HDF5_USE_FILE_LOCKING=FALSE
     ;;
-
-  # Monde options
-  monde)
-    # All netcdf, mpich, etc. utilites are separate so we add them
-    # NOTE: Should not need to edit $MANPATH since man is intelligent and should detect
-    # 'man' folders automatically even for custom utilities. However if the resuilt of
-    # 'manpath' is missing something follow these notes: https://unix.stackexchange.com/q/344603/112647
-    # source set_pgi.sh  # instead do this manually
+  monde)  # could use 'source set_pgi.sh' but instead do manually
     _pgi_version='19.10'  # increment this as needed
-    export PATH=/usr/bin:/usr/local/sbin:/usr/sbin
-    export PATH=/usr/local/bin:$PATH
-    export PATH=/usr/lib64/mpich/bin:/usr/lib64/qt-3.3/bin:$PATH
-    export PATH=/opt/pgi/linux86-64/$_pgi_version/bin:$PATH
+    export PATH=/usr/bin:/usr/local/sbin:/usr/sbin  # general
+    export PATH=/usr/local/bin:$PATH  # general
+    export PATH=/usr/lib64/mpich/bin:/usr/lib64/qt-3.3/bin:$PATH  # pgi compilers
+    export PATH=/opt/pgi/linux86-64/$_pgi_version/bin:$PATH  # pgi utilities
     export PGI=/opt/pgi
     export LD_LIBRARY_PATH=/usr/lib64/mpich/lib:/usr/local/lib
     export LM_LICENSE_FILE=/opt/pgi/license.dat-COMMUNITY-$_pgi_version
@@ -320,38 +243,23 @@ case "${HOSTNAME%%.*}" in
     export GFDL_DATA=/mdata1/ldavis/isca_data  # directory for storing model output
     export NCARG_ROOT=/usr/local  # ncl root
     ;;
-
-  # Euclid options
-  euclid*)
-    # Add basic paths
-    # Note all netcdf and mpich utilites are already in in /usr/local/bin
+  euclid*)  # all netcdf/mpich utilities already in /usr/local/bin
     export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
     export PATH=/opt/pgi/linux86-64/13.7/bin:/opt/Mathworks/bin:$PATH
     export LD_LIBRARY_PATH=/usr/local/lib
     ;;
-
-  # Cheyenne supercomputer, any of the login nodes
-  # NOTE: Use 'sinteractive' for interactive mode
-  cheyenne*)
-    # Add modules and paths and set tmpdir following direction of:
-    # https://www2.cisl.ucar.edu/user-support/storing-temporary-files-tmpdir
-    INTEL=/glade/u/apps/ch/opt/netcdf/4.6.1/intel/17.0.1/lib
-    export TMPDIR=/glade/scratch/$USER/tmp
-    export LD_LIBRARY_PATH=$INTEL:$LD_LIBRARY_PATH
-    _load_unloaded netcdf tmux intel impi  # cdo and nco via conda
+  cheyenne*)  # cheyenne supercomputer (use 'sinteractive' for interactive mode)
+    INTEL=/glade/u/apps/ch/opt/netcdf/4.6.1/intel/17.0.1/lib  # compilers
+    export TMPDIR=/glade/scratch/$USER/tmp  # see: https://www2.cisl.ucar.edu/user-support/storing-temporary-files-tmpdir
+    export LD_LIBRARY_PATH=$INTEL:$LD_LIBRARY_PATH  # compilers
+    _load_modules netcdf tmux intel impi  # cdo and nco via conda
     ;;
-
-  # Chicago supercomputer, any of the login nodes
-  # WARNING: Greedy glob removes commands sandwiched between print statements
-  midway*)
-    # Add modules and paths
-    # Remove annoying print statements from prompt
+  midway*)  # chicago supercomputer
     export PATH=$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin
-    export PROMPT_COMMAND=${PROMPT_COMMAND//printf*\";/}
-    _load_unloaded mlk intel  # cdo and nco via conda
+    export PROMPT_COMMAND=${PROMPT_COMMAND//printf*\";/}  # remove print statement
+    _load_modules mlk intel  # cdo and nco via conda
     ;;
-
-  *)
+  *)  # unknown
     echo "Warning: Host '$HOSTNAME' does not have any custom bashrc settings."
     ;;
 esac
@@ -412,6 +320,7 @@ for _name in "${_dirs_research[@]}"; do
 done
 
 # Adding additional flags for building C++ stuff
+# NOTE: This is required for e.g. pypinfo and other commands
 # https://github.com/matplotlib/matplotlib/issues/13609
 # https://github.com/huggingface/neuralcoref/issues/97#issuecomment-436638466
 export CFLAGS=-stdlib=libc++
@@ -451,12 +360,15 @@ fi
 # readline functions, but strings specifying our own) and the -s show bindings bound
 # to macos (can be combination of key-presses and shell commands).
 # For more info see: https://stackoverflow.com/a/949006/4970632.
-alias aliases='compgen -a'
-alias variables='compgen -v'
-alias functions='compgen -A function'  # show current shell functions
+alias binds='bind -P'  # the functions, for example 'forward-char'
+alias inputs='bind -v'  # the 'set' options, and their values
+alias actions='bind -l'  # the functions, for example 'forward-char'
+alias aliases='compgen -a'  # shell aliases
+alias variables='compgen -v'  # shell variables
+alias functions='compgen -A function'  # shell functions
 alias builtins='compgen -b'  # bash builtins
-alias commands='compgen -c'
-alias keywords='compgen -k'
+alias commands='compgen -c'  # bash commands
+alias keywords='compgen -k'  # bash commands
 alias modules='module avail 2>&1 | cat '
 alias bindings_stty='stty -a'  # show bindings (linux and coreutils)
 kinds() { ctags --list-kinds="$*"; }  # list language shortcuts
@@ -471,8 +383,6 @@ else  # shellcheck disable=2142
   alias hardware="cat /etc/*-release"  # print operating system info
   alias bindings="bind -ps | egrep '\\\\C|\\\\e' | grep -v do-lowercase-version | sort"
 fi
-alias inputrc_ops='bind -v'    # the 'set' options, and their values
-alias inputrc_funcs='bind -l'  # the functions, for example 'forward-char'
 
 # Helper functions
 # The _columnize function splits lines into columns so they fill the terminal window
