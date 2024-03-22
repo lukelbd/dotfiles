@@ -32,13 +32,13 @@
 #   Fetch all branches, even ones that don't yet exist on local
 #   local (normally those are ignored with git fetch --all).
 #   See: https://stackoverflow.com/a/10312587/4970632
-# 'head1':
+# 'head':
 #   Show stylized git branch head
-# 'head2':
-#   Show stylized git stash head
 # 'ignore':
 #   Stop tracking every single regex pattern in your .gitignore
 #   to ignore all subdirectories in another directory, use subdir/*/
+# 'latest':
+#   Show stylized latest git stash
 # 'ls':
 #   List the tracked file names only.
 # 'll':
@@ -124,9 +124,10 @@
 	dictator = "!git-dictator \"$@\""
 	exec     = "!exec \"$@\""
 	get      = "!get-get \"$@\""
-	head1    = "!git status --short --branch | head -1"
-	head2    = "!git stashes | head -1 | sed 's/^/## /'"
+	head     = "!git status --short --branch | head -1"
 	ignore   = "!git-ignore \"$@\""
+	label    = "!git stashes | head -1 | sed 's/^/## /'"
+	latest   = "!git label 2>/dev/null && git stash show --name-status 2>/dev/null"
 	ls       = ls-tree -r HEAD --name-only :/
 	ll       = ls-tree -r HEAD --abbrev :/
 	master   = "!git fetch --all && git stash push && {git merge master; git stash pop; }"
@@ -148,8 +149,7 @@
 	stashed  = "!f() { git diff stash@{${1:-0}}^ stash@{${1:-0}} --stat=80 2>/dev/null; }; f"
 	stored   = "!f() { git diff HEAD stash@{${1:-0}} --stat=80 2>/dev/null; }; f"
 	stashes  = stash list
-	status1  = "!git head1 2>/dev/null && git status --short"
-	status2  = "!git head2 2>/dev/null && git stash show --name-status 2>/dev/null"
+	summary  = "!git head 2>/dev/null && git status --short"
 	stream   = "!git checkout master && pull upstream master"
 	tags     = tag --list
 	top      = rev-parse --show-toplevel
@@ -192,13 +192,13 @@
 	prompt = false
 [pager]
 	branch = false
+	latest = false
 	staged = false
 	stash = false
 	stashed = false
 	stat = false
 	status = false
-	status1 = false
-	status2 = false
+	summary = false
 	saved = false
 	tag = false
 [push]
