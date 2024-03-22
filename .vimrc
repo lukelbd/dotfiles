@@ -474,10 +474,11 @@ cnoremap <F9> <Esc><Cmd>Commands<CR>
 " Vim help and history windows
 " Note: For some reason even though :help :mes claims count N shows the N most recent
 " message, for some reason using 1 shows empty line and 2 shows previous plus newline.
-for s:key in ['<CR>'] | silent! exe 'unmap! <Leader>' . s:key | endfor
+for s:key in ['[[', ']]'] | silent! exe 'unmap! g' . s:key | endfor
 noremap g] <Cmd>call switch#reveal(1)<CR>
 noremap g[ <Cmd>call switch#reveal(0)<CR>
 noremap g<Space> <Cmd>call switch#message()<CR>
+noremap <Leader><CR> @:
 nnoremap <Leader>; q:
 nnoremap <Leader>/ q/
 nnoremap <Leader>: <Cmd>History:<CR>
@@ -506,7 +507,7 @@ nnoremap <Leader>M <Cmd>call shell#fzf_man()<CR>
 " and <Home|End> jump to first/last character of line by default. Here apply option
 " arrow navigation by word/WORD to match .inputrc shell navigation settings. Note that
 " iterm captures <PageUp|PageDown> but not needed since we have separate vim scrolling.
-for s:mode in ['', 'i', 'c']  " note command and insert mode S|C-Left|Right are identical
+for s:mode in ['', 'i', 'c']  " note i/c mode shift/control arrows are identical in vim
   exe s:mode . 'noremap <M-Left> <S-Left>'
   exe s:mode . 'noremap <M-Up> <C-Left>'
   exe s:mode . 'noremap <M-Right> <S-Right>'
@@ -516,14 +517,14 @@ noremap <expr> <C-u> iter#scroll_infer(-0.33, 0)
 noremap <expr> <C-d> iter#scroll_infer(0.33, 0)
 noremap <expr> <C-b> iter#scroll_infer(-0.66, 0)
 noremap <expr> <C-f> iter#scroll_infer(0.66, 0)
-inoremap <expr> <Up> iter#scroll_infer(-1)
-inoremap <expr> <Down> iter#scroll_infer(1)
-inoremap <expr> <C-k> iter#scroll_infer(-1)
-inoremap <expr> <C-j> iter#scroll_infer(1)
 inoremap <expr> <C-u> iter#scroll_infer(-0.33, 0)
 inoremap <expr> <C-d> iter#scroll_infer(0.33, 0)
 inoremap <expr> <C-b> iter#scroll_infer(-0.66, 0)
 inoremap <expr> <C-f> iter#scroll_infer(0.66, 0)
+inoremap <expr> <Up> iter#scroll_infer(-1)
+inoremap <expr> <Down> iter#scroll_infer(1)
+inoremap <expr> <C-k> iter#scroll_infer(-1)
+inoremap <expr> <C-j> iter#scroll_infer(1)
 
 " Insert mode popup window completion
 " Todo: Consider using Shuougo pum.vim but hard to implement <CR>/<Tab> features.
