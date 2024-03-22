@@ -299,6 +299,15 @@ endfor
 "-----------------------------------------------------------------------------"
 " File and window utilities
 "-----------------------------------------------------------------------------"
+" Terminal settings
+" Mnemonic is that '!' matches the ':!' used to enter shell commands
+" Note: Map Ctrl-c to literal keypress so it does not close window
+" Note: Must change local dir or use environment variable to make term pop up here:
+" https://vi.stackexchange.com/questions/14519/how-to-run-internal-vim-terminal-at-current-files-dir
+" silent! tnoremap <silent> <Esc> <C-w>:q!<CR>  " disables all iTerm shortcuts
+silent! tnoremap <expr> <C-c> "\<C-c>"
+nnoremap <Leader>! <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTERMDIR<CR>
+
 " Save or quit the current session
 " Note: To avoid accidentally closing vim do not use mapped shortcuts. Instead
 " require manual closure with :qall or :quitall.
@@ -465,7 +474,7 @@ cnoremap <F9> <Esc><Cmd>Commands<CR>
 " Vim help and history windows
 " Note: For some reason even though :help :mes claims count N shows the N most recent
 " message, for some reason using 1 shows empty line and 2 shows previous plus newline.
-for s:key in ['z', '<Leader>'] | silent! exe 'unmap! ' . s:key . '<CR>' | endfor
+for s:key in ['<CR>'] | silent! exe 'unmap! <Leader>' . s:key | endfor
 noremap g] <Cmd>call switch#reveal(1)<CR>
 noremap g[ <Cmd>call switch#reveal(0)<CR>
 noremap g<Space> <Cmd>call switch#message()<CR>
@@ -491,19 +500,84 @@ nnoremap <Leader>m <Cmd>call stack#push_stack('man', 'shell#man_page')<CR>
 nnoremap <Leader>N <Cmd>call shell#fzf_help()<CR>
 nnoremap <Leader>M <Cmd>call shell#fzf_man()<CR>
 
-" Terminal maps, map Ctrl-c to literal keypress so it does not close window
-" Mnemonic is that '!' matches the ':!' used to enter shell commands
-" Note: Must change local dir or use environment variable to make term pop up here:
-" https://vi.stackexchange.com/questions/14519/how-to-run-internal-vim-terminal-at-current-files-dir
-" silent! tnoremap <silent> <Esc> <C-w>:q!<CR>  " will prevent sending iTerm shortcuts
-silent! tnoremap <expr> <C-c> "\<C-c>"
-nnoremap <Leader>! <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTERMDIR<CR>
+" General and popup/preview window scrolling
+" Note: Karabiner remaps <S-Left|Right> to <PageUp|PageDown> and <C-Left|Right> to
+" <Home|End>. Also note <S-Up|PageDown> and <PageUp|PageDown> scroll pages by default,
+" and <Home|End> jump to first/last character of line by default. Here apply option
+" arrow navigation by word/WORD to match .inputrc shell navigation settings. Note that
+" iterm captures <PageUp|PageDown> but not needed since we have separate vim scrolling.
+for s:mode in ['', 'i', 'c']  " note command and insert mode S|C-Left|Right are identical
+  exe s:mode . 'noremap <M-Left> <S-Left>'
+  exe s:mode . 'noremap <M-Up> <C-Left>'
+  exe s:mode . 'noremap <M-Right> <S-Right>'
+  exe s:mode . 'noremap <M-Down> <C-Right>'
+endfor
+noremap <expr> <C-u> iter#scroll_infer(-0.33, 0)
+noremap <expr> <C-d> iter#scroll_infer(0.33, 0)
+noremap <expr> <C-b> iter#scroll_infer(-0.66, 0)
+noremap <expr> <C-f> iter#scroll_infer(0.66, 0)
+inoremap <expr> <Up> iter#scroll_infer(-1)
+inoremap <expr> <Down> iter#scroll_infer(1)
+inoremap <expr> <C-k> iter#scroll_infer(-1)
+inoremap <expr> <C-j> iter#scroll_infer(1)
+inoremap <expr> <C-u> iter#scroll_infer(-0.33, 0)
+inoremap <expr> <C-d> iter#scroll_infer(0.33, 0)
+inoremap <expr> <C-b> iter#scroll_infer(-0.66, 0)
+inoremap <expr> <C-f> iter#scroll_infer(0.66, 0)
+
+" Insert mode popup window completion
+" Todo: Consider using Shuougo pum.vim but hard to implement <CR>/<Tab> features.
+" Note: Enter is 'accept' only if we scrolled down while tab always means 'accept'
+augroup popup_setup
+  au!
+  au InsertEnter * set noignorecase | let b:scroll_state = 0
+  au InsertLeave * set ignorecase | let b:scroll_state = 0
+augroup END
+inoremap <expr> <C-q> iter#complete_popup('<Cmd>pclose<CR>')
+inoremap <expr> <C-w> iter#complete_popup('<Cmd>pclose<CR>')
+inoremap <expr> <Tab> iter#complete_popup('<C-]><Tab>', 2, 1)
+inoremap <expr> <S-Tab> iter#complete_popup(edit#forward_delete(0), 0, 1)
+inoremap <expr> <F2> iter#complete_popup(ddc#map#manual_complete(), 2, 1)
+inoremap <expr> <F1> iter#complete_popup(edit#forward_delete(0), 0, 1)
+inoremap <expr> <Delete> iter#complete_popup(edit#forward_delete(1), 1)
+inoremap <expr> <CR> iter#complete_popup('<C-]><C-r>=edit#delimit_mate("r")<CR>', 1, 1)
+inoremap <expr> <Space> iter#complete_popup('<C-]><C-r>=edit#delimit_mate("s")<CR>', 1)
+inoremap <expr> <Backspace> iter#complete_popup('<C-r>=edit#delimit_mate("b")<CR>', 1)
+inoremap <expr> <C-g><CR> iter#complete_popup('<CR>')
+inoremap <expr> <C-g><Space> iter#complete_popup('<Space>')
+inoremap <expr> <C-g><BackSpace> iter#complete_popup('<BackSpace>')
+
+" Command mode wild menu completion
+" Note: This prevents annoyance where multiple old completion options can be shown
+" on top of each other if triggered more than once, and permits workflow where hitting
+" e.g. <Right> after scrolling will descend into subfolder and show further options.
+" Note: This enforces paradigm where <F1>/<F2> is tab-like (horizontally scroll options)
+" and <Up>/<Down> is scroll-like (vertically scroll history after clearing options).
+augroup complete_setup
+  au!
+  au CmdlineLeave * let b:show_message = 1
+  au CmdlineEnter,CmdlineLeave * let b:complete_state = 0
+augroup END
+cnoremap <expr> <Tab> iter#complete_cmdline("\<Tab>", 1)
+cnoremap <expr> <S-Tab> iter#complete_cmdline("\<S-Tab>", 1)
+cnoremap <expr> <F2> iter#complete_cmdline("\<Tab>", 1)
+cnoremap <expr> <F1> iter#complete_cmdline("\<S-Tab>", 1)
+cnoremap <expr> <C-k> iter#complete_cmdline("\<C-p>")
+cnoremap <expr> <C-j> iter#complete_cmdline("\<C-n>")
+cnoremap <expr> <Up> iter#complete_cmdline("\<C-p>")
+cnoremap <expr> <Down> iter#complete_cmdline("\<C-n>")
+cnoremap <expr> <C-h> iter#complete_cmdline("\<Left>")
+cnoremap <expr> <C-l> iter#complete_cmdline("\<Right>")
+cnoremap <expr> <Right> iter#complete_cmdline("\<Right>")
+cnoremap <expr> <Left> iter#complete_cmdline("\<Left>")
+cnoremap <expr> <Delete> iter#complete_cmdline("\<Delete>")
+cnoremap <expr> <BS> iter#complete_cmdline("\<BS>")
 
 
 "-----------------------------------------------------------------------------"
-" Navigation and searching
+" Navigation and searching shortcuts
 "-----------------------------------------------------------------------------"
-" Navigate and toggle visual mode
+" Toggle and navigate visual mode
 " Note: Throughout vimrc marks y and z are reserved for internal map utilities. Here
 " use 'y' for mouse click location and 'z' for visual mode entrance location, then
 " start new visual selection between 'y' and 'z'. Generally 'y' should be temporary
@@ -622,7 +696,7 @@ call utils#repeat_map('o', 'zm', 'CasePrevEnd',   "<Cmd>call iter#next_motion('g
 " Screen motion mappings
 " Note: This is consistent with 'zl', 'zL', 'zh', 'zH' horizontal scrolling
 " and lets us use 'zt' for title case 'zb' for boolean toggle.
-for s:key in ['<CR>', 'm', 'r', 'R'] | exe 'noremap z' . s:key . ' <Nop>' | endfor
+for s:key in ['m', 'r', 'R'] | exe 'noremap z' . s:key . ' <Nop>' | endfor
 noremap z<Space> zz
 noremap z\ zzze
 noremap z9 ze
@@ -708,12 +782,10 @@ noremap <F12> <Cmd>call mark#init_marks()<CR><Cmd>call mark#next_mark(v:count1)<
 " Note: These redefinitions add flexibility to native fzf.vim commands, mnemonic
 " for alternatives is 'local directory' or 'current file'. Also note Rg is faster and
 " has nicer output so use by default: https://unix.stackexchange.com/a/524094/112647
-command! -bang -nargs=+ -complete=file Rg call grep#call_rg(<bang>0, 0, <f-args>)
-command! -bang -nargs=+ -complete=file Rf call grep#call_rg(<bang>0, 1, <f-args>)
-command! -bang -nargs=+ -complete=file Rp call grep#call_rg(<bang>0, 2, <f-args>)
-command! -bang -nargs=+ -complete=file Ag call grep#call_ag(<bang>0, 0, <f-args>)
-command! -bang -nargs=+ -complete=file Af call grep#call_ag(<bang>0, 1, <f-args>)
-command! -bang -nargs=+ -complete=file Ap call grep#call_ag(<bang>0, 2, <f-args>)
+command! -range=0 -bang -nargs=* -complete=file Grep call call('grep#call_rg', [<bang>0, <count>, tags#get_match()expand('<cWORD>'), <f-args>])
+command! -range=0 -bang -nargs=* -complete=file Find call call('grep#call_rg', [<bang>0, <count>, '\<' . expand('<cword>') . '\>', <f-args>])
+command! -range=0 -bang -nargs=+ -complete=file Ag call grep#call_ag(<bang>0, <count>, <f-args>)
+command! -range=0 -bang -nargs=+ -complete=file Rg call grep#call_rg(<bang>0, <count>, <f-args>)
 nnoremap g; <Cmd>call grep#call_grep('rg', 1, 0)<CR>
 nnoremap g: <Cmd>call grep#call_grep('rg', 1, 1)<CR>
 nnoremap z; <Cmd>call grep#call_grep('rg', 0, 2)<CR>
@@ -724,15 +796,21 @@ nnoremap z: <Cmd>call grep#call_grep('rg', 1, 2)<CR>
 " Note: Currently do not use :Fixme :Error or :Xxx but these are also highlighted
 let s:conflicts = '^' . repeat('[<>=|]', 7) . '\($\|\s\)'
 command! -bang -nargs=* -complete=file Debugs call grep#call_rg(<bang>0, 2, '^\s*ic(', <f-args>)
+command! -bang -nargs=* -complete=file Prints call grep#call_rg(<bang>0, 2, '^\s*print(', <f-args>)
 command! -bang -nargs=* -complete=file Notes call grep#call_rg(<bang>0, 2, '\<\(Note\|NOTE\):', <f-args>)
 command! -bang -nargs=* -complete=file Todos call grep#call_rg(<bang>0, 2, '\<\(Todo\|TODO\|Fixme\|FIXME\):', <f-args>)
-command! -bang -nargs=* -complete=file Warnings call grep#call_rg(<bang>0, 2, '\<\(Warning\|WARNING\):', <f-args>)
+command! -bang -nargs=* -complete=file Errors call grep#call_rg(<bang>0, 2, '\<\(Warning\|WARNING\|Error\|ERROR\):', <f-args>)
 command! -bang -nargs=* -complete=file Conflicts call grep#call_rg(<bang>0, 2, s:conflicts, <f-args>)
+noremap g<CR> <Cmd>Debugs!<CR>
 noremap gG <Cmd>Conflicts<CR>
-noremap gB <Cmd>Debugs!<CR>
+noremap gM <Cmd>Prints<CR>
+noremap gB <Cmd>Todos<CR>
 noremap gW <Cmd>Notes<CR>
-noremap gE <Cmd>Todos<CR>
-noremap gM <Cmd>Warnings<CR>
+noremap gE <Cmd>Errors<CR>
+noremap zM <Cmd>Prints!<CR>
+noremap zB <Cmd>Todos<CR>
+noremap zW <Cmd>Notes<CR>
+noremap zE <Cmd>Errors<CR>
 
 " Navigate docstrings and methods
 " Capital uses only non-variable-assignment zero-level or first-level docstrings
@@ -758,10 +836,10 @@ noremap [q <Cmd>call comment#next_label(-v:count1, 0, 'todo', 'fixme')<CR>
 noremap ]q <Cmd>call comment#next_label(v:count1, 0, 'todo', 'fixme')<CR>
 noremap [Q <Cmd>call comment#next_label(-v:count1, 1, 'todo', 'fixme')<CR>
 noremap ]Q <Cmd>call comment#next_label(v:count1, 1, 'todo', 'fixme')<CR>
-noremap [a <Cmd>call comment#next_label(-v:count1, 0, 'note', 'warning')<CR>
-noremap ]a <Cmd>call comment#next_label(v:count1, 0, 'note', 'warning')<CR>
-noremap [A <Cmd>call comment#next_label(-v:count1, 1, 'note', 'warning')<CR>
-noremap ]A <Cmd>call comment#next_label(v:count1, 1, 'note', 'warning')<CR>
+noremap [a <Cmd>call comment#next_label(-v:count1, 0, 'note', 'warning', 'error')<CR>
+noremap ]a <Cmd>call comment#next_label(v:count1, 0, 'note', 'warning', 'error')<CR>
+noremap [A <Cmd>call comment#next_label(-v:count1, 1, 'note', 'warning', 'error')<CR>
+noremap ]A <Cmd>call comment#next_label(v:count1, 1, 'note', 'warning', 'error')<CR>
 
 " Run replacement on this line alone
 " Note: Critical to have separate visual and normal maps
@@ -1023,89 +1101,26 @@ nnoremap <Leader>C <Cmd>call switch#conceal()<CR>
 cnoremap <expr> <C-v> edit#lang_map()
 inoremap <expr> <C-v> edit#lang_map()
 
-" Command mode selection and completion
-" Note: This prevents annoyance where multiple old completion options can be shown
-" on top of each other if triggered more than once, and permits workflow where hitting
-" e.g. <Right> after scrolling will descend into subfolder and show further options.
-" Note: This enforces paradigm where <F1>/<F2> is tab-like (horizontally scroll options)
-" and <Up>/<Down> is scroll-like (vertically scroll history after clearing options).
-augroup complete_setup
-  au!
-  au CmdlineLeave * let b:show_message = 1
-  au CmdlineEnter,CmdlineLeave * let b:complete_state = 0
-augroup END
-cnoremap <expr> <Tab> iter#complete_cmdline("\<Tab>", 1)
-cnoremap <expr> <S-Tab> iter#complete_cmdline("\<S-Tab>", 1)
-cnoremap <expr> <F2> iter#complete_cmdline("\<Tab>", 1)
-cnoremap <expr> <F1> iter#complete_cmdline("\<S-Tab>", 1)
-cnoremap <expr> <C-k> iter#complete_cmdline("\<C-p>")
-cnoremap <expr> <C-j> iter#complete_cmdline("\<C-n>")
-cnoremap <expr> <Up> iter#complete_cmdline("\<C-p>")
-cnoremap <expr> <Down> iter#complete_cmdline("\<C-n>")
-cnoremap <expr> <C-h> iter#complete_cmdline("\<Left>")
-cnoremap <expr> <C-l> iter#complete_cmdline("\<Right>")
-cnoremap <expr> <Right> iter#complete_cmdline("\<Right>")
-cnoremap <expr> <Left> iter#complete_cmdline("\<Left>")
-cnoremap <expr> <Delete> iter#complete_cmdline("\<Delete>")
-cnoremap <expr> <BS> iter#complete_cmdline("\<BS>")
-
-" Insert mode selection and completion
-" Todo: Consider using Shuougo pum.vim but hard to implement <CR>/<Tab> features.
-" Note: Enter is 'accept' only if we scrolled down while tab always means 'accept'
-augroup popup_setup
-  au!
-  au InsertEnter * set noignorecase | let b:scroll_state = 0
-  au InsertLeave * set ignorecase | let b:scroll_state = 0
-augroup END
-inoremap <expr> <C-q> iter#complete_popup('<Cmd>pclose<CR>')
-inoremap <expr> <C-w> iter#complete_popup('<Cmd>pclose<CR>')
-inoremap <expr> <Tab> iter#complete_popup('<C-]><Tab>', 2, 1)
-inoremap <expr> <S-Tab> iter#complete_popup(edit#forward_delete(0), 0, 1)
-inoremap <expr> <F2> iter#complete_popup(ddc#map#manual_complete(), 2, 1)
-inoremap <expr> <F1> iter#complete_popup(edit#forward_delete(0), 0, 1)
-inoremap <expr> <Delete> iter#complete_popup(edit#forward_delete(1), 1)
-inoremap <expr> <CR> iter#complete_popup('<C-]><C-r>=edit#delimit_mate("r")<CR>', 1, 1)
-inoremap <expr> <Space> iter#complete_popup('<C-]><C-r>=edit#delimit_mate("s")<CR>', 1)
-inoremap <expr> <Backspace> iter#complete_popup('<C-r>=edit#delimit_mate("b")<CR>', 1)
-inoremap <expr> <C-g><CR> iter#complete_popup('<CR>')
-inoremap <expr> <C-g><Space> iter#complete_popup('<Space>')
-inoremap <expr> <C-g><BackSpace> iter#complete_popup('<BackSpace>')
-
-" General and popup or preview window scrolling
-" Note: This requires setting let g:scrollwrapped_nomap = 1
-inoremap <expr> <Up> iter#scroll_infer(-1)
-inoremap <expr> <Down> iter#scroll_infer(1)
-inoremap <expr> <C-k> iter#scroll_infer(-1)
-inoremap <expr> <C-j> iter#scroll_infer(1)
-inoremap <expr> <C-u> iter#scroll_infer(-0.33, 0)
-inoremap <expr> <C-d> iter#scroll_infer(0.33, 0)
-inoremap <expr> <C-b> iter#scroll_infer(-0.66, 0)
-inoremap <expr> <C-f> iter#scroll_infer(0.66, 0)
-noremap <expr> <C-u> iter#scroll_infer(-0.33, 0)
-noremap <expr> <C-d> iter#scroll_infer(0.33, 0)
-noremap <expr> <C-b> iter#scroll_infer(-0.66, 0)
-noremap <expr> <C-f> iter#scroll_infer(0.66, 0)
-
 " ReST section comment headers
 " Note: <Plug> name cannot be subset of other name or results in delay
-call utils#repeat_map('n', 'g-', 'DashSingle', "<Cmd>call comment#append_line('-', 0)<CR>")
-call utils#repeat_map('n', 'z-', 'DashDouble', "<Cmd>call comment#append_line('-', 1)<CR>")
-call utils#repeat_map('n', 'g=', 'EqualSingle', "<Cmd>call comment#append_line('=', 0)<CR>")
-call utils#repeat_map('n', 'z=', 'EqualDouble', "<Cmd>call comment#append_line('=', 1)<CR>")
-call utils#repeat_map('v', 'g-', 'VDashSingle', "<Cmd>call comment#append_line('-', 0, '''<', '''>')<CR>")
-call utils#repeat_map('v', 'z-', 'VDashDouble', "<Cmd>call comment#append_line('-', 1, '''<', '''>')<CR>")
-call utils#repeat_map('v', 'g=', 'VEqualSingle', "<Cmd>call comment#append_line('=', 0, '''<', '''>')<CR>")
-call utils#repeat_map('v', 'z=', 'VEqualDouble', "<Cmd>call comment#append_line('=', 1, '''<', '''>')<CR>")
+call utils#repeat_map('n', 'g-', 'DashSingle', '<Cmd>call comment#append_line("-", 0)<CR>')
+call utils#repeat_map('n', 'z-', 'DashDouble', '<Cmd>call comment#append_line("-", 1)<CR>')
+call utils#repeat_map('n', 'g=', 'EqualSingle', '<Cmd>call comment#append_line("=", 0)<CR>')
+call utils#repeat_map('n', 'z=', 'EqualDouble', '<Cmd>call comment#append_line("=", 1)<CR>')
+call utils#repeat_map('v', 'g-', 'VDashSingle', '<Cmd>call comment#append_line("-", 0, "''<", "''>")<CR>')
+call utils#repeat_map('v', 'z-', 'VDashDouble', '<Cmd>call comment#append_line("-", 1, "''<", "''>")<CR>')
+call utils#repeat_map('v', 'g=', 'VEqualSingle', '<Cmd>call comment#append_line("=", 0, "''<", "''>")<CR>')
+call utils#repeat_map('v', 'z=', 'VEqualDouble', '<Cmd>call comment#append_line("=", 1, "''<", "''>")<CR>')
 
 " Insert various comment blocks
-" Note: No need to repeat any of other commands
-let s:author = "'Author: Luke Davis (lukelbd@gmail.com)'"
-let s:edited = "'Edited: ' . strftime('%Y-%m-%d')"
+" Note: This disables repitition of title insertions
+let s:author = '"Author: Luke Davis (lukelbd@gmail.com)"'
+let s:edited = '"Edited: " . strftime("%Y-%m-%d")'
 for s:key in ';:/?''"' | silent! exe 'unmap gc' . s:key | endfor
-call utils#repeat_map('n', 'z.;', 'HeadLine', "<Cmd>call comment#header_line('-', 77, 0)<CR>")
+call utils#repeat_map('n', 'z.;', 'HeadLine', '<Cmd>call comment#header_line("-", 77, 0)<CR>')
 call utils#repeat_map('n', 'z./', 'HeadAuth', '<Cmd>call comment#append_note(' . s:author . ')<CR>')
 call utils#repeat_map('n', 'z.?', 'HeadEdit', '<Cmd>call comment#append_note(' . s:edited . ')<CR>')
-call utils#repeat_map('n', 'z.:', '', "<Cmd>call comment#header_line('-', 77, 1)<CR>")
+call utils#repeat_map('n', 'z.:', '', '<Cmd>call comment#header_line("-", 77, 1)<CR>')
 call utils#repeat_map('n', "z.'", '', '<Cmd>call comment#header_inchar()<CR>')
 call utils#repeat_map('n', 'z."', '', '<Cmd>call comment#header_inline(5)<CR>')
 

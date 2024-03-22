@@ -189,7 +189,7 @@ function! utils#repeat_map(mode, lhs, name, rhs) abort
   let icmd = has('gui_running') ? a:mode ==? 'o' ? '' : ':<C-u>' : '<Cmd>'
   let mrep = '"\<Plug>' . a:name . '", v:prevcount'
   let orep = 'utils#repeat_op(' . string(a:name) . ', v:prevcount)'
-  let iset = empty(a:name) ? "\<Ignore>" : a:mode ==# 'o' ? orep : mrep
+  let iset = empty(a:name) ? '"\<Ignore>"' : a:mode ==# 'o' ? orep : mrep
   let repeat = empty(icmd) ? '' : icmd . 'call repeat#set(' . iset . ')<CR>'
   if empty(a:name)  " disable repetition (e.g. require user input)
     exe noremap . ' ' . a:lhs . ' ' . a:rhs . repeat

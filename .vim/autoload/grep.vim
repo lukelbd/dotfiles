@@ -53,8 +53,7 @@ function! s:parse_grep(global, level, pattern, ...) abort
   return [regex, join(paths, ' '), flags]
 endfunction
 function! s:parse_pattern(pattern)
-  let regex = fzf#shellescape(a:pattern)  " similar to native but handles other shells
-  let regex = substitute(regex, '\\%\([$^]\)', '\1', 'g')  " file border to line border
+  let regex = substitute(a:pattern, '\\%\([$^]\)', '\1', 'g')  " file border to line border
   let regex = substitute(regex, '\\%\([#V]\|[<>]\?''m\)', '', 'g')  " ignore markers
   let regex = substitute(regex, '\\%[<>]\?\(\.\|[0-9]\+\)[lcv]', '', 'g')  " ignore ranges
   let regex = substitute(regex, '\\[<>]', '\\b', 'g')  " sided word border to unsided
@@ -65,7 +64,8 @@ function! s:parse_pattern(pattern)
   let regex = substitute(regex, '\C\\[ikf]', '\\w', 'g')  " numbers letters underscore
   let regex = substitute(regex, '\\%\?\([(|)]\)', '@\1', 'g')  " mark grouping parentheses
   let regex = substitute(regex, '\(^\|[^@\\]\)\([(|)]\)', '\1\\\2', 'g')  " escape parentheses
-  return substitute(regex, '@\([(|)]\)', '\1', 'g')  " unmark grouping parentheses
+  let regex = substitute(regex, '@\([(|)]\)', '\1', 'g')  " unmark grouping parentheses
+  return fzf#shellescape(regex)  " similar to native but handles other shells
 endfunction
 
 " Call Ag or Rg from command
@@ -76,9 +76,6 @@ endfunction
 " Fzf matches paths: https://github.com/junegunn/fzf.vim/issues/346
 " Ag ripgrep flags: https://github.com/junegunn/fzf.vim/issues/921#issuecomment-1577879849
 " Ag ignore file: https://github.com/ggreer/the_silver_searcher/issues/1097
-function! s:echo_grep(regex, ...) abort
-  echom 'Grep ' . a:regex
-endfunction
 function! grep#call_ag(global, level, ...) abort
   let flags = '--hidden --path-to-ignore ~/.wildignore'
   let flags .= a:0 > 1 ? '' : ' --path-to-ignore ~/.ignore --skip-vcs-ignores'
@@ -86,7 +83,7 @@ function! grep#call_ag(global, level, ...) abort
   let [regex, paths, extra] = call('s:parse_grep', [a:global, a:level] + a:000)
   let opts = fzf#vim#with_preview()
   call fzf#vim#ag_raw(join([flags, extra, '--', regex, paths], ' '), opts, 0)  " 0 is no fullscreen
-  redraw | echom 'Grep ' . regex
+  redraw | echom a:level . 'Ag ' . regex
 endfunction
 function! grep#call_rg(global, level, ...) abort
   let flags = '--hidden --ignore-file ~/.wildignore'
@@ -96,7 +93,7 @@ function! grep#call_rg(global, level, ...) abort
   let opts = fzf#vim#with_preview()
   let head = 'rg --column --line-number --no-heading --color=always'
   call fzf#vim#grep(join([head, flags, '--', regex, paths], ' '), opts, 0)  " 0 is no fullscreen
-  redraw | echom 'Grep ' . regex
+  redraw | echom a:level . 'Rg ' . regex
 endfunction
 
 " Call Rg or Ag from mapping (see also file.vim)
