@@ -104,11 +104,10 @@ endfunction
 " Navigate matches without editing jumplist and words with conservative iskeyword
 " Note: This implements indexed-search directional consistency
 " and avoids adding to the jumplist to prevent overpopulation
-function! iter#next_motion(motion, ...) abort
-  let cmd = 'setlocal iskeyword=' . &l:iskeyword
-  setlocal iskeyword=@,48-57,192-255
+function! iter#next_motion(motion, mode, ...) abort
+  let cmd = 'setlocal iskeyword=' . &l:iskeyword  " vint: next-line -ProhibitUnnecessaryDoubleQuote
+  let &l:iskeyword = a:mode ? "a-z,48-57" : "@,48-57,192-255"
   let action = a:0 ? a:1 ==# 'c' ? "\<Esc>c" : a:1 : ''
-  echom 'Go!!! ' . action . v:count1 . a:motion
   call feedkeys(action . v:count1 . a:motion . "\<Cmd>" . cmd . "\<CR>", 'n')
 endfunction
 function! iter#next_match(count) abort

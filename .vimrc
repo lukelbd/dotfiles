@@ -599,19 +599,30 @@ noremap M gE
 " Move between alphanumeric groups of characters (i.e. excluding dots, dashes,
 " underscores). This is consistent with tmux vim selection navigation
 exe 'silent! runtime autoload/utils.vim'
-noremap gw <Cmd>call iter#next_motion('w')<CR>
-noremap gb <Cmd>call iter#next_motion('b')<CR>
-noremap ge <Cmd>call iter#next_motion('e')<CR>
-noremap gm <Cmd>call iter#next_motion('ge')<CR>
-call utils#repeat_map('o', 'gw', 'NextStart', "<Cmd>call iter#next_motion('w', v:operator)<CR>")
-call utils#repeat_map('o', 'gb', 'PrevStart', "<Cmd>call iter#next_motion('b', v:operator)<CR>")
-call utils#repeat_map('o', 'ge', 'NextEnd',   "<Cmd>call iter#next_motion('e', v:operator)<CR>")
-call utils#repeat_map('o', 'gm', 'PrevEnd',   "<Cmd>call iter#next_motion('ge, v:operator)<CR>")
+noremap gw <Cmd>call iter#next_motion('w', 0)<CR>
+noremap gb <Cmd>call iter#next_motion('b', 0)<CR>
+noremap ge <Cmd>call iter#next_motion('e', 0)<CR>
+noremap gm <Cmd>call iter#next_motion('ge', 0)<CR>
+call utils#repeat_map('o', 'gw', 'AlphaNextStart', "<Cmd>call iter#next_motion('w', 0, v:operator)<CR>")
+call utils#repeat_map('o', 'gb', 'AlphaPrevStart', "<Cmd>call iter#next_motion('b', 0, v:operator)<CR>")
+call utils#repeat_map('o', 'ge', 'AlphaNextEnd',   "<Cmd>call iter#next_motion('e', 0, v:operator)<CR>")
+call utils#repeat_map('o', 'gm', 'AlphaPrevEnd',   "<Cmd>call iter#next_motion('ge, 0, v:operator)<CR>")
+
+" Move between groups of characters with the same case
+" This is helpful when refactoring or renaming variables
+noremap zw <Cmd>call iter#next_motion('w', 1)<CR>
+noremap zb <Cmd>call iter#next_motion('b', 1)<CR>
+noremap ze <Cmd>call iter#next_motion('e', 1)<CR>
+noremap zm <Cmd>call iter#next_motion('ge', 1)<CR>
+call utils#repeat_map('o', 'zw', 'CaseNextStart', "<Cmd>call iter#next_motion('w', 1, v:operator)<CR>")
+call utils#repeat_map('o', 'zb', 'CasePrevStart', "<Cmd>call iter#next_motion('b', 1, v:operator)<CR>")
+call utils#repeat_map('o', 'ze', 'CaseNextEnd',   "<Cmd>call iter#next_motion('e', 1, v:operator)<CR>")
+call utils#repeat_map('o', 'zm', 'CasePrevEnd',   "<Cmd>call iter#next_motion('ge, 1, v:operator)<CR>")
 
 " Screen motion mappings
 " Note: This is consistent with 'zl', 'zL', 'zh', 'zH' horizontal scrolling
 " and lets us use 'zt' for title case 'zb' for boolean toggle.
-for s:key in ['<CR>'] | silent! exe 'unmap! z' . s:key | endfor
+for s:key in ['<CR>', 'm', 'r', 'R'] | exe 'noremap z' . s:key . ' <Nop>' | endfor
 noremap z<Space> zz
 noremap z\ zzze
 noremap z9 ze
@@ -624,7 +635,7 @@ noremap z) zb
 " Note: Here fold#update_folds() re-enforces special expr fold settings for markdown
 " and python files then applies default toggle status that differs from buffer-wide
 " &foldlevel for fortran python and tex files (e.g. always open \begin{document}).
-for s:key in ['z', 's', 'e', 'f', 'F', 'n', 'N'] | silent! exe 'unmap! z' . s:key | endfor
+for s:key in ['z', 'f', 'F', 'n', 'N'] | silent! exe 'unmap! z' . s:key | endfor
 noremap gz <Cmd>Folds<CR>
 noremap zg <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>
 noremap zx <Cmd>call fold#update_folds()<CR>zx<Cmd>call fold#regex_levels()<CR>zv
@@ -664,10 +675,6 @@ noremap z[ <Cmd>call fold#update_level('m')<CR>
 noremap z] <Cmd>call fold#update_level('r')<CR>
 noremap z{ <Cmd>call fold#update_level('M')<CR>
 noremap z} <Cmd>call fold#update_level('R')<CR>
-noremap zm <Cmd>call fold#update_level('m')<CR>
-noremap zr <Cmd>call fold#update_level('r')<CR>
-noremap zM <Cmd>call fold#update_level('M')<CR>
-noremap zR <Cmd>call fold#update_level('R')<CR>
 
 " Jump to next or previous fold or inside fold
 " Note: The bracket maps fail without silent! when inside first fold in file
@@ -1620,10 +1627,9 @@ for s:plugin in s:fork_plugins
   let s:name = 'lukelbd/' . s:plugin
   if isdirectory(s:path) | call s:plug_local(s:path) | else | call plug#(s:name) | endif
 endfor
-let g:toggle_map = 'zb'
+let g:toggle_map = 'z<CR>'  " adjust toggle mapping (note this is repeatable)
 let g:scrollwrapped_nomap = 1  " instead have advanced iter#scroll_infer maps
 let g:scrollwrapped_wrap_filetypes = s:copy_filetypes + ['tex', 'text']
-noremap zb <Cmd>Toggle<CR>
 noremap <Leader>w <Cmd>WrapToggle<CR>
 
 " End plugin manager. Also declares filetype plugin, syntax, and indent on
@@ -2345,7 +2351,7 @@ endif
 " Note: This overwrites default increment/decrement plugins declared above. Works
 " by incrementing selected item(s), and if selection includes empty lines then extends
 " them using the step size from preceding lines or using a default step size.
-if !s:plug_active('vim-speeddating')
+if s:plug_active('vim-speeddating')
   map + <Plug>SpeedDatingUp
   map - <Plug>SpeedDatingDown
   noremap <Plug>SpeedDatingFallbackUp <C-a>
