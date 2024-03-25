@@ -4,6 +4,8 @@
 " mapped to these control combinations below must also be assigned to arrow keys.
 " Note: Use iterm to convert impossible or normal-mode-incompatible ctrl+key combos
 " to function keys (settings -> keys -> key bindings -> 'send hex codes') various hex codes.
+" Note: Select mode (e.g. by typing 'gh') is same as visual but enters insert mode
+" when you start typing, to emulate typing after click-and-drag. Never use it.
 " See: https://github.com/c-bata/go-prompt/blob/82a9122/input.go#L94-L125
 " See: https://eevblog.com/forum/microcontrollers/mystery-of-vt100-keyboard-codes/
 " F1: 0x1b 0x4f 0x50 (Ctrl-,) (5-digit codes failed)
@@ -25,13 +27,14 @@
 " Note: The refresh variable used in .vim/autoload/vim.vim to autoload recently
 " updated script and line length variable used in linting tools below.
 " vint: -ProhibitSetNoCompatible
-let $PATH = (has('gui_running') && $PATH !~# '/mambaforge/' ? $HOME . '/mambaforge/bin:' : '') . $PATH
 set nocompatible
 set encoding=utf-8
 scriptencoding utf-8
 let g:linelength = 88  " see below configuration
 let g:mapleader = "\<Space>"  " see <Leader> mappings
 let g:refresh = get(g:, 'refresh', localtime())
+let s:conda = $HOME . '/mambaforge/bin'  " gui vim support
+let $PATH = ($PATH !~# s:conda ? s:conda : '') . $PATH
 
 " Global settings
 " Warning: Tried setting default 'foldmethod' and 'foldexpr' can cause buffer-local
@@ -508,10 +511,10 @@ nnoremap <Leader>M <Cmd>call shell#fzf_man()<CR>
 " arrow navigation by word/WORD to match .inputrc shell navigation settings. Note that
 " iterm captures <PageUp|PageDown> but not needed since we have separate vim scrolling.
 for s:mode in ['', 'i', 'c']  " note i/c mode shift/control arrows are identical in vim
+  exe s:mode . 'noremap <C-Left> <C-Left>'
+  exe s:mode . 'noremap <C-Right> <C-Right>'
   exe s:mode . 'noremap <M-Left> <S-Left>'
-  exe s:mode . 'noremap <M-Up> <C-Left>'
   exe s:mode . 'noremap <M-Right> <S-Right>'
-  exe s:mode . 'noremap <M-Down> <C-Right>'
 endfor
 noremap <expr> <C-u> iter#scroll_infer(-0.33, 0)
 noremap <expr> <C-d> iter#scroll_infer(0.33, 0)
@@ -534,19 +537,19 @@ augroup popup_setup
   au InsertEnter * set noignorecase | let b:scroll_state = 0
   au InsertLeave * set ignorecase | let b:scroll_state = 0
 augroup END
-inoremap <expr> <C-q> iter#complete_popup('<Cmd>pclose<CR>')
-inoremap <expr> <C-w> iter#complete_popup('<Cmd>pclose<CR>')
-inoremap <expr> <Tab> iter#complete_popup('<C-]><Tab>', 2, 1)
-inoremap <expr> <S-Tab> iter#complete_popup(edit#forward_delete(0), 0, 1)
-inoremap <expr> <F2> iter#complete_popup(ddc#map#manual_complete(), 2, 1)
-inoremap <expr> <F1> iter#complete_popup(edit#forward_delete(0), 0, 1)
-inoremap <expr> <Delete> iter#complete_popup(edit#forward_delete(1), 1)
-inoremap <expr> <CR> iter#complete_popup('<C-]><C-r>=edit#delimit_mate("r")<CR>', 1, 1)
-inoremap <expr> <Space> iter#complete_popup('<C-]><C-r>=edit#delimit_mate("s")<CR>', 1)
-inoremap <expr> <Backspace> iter#complete_popup('<C-r>=edit#delimit_mate("b")<CR>', 1)
-inoremap <expr> <C-g><CR> iter#complete_popup('<CR>')
-inoremap <expr> <C-g><Space> iter#complete_popup('<Space>')
-inoremap <expr> <C-g><BackSpace> iter#complete_popup('<BackSpace>')
+inoremap <silent> <expr> <C-q> iter#complete_popup('<Cmd>pclose<CR>')
+inoremap <silent> <expr> <C-w> iter#complete_popup('<Cmd>pclose<CR>')
+inoremap <silent> <expr> <Tab> iter#complete_popup('<C-]><Tab>', 2, 1)
+inoremap <silent> <expr> <S-Tab> iter#complete_popup(edit#forward_delete(0), 0, 1)
+inoremap <silent> <expr> <F2> iter#complete_popup(ddc#map#manual_complete(), 2, 1)
+inoremap <silent> <expr> <F1> iter#complete_popup(edit#forward_delete(0), 0, 1)
+inoremap <silent> <expr> <Delete> iter#complete_popup(edit#forward_delete(1), 1)
+inoremap <silent> <expr> <C-g><CR> iter#complete_popup('<CR>')
+inoremap <silent> <expr> <C-g><Space> iter#complete_popup('<Space>')
+inoremap <silent> <expr> <C-g><BackSpace> iter#complete_popup('<BackSpace>')
+inoremap <silent> <expr> <CR> iter#complete_popup('<C-]><C-r>=edit#delimit_mate("r")<CR>', 1, 1)
+inoremap <silent> <expr> <Space> iter#complete_popup('<C-]><C-r>=edit#delimit_mate("s")<CR>', 1)
+inoremap <silent> <expr> <Backspace> iter#complete_popup('<C-r>=edit#delimit_mate("b")<CR>', 1)
 
 " Command mode wild menu completion
 " Note: This prevents annoyance where multiple old completion options can be shown
@@ -559,20 +562,20 @@ augroup complete_setup
   au CmdlineLeave * let b:show_message = 1
   au CmdlineEnter,CmdlineLeave * let b:complete_state = 0
 augroup END
-cnoremap <expr> <Tab> iter#complete_cmdline("\<Tab>", 1)
-cnoremap <expr> <S-Tab> iter#complete_cmdline("\<S-Tab>", 1)
-cnoremap <expr> <F2> iter#complete_cmdline("\<Tab>", 1)
-cnoremap <expr> <F1> iter#complete_cmdline("\<S-Tab>", 1)
-cnoremap <expr> <C-k> iter#complete_cmdline("\<C-p>")
-cnoremap <expr> <C-j> iter#complete_cmdline("\<C-n>")
-cnoremap <expr> <Up> iter#complete_cmdline("\<C-p>")
-cnoremap <expr> <Down> iter#complete_cmdline("\<C-n>")
-cnoremap <expr> <C-h> iter#complete_cmdline("\<Left>")
-cnoremap <expr> <C-l> iter#complete_cmdline("\<Right>")
-cnoremap <expr> <Right> iter#complete_cmdline("\<Right>")
-cnoremap <expr> <Left> iter#complete_cmdline("\<Left>")
-cnoremap <expr> <Delete> iter#complete_cmdline("\<Delete>")
-cnoremap <expr> <BS> iter#complete_cmdline("\<BS>")
+cnoremap <silent> <expr> <Tab> iter#complete_cmdline("\<Tab>", 1)
+cnoremap <silent> <expr> <S-Tab> iter#complete_cmdline("\<S-Tab>", 1)
+cnoremap <silent> <expr> <F2> iter#complete_cmdline("\<Tab>", 1)
+cnoremap <silent> <expr> <F1> iter#complete_cmdline("\<S-Tab>", 1)
+cnoremap <silent> <expr> <C-k> iter#complete_cmdline("\<C-p>")
+cnoremap <silent> <expr> <C-j> iter#complete_cmdline("\<C-n>")
+cnoremap <silent> <expr> <Up> iter#complete_cmdline("\<C-p>")
+cnoremap <silent> <expr> <Down> iter#complete_cmdline("\<C-n>")
+cnoremap <silent> <expr> <C-h> iter#complete_cmdline("\<Left>")
+cnoremap <silent> <expr> <C-l> iter#complete_cmdline("\<Right>")
+cnoremap <silent> <expr> <Right> iter#complete_cmdline("\<Right>")
+cnoremap <silent> <expr> <Left> iter#complete_cmdline("\<Left>")
+cnoremap <silent> <expr> <Delete> iter#complete_cmdline("\<Delete>")
+cnoremap <silent> <expr> <BS> iter#complete_cmdline("\<BS>")
 
 
 "-----------------------------------------------------------------------------"
@@ -1229,96 +1232,46 @@ command! -nargs=1 PlugLocal call s:plug_local(<args>)
 " from Shougo/neobundle.vim which was based on vundle. Just a bit faster.
 call plug#begin('~/.vim/plugged')
 
-" Escape character handling
-" Note: Previously used this to preserve colors in 'command --help' pages but now simply
-" redirect git commands that include ANSI colors to their corresponding man pages.
-" call plug#('powerman/vim-plugin-AnsiEsc')
-
-" Inline code handling
-" Note: Use :InlineEdit within blocks to open temporary buffer for editing. The buffer
-" will have filetype-aware settings. See: https://github.com/AndrewRadev/inline_edit.vim
-" call plug#('AndrewRadev/inline_edit.vim')
-
-" Close unused buffers with Bdelete
-" Note: Instead use custom utilities
-" call plug#('Asheq/close-buffers.vim')  " e.g. Bdelete hidden, Bdelete select
-" call plug#('artnez/vim-wipeout')  " utility overwritten with custom one
-
-" Commenting stuff
-" Note: tcomment_vim is nice minimal extension of vim-commentary, include explicit
-" commenting and uncommenting and 'blockwise' commenting with g>b and g<b
-" call plug#('scrooloose/nerdcommenter')
-" call plug#('tpope/vim-commentary')  " too simple
-call plug#('tomtom/tcomment_vim')
-silent! unlet g:loaded_tcomment
-
-" General utilities
-" Note: Select mode (e.g. by typing 'gh') is same as visual but enters insert mode
-" when you start typing, to emulate typing after click-and-drag. Never use it.
-" See: https://vi.stackexchange.com/a/4892/8084
-" call plug#('Shougo/vimshell.vim')  " first generation :terminal add-ons
-" call plug#('Shougo/deol.nvim')  " second generation :terminal add-ons
-" call plug#('jez/vim-superman')  " replaced with vim.vim and bashrc utilities
-" call plug#('tpope/vim-unimpaired')  " bracket maps that no longer use
-call plug#('tpope/vim-repeat')  " basic repeat utility
-call plug#('tpope/vim-eunuch')  " shell utils like chmod rename and move
-call plug#('tpope/vim-characterize')  " print character info (nicer version of 'ga')
-
-" Panel utilities
-" See: https://github.com/junegunn/vim-peekaboo/issues/84
-" Note: For why to avoid these plugins see https://shapeshed.com/vim-netrw/
-" various shortcuts to test whole file, current test, next test, etc.
-" call plug#('vim-scripts/EnhancedJumps')  " unnecessary
-" call plug#('jistr/vim-nerdtree-tabs')  " unnecessary
-" call plug#('scrooloose/nerdtree')  " unnecessary
-call plug#('junegunn/vim-peekaboo')  " popup display
-call plug#('mbbill/undotree')
-let g:peekaboo_window = 'vertical topleft 30new'
-let g:peekaboo_prefix = "\1"  " disable mappings in lieu of 'nomap' option
-let g:peekaboo_ins_prefix = "\1"  " disable mappings in lieu of 'nomap' option
-
-" Restoring sessions and recent files. Use 'vim-session' bash function to restore from
+" Sessions and history. Use 'vim-session' bash function to restore from
 " .vimsession or start new session with that file, or 'vim' then ':so .vimsession'.
+" See: https://github.com/junegunn/vim-peekaboo/issues/84
 " Note: Here mru can be used to replace current file in window with files from recent
 " popup list. Useful e.g. if lsp or fugitive plugins accidentally replace buffer.
 " call plug#('thaerkh/vim-workspace')
 " call plug#('gioele/vim-autoswap')  " deals with swap files automatically; no longer use them so unnecessary
 " call plug#('xolox/vim-reload')  " easier to write custom reload function
+" call plug#('Asheq/close-buffers.vim')  " e.g. Bdelete hidden, Bdelete select
+" call plug#('artnez/vim-wipeout')  " utility overwritten with custom one
+call plug#('tpope/vim-repeat')  " repeat utility
 call plug#('tpope/vim-obsession')  " sparse features on top of built-in session behavior
+call plug#('junegunn/vim-peekaboo')  " register display
+call plug#('mbbill/undotree')  " undo history display
 call plug#('yegappan/mru')  " most recent file
 let g:MRU_file = '~/.vim_mru_files'  " default (custom was ignored for some reason)
+let g:peekaboo_window = 'vertical topleft 30new'
+let g:peekaboo_prefix = "\1"  " disable mappings in lieu of 'nomap' option
+let g:peekaboo_ins_prefix = "\1"  " disable mappings in lieu of 'nomap' option
 
-" Navigation, folding, and registers
-" Note: SimPylFold seems to have nice improvements, but while vim-tex-fold adds
-" environment folding support, only native vim folds document header, which is
-" sometimes useful. Will stick to default unless things change.
-" Note: FastFold simply keeps &l:foldmethod = 'manual' most of time and updates on
-" saves or fold commands instead of continuously-updating with the highlighting as
-" vim tries to do. Works with both native vim syntax folding and expr overrides.
-" See: https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
-" call plug#('easymotion/vim-easymotion')  " extremely slow and overkill
-" call plug#('kshenoy/vim-signature')  " unneeded and abandoned
-" call plug#('pseewald/vim-anyfold')  " better indent folding (instead of vim syntax)
-" call plug#('matze/vim-tex-fold')  " folding tex environments (but no preamble)
-call plug#('tmhedberg/SimpylFold')  " python folding
-call plug#('Konfekt/FastFold')  " speedup folding
-call plug#('justinmk/vim-sneak')  " simple and clean
-silent! unlet g:loaded_sneak_plugin
-let g:tex_fold_override_foldtext = 0  " disable foldtext() override
-let g:SimpylFold_docstring_preview = 0  " disable foldtext() override
-
-" Matching groups and searching
+" Navigation and searching
 " Note: The vim-tags @#&*/?! mappings auto-integrate with vim-indexed-search. Also
 " disable colors for increased speed.
-call plug#('andymass/vim-matchup')
+" See: https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
+" call plug#('tpope/vim-unimpaired')  " bracket map navigation, no longer used
+" call plug#('kshenoy/vim-signature')  " mark signs, unneeded and abandoned
+" call plug#('vim-scripts/EnhancedJumps')  " jump list, unnecessary
+" call plug#('easymotion/vim-easymotion')  " extremely slow and overkill
 call plug#('henrik/vim-indexed-search')
+call plug#('andymass/vim-matchup')
+call plug#('justinmk/vim-sneak')  " simple and clean
+silent! unlet g:loaded_sneak_plugin
 let g:matchup_mappings_enabled = 1  " enable default mappings
 let g:indexed_search_mappings = 0  " note this also disables <Plug>(mappings)
 
-" Error checking and testing
+" Error checking utilities
 " Note: Test plugin works for every filetype (simliar to ale).
 " Note: ALE plugin looks for all checkers in $PATH
 " call plut#('scrooloose/syntastic')  " out of date: https://github.com/vim-syntastic/syntastic/issues/2319
+" call plug#('tweekmonster/impsort.vim') " conflicts with isort plugin, also had major issues
 if has('python3') | call plug#('fisadev/vim-isort') | endif
 call plug#('vim-test/vim-test')
 call plug#('dense-analysis/ale')
@@ -1326,7 +1279,7 @@ call plug#('Chiel92/vim-autoformat')
 call plug#('tell-k/vim-autopep8')
 call plug#('psf/black')
 
-" Git wrappers and differencing tools
+" Git integration utilities
 " Note: vim-flog and gv.vim are heavyweight and lightweight commit branch viewing
 " plugins. Probably not necessary unless in giant project with tons of branches.
 " See: https://github.com/rbong/vim-flog/issues/15
@@ -1338,7 +1291,7 @@ call plug#('airblade/vim-gitgutter')
 call plug#('tpope/vim-fugitive')
 let g:conflict_marker_enable_mappings = 0
 
-" Project-wide tags and auto-updating
+" Tag integration utilities
 " Note: This should work for both fzf ':Tags' (uses 'tags' since relies on tagfiles()
 " for detection in autoload/vim.vim) and gutentags (uses only g:gutentags_ctags_tagfile
 " for both detection and writing).
@@ -1355,7 +1308,7 @@ let g:Tlist_Use_Right_Window = 1
 let g:Tlist_WinWidth = 40
 " let g:gutentags_enabled = 0
 
-" User fuzzy selection stuff
+" Fuzzy selection and searching
 " Note: For consistency, specify ctags command below and set 'tags' above accordingly,
 " however this should generally not be used since ctags are managed by gutentags.
 " Note: You must use fzf#wrap to apply global settings and cannot rely on fzf#run
@@ -1401,7 +1354,7 @@ if s:enable_lsp
   let g:lsp_preview_max_height = 2 * g:linelength
 endif
 
-" Completion engines
+" Insert completion engines
 " Note: Autocomplete requires deno (install with mamba). Older verison requires pynvim
 " Warning: denops.vim frequently upgrades requirements to most recent vim
 " distribution but conda-forge version is slower to update. Workaround by pinning
@@ -1453,18 +1406,14 @@ if s:enable_ddc
   call plug#('delphinus/ddc-ctags')  " current file ctags
 endif
 
-" Delimiters and stuff. Use vim-surround rather than vim-sandwich because key mappings
-" are better and API is simpler. Only miss adding numbers to operators, otherwise
-" feature set is same (e.g. cannot delete and change arbitrary text objects)
-" See discussion: https://www.reddit.com/r/vim/comments/esrfno/why_vimsandwich_and_not_surroundvim/
-" See also: https://github.com/wellle/targets.vim/issues/225
+" Delimiters and snippets. Use vim-surround not vim-sandwich because mappings are
+" better and API is nicer (note neither can delete surrounding delimiters). Should
+" investigate snippet utils further but so far vim-succinct is fine.
+" Todo: Investigate snippet further, but so far primitive vim-succinct snippets are fine
+" See: https://github.com/wellle/targets.vim/issues/225
+" See: https://www.reddit.com/r/vim/comments/esrfno/why_vimsandwich_and_not_surroundvim/
 " call plug#('wellle/targets.vim')
 " call plug#('machakann/vim-sandwich')
-call plug#('tpope/vim-surround')
-call plug#('raimondi/delimitmate')
-
-" Snippets and stuff
-" Todo: Investigate further, but so far primitive vim-succinct snippets are fine
 " call plug#('honza/vim-snippets')  " reference snippet files supplied to e.g. ultisnips
 " call plug#('LucHermitte/mu-template')  " file template and snippet engine mashup, not popular
 " call plug#('Shougo/neosnippet.vim')  " snippets consistent with ddc
@@ -1473,10 +1422,12 @@ call plug#('raimondi/delimitmate')
 " call plug#('hrsh7th/vim-vsnip')  " snippets
 " call plug#('hrsh7th/vim-vsnip-integ')  " integration with ddc.vim
 " call plug#('SirVer/ultisnips')  " fancy snippet actions
+call plug#('tpope/vim-surround')
+call plug#('raimondi/delimitmate')
 
-" Additional text objects (inner/outer selections)
-" Todo: Generalized function converting text objects into navigation commands? Or
-" could just rely on tag and fold jumping for most navigation.
+" Text object definitions
+" Note: Also use vim-succinct to auto-convert every vim-surround delimiter
+" definition to 'inner'/'outer' delimiter inclusive/exclusive objects.
 " call plug#('bps/vim-textobj-python')  " use braceless 'm' instead
 " call plug#('machakann/vim-textobj-functioncall')  " does not work
 " call plug#('vim-scripts/argtextobj.vim')  " issues with this too
@@ -1495,20 +1446,32 @@ let g:textobj_numeral_no_default_key_mappings = 1  " defined in vim-succinct blo
 let g:loaded_textobj_comment = 1  " avoid default mappings (see below)
 let g:loaded_textobj_entire = 1  " avoid default mappings (see below)
 
-" Formatting stuff. Conjoin plugin removes line continuation characters and is awesome.
-" Use vim-easy-align because tabular API is fugly and requires separate maps and does
-" not support motions or text objects or ignoring comments by default.
-" Note: Seems that mapping <Nop> just sends it to a black hole. Try :map <Nop> after.
+" Alignment and calculations
+" Note: tcomment_vim is nice minimal extension of vim-commentary, include explicit
+" commenting and uncommenting and 'blockwise' commenting with g>b and g<b
 " See: https://www.reddit.com/r/vim/comments/g71wyq/delete_continuation_characters_when_joining_lines/
+" call plug#('scrooloose/nerdcommenter')  " too complex
+" call plug#('tpope/vim-commentary')  " too simple
 " call plug#('vim-scripts/Align')  " outdated align plugin
-" call plug#('vim-scripts/LargeFile')  " disable syntax highlighting for large files
 " call plug#('tommcdo/vim-lion')  " alternative to easy-align
 " call plug#('godlygeek/tabular')  " difficult to use
 " call plug#('terryma/vim-multiple-cursors')  " article against this idea: https://medium.com/@schtoeffel/you-don-t-need-more-than-one-cursor-in-vim-2c44117d51db
 " call plug#('dkarter/bullets.vim')  " list numbering but completely fails
+" call plug#('stormherz/tablify')  " fancy ++ style tables, for now use == instead
+" call plug#('Rykka/riv.vim')  " fancy tables, let g:riv_python_rst_hl = 1
+" call plug#('triglav/vim-visual-increment')  " superceded by vim-speeddating
+" call plug#('vim-scripts/Toggle')  " toggling stuff on/off (forked instead)
+call plug#('junegunn/vim-easy-align')  " align with motions, text objects, and ignores comments
 call plug#('AndrewRadev/splitjoin.vim')  " single-line multi-line transition hardly every needed
-call plug#('flwyd/vim-conjoin')  " remove line continuation characters
-let g:LargeFile = 1  " megabyte limit
+call plug#('flwyd/vim-conjoin')  " join and remove line continuation characters
+call plug#('tpope/vim-speeddating')  " dates and stuff
+call plug#('sk1418/HowMuch')  " calcuations
+call plug#('tomtom/tcomment_vim')  " comment motions
+call plug#('tpope/vim-characterize')  " print character (nicer version of 'ga')
+call plug#('metakirby5/codi.vim')  " calculators
+silent! unlet g:loaded_tcomment
+let g:HowMuch_no_mappings = 1
+let g:speeddating_no_mappings = 1
 let g:conjoin_map_J = "\1"  " disable mapping in lieu of 'nomap' option
 let g:conjoin_map_gJ = "\1"  " disable mapping in lieu of 'nomap' option
 let g:splitjoin_join_mapping  = 'cJ'
@@ -1516,78 +1479,42 @@ let g:splitjoin_split_mapping = 'cK'
 let g:splitjoin_trailing_comma = 1
 let g:splitjoin_normalize_whitespace = 1
 let g:splitjoin_python_brackets_on_separate_lines = 1
-call plug#('junegunn/vim-easy-align')
 
-" Python and related utilities
-" Todo: Test vim-repl, seems to support all REPLs, but only :terminal is supported.
-" Todo: Test vimcmdline, claims it can also run in tmux pane or 'terminal emulator'.
-" call plug#('sillybun/vim-repl')  " run arbitrary code snippets
-" call plug#('jalvesaq/vimcmdline')  " run arbitrary code snippets
-" call plug#('vim-scripts/Pydiction')  " just changes completeopt and dictionary and stuff
-" call plug#('cjrh/vim-conda')  " for changing anconda VIRTUALENV but probably don't need it
-" call plug#('klen/python-mode')  " incompatible with jedi-vim and outdated
-" call plug#('ivanov/vim-ipython')  " replaced by jupyter-vim
-" call plug#('davidhalter/jedi-vim')  " use vim-lsp with mamba install python-lsp-server
-" call plug#('jeetsukumaran/vim-python-indent-black')  " black style indentexpr, but too buggy
-" call plug#('lukelbd/jupyter-vim', {'branch': 'buffer-local-highlighting'})  " temporary
-" call plug#('fs111/pydoc.vim')  " python docstring browser, now use custom utility
-" let g:pydiction_location = expand('~') . '/.vim/plugged/Pydiction/complete-dict'  " for pydiction
-call plug#('heavenshell/vim-pydocstring')  " automatic docstring templates
-call plug#('Vimjas/vim-python-pep8-indent')  " pep8 style indentexpr, actually seems to respect black style?
+" Folding and indentation
+" Note: SimPylFold seems to have nice improvements, but while vim-tex-fold adds
+" environment folding support, only native vim folds document header, which is
+" sometimes useful. Will stick to default unless things change.
+" Note: FastFold simply keeps &l:foldmethod = 'manual' most of time and updates on
+" saves or fold commands instead of continuously-updating with the highlighting as
+" vim tries to do. Works with both native vim syntax folding and expr overrides.
+" Note: Indentline completely messes up search mode. Also requires changing Conceal
+" group color, but doing that also messes up latex conceal backslashes. Instead use
+" braceless.vim highlighting, appears only when cursor is there.
+" call plug#('pseewald/vim-anyfold')  " better indent folding (instead of vim syntax)
+" call plug#('matze/vim-tex-fold')  " folding tex environments (but no preamble)
+" call plug#('yggdroot/indentline')  " vertical indent line
+" call plug#('nathanaelkane/vim-indent-guides')  " alternative indent guide
 call plug#('tweekmonster/braceless.vim')  " partial overlap with vim-textobj-indent, but these include header
-call plug#('goerz/jupytext.vim')  " edit ipython notebooks
-call plug#('jupyter-vim/jupyter-vim')  " pair with jupyter consoles, support %% highlighting
+call plug#('tmhedberg/SimpylFold')  " python folding
+call plug#('Konfekt/FastFold')  " speedup folding
 let g:braceless_block_key = 'm'  " captures if, for, def, etc.
 let g:braceless_generate_scripts = 1  " see :help, required since we active in ftplugin
-let g:pydocstring_formatter = 'numpy'  " default is google so switch to numpy
-let g:pydocstring_doq_path = '~/mambaforge/bin/doq'  " critical to mamba install
-let g:jupyter_highlight_cells = 1  " required to prevent error in non-python vim
-let g:jupyter_cell_separators = ['# %%', '# <codecell>']
-let g:jupyter_mapkeys = 0
-let g:jupytext_fmt = 'py:percent'
-
-" Indent guides
-" Note: Indentline completely messes up search mode. Also requires changing Conceal
-" group color, but doing that also messes up latex conceal backslashes (which
-" we need to stay transparent). Also indent-guides looks too busy and obtrusive.
-" Instead use braceless.vim highlighting, appears only when cursor is there.
-" call plug#('yggdroot/indentline')
-" call plug#('nathanaelkane/vim-indent-guides')
-
-" ReST utilities
-" Note: For now skip since use == style tables instead of fancy ++ style tables
-" call plug#('nvie/vim-rst-tables')
-" call plug#('ossobv/vim-rst-tables-py3')
-" call plug#('philpep/vim-rst-tables')
-" noremap <silent> \s :python ReformatTable()<CR>
-" let g:riv_python_rst_hl = 1
-" call plug#('Rykka/riv.vim')
-
-" TeX utilities with syntax highlighting, indentation, mappings, and zotero integration
-" Note: For better configuration see https://github.com/lervag/vimtex/issues/204
-" Note: Now use https://github.com/msprev/fzf-bibtex with vim integration inside
-" autoload/tex.vim rather than unite versions. This is consistent with our choice
-" of using fzf over the shougo unite/denite/ddu plugin series.
-" call plug#('twsh/unite-bibtex')  " python 3 version
-" call plug#('msprev/unite-bibtex')  " python 2 version
-" call plug#('lervag/vimtex')
-" call plug#('chrisbra/vim-tex-indent')
-" call plug#('rafaqz/citation.vim')
-let g:vimtex_fold_enabled = 1
-let g:vimtex_fold_types = {'envs' : {'whitelist': ['enumerate','itemize','math']}}
+let g:tex_fold_override_foldtext = 0  " disable foldtext() override
+let g:SimpylFold_docstring_preview = 0  " disable foldtext() override
 
 " Syntax highlighting
+" Note: Use :InlineEdit within blocks to open temporary buffer for editing. The buffer
+" will have filetype-aware settings. See: https://github.com/AndrewRadev/inline_edit.vim
 " Note: Here 'pythonic' vim-markdown folding prevents bug where folds auto-close after
 " insert mode and ignores primary headers so entire document is not folded.
-" See: https://github.com/preservim/vim-markdown/issues/516
-" See: https://github.com/preservim/vim-markdown/issues/489
-"
+" See: https://vi.stackexchange.com/a/4892/8084
+" See: https://github.com/preservim/vim-markdown/issues/516 and 489
 " call plug#('numirias/semshi', {'do': ':UpdateRemotePlugins'})  " neovim required
-" call plug#('tweekmonster/impsort.vim') " conflicts with isort plugin, also had major issues
 " call plug#('vim-python/python-syntax')  " originally from hdima/python-syntax, manually copied version with match case
 " call plug#('MortenStabenau/matlab-vim')  " requires tmux installed
 " call plug#('daeyun/vim-matlab')  " alternative but project seems dead
 " call plug#('neoclide/jsonc.vim')  " vscode-style expanded json syntax, but overkill
+" call plug#('AndrewRadev/inline_edit.vim')  " inline syntax highlighting
 call plug#('vim-scripts/applescript.vim')  " applescript syntax support
 call plug#('andymass/vim-matlab')  " recently updated vim-matlab fork from matchup author
 call plug#('preservim/vim-markdown')  " see .vim/after/syntax.vim for kludge fix
@@ -1596,6 +1523,12 @@ call plug#('anntzer/vim-cython')
 call plug#('tpope/vim-liquid')
 call plug#('cespare/vim-toml')
 call plug#('JuliaEditorSupport/julia-vim')
+call plug#('flazz/vim-colorschemes')  " for macvim
+call plug#('fcpg/vim-fahrenheit')  " for macvim
+call plug#('KabbAmine/yowish.vim')  " for macvim
+call plug#('lilydjwg/colorizer')  " only in macvim or when &t_Co == 256
+let g:colorizer_nomap = 1  " use custom mapping
+let g:colorizer_startup = 0  " too expensive to enable at startup
 let g:filetype_m = 'matlab'  " see $VIMRUNTIME/autoload/dist/ft.vim
 let g:latex_to_unicode_file_types = ['julia']  " julia-vim feature
 let g:vim_markdown_conceal = 1  " conceal stuff
@@ -1606,26 +1539,52 @@ let g:vim_markdown_folding_style_pythonic = 1  " repair fold close issue
 let g:vim_markdown_override_foldtext = 1  " also overwrite function (see common.vim)
 let g:vim_markdown_math = 1 " turn on $$ math
 
-" Colorful stuff
-" Test: ~/.vim/plugged/colorizer/colortest.txt
-" Note: colorizer very expensive so disabled by default and toggled with shortcut
-" call plug#('altercation/vim-colors-solarized')
-call plug#('flazz/vim-colorschemes')  " for macvim
-call plug#('fcpg/vim-fahrenheit')  " for macvim
-call plug#('KabbAmine/yowish.vim')  " for macvim
-call plug#('lilydjwg/colorizer')  " only in macvim or when &t_Co == 256
-let g:colorizer_nomap = 1
-let g:colorizer_startup = 0
+" Filetype utilities
+" Todo: Test vim-repl, seems to support all REPLs, but only :terminal is supported.
+" Todo: Test vimcmdline, claims it can also run in tmux pane or 'terminal emulator'.
+" Note: Now use https://github.com/msprev/fzf-bibtex with autoload/tex.vim integration
+" Note: For better configuration see https://github.com/lervag/vimtex/issues/204
+" call plug#('sillybun/vim-repl')  " run arbitrary code snippets
+" call plug#('jalvesaq/vimcmdline')  " run arbitrary code snippets
+" call plug#('vim-scripts/Pydiction')  " changes completeopt and dictionary and stuff
+" call plug#('cjrh/vim-conda')  " for changing anconda VIRTUALENV but probably don't need it
+" call plug#('klen/python-mode')  " incompatible with jedi-vim and outdated
+" call plug#('ivanov/vim-ipython')  " replaced by jupyter-vim
+" call plug#('davidhalter/jedi-vim')  " use vim-lsp with mamba install python-lsp-server
+" call plug#('jeetsukumaran/vim-python-indent-black')  " black style indentexpr, but too buggy
+" call plug#('lukelbd/jupyter-vim', {'branch': 'buffer-local-highlighting'})  " temporary
+" call plug#('fs111/pydoc.vim')  " python docstring browser, now use custom utility
+" call plug#('rafaqz/citation.vim')  " unite.vim citation source
+" call plug#('twsh/unite-bibtex')  " unite.vim python 3 citation source
+" call plug#('lervag/vimtex')  " giant tex plugin
+" let g:pydiction_location = expand('~') . '/.vim/plugged/Pydiction/complete-dict'  " for pydiction
+call plug#('heavenshell/vim-pydocstring')  " automatic docstring templates
+call plug#('Vimjas/vim-python-pep8-indent')  " pep8 style indentexpr, actually seems to respect black style?
+call plug#('goerz/jupytext.vim')  " edit ipython notebooks
+call plug#('jupyter-vim/jupyter-vim')  " pair with jupyter consoles, support %% highlighting
+let g:pydocstring_formatter = 'numpy'  " default is google so switch to numpy
+let g:pydocstring_doq_path = '~/mambaforge/bin/doq'  " critical to mamba install
+let g:jupyter_highlight_cells = 1  " required to prevent error in non-python vim
+let g:jupyter_cell_separators = ['# %%', '# <codecell>']
+let g:jupyter_mapkeys = 0
+let g:jupytext_fmt = 'py:percent'
+let g:vimtex_fold_enabled = 1
+let g:vimtex_fold_types = {'envs' : {'whitelist': ['enumerate', 'itemize', 'math']}}
 
-" Calculators and number stuff
-" Note: Now use forked version of toggle plugin
-" call plug#('vim-scripts/Toggle')  " toggling stuff on/off (forked instead)
-" call plug#('triglav/vim-visual-increment')  " superceded by vim-speeddating
-call plug#('sk1418/HowMuch')
-call plug#('tpope/vim-speeddating')  " dates and stuff
-call plug#('metakirby5/codi.vim')  " calculators
-let g:HowMuch_no_mappings = 1
-let g:speeddating_no_mappings = 1
+" Shell utilities
+" Note: For why to avoid these plugins see https://shapeshed.com/vim-netrw/
+" various shortcuts to test whole file, current test, next test, etc.
+" Note: Previously used ansi plugin to preserve colors in 'command --help' pages
+" but now redirect colorized git help info to their corresponding man pages.
+" call plug#('powerman/vim-plugin-AnsiEsc')  " colorize help pages
+" call plug#('Shougo/vimshell.vim')  " first generation :terminal add-ons
+" call plug#('Shougo/deol.nvim')  " second generation :terminal add-ons
+" call plug#('jez/vim-superman')  " replaced with vim.vim and bashrc utilities
+" call plug#('jistr/vim-nerdtree-tabs')  " unnecessary
+" call plug#('scrooloose/nerdtree')  " unnecessary
+" call plug#('vim-scripts/LargeFile')  " disable syntax highlighting for large files
+call plug#('tpope/vim-eunuch')  " shell utils like chmod rename and move
+let g:LargeFile = 1  " megabyte limit
 
 " Custom plugins or forks and try to load locally if possible!
 " Note: ^= prepends to list and += appends. Also previously added forks here but
@@ -1866,6 +1825,7 @@ if &g:foldenable || s:plug_active('FastFold')
   let g:clojure_fold = 1
   let g:fortran_fold = 1
   let g:javaScript_fold = 1
+  let g:html_syntax_folding = 1
   let g:markdown_folding = 1
   let g:perl_fold = 1
   let g:perl_fold_blocks = 1

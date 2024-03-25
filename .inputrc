@@ -20,17 +20,17 @@
 "\eOQ": menu-complete
 # Tab-like complete backward with F1 = ctrl-, (see .vimrc)
 "\eOP": menu-complete-backward
-# <End> key from sed -n l <Ctrl-Right> i.e. 0x1b 0x5b 0x46
-"\e[F": end-of-line
 # <Home> key from sed -n l <Ctrl-Left> i.e. 0x1b 0x5b 0x48
 "\e[H": beginning-of-line
-# # <Alt-Right> key from sed -n -l <Alt-Right>
-"\e[1;3C": forward-word
-# # <Alt-Left> key from sed -n l <Alt-Left>
+# <End> key from sed -n l <Ctrl-Right> i.e. 0x1b 0x5b 0x46
+"\e[F": end-of-line
+# <Alt-Left> key from sed -n l <Alt-Left>
 "\e[1;3D": backward-word
-# # <Alt-Up> key from sed -n l <Alt-Left>
+# <Alt-Right> key from sed -n -l <Alt-Right>
+"\e[1;3C": forward-word
+# <Alt-Up> key from sed -n l <Alt-Left>
 "\e[1;3A": shell-backward-word
-  # <Alt-Down> key from sed -n -l <Alt-Right>
+# <Alt-Down> key from sed -n -l <Alt-Right>
 "\e[1;3B": shell-forward-word
 
 # Terminal settings

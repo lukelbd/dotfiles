@@ -1,5 +1,7 @@
 "-----------------------------------------------------------------------------
 " Json settings
 "-----------------------------------------------------------------------------
-" Tab settings. Normally keep it to just 2 spaces.
+" General settings
+" Note $VIMRUNTIME/syntax/json.vim has no global foldmethod option
 setlocal tabstop=4 softtabstop=4 shiftwidth=4
+setlocal foldmethod=syntax

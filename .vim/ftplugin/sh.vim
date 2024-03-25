@@ -4,6 +4,9 @@
 " General settings
 " Note: Without this $VIMRUNTIME will fold every nested 'if' 'case' etc. block
 setlocal foldnestmax=1
+setlocal tabstop=2
+setlocal shiftwidth=2
+setlocal softtabstop=2
 
 " Syntax settings and enable bash
 " Note: Defaults are 200. This fixes syntax error highlighting issues when scrolling.

@@ -87,25 +87,32 @@
 #   ~# -- Give list of forwarded connections in this session
 #   ~? -- Give list of these commands
 #-----------------------------------------------------------------------------
-# Apply general shell settings
-# Prompt "<comp name>[<job count>]:<push dir N>:...:<push dir 1>:<work dir> <user>$"
-# Ensure the prompt is applied only once so modules, conda, etc. can modify it
-# See: https://stackoverflow.com/a/28938235/4970632
+# Apply prompt "<comp name>[<job count>]:<push dir N>:...:<push dir 1>:<work dir> <user>$"
+# Ensure the prompt is applied only once so modules can modify it
 # See: https://unix.stackexchange.com/a/124408/112647
 # See: https://unix.stackexchange.com/a/420362/112647
-# See: https://unix.stackexchange.com/a/88605/112647
-[[ $- != *i* ]] && return  # not interactive (scp/rscync fail without this line)
-_setup_message() { printf '%s' "${1}$(seq -s '.' $((30 - ${#1})) | tr -d 0-9)"; }
-_prompt_branch() {  # print parentheses around git branch similar to conda environments
-  local branch
+_prompt_head() {  # print parentheses around git branch similar to conda environments
+  local opt env base branch
   branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
-  [ -n "$branch" ] && echo "($branch) "
+  base=${CONDA_PREFIX_1:-$CONDA_PREFIX}  # both empty after conda deactivate
+  [ -n "$base" ] && [ "$CONDA_PREFIX" == "$base" ] && env=base || env=${CONDA_PREFIX##*/}
+  for opt in "$env" "$branch"; do [ -n "$opt" ] && printf "(%s) " "$opt"; done
 }
-_prompt_dirs() {  # prompt string "<push dir N>:...:<push dir 1>:<work dir> <user>$"
+_prompt_tail() {  # prompt string "<push dir N>:...:<push dir 1>:<work dir> <user>$"
   local paths
   IFS=$'\n' read -d '' -r -a paths < <(command dirs -p | tac)
   IFS=: eval 'echo "${paths[*]##*/}"'
 }
+[[ $- != *i* ]] && return  # not interactive (scp/rscync fail without this line)
+[[ "$PS1" =~ _prompt_head ]] && [[ "$PS1" =~ _prompt_tail ]] \
+  || PS1='$(_prompt_head)\[\033[1;37m\]\h[\j]:$(_prompt_tail)\$ \[\033[0m\]'
+
+# Apply general shell settings
+# Ensure interactive mode present and remove aliases
+# See: https://stackoverflow.com/a/28938235/4970632
+# See: https://unix.stackexchange.com/a/88605/112647
+_setup_message() { printf '%s' "${1}$(seq -s '.' $((30 - ${#1})) | tr -d 0-9)"; }
+_setup_message 'General setup'
 _setup_shell() {         # apply shell options (list available with shopt -p)
   stty werase undef      # disable ctrl-w word delete function
   stty stop undef        # disable ctrl-s start/stop binding
@@ -138,10 +145,6 @@ _setup_shell() {         # apply shell options (list available with shopt -p)
   bind '"\e[1;3C": forward-word'
   bind '"\e[1;3D": backward-word'
 }
-_setup_message 'General setup'
-[ -n "$_prompt_set" ] \
-  || export PS1='$(_prompt_branch)\[\033[1;37m\]\h[\j]:$(_prompt_dirs)\$ \[\033[0m\]'
-_prompt_set=1  # avoid overwriting e.g. conda environment
 _setup_shell 2>/dev/null  # ignore if opton unavailable
 unalias -a  # critical (also use declare -F for definitions)
 
@@ -630,7 +633,7 @@ function man() {
   [ $# -eq 0 ] && echo "Requires one argument." && return 1
   if command man "$arg" 2>/dev/null | head -2 | grep "BUILTIN" &>/dev/null; then
     $_macos && [ "$arg" != "builtin" ] && search=bash || search=$arg
-    LESS=-p"^ *$arg.*\[.*$" command man "$search"
+    LESS=-p"^ *$arg.*\[.*$" command man "$search" 2>/dev/null
   else
     command man "$arg"  # could display error message
   fi
@@ -2002,7 +2005,7 @@ mamba-restore() {
 # See: https://stackoverflow.com/a/54985829/4970632
 # See: https://stackoverflow.com/a/48591320/4970632
 # See: https://medium.com/@nrk25693/how-to-add-your-conda-environment-to-your-jupyter-notebook-in-just-4-steps-abeab8b8d084
-if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda3 ]]; then
+if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda|mamba ]]; then
   _setup_message 'Enabling conda'
   __conda_setup=$("$_conda/bin/conda" 'shell.bash' 'hook' 2>/dev/null)
   if [ $? -eq 0 ]; then
@@ -2029,12 +2032,10 @@ fi
 # Shell integration and session management
 #-----------------------------------------------------------------------------
 # Enable shell integration and show inline figures with fixed 300dpi
-# Pass of this was not already installed and we are not inside vim :terminal
-# Window badges: https://iterm2.com/documentation-badges.html
+# Pane badges: https://iterm2.com/documentation-badges.html
 # Prompt markers: https://stackoverflow.com/a/38913948/4970632
-# Debug current directory: https://gitlab.com/gnachman/iterm2/-/issues/11073
-# Could try `printf "\e]1337;SetBadgeFormat=%s\a" $(echo -n "\(path)" | base64)`
-# to print current directory badge when debugging.
+# Use `printf "\e]1337;SetBadgeFormat=%s\a" $(echo -n "\(path)" | base64)` to print
+# current directory when debugging: https://gitlab.com/gnachman/iterm2/-/issues/11073
 if [ "${ITERM_SHELL_INTEGRATION_SKIP:-0}" == 0 ] \
   && [ -z "$ITERM_SHELL_INTEGRATION_INSTALLED" ] \
   && [ -r ~/.iterm2_shell_integration.bash ] \
@@ -2063,78 +2064,73 @@ if [ "${ITERM_SHELL_INTEGRATION_SKIP:-0}" == 0 ] \
   echo 'done'
 fi
 
-# Safely add a prompt command
-_append_prompt() {  # input argument should be new command
-  export PROMPT_COMMAND=$( \
-    echo "$PROMPT_COMMAND; $1" | sed 's/;[ \t]*;/;/g;s/^[ \t]*;//g' \
-  )
+# Change directory based on session title
+_title_cwd() {
+  local _ sub dir title
+  title=$(_title_get)
+  $_macos && [ -n "$title" ] || return 1
+  for sub in '' research shared school software; do
+    while read -r -d '' _ dir; do  # 'seconds.fraction' 'path'
+      cd "$dir" && break
+    done < <(find "$HOME/$sub" \
+      -maxdepth 1 -name "*${title%%-*}*" \
+      -type d -printf "%T@ %p\0" \
+      | sort -z -k1,1gr)  # reverse floating
+  done
 }
 
-# Set the iTerm2 window title; see https://superuser.com/a/560393/506762
-# First was idea to make title match working directory but fails inside tmux
-# export PROMPT_COMMAND='echo -ne "\033]0;${PWD/#$HOME/~}\007"'
-# Next idea was to use environment variabbles -- TERM_SESSION_ID/ITERM_SESSION_ID
-# indicate the window/tab/pane number so we can grep and fill.
-_title_file=$HOME/.title
-if [[ "$TERM_PROGRAM" =~ Apple_Terminal ]]; then
-  _win_num=0
-else
-  _win_num=${TERM_SESSION_ID%%t*}
-fi
-_win_num=${_win_num#w}
-
-# First function that sets title
-# Record title from user input, or as user argument
-_title_set() {  # default way is probably using Cmd-I in iTerm2
-  $_macos || return 1
-  [ -z "$TERM_SESSION_ID" ] && return 1
-  if [ $# -gt 0 ]; then
-    _title="$*"
-  else
-    read -r -p "Window title (window $_win_num):" _title
-  fi
-  [ -z "$_title" ] && _title="window $_win_num"
-  [ -e "$_title_file" ] || touch "$_title_file"
-  sed -i '/^'"$_win_num"':.*$/d' "$_title_file"  # remove existing title from file
-  echo "$_win_num: $_title" >> "$_title_file"  # add to file
-}
-
-# Get the title from file
+# Get session title from path
 _title_get() {
-  if ! [ -r "$_title_file" ]; then
-    unset _title
-  elif $_macos; then
-    _title=$(grep "^$_win_num:.*$" "$_title_file" 2>/dev/null | cut -d: -f2-)
-  else
-    _title=$(cat "$_title_file")  # only text in file, is this current session's title
+  local idx title
+  idx=${TERM_SESSION_ID%%t*}
+  idx=${idx#w}; idx=${idx:-0}
+  if [ -r "$_title_path" ]; then
+    if $_macos; then
+      title=$(grep "^$idx:.*$" "$_title_path" 2>/dev/null | cut -d: -f2-)
+    else
+      title=$(cat "$_title_path")  # only text in file, is this current session's title
+    fi
   fi
-  _title=$(echo "$_title" | sed $'s/^[ \t]*//;s/[ \t]*$//')
+  echo "$title" | sed $'s/^[ \t]*//;s/[ \t]*$//'
 }
 
-# Update the title
-_title_update() {
-  [ -r "$_title_file" ] || return 1
-  _title_get  # set _title global variable, attemp to read existing window title
-  if [ -z "$_title" ]; then
-    $_macos && _title_set  # set title name
-  else
-    echo -ne "\033]0;$_title\007"  # re-assert existing title, in case changed
-  fi
+# Set session title from user input or prompt
+_title_set() {
+  local idx title
+  $_macos && [ -n "$TERM_SESSION_ID" ] || return 1
+  idx=${TERM_SESSION_ID%%t*}
+  idx=${idx#w}; idx=${idx:-0}
+  [ $# -gt 0 ] && title="$*" || read -r -p "Title (window $idx):" title
+  title=${title:-window $idx}
+  [ -e "$_title_path" ] || touch "$_title_path"
+  sed -i '/^'"$idx"':.*$/d' "$_title_path"  # remove existing title from file
+  echo "$idx: $title" >> "$_title_path"  # add to file
 }
-title_update() { _title_update "$@"; }
-
-# Request title on first pane
-if $_macos; then
-  [[ "$PROMPT_COMMAND" =~ _title_update ]] || _append_prompt _title_update
-  [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && _title_update
-fi
 alias title='_title_set'  # easier for user
 
-#-----------------------------------------------------------------------------
-# Message
-#-----------------------------------------------------------------------------
+# Update the iterm2 window title
+# See: https://superuser.com/a/560393/506762
+_prompt_append() {  # input argument should be new command
+  PROMPT_COMMAND=$(echo "$PROMPT_COMMAND; $1" | sed 's/;[ \t]*;/;/g;s/^[ \t]*;//g')
+}
+_prompt_title() {
+  $_macos || return 1; local title=$(_title_get)
+  [ -z "$title" ] && _title_set && title=$(_title_get)
+  [ -n "$title" ] && echo -ne "\033]0;$title\007"  # re-assert title
+}
+if $_macos; then
+  _title_path=$HOME/.title
+  PROMPT_COMMAND=${PROMPT_COMMAND/_title_get/_prompt_title}
+  [[ "$PROMPT_COMMAND" =~ _prompt_title ]] || _prompt_append _prompt_title
+  [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && _prompt_title
+fi
+
+# Source other commands and print message
+# NOTE: This also fixes bug from restarting iterm sessions
 [ -n "$VIMRUNTIME" ] \
   && unset PROMPT_COMMAND
+$_macos && [ -z "$OLDPWD" ] && [ "$PWD" == "$HOME" ] \
+  && _title_cwd
 $_macos && [ -r $HOME/mackup/shell.sh ] \
   && source $HOME/mackup/shell.sh
 [ -z "$_bashrc_loaded" ] && [[ "$(hostname)" =~ "$HOSTNAME" ]] \

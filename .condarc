@@ -1,9 +1,10 @@
 always_yes: true
-show_channel_urls: true
+auto_activate_base: false
 auto_update_conda: true
+changeps1: false
 channels:
   - conda-forge
 create_default_packages:
   - pip
   - ipykernel
-auto_activate_base: false
+show_channel_urls: true
