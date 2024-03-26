@@ -179,21 +179,19 @@ function! s:setup_syntax() abort  " man-style pydoc syntax
   highlight link docHead manHeader
 endfunction
 function! shell#setup_man(...) abort
-  let page = tolower(matchstr(getline(1), '\f\+'))  " from man syntax group
-  let pnum = matchstr(getline(1), '(\@<=[1-9][a-z]\=)\@=')  " from man syntax
   if !empty(get(b:, 'doc_name', ''))
     setlocal tabstop=4 softtabstop=4 shiftwidth=4 foldnestmax=3
-    let b:doc_name = @% | call s:setup_syntax()
-    noremap <buffer> <CR> <Cmd>call stack#push_stack('doc', 'python#doc_page', '')<CR>
-    noremap <nowait> <buffer> [ <Cmd>call stack#push_stack('doc', 'python#doc_page', -v:count1)<CR>
-    noremap <nowait> <buffer> ] <Cmd>call stack#push_stack('doc', 'python#doc_page', v:count1)<CR>
+    call s:setup_syntax()  " set up syntax highlighting
+    let [b:doc_name, key, cmd] = [@%, 'doc', 'python#doc_page']
   else
     setlocal tabstop=7 softtabstop=7 shiftwidth=7 foldnestmax=3
-    let b:man_name = [page, pnum]  " see below
-    noremap <buffer> <CR> <Cmd>call stack#push_stack('man', 'shell#man_page', '')<CR>
-    noremap <nowait> <buffer> [ <Cmd>call stack#push_stack('man', 'shell#man_page', -v:count1)<CR>
-    noremap <nowait> <buffer> ] <Cmd>call stack#push_stack('man', 'shell#man_page', v:count1)<CR>
+    let page = tolower(matchstr(getline(1), '\f\+'))  " from man syntax group
+    let pnum = matchstr(getline(1), '(\@<=[1-9][a-z]\=)\@=')  " from man syntax
+    let [b:man_name, key, cmd] = [[page, pnum], 'man', 'shell#man_page']
   endif
+  noremap <buffer> <CR> <Cmd>call stack#push_stack(key, cmd, '')<CR>
+  noremap <nowait> <buffer> [ <Cmd>call stack#push_stack(key, cmd, -v:count1)<CR>
+  noremap <nowait> <buffer> ] <Cmd>call stack#push_stack(key, cmd, v:count1)<CR>
 endfunction
 
 " Tables of netrw mappings

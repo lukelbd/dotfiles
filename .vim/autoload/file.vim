@@ -115,16 +115,6 @@ endfunction
 " Open from local or current directory (see also grep.vim)
 " Note: Using <expr> instead of this tiny helper function causes <C-c> to
 " display annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
-function! file#setup_dir() abort
-  call utils#switch_maps(['<CR>', 't', 'n'], ['t', '<CR>', 'n'])
-  for char in 'fbFL' | silent! exe 'unmap <buffer> q' . char | endfor
-endfunction
-function! file#open_dir(cmd, local) abort
-  let base = a:local ? fnamemodify(resolve(@%), ':p:h') : tag#find_root(@%)
-  exe a:cmd . ' ' . base
-  exe 'vert resize ' . window#default_width(1)
-  exe 'resize ' . window#default_height(1) | goto
-endfunction
 function! file#open_init(cmd, local) abort
   let cmd = a:cmd ==# 'Drop' ? 'Open' : a:cmd  " alias 'Open' for 'Drop' command
   let path = resolve(expand('%:p'))
@@ -248,10 +238,49 @@ function! file#open_drop(...) abort
   endfor
 endfunction
 
-" Save or rename the file
-" Note: Prevents vim bug where cancelling the save in the confirmation prompt still
-" triggers BufWritePost and resets b:tabline_filechanged., and prevents Rename.vim
-" integration bug that triggers undefined b:gitgutter_was_enabled errors.
+" Manage file buffers
+" Note: This is alternative to bufwipeout plugin.
+" See: https://stackoverflow.com/a/7321131/4970632
+" See: https://github.com/Asheq/close-buffers.vim
+function! file#show_bufs() abort
+  let ndigits = len(string(bufnr('$')))
+  let result = {}
+  let lines = []
+  for bnr in tags#bufs_recent(0)  " all buffers loaded after unix time zero
+    let pad = repeat(' ', ndigits - len(string(bnr)))
+    if exists('*RelativePath')
+      let path = RelativePath(bufname(bnr))
+    else
+      let path = expand('#' . bnr . ':~:.')
+    endif
+    call add(lines, pad . bnr . ': ' . path)
+  endfor
+  let message = "Open buffers (sorted by recent use):\n" . join(lines, "\n")
+  echo message
+endfunction
+function! file#wipe_bufs()
+  let nums = []
+  for tnr in range(1, tabpagenr('$'))
+    call extend(nums, tabpagebuflist(tnr))
+  endfor
+  let names = []
+  for bnr in range(1, bufnr('$'))
+    if bufexists(bnr) && !getbufvar(bnr, '&mod') && index(nums, bnr) == -1
+      call add(names, bufname(bnr))
+      silent exe 'bwipeout ' bnr
+    endif
+  endfor
+  if !empty(names)
+    echom 'Wiped out ' . len(names) . ' hidden buffer(s): ' . join(names, ', ')
+  endif
+endfunction
+
+" Save, refresh, or rename the file
+" Note: Here :Gedit returns to head after viewing a blob. Can also use e.g. :Mru
+" to return but this is faster. See https://github.com/tpope/vim-fugitive/issues/543
+" Note: Here file#rename adapated from Rename.vim. Avoids bug where cancelling the save
+" in the confirmation prompt still triggers BufWritePost and b:tabline_filechanged, and
+" prevents integration bug that triggers undefined b:gitgutter_was_enabled errors.
 function! file#update() abort
   let tabline_changed = exists('b:tabline_filechanged') ? b:tabline_filechanged : 0
   let statusline_changed = exists('b:statusline_filechanged') ? b:statusline_filechanged : 0
@@ -262,6 +291,15 @@ function! file#update() abort
   if &l:modified && statusline_changed && !b:statusline_filechanged
     let b:statusline_filechanged = 1
   endif
+endfunction
+function! file#refresh() abort
+  let type = get(b:, 'fugitive_type', '')
+  if !empty(type)  " return to original file
+    call git#safe_return()
+  else  " reload from disk
+    edit | call fold#update_folds(1)
+  endif
+  normal! zv
 endfunction
 function! file#rename(name, bang)
   let b:gitgutter_was_enabled = get(b:, 'gitgutter_was_enabled', 0)

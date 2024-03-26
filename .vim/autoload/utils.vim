@@ -140,7 +140,7 @@ function! utils#motion_func(funcname, args) abort
   let string = a:funcname . '(' . string . ')'
   let s:operator_func = string
   if mode() =~# '^\(v\|V\|\)$'  " call operator function with line range
-    return "<Esc>:call utils#operator_func('')\<CR>"
+    return ":call utils#operator_func('')\<CR>"
   elseif mode() ==# 'n'
     set operatorfunc=utils#operator_func
     return "\<Esc>g@"  " await user motion and call operator function over those lines

@@ -93,10 +93,10 @@ endfunction
 " and updating the tag 'stack' (effectively a cache). Seems that $VIMRUNTIME/docs/tags
 " is included with vim by default, and this is always used no matter the value of &tags
 " (try ':echo tagfiles()' when inside help page, shows various doc/tags files).
-function! vim#show_help(...) abort
-  let item = a:0 ? a:1 : utils#input_default('Vim help', expand('<cword>'), 'help')
-  if empty(item) | return | endif
-  exe 'vertical help ' . item
+function! vim#show_runtime(name, ...) abort
+  let path = $VIMRUNTIME . '/' . a:name . '/' . (a:0 ? a:1 : &l:filetype) . '.vim'
+  call file#open_drop(path) | call window#setup_panel()
+  if a:0 && a:1 =~# 'test' | exe 'source %' | endif
 endfunction
 function! vim#setup_help() abort
   wincmd L | vert resize 88 | nnoremap <buffer> <CR> <C-]>

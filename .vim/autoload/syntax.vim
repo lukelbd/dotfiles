@@ -1,13 +1,13 @@
 "-----------------------------------------------------------------------------"
 " Utilities for syntax syncing
 "-----------------------------------------------------------------------------"
-" Jump to next conceal character
+" Move to next conceal character
 " See: https://stackoverflow.com/a/24224578/4970632
 " Note: This detects both columns concealed with matchadd(..., {'conceal': ''}) and
 " syntax 'conceal' or 'concealends'. In the former case leverage fact that matchadd
 " method is only used to make tex and markdown characters invisible, so no need to
 " compare replacement characters or check groups -- simply skip those columns.
-function! s:skip_cols(...) abort
+function! s:skip_chars(...) abort
   let cols = []  " column numbers concealed with empty string
   let line = getline(a:0 ? a:1 : '.')
   let matches = filter(getmatches(), "v:val.group ==# 'Conceal'")
@@ -23,14 +23,14 @@ function! s:skip_cols(...) abort
 endfunction
 function! syntax#next_char(count)
   let [lnum, cnum, cmax] = [line('.'), col('.'), col('$')]
-  let [line, skip] = [getline(lnum), s:skip_cols(lnum)]
+  let [line, cols] = [getline(lnum), s:skip_chars(lnum)]
   let [icnt, jcnt] = [a:count, 0]
   let cmode = mode() ==# '' ? 'v' : mode()
   let offset = a:count < 0 ? -1 : 0
   let delta = a:count < 0 ? -1 : 1
   while delta * icnt > 0
     let concealed = 0
-    let invisible = index(skip, cnum + offset) != -1
+    let invisible = index(cols, cnum + offset) != -1
     if a:count < 0 && cnum <= 1 || a:count > 0 && cnum >= cmax
       let jcnt += icnt | break
     endif
@@ -74,10 +74,6 @@ endfunction
 " Note: Have to trigger 'InsertLeave' so status line updates (for some reason only
 " works after timer when :colorscheme triggers ColorScheme autocommand). Also note
 " g:colors_name is convention shared by most color schemes, no official vim setting.
-function! s:echo_scheme(...) abort
-  let name = get(g:, 'colors_name', 'default')
-  echom 'Colorscheme: ' . name
-endfunction
 function! syntax#next_scheme(arg) abort
   let default = get(g:, 'colors_default', 'default')
   if !exists('g:colors_all')
@@ -101,8 +97,9 @@ function! syntax#next_scheme(arg) abort
   redraw | echom 'Colorscheme: ' . name
 endfunction
 
-" Show syntax highlight groups and info
+" Show syntax or filetype info
 " Note: This adds header in same format as built-in command
+" Note: This opens files in separate tabs for consistency with others tools
 function! syntax#show_stack(...) abort
   let sids = a:0 ? map(copy(a:000), 'hlID(v:val)') : synstack(line('.'), col('.'))
   let [names, labels] = [[], []]
@@ -124,25 +121,10 @@ function! syntax#show_stack(...) abort
   endif
 endfunction
 
-" Show syntax or plugin information
-" Note: This opens files in separate tabs for consistency with others tools
-function! syntax#show_colors() abort
-  silent call file#open_drop('colortest.vim')
-  silent let path = $VIMRUNTIME . '/syntax/colortest.vim'
-  exe 'source ' . path
-  call window#setup_panel()
-endfunction
-function! syntax#show_runtime(...) abort
-  let path = a:0 ? a:1 : 'ftplugin'
-  let path = $VIMRUNTIME . '/' . path . '/' . &l:filetype . '.vim'
-  call file#open_drop(path)
-  call window#setup_panel()
-endfunction
-
 " Update syntax colors
 " Note: This gets the closest tag to the first line in the window, all tags
 " rather than top-level only, searching backward, and without circular wrapping.
-function! syntax#update_lines(count, ...) abort
+function! syntax#sync_lines(count, ...) abort
   if a:0 && a:1
     exe 'syntax sync fromstart'
     echom 'Syntax sync: fromstart'
@@ -219,7 +201,7 @@ endfunction
 " Highlight group with gui or cterm codes
 " Note: Cannot use e.g. aliases 'bg' or 'fg' in terminal since often unset, and cannot
 " use transparent 'NONE' in gui vim since undefined, so swap them here.
-function! s:update_highlight(group, back, front, ...) abort
+function! s:highlight_group(group, back, front, ...) abort
   let defaults = {'black': '#000000', 'gray': '#333333', 'white': '#ffffff'}
   let name = has('gui_running') ? 'gui' : 'cterm'
   let text = a:0 && type(a:1) ? empty(a:1) ? 'None' : a:1 : ''
@@ -258,16 +240,16 @@ endfunction
 " workaround to apply bold gui syntax. See https://stackoverflow.com/a/73783079/4970632
 function! syntax#update_highlights() abort
   let pairs = []  " highlight links
-  call s:update_highlight('Normal', '', '', '')
-  call s:update_highlight('LineNR', '', 'black', '')
-  call s:update_highlight('Folded', '', 'white', 'bold')
-  call s:update_highlight('CursorLine', 'black', 0, '')
-  call s:update_highlight('ColorColumn', 'gray', 0, '')
-  call s:update_highlight('DiffAdd', 'black', '', 'bold')
-  call s:update_highlight('DiffChange', 'black', '', '')
-  call s:update_highlight('DiffDelete', '', 'black', '')
-  call s:update_highlight('DiffText', 0, 0, 'inverse')
-  call s:update_highlight('StrikeThrough', 0, 0, 'strikethrough')
+  call s:highlight_group('Normal', '', '', '')
+  call s:highlight_group('LineNR', '', 'black', '')
+  call s:highlight_group('Folded', '', 'white', 'bold')
+  call s:highlight_group('CursorLine', 'black', 0, '')
+  call s:highlight_group('ColorColumn', 'gray', 0, '')
+  call s:highlight_group('DiffAdd', 'black', '', 'bold')
+  call s:highlight_group('DiffChange', 'black', '', '')
+  call s:highlight_group('DiffDelete', '', 'black', '')
+  call s:highlight_group('DiffText', 0, 0, 'inverse')
+  call s:highlight_group('StrikeThrough', 0, 0, 'strikethrough')
   for group in ['Conceal', 'Pmenu', 'Terminal']
     call add(pairs, [group, 'Normal'])
   endfor

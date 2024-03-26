@@ -205,6 +205,32 @@ function! window#move_tab(...) abort
   \ }))
 endfunction
 
+" Show helper windows
+" Note: These are for lsp management and viewing directory contents
+function! window#setup_dir() abort
+  call utils#switch_maps(['<CR>', 't', 'n'], ['t', '<CR>', 'n'])
+  for char in 'fbFL' | silent! exe 'unmap <buffer> q' . char | endfor
+endfunction
+function! window#show_dir(cmd, local) abort
+  let base = a:local ? fnamemodify(resolve(@%), ':p:h') : tag#find_root(@%)
+  exe a:cmd . ' ' . base | exe 'vert resize ' . window#default_width(1)
+  exe 'resize ' . window#default_height(1) | goto
+endfunction
+function! window#show_health() abort
+  exe 'CheckHealth'
+  setlocal foldlevel=1 syntax=checkhealth.markdown
+  doautocmd BufRead
+endfunction
+function! window#show_manager() abort
+  silent tabnew
+  if bufexists('lsp-manager')
+    buffer lsp-manager
+  else  " new manager
+    silent exe 'LspManage' | call window#setup_panel(0) | silent file lsp-manage
+  endif
+  redraw | echom 'Type i to install, or x to uninstall, b to open browser, ? to show description'
+endfunction
+
 " Setup preview windows
 " Note: Here use a border for small popup windows and no border by default for
 " autocomplete. See: https://github.com/prabirshrestha/vim-lsp/issues/594
@@ -256,57 +282,4 @@ function! window#setup_panel(...) abort
       exe 'nmap <buffer> g' . char . ' <Nop>'
     endif
   endfor
-endfunction
-
-" Refresh window contents
-" Note: Here :Gedit returns to head after viewing a blob. Can also use e.g. :Mru
-" to return but this is faster. See https://github.com/tpope/vim-fugitive/issues/543
-function! window#refresh_buf() abort
-  let type = get(b:, 'fugitive_type', '')
-  if !empty(type)  " return to original file
-    call git#safe_return()
-  else  " reload from disk
-    edit | call fold#update_folds(1)
-  endif
-  normal! zv
-endfunction
-
-" Print currently open buffers
-" Note: This should be used in conjunction with :WipeBufs. Note s:buffers_recent()
-" normally restricts output to files loaded after VimEnter but bypass that here.
-function! window#show_bufs() abort
-  let ndigits = len(string(bufnr('$')))
-  let result = {}
-  let lines = []
-  for bnr in tags#bufs_recent(0)  " include all buffers
-    let pad = repeat(' ', ndigits - len(string(bnr)))
-    if exists('*RelativePath')
-      let path = RelativePath(bufname(bnr))
-    else
-      let path = expand('#' . bnr . ':~:.')
-    endif
-    call add(lines, pad . bnr . ': ' . path)
-  endfor
-  let message = "Open buffers (sorted by recent use):\n" . join(lines, "\n")
-  echo message
-endfunction
-
-" Close buffers that do not appear in windows
-" See: https://stackoverflow.com/a/7321131/4970632
-" See: https://github.com/Asheq/close-buffers.vim
-function! window#wipe_bufs()
-  let nums = []
-  for tnr in range(1, tabpagenr('$'))
-    call extend(nums, tabpagebuflist(tnr))
-  endfor
-  let names = []
-  for bnr in range(1, bufnr('$'))
-    if bufexists(bnr) && !getbufvar(bnr, '&mod') && index(nums, bnr) == -1
-      call add(names, bufname(bnr))
-      silent exe 'bwipeout ' bnr
-    endif
-  endfor
-  if !empty(names)
-    echom 'Wiped out ' . len(names) . ' hidden buffer(s): ' . join(names, ', ')
-  endif
 endfunction

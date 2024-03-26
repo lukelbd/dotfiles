@@ -4,8 +4,6 @@
 " mapped to these control combinations below must also be assigned to arrow keys.
 " Note: Use iterm to convert impossible or normal-mode-incompatible ctrl+key combos
 " to function keys (settings -> keys -> key bindings -> 'send hex codes') various hex codes.
-" Note: Select mode (e.g. by typing 'gh') is same as visual but enters insert mode
-" when you start typing, to emulate typing after click-and-drag. Never use it.
 " See: https://github.com/c-bata/go-prompt/blob/82a9122/input.go#L94-L125
 " See: https://eevblog.com/forum/microcontrollers/mystery-of-vt100-keyboard-codes/
 " F1: 0x1b 0x4f 0x50 (Ctrl-,) (5-digit codes failed)
@@ -34,7 +32,7 @@ let g:linelength = 88  " see below configuration
 let g:mapleader = "\<Space>"  " see <Leader> mappings
 let g:refresh = get(g:, 'refresh', localtime())
 let s:conda = $HOME . '/mambaforge/bin'  " gui vim support
-let $PATH = ($PATH !~# s:conda ? s:conda : '') . $PATH
+let $PATH = ($PATH !~# s:conda ? s:conda . ':' : '') . $PATH
 
 " Global settings
 " Warning: Tried setting default 'foldmethod' and 'foldexpr' can cause buffer-local
@@ -137,6 +135,7 @@ set wildmode=longest:list,full  " command line completion
 let &g:breakat = '  !*-+;:,./?'  " break lines following punctuation
 let &g:expandtab = 1  " global expand tab (respect tab toggling)
 let &g:foldenable = 1  " global fold enable (respect 'zn' toggling)
+let &g:iskeyword = '@,48-57,_,192-255'  " default keywords
 let &g:shortmess .= &buftype ==# 'nofile' ? 'I' : ''  " no intro when starting vim
 let &g:shiftwidth = 2  " default 2 spaces
 let &g:softtabstop = 2  " default 2 spaces
@@ -350,10 +349,10 @@ nnoremap g, <Cmd>History<CR>
 nnoremap g< <Cmd>call file#open_used()<CR>
 
 " Tab and window jumping
+nnoremap <Tab>, <Cmd>exe max([tabpagenr() - v:count1, 1]) . 'tabnext'<CR>
+nnoremap <Tab>. <Cmd>exe min([tabpagenr() + v:count1, tabpagenr('$')]) . 'tabnext'<CR>
 nnoremap <Tab>' <Cmd>silent! tabnext #<CR><Cmd>call file#echo_path('tab')<CR>
 nnoremap <Tab>; <Cmd>silent! wincmd p<CR><Cmd>call file#echo_path('window')<CR>
-nnoremap <Tab>, <Cmd>silent! exe 'tabnext -' . v:count1<CR>
-nnoremap <Tab>. <Cmd>silent! exe 'tabnext +' . v:count1<CR>
 nnoremap <Tab>j <Cmd>silent! wincmd j<CR>
 nnoremap <Tab>k <Cmd>silent! wincmd k<CR>
 nnoremap <Tab>h <Cmd>silent! wincmd h<CR>
@@ -386,8 +385,8 @@ nnoremap <Tab>i <Cmd>call file#open_init('Drop', 1)<CR>
 nnoremap <Tab>y <Cmd>call file#open_init('Files', 1)<CR>
 nnoremap <Tab>- <Cmd>call file#open_init('Split', 1)<CR>
 nnoremap <Tab>= <Cmd>call file#open_init('Split', 0)<CR>
-nnoremap <Tab>/ <Cmd>call file#open_dir('topleft vsplit', 1)<CR>
-nnoremap <Tab>\ <Cmd>call file#open_dir('topleft vsplit', 0)<CR>
+nnoremap <Tab>/ <Cmd>call window#show_dir('topleft vsplit', 1)<CR>
+nnoremap <Tab>\ <Cmd>call window#show_dir('topleft vsplit', 0)<CR>
 
 " Open file in current directory or some input directory
 " Note: Anything that is not :Files gets passed to :Drop command
@@ -454,7 +453,7 @@ augroup panel_setup
   au FileType help call vim#setup_help()
   au FileType qf call iter#setup_quickfix()
   au FileType taglist call iter#setup_taglist()
-  au FileType netrw call file#setup_dir()
+  au FileType netrw call window#setup_dir()
   au FileType man call shell#setup_man()
   au FileType gitcommit call git#setup_commit()
   au FileType fugitiveblame call git#setup_blame() | call git#setup_fugitive()
@@ -481,7 +480,7 @@ for s:key in ['[[', ']]'] | silent! exe 'unmap! g' . s:key | endfor
 noremap g] <Cmd>call switch#reveal(1)<CR>
 noremap g[ <Cmd>call switch#reveal(0)<CR>
 noremap g<Space> <Cmd>call switch#message()<CR>
-noremap <Leader><CR> @:
+noremap z<Space> @:
 nnoremap <Leader>; q:
 nnoremap <Leader>/ q/
 nnoremap <Leader>: <Cmd>History:<CR>
@@ -582,6 +581,8 @@ cnoremap <silent> <expr> <BS> iter#complete_cmdline("\<BS>")
 " Navigation and searching shortcuts
 "-----------------------------------------------------------------------------"
 " Toggle and navigate visual mode
+" Note: Select mode (e.g. by typing 'gh') is same as visual but enters insert mode
+" when you start typing, to emulate typing after click-and-drag. Never use it.
 " Note: Throughout vimrc marks y and z are reserved for internal map utilities. Here
 " use 'y' for mouse click location and 'z' for visual mode entrance location, then
 " start new visual selection between 'y' and 'z'. Generally 'y' should be temporary
@@ -651,12 +652,6 @@ noremap n <Cmd>call iter#next_match(v:count1)<CR>
 noremap { <Cmd>exe 'keepjumps normal! ' . v:count1 . '{'<CR>
 noremap } <Cmd>exe 'keepjumps normal! ' . v:count1 . '}'<CR>
 
-" Search for non-ascii or non-printable characters
-" Note: \x7F-\x9F are actually displayable but not part of ISO standard so not shown
-" by vim (also used as dummy no-match in comment.vim). See https://www.ascii-code.com
-noremap gr /[^\x00-\x7F]<CR>
-noremap gR /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
-
 " Go to start or end without opening folds
 " Useful for e.g. python files with docstring at top and function at bottom
 " Note: Mapped jumping commands do not open folds by default, hence the expr below
@@ -700,9 +695,7 @@ call utils#repeat_map('o', 'zm', 'CasePrevEnd',   "<Cmd>call iter#next_motion('g
 " Screen motion mappings
 " Note: This is consistent with 'zl', 'zL', 'zh', 'zH' horizontal scrolling
 " and lets us use 'zt' for title case 'zb' for boolean toggle.
-for s:key in ['m', 'r', 'R'] | exe 'noremap z' . s:key . ' <Nop>' | endfor
-noremap z<Space> zz
-noremap z\ zzze
+noremap <Leader><Space> zzze
 noremap z9 ze
 noremap z0 zs
 noremap z( zt
@@ -800,21 +793,19 @@ nnoremap z: <Cmd>call grep#call_grep('rg', 1, 2)<CR>
 " Note: Currently do not use :Fixme :Error or :Xxx but these are also highlighted
 let s:conflicts = '^' . repeat('[<>=|]', 7) . '\($\|\s\)'
 command! -bang -nargs=* -complete=file Debugs call grep#call_rg(<bang>0, 2, '^\s*ic(', <f-args>)
-command! -bang -nargs=* -complete=file Prints call grep#call_rg(<bang>0, 2, '^\s*print(', <f-args>)
 command! -bang -nargs=* -complete=file Notes call grep#call_rg(<bang>0, 2, '\<\(Note\|NOTE\):', <f-args>)
 command! -bang -nargs=* -complete=file Todos call grep#call_rg(<bang>0, 2, '\<\(Todo\|TODO\|Fixme\|FIXME\):', <f-args>)
-command! -bang -nargs=* -complete=file Errors call grep#call_rg(<bang>0, 2, '\<\(Warning\|WARNING\|Error\|ERROR\):', <f-args>)
+command! -bang -nargs=* -complete=file Warnings call grep#call_rg(<bang>0, 2, '\<\(Warning\|WARNING\|Error\|ERROR\):', <f-args>)
 command! -bang -nargs=* -complete=file Conflicts call grep#call_rg(<bang>0, 2, s:conflicts, <f-args>)
-noremap g<CR> <Cmd>Debugs!<CR>
 noremap gG <Cmd>Conflicts<CR>
-noremap gM <Cmd>Prints<CR>
-noremap gB <Cmd>Todos<CR>
-noremap gW <Cmd>Notes<CR>
-noremap gE <Cmd>Errors<CR>
-noremap zM <Cmd>Prints!<CR>
-noremap zB <Cmd>Todos<CR>
-noremap zW <Cmd>Notes<CR>
-noremap zE <Cmd>Errors<CR>
+noremap gB <Cmd>Debugs<CR>
+noremap gE <Cmd>Todos<CR>
+noremap gM <Cmd>Notes<CR>
+noremap gW <Cmd>Warnings<CR>
+noremap zB <Cmd>Debugs!<CR>
+noremap zE <Cmd>Todos!<CR>
+noremap zM <Cmd>Notes!<CR>
+noremap zW <Cmd>Warnings!<CR>
 
 " Navigate docstrings and methods
 " Capital uses only non-variable-assignment zero-level or first-level docstrings
@@ -1136,16 +1127,17 @@ command! -range -nargs=? WrapItems <line1>,<line2>call edit#wrap_items(<args>)
 noremap <expr> gq edit#wrap_lines_expr(v:count)
 noremap <expr> gQ edit#wrap_items_expr(v:count)
 
-" Single character mappings
-" Here prefer characterize since usually has more info
-nnoremap <expr> cx '"_' . edit#insert_mode('s')
-nnoremap <expr> gx edit#insert_mode('gi')
-map ` <Plug>(characterize)
-noremap ~ ga
-noremap + <C-a>
-noremap - <C-x>
+" Change or check single character
+" Note: \x7F-\x9F are actually displayable but not part of ISO standard so not shown
+" by vim (also used as dummy no-match in comment.vim). See https://www.ascii-code.com
 noremap x "_x
 noremap X "_X
+nnoremap <expr> gx edit#insert_mode('gi')
+nnoremap <expr> cx '"_' . edit#insert_mode('s')
+map ` <Plug>(characterize)
+noremap ~ ga
+noremap g` /[^\x00-\x7F]<CR>
+noremap g~ /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
 
 " Change case for word or motion
 " Note: Here 'zu' is analgogous to 'zb' used for boolean toggle
@@ -1605,6 +1597,7 @@ endfor
 let g:toggle_map = 'z<CR>'  " adjust toggle mapping (note this is repeatable)
 let g:scrollwrapped_nomap = 1  " instead have advanced iter#scroll_infer maps
 let g:scrollwrapped_wrap_filetypes = s:copy_filetypes + ['tex', 'text']
+exe 'noremap + <C-a>' | exe 'noremap - <C-x>'
 noremap <Leader>w <Cmd>WrapToggle<CR>
 
 " End plugin manager. Also declares filetype plugin, syntax, and indent on
@@ -1687,13 +1680,13 @@ if s:plug_active('vim-textobj-user')
   vmap av <Plug>(textobj-numeral-a)
   omap iv <Plug>(textobj-numeral-i)
   vmap iv <Plug>(textobj-numeral-i)
-  let g:textobj#sentence#select = 's'  " smarter sentence selection
+  let g:textobj#sentence#select = 's'  " smarter sentence selection FooBarBaz
   let g:textobj#sentence#move_p = '('  " smarter sentence navigation
   let g:textobj#sentence#move_n = ')'  " smarter sentence navigation
   let g:vim_textobj_parameter_mapping = 'k'  " i.e. 'keyword' or 'keyword argument'
   let s:textobj_alpha = {
-    \ 'g': '\(\<\|[^0-9A-Za-z]\)\r\(\>\|[^0-9A-Za-z]\)',
-    \ 'h': '\(\<\|[^0-9a-z]\)\r[0-9a-z]\(\>\|[^0-9a-z]\)\@=',
+    \ 'g': '\(\<\|[^0-9A-Za-z]\)\r\([^0-9A-Za-z]\|\>\)',
+    \ 'h': '\(\<\|[^0-9a-z]\@=\)\r\([^0-9a-z]\@=\|\>\)',
   \ }
   let s:textobj_comment = {
     \ 'select-i': 'iC', 'select-i-function': 'textobj#comment#select_i',
@@ -1870,18 +1863,25 @@ if s:plug_active('vim-lsp')
   command! -nargs=? Doc call stack#push_stack('doc', 'python#doc_page', <f-args>)
   noremap [r <Cmd>LspPreviousReference<CR>
   noremap ]r <Cmd>LspNextReference<CR>
-  noremap gd <Cmd>call lsp#ui#vim#definition(0, "call feedkeys('zv', 'n') \| tab")<CR>
-  noremap gD gdzv<Cmd>noh<CR>
-  noremap zd <Cmd>LspReferences<CR>
-  noremap zD <Cmd>LspRename<CR>
-  noremap <Leader>d <Cmd>LspPeekDefinition<CR>
-  noremap <Leader>f <Cmd>call stack#push_stack('doc', 'python#doc_page')<CR>
-  noremap <Leader>F <Cmd>call python#doc_search()<cr>
-  noremap <Leader>a <Cmd>LspHover --ui=float<CR>
-  noremap <Leader>A <Cmd>LspSignatureHelp<CR>
+  noremap gr <Cmd>LspReferences<CR>
+  noremap gR <Cmd>LspRename<CR>
+  noremap zr <Cmd>LspDocumentSymbol<CR>
+  noremap zR <Cmd>LspDocumentSymbolSearch<CR>
+  noremap gd <Cmd>LspHover --ui=float<CR>
+  noremap gD <Cmd>LspSignatureHelp<CR>
+  noremap zd <Cmd>LspPeekDefinition<CR>
+  noremap zD <Cmd>LspPeekDeclaration<CR>
+  noremap g<CR> <Cmd>call lsp#ui#vim#definition(0, "call feedkeys('zv', 'n') \| tab")<CR>
+  noremap z<CR> gdzv<Cmd>noh<CR>
+  noremap <Leader>a <Cmd>LspInstallServer<CR>
+  noremap <Leader>A <Cmd>LspUninstallServer<CR>
+  noremap <Leader>f <Cmd>Autoformat<CR>
+  noremap <Leader>F <Cmd>LspDocumentFormat<CR>
+  noremap <Leader>d <Cmd>call stack#push_stack('doc', 'python#doc_page')<CR>
+  noremap <Leader>D <Cmd>call python#doc_search()<cr>
   noremap <Leader>& <Cmd>call switch#lsp()<CR>
-  noremap <Leader>% <Cmd>CheckHealth<CR>
-  noremap <Leader>^ <Cmd>tabnew \| LspManage<CR><Cmd>file lspservers \| call window#setup_panel(0)<CR>
+  noremap <Leader>% <Cmd>call window#show_health()<CR>
+  noremap <Leader>^ <Cmd>call window#show_manager()<CR>
   " Lsp and server settings
   " See: https://github.com/python-lsp/python-lsp-server/issues/477
   " Note: See 'jupyterlab-lsp/plugin.jupyterlab-settings' for examples. Results are
@@ -2188,7 +2188,7 @@ if s:plug_active('vim-gitgutter')
   let g:gitgutter_async = 1  " ensure enabled
   let g:gitgutter_map_keys = 0  " disable all maps yo
   let g:gitgutter_max_signs = -1  " maximum number of signs
-  let g:gitgutter_preview_win_floating = 1  " enable preview window
+  let g:gitgutter_preview_win_floating = 0  " toggle preview window
   let g:gitgutter_use_location_list = 0  " use for errors instead
   call utils#repeat_map('', '[G', 'HunkBackward', '<Cmd>call git#hunk_jump(-v:count1, 1)<CR>')
   call utils#repeat_map('', ']G', 'HunkForward', '<Cmd>call git#hunk_jump(v:count1, 1)<CR>')
@@ -2328,8 +2328,8 @@ endif
 " by incrementing selected item(s), and if selection includes empty lines then extends
 " them using the step size from preceding lines or using a default step size.
 if s:plug_active('vim-speeddating')
-  map + <Plug>SpeedDatingUp
-  map - <Plug>SpeedDatingDown
+  map <silent> + <Plug>SpeedDatingUp:call repeat#set("\<Plug>SpeedDatingUp")<CR>
+  map <silent> - <Plug>SpeedDatingDown:call repeat#set("\<Plug>SpeedDatingDown")<CR>
   noremap <Plug>SpeedDatingFallbackUp <C-a>
   noremap <Plug>SpeedDatingFallbackDown <C-x>
 endif
@@ -2356,14 +2356,14 @@ endif
 " Note: The first map prints information, the second two maps open windows, the
 " other maps open tabs.
 command! -nargs=? ShowStack call syntax#show_stack(<f-args>)
-command! -nargs=0 ShowPlugin call syntax#show_runtime('ftplugin')
-command! -nargs=0 ShowSyntax call syntax#show_runtime('syntax')
 command! -nargs=0 ShowGroups exe 'help highlight-groups' | exe 'normal! zt'
-command! -nargs=0 ShowBases exe 'help group-name' | exe 'normal! zt'
-command! -nargs=0 ShowColors call syntax#show_colors()
+command! -nargs=0 ShowNames exe 'help group-name' | exe 'normal! zt'
+command! -nargs=0 ShowColors call vim#show_runtime('syntax', 'colortest')
+command! -nargs=0 ShowSyntax call vim#show_runtime('syntax')
+command! -nargs=0 ShowPlugin call vim#show_runtime('ftplugin')
 noremap <Leader>` <Cmd>ShowStack<CR>
 noremap <Leader>1 <Cmd>ShowGroups<CR>
-noremap <Leader>2 <Cmd>ShowBases<CR>
+noremap <Leader>2 <Cmd>ShowNames<CR>
 noremap <Leader>3 <Cmd>ShowColors<CR>
 noremap <Leader>4 <Cmd>ShowSyntax<CR>
 noremap <Leader>5 <Cmd>ShowPlugin<CR>
@@ -2376,7 +2376,7 @@ augroup color_setup
   au VimEnter * exe 'runtime after/common.vim' | call mark#init_marks()
 augroup END
 command! -bang -range -count=0 Syntax
-  \ call syntax#update_lines(<range> == 2 ? abs(<line2> - <line1>) : <count>, <bang>0)
+  \ call syntax#sync_lines(<range> == 2 ? abs(<line2> - <line1>) : <count>, <bang>0)
 call utils#repeat_map('', 'zy', 'SyncSmart', ':Syntax<CR>')
 call utils#repeat_map('', 'zY', 'SyncStart', '<Cmd>Syntax!<CR>')
 noremap <Leader>8 <Cmd>Colorize<CR>
@@ -2448,10 +2448,10 @@ endif
 " See: http://vim.1045645.n5.nabble.com/Clearing-Jumplist-td1152727.html
 augroup clear_jumps
   au!
-  au VimEnter,BufWinEnter * if get(w:, 'clear_jumps', 1) | silent clearjumps | let w:clear_jumps = 0 | endif
-  au VimEnter,BufWinEnter * exe 'normal! zvzz'
+  au VimEnter,BufWinEnter * exe 'normal! zvzzze' | if get(w:, 'clear_jumps', 1)
+    \ | silent clearjumps | let w:clear_jumps = 0 | endif
 augroup END
 exe 'runtime autoload/repeat.vim'
-call syntax#update_highlights()
+call syntax#update_highlights()  " show correct colors while loading
 nohlsearch  " turn off highlighting at startup
 redraw!  " prevent statusline error

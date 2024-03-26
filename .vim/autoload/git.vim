@@ -1,7 +1,37 @@
 "-----------------------------------------------------------------------------"
 " Utilities for fugitive windows
 "-----------------------------------------------------------------------------"
-" Set up fugitive commands
+" Helper function and aliases
+" Note: Here use 'Git' to open standard status pane and 'Git status' to open
+" pane with diff hunks expanded with '=' and folded with 'zc'.
+let s:git_flags1 = '--graph --abbrev-commit --max-count=50'
+let s:git_flags2 = '--date=relative --branches --decorate'
+let s:git_editor = ['merge', 'commit', 'oops']  " commands open editor
+let s:git_vertical = ['commits', 'log', 'tree', 'trunk']  " vertical commands
+let s:git_nobreak = ['add', 'stage', 'reset', 'push', 'pull', 'fetch', 'switch', 'restore', 'checkout']
+let s:git_windows = {'show': 0, 'diff': 0, 'merge': 0, 'commit': 0, 'oops': 0, 'status': 0, '': 0.5}
+let s:git_windows = extend(s:git_windows, {'commits': 0.5, 'log': 0.5, 'tree': 0.5, 'trunk': 0.5})
+let s:git_translate = {
+  \ 'blame': 'blame --show-email',
+  \ 'commits': 'log --graph --oneline ' . s:git_flags2,
+  \ 'log': 'log ' . s:git_flags1,
+  \ 'tree': 'log --stat ' . s:git_flags1 . ' ' . s:git_flags2,
+  \ 'trunk': 'log --name-status ' . s:git_flags1 . ' ' . s:git_flags2,
+  \ 'show': 'show --abbrev-commit',
+  \ 'status': '',
+\ }
+function! s:echo_command(args, msg) abort
+  let cmd = 'Git ' . a:args
+  if empty(a:msg)
+    redraw | echom cmd
+  else  " warning message
+    redraw | echohl WarningMsg
+    echom 'Warning: ' . (type(a:msg) ? a:msg : string(cmd) . ' was empty')
+    echohl None
+  endif
+endfunction
+
+" Override fugitive commands
 " Note: Native fugitive command is declared with :command! Git -nargs=? -range=-1
 " fugitive#Command(<line1>, <count>, +'<range>', <bang>0, '<mods>', <q-args>)
 " where <line1> is cursor line, <count> is -1 if no range supplied and <line2>
@@ -28,72 +58,33 @@ function! git#command_setup() abort
   endfor
 endfunction
 
-" Git command with message
+" Run fugitive command or mapping
 " Note: Fugitive does not currently use &previewwindow and does not respect <mods>
 " so set window explicitly below. See: https://stackoverflow.com/a/8356605/4970632
-let s:flags1 = '--graph --abbrev-commit --max-count=50'
-let s:flags2 = '--date=relative --branches --decorate'
-let s:git_user = ['merge', 'commit', 'oops']
-let s:git_tree = ['log', 'tree', 'trunk']
-let s:git_wide = ['', 'status', 'show', 'diff'] + s:git_user
-let s:git_quiet = ['add', 'stage', 'reset', 'push', 'pull', 'fetch', 'switch', 'restore', 'checkout']
-let s:git_aliases = {
-  \ 'status': '',
-  \ 'show': 'show --abbrev-commit',
-  \ 'blame': 'blame --show-email',
-  \ 'commits': 'log --oneline ' . s:flags1 . ' ' . s:flags2,
-  \ 'log': 'log ' . s:flags1,
-  \ 'tree': 'log --stat ' . s:flags1 . ' ' . s:flags2,
-  \ 'trunk': 'log --name-status ' . s:flags1 . ' ' . s:flags2,
-\ }
-function! s:echo_command(args, msg) abort
-  let cmd = 'Git ' . a:args
-  if empty(a:msg)
-    redraw | echom cmd
-  else  " warning message
-    redraw | echohl WarningMsg
-    echom 'Warning: ' . (type(a:msg) ? a:msg : string(cmd) . ' was empty')
-    echohl None
-  endif
-endfunction
 function! git#run_command(msg, line1, count, range, bang, mods, args, ...) abort range
-  " Parse input arguments
-  if empty(FugitiveGitDir())
-    let args = [a:line1, a:count, a:range, a:bang, a:mods, ''] + a:000
-    let cmd = "call('fugitive#Command', " . string(args) . ')'
-    call feedkeys("\<Cmd>exe " . cmd . "\<CR>", 'n') | return
-  endif
   let [bnum, width, height] = [bufnr(), winwidth(0), winheight(0)]
   let [name; flags] = empty(trim(a:args)) ? [''] : split(a:args, '\\\@<!\s\+')
-  let quiet = index(s:git_quiet, name) != -1  " commands print at most one line
-  let user = index(s:git_user, name) != -1  " commands require user interaction
-  let wide = index(s:git_wide, name) != -1  " popup window should have 'main' size
-  let tree = index(s:git_tree, name) != -1  " popup window should be vertical
-  let name = get(s:git_aliases, name, name)  " e.g. '' for 'status'
-  let mods = tree && empty(a:mods) ? 'botright vert' : a:mods
-  " Generate and run command
-  let opts = name . (empty(flags) ? '' : ' ' . join(flags, ' '))
-  let opts = substitute(opts, '--color\>', '', 'g')  " fugitive uses its own colors
-  let opts = [a:line1, a:count, a:range, a:bang, mods, opts] + a:000
-  silent let cmd = call('fugitive#Command', opts)
-  let pane = user || bnum != bufnr() || cmd =~# '\<v\?split\>'
-  if pane  " pane generated
-    silent exe cmd | let error = line('$') <= 1
-  else  " no pane generated
-    redraw | echo 'Git ' . a:args . (quiet ? ' ' : "\n") | exe cmd | let error = 0
+  let items = [a:line1, a:count, a:range, a:bang]  " fugitive arguments
+  call add(items, empty(a:mods) ? index(s:git_vertical, name) >= 0 ? 'vert botright' : 'botright' : a:mods)
+  call add(items, join([get(s:git_translate, name, name)] + flags, ' '))
+  silent let cmd = call('fugitive#Command', items + a:000)
+  let panel = bnum != bufnr() || cmd =~# '\<v\?split\>' || index(s:git_editor, name) != -1
+  if !panel  " no panel generated
+    let pad = index(s:git_nobreak, name) >= 0 ? ' ' : "\n"
+    redraw | echo 'Git ' . a:args . pad | exe cmd
+  else  " panel generated
+    silent exe cmd | let error = bnum != bufnr() && line('$') <= 1
+    if bnum != bufnr() || index(s:git_editor, name) != -1
+      setlocal bufhidden=delete
+      if error | call window#close_pane(1) | endif
+    endif
   endif
-  if pane && !user && error
-    call window#close_pane(1)
-  elseif pane && !user
-    setlocal bufhidden=delete
-  endif
-  " Configure resulting window
-  if bnum == bufnr()  " pane not opened
+  if bnum == bufnr()  " panel not opened
     exe 'vertical resize ' . width | exe 'resize ' . height
   elseif a:args =~# '^blame\( %\)\@!' || cmd =~# '\<\(vsplit\|vert\(ical\)\?\)\>'
-    exe 'vertical resize ' . window#default_width(tree ? 0.5 : !wide)
-  else  " bottom pane
-    exe 'resize ' . window#default_height(tree ? 0.5 : !wide)
+    exe 'vertical resize ' . window#default_width(get(s:git_windows, name, 1))
+  else  " bottom panel
+    exe 'resize ' . window#default_height(get(s:git_windows, name, 1))
   endif
   if !a:range && a:args =~# '^blame'  " syncbind is no-op if not vertical
     exe a:line1 | exe 'normal! z.' | call feedkeys("\<Cmd>syncbind\<CR>", 'n')
@@ -101,14 +92,14 @@ function! git#run_command(msg, line1, count, range, bang, mods, args, ...) abort
   if a:args =~# '\s\+%' && bnum != bufnr()  " open single difference fold
     call feedkeys('zv', 'n')
   endif
-  if empty(name) && !empty(a:args) && bnum != bufnr()  " open change statistics
+  if name ==# 'status' && bnum != bufnr()  " open change statistics
     silent global/^\(Staged\|Unstaged\)\>/normal =zxgg
   endif
-  if pane  " echo error or command message
+  if panel  " emit message
     call s:echo_command(a:args, empty(a:msg) ? error : a:msg)
   endif
 endfunction
-" For special range handling
+" For <expr> map accepting motion
 function! git#run_map(range, ...) abort range
   if a:range && a:firstline == a:lastline
     let offset = 5 | let [line1, line2] = [a:firstline - offset, a:lastline + offset]
@@ -122,7 +113,6 @@ function! git#run_map(range, ...) abort range
   endif
   call feedkeys(offset ? abs(offset) . (offset > 0 ? 'j' : 'k') : '', 'n')
 endfunction
-" For <expr> map accepting motion
 function! git#run_map_expr(...) abort
   return utils#motion_func('git#run_map', a:000)
 endfunction
