@@ -54,7 +54,7 @@ set display=lastline  " displays as much of wrapped lastline as possible;
 set esckeys  " make sure enabled, allows keycodes
 set fillchars=vert:\|,fold:\ ,foldopen:\>,foldclose:<,eob:~,lastline:@  " e.g. fold markers
 set foldclose=  " use foldclose=all to auto-close folds when leaving
-set foldcolumn=2  " show fold boundaries on column
+set foldcolumn=0  " do not show folds, since fastfold dynamically updates
 set foldlevelstart=0  " hide folds when opening (then 'foldlevel' sets current status)
 set foldnestmax=5  " allow only a few folding levels
 set foldopen=insert,mark,quickfix,tag,undo  " opening folds on cursor movement, disallow block folds
@@ -700,6 +700,7 @@ noremap z9 ze
 noremap z0 zs
 noremap z( zt
 noremap z) zb
+noremap 0 0ze
 
 " Reset manually open-closed folds accounting for custom overrides
 " Note: Here 'zV' opens all folds from the most recent search
@@ -1872,11 +1873,11 @@ if s:plug_active('vim-lsp')
   noremap zd <Cmd>LspPeekDefinition<CR>
   noremap zD <Cmd>LspPeekDeclaration<CR>
   noremap g<CR> <Cmd>call lsp#ui#vim#definition(0, "call feedkeys('zv', 'n') \| tab")<CR>
-  noremap z<CR> gdzv<Cmd>noh<CR>
+  noremap z<CR> <Cmd>silent! normal! gdzv<CR><Cmd>noh<CR>
   noremap <Leader>a <Cmd>LspInstallServer<CR>
   noremap <Leader>A <Cmd>LspUninstallServer<CR>
-  noremap <Leader>f <Cmd>Autoformat<CR>
-  noremap <Leader>F <Cmd>LspDocumentFormat<CR>
+  noremap <Leader>f <Cmd>Autoformat<CR><Cmd>call fold#update_folds(1)<CR>
+  noremap <Leader>F <Cmd>LspDocumentFormat<CR><Cmd>call fold#update_folds(1)<CR>
   noremap <Leader>d <Cmd>call stack#push_stack('doc', 'python#doc_page')<CR>
   noremap <Leader>D <Cmd>call python#doc_search()<cr>
   noremap <Leader>& <Cmd>call switch#lsp()<CR>
