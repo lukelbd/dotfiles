@@ -10,6 +10,8 @@
 #   See: https://blog.filippo.io/git-fixup-amending-an-older-commit/
 # 'amputate':
 #   Use this to amputate history at given SHA
+# 'base':
+#   Show the base directory.
 # 'blame':
 #   Add nice highlightRecent coloring according to date of commit.
 #   See: https://gist.github.com/BuonOmo/ce45b51d0cefe949fd0c536a4a60f000
@@ -69,8 +71,6 @@
 # 'remove':
 #   For more information see the script, can be passed a filename or a
 #   regular expression e.g. '*.mov'
-# 'root':
-#   Show the root directory.
 # 'search':
 #   Search entire histry for given regex.
 #   See: https://stackoverflow.com/a/2929502/4970632
@@ -88,8 +88,6 @@
 #   Checkout master and pull upstream branch.
 # 'tags':
 #   List all git tags.
-# 'top':
-#   Show top level path.
 # 'tree':
 #   Git log including changes
 # 'trunk':
@@ -116,6 +114,7 @@
 [alias]
 	amend    = "!f() { TARGET=$(git rev-parse \"$1\"); git commit --fixup=$TARGET ${@:2} && EDITOR=true git rebase -i --autostash --autosquash $TARGET^; }; f"
 	amputate = "!git-amputate \"$@\""
+	base     = rev-parse --show-toplevel
 	branches = branch -vv --all
 	commands = "!git help -a | grep \"^ \\+[a-z]\" | tr -s ' ' | cut -d' ' -f2"
 	commits  = "!git log --graph --abbrev-commit --date=relative --branches --oneline --decorate --color $(git rev-list -g --all) 2>/dev/null"
@@ -141,7 +140,6 @@
 	remotes  = remote --verbose
 	remove   = "!git-remove \"$@\""
 	reveal   = "!git stash show --name-status"
-	root     = rev-parse --show-toplevel
 	save     = stash save
 	search   = "!f() { git grep \"$@\" $(git rev-list --all --abbrev-commit); }; f"
 	stat     = diff --stat=80
