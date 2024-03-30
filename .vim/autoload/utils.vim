@@ -235,106 +235,128 @@ function! utils#switch_maps(...) abort
   endfor
 endfunction
 
-" Return commands specifying or demanding a register (e.g. " or peekaboo)
-" Note: These functions translate counts passed to yanks/change/delete/paste to first
-" 12 letters of alphabet, counts passed to macro records/plays to next 12 letters of
-" alphabet, and counts passed to mark sets/jumps to first 24 letters of alphabet.
-" Leave letters 'y' and 'z' alone for internal use (currently just used by marks).
-function! s:translate_count(mode, ...) abort
-  let cnt = v:count
-  let name = v:register
-  let warnings = []
-  if name !=# '"' && a:mode !=# 'm'  " already translated (avoid recursion)
-    return [name, '']
-  elseif a:mode =~# '[m`]'  " marks: uppercase a-x (64+1-64+24)
-    let [base, min, max] = [64, 1, 24]
-  elseif a:mode =~# '[q@]'  " macros: lowercase n-z (109+1-109+13)
-    let [base, min, max] = [109, 1, 13]
-  else  " others: lowercase a-m (96+1-96+13)
-    let [base, min, max] = [96, 0, 13]
-  endif
-  if cnt == 0 && a:mode =~# '[m`]'
-    let stack = get(g:, 'mark_stack', [])  " recent mark stack
-    let prev = a:mode ==# 'm' ? get(stack, -1, '@') : get(stack, -1, 'A')
-    let char = a:mode ==# 'm' ? char2nr(prev) + 1 : char2nr(prev)
-    let name = nr2char(min([char, base + max]))
-  else
-    let min = a:0 ? a:1 : min  " e.g. set to '0' disables v:count1 for 'm' and 'q'
-    let char = max([min, cnt])  " use v:count1 for 'm' and 'q'
-    let char = min([char, max])  " below maximum letter
-    let name = char == 0 ? '' : nr2char(base + char)
-  endif
-  if cnt > max  " emit warning
-    let head = "Count '" . cnt . "' too high for register translation"
-    let tail = "Using maximum '" . name . "' (" . max . ')'
-    call add(warnings, head . ' ' . tail)
-  endif
-  if a:mode ==# 'm' && index(map(getmarklist(), "v:val['mark']"), "'" . name) != -1
-    let head = 'Overwriting existing mark'
-    let tail = string(name) . (cnt ? "' (" . cnt . ')' : '')
-    call add(warnings, head . ' ' . tail)
-  endif
-  if !empty(warnings)
-    echohl WarningMsg
-    echom 'Warning: ' . join(warnings, ' ')
-    echohl None
-  endif
-  let label = empty(warnings) ? 'count ' . cnt : ''
-  return [name, label]
+" Set register and rotate out other options
+" Note: This auto-cycles previous register contents if input count was empty, either
+" immediately for macros or delaying until TextYankPost i.e. delete or yank finished.
+" Note: Vim by default sends multi-line deletes/changes to @1 through @9, 'small'
+" deletes/changes to @-, and all yanks to @0. Here use numbers for all multi-line
+" changes, letters for single-line changes, and zero for excluding yanks.
+function! s:set_register(text, opts, reg, ...) abort
+  let rmin = type(a:reg) ? a:reg : nr2char(a:reg)
+  let rmax = a:0 ? type(a:1) ? a:1 : nr2char(a:1) : rmin
+  let [nmin, nmax] = [char2nr(rmin), char2nr(rmax)]
+  for nr in range(nmax, nmin + 1, -1)
+    let reg1 = nr2char(nr - 1)  " copy from this register
+    let reg2 = nr2char(nr)  " copy to this register
+    let text = getreg(reg1)
+    let opts = get(getreginfo(reg1), 'regtype', '')
+    call setreg(reg2, text, opts)
+  endfor
+  call setreg(rmin, a:text, a:opts)
+  call setreg('"', a:text, a:opts)
 endfunction
-" Translate into map command
-function! s:translate_input(mode, ...) abort
-  if empty(a:0) || empty(a:1)  " i.e. empty(0) || empty('')
-    let char = ''
-    let [name, label] = s:translate_count(a:mode)
-    if a:mode =~# '[m`q@]'  " marks/macros (register mandatory)
-      let result = name
-    elseif !empty(name)  " yanks/changes/deletes/pastes
-      let result = '"' . name
-    else  " default unnamed register
-      let result = ''
+function! utils#rotate_setup() abort
+  augroup rotate_registers
+    au!
+    au BufLeave,CursorHold * autocmd! rotate_registers
+    au TextYankPost * call utils#rotate_registers(v:event.operator, v:event.regname) | autocmd! rotate_registers
+  augroup END
+endfunction
+function! utils#rotate_registers(mode, ...) abort
+  if a:0 && a:1 !~# '^"\?$' | return | endif
+  let text = getreg('')  " string contents
+  let info = getreginfo('')  " empty if unset
+  let opts = get(info, 'regtype', '')  " see :help getreginfo
+  let dest = get(info, 'points_to', '')
+  let [nr1, nr2, _] = s:translate_chars(a:mode)
+  if !count(text, "\n")  " never points to 1
+    call s:set_register(text, opts, nr1, nr2)  " see below
+  elseif dest ==# '0'  " multi-line yank
+    call s:set_register(text, opts, '1', '9')
+  elseif dest ==# '1'  " multi-line delete/change
+    call s:set_register(text, opts, '0')
+  endif
+endfunction
+
+" Return the register based on input count
+" Note: This translates counts passed to yanks/change/delete/paste to first
+" 20 letters of alphabet, counts passed to macro records/plays to next 6 letters of
+" alphabet, and counts passed to mark sets/jumps to first 24 letters of alphabet.
+function! s:translate_stack(mode) abort
+  let offset = a:mode ==# 'm' ? 1 : 0  " offset
+  let stack = get(g:, 'mark_stack', [])  " recent mark stack
+  let base = char2nr('A')  " default mark
+  let mrk1 = nr2char(base - offset)  " previous mark
+  let mrk2 = char2nr(get(stack, -1, mrk1))
+  let cnt = mrk2 - base + 1
+  return cnt + offset
+endfunction
+function! s:translate_chars(mode, ...) abort
+  if a:mode =~# '[m`]'  " marks: uppercase a-z (64+1-64+26)
+    let [char1, char2] = [char2nr('A'), char2nr('Z')]
+  elseif a:mode =~# '[q@]'  " macros: lowercase u-z (96+21-96+26)
+    let [char1, char2] = [char2nr('u'), char2nr('z')]
+  else  " registers: lowercase a-t (96+1-96+20)
+    let [char1, char2] = [char2nr('a'), char2nr('t')]
+  endif
+  return [char1, char2, char2 - char1 + 1]
+endfunction
+function! s:translate_count(mode, ...) abort
+  let zero = a:0 && !empty(a:1)
+  if v:count  " user-input count
+    let cnt = v:count
+  elseif !zero && a:mode =~# '[m`]'  " translate count
+    let cnt = s:translate_stack(a:mode)
+  elseif !zero && a:mode =~# '[q@]'  " enforce count
+    let cnt = 1 | call utils#rotate_registers(a:mode)
+  else  " allow empty count
+    let cnt = 0 | call utils#rotate_setup()
+  endif
+  let [nr1, nr2, cmax] = s:translate_chars(a:mode)
+  let [cnt, msg] = [min([cnt, cmax]), '']  " truncate user-input count
+  let name = cnt ? nr2char(min([nr1 + cnt - 1, nr2])) : ''
+  if v:count > cmax  " emit warning
+    let msg .= ' Truncating count ' . v:count . ' to ' . string(name) . ' (count ' . cmax . ')'
+  endif
+  if a:mode ==# 'm' && index(map(getmarklist(), 'v:val.mark'), "'" . name) != -1
+    let msg .= ' Overwriting mark ' . string(name) . ' (count ' . cnt . ')'
+  endif
+  if !empty(msg)  " warning messages
+    echohl WarningMsg | echom 'Warning: ' . trim(msg) | echohl None
+  endif
+  return [name, cnt && empty(msg) ? 'count ' . cnt : '']
+endfunction
+function! utils#translate_count(mode, ...) abort
+  if a:mode !~# '[m`]' && v:register !=# '"' | return '' | endif
+  let [name, label] = s:translate_count(a:mode, a:0 ? a:1 : 0)
+  if a:0 && empty(name)  " no count so request additional character
+    let char = utils#input_default('Register', '', '', 1)
+    if char =~# '^[''"]$'  " select vim register name
+      let name = utils#input_default('Register (vim)', '', '', 1)
+    elseif char =~# '^\d$'  " select number register
+      let name = char
+    else  " pass default to operator
+      let name = char =~? '^[dcyp]$' ? a:1 : '' | call feedkeys(char, 'm')
     endif
-  else  " ' or \" register invocation
-    let [name, label] = s:translate_count(a:mode, 0)
-    if !empty(name)  " count preceded ' or \" press
-      let result = '"' . name
-    else  " request additional character
-      let char = utils#input_default('Register', '', '', 1)
-      if empty(char)  " e.g. escape character
-        let name = char
-        let result = ''
-      elseif char ==# "\<F10>"  " peekaboo shortcut
-        let name = ''
-        let result = peekaboo#peek(1, '"', 0)
-      elseif char =~# '^[''"]$'  " native register selection
-        let name = utils#input_default('Register (raw)', '', '', 1)
-        let result = '"' . name
-      elseif char =~# '^\d$'  " use character to pick number register
-        let name = char
-        let result = '"' . name
-      else  " pass default to operator or cancel selection
-        let name = char =~? '^[dcyp]$' ? a:1 : ''
-        let char = char ==# 'Y' ? 'y$' : char
-        let result = empty(name) ? char : '"' . name . char
-      endif
-      if name ==# '_'
-        let label = 'blackhole'
-      elseif name =~# '[+*]'
-        let label = 'clipboard'
-      elseif name =~# '\d'  " use character to pick number register
-        let label = name . get({'1': 'st', '2': 'nd', '3': 'rd'}, name, 'th') . ' delete'
-      else  " default label
-        let label = ''
-      endif
+    if name ==# '_'
+      let label = 'blackhole'
+    elseif name =~# '[+*]'
+      let label = 'clipboard'
+    elseif name =~# '\d'  " use character to pick number register
+      let label = name . get({'1': 'st', '2': 'nd', '3': 'rd'}, name, 'th') . ' delete'
+    else  " default label
+      let label = ''
     endif
   endif
-  let head = a:mode =~# '[m`]' ? 'Mark' : 'Register'
   if !empty(name) && !empty(label)  " mark name label
+    let head = a:mode =~# '[m`]' ? 'Mark' : 'Register'
     echom head . ': ' . name[0] . ' (' . label . ')'
   endif
-  return result
-endfunction
-" Return register without statusline flashes
-function! utils#translate_name(...) abort
-  noautocmd return call('s:translate_input', a:000)
+  let head = v:count ? "\<Esc>" : ''
+  if a:0 || a:mode !~# '[m`q@]'
+    let head .= '"'
+  elseif !a:0 && a:mode =~# '[q@]'
+    let head .= a:mode
+  endif
+  return head . name
 endfunction

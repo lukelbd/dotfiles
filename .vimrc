@@ -65,7 +65,6 @@ set guioptions=M  " skip $VIMRUNTIME/menu.vim https://vi.stackexchange.com/q/103
 set history=500  " remember 500 previous searches / commands and save in .viminfo
 set hlsearch  " highlight as you search forward
 set ignorecase  " ignore case in search patterns
-set iminsert=0  " disable language maps (used for caps lock)
 set incsearch  " show matches incrementally when using e.g. :sub
 set lazyredraw  " skip redraws during macro and function calls
 set list  " show hidden characters
@@ -83,7 +82,8 @@ set noerrorbells  " disable error bells (see also visualbell and t_vb)
 set nofileignorecase  " disable ignoring case (needed for color scheme iteration)
 set nohidden  " unload buffers when not open in window
 set noinfercase  " do not replace insert-completion with case inferred from typed text
-set nostartofline  " when switching buffers, doesn't move to start of line (weird default)
+set noshowmode  " hide e.g. 'insert' from bottom line (redundant with statusline)
+set nostartofline  " do not move to column 1 when scrolling or changing buffers
 set noswapfile " no more swap files, instead use session
 set notimeout  " wait forever when doing multi-key *mappings*
 set nowrap  " global wrap setting possibly overwritten by wraptoggle
@@ -138,6 +138,7 @@ let &g:breakat = '  !*-+;:,./?'  " break lines following punctuation
 let &g:expandtab = 1  " global expand tab (respect tab toggling)
 let &g:foldenable = 1  " global fold enable (respect 'zn' toggling)
 let &g:iskeyword = '@,48-57,_,192-255'  " default keywords
+let &g:iminsert = 0  " disable language maps (used for caps lock)
 let &g:shortmess .= &buftype ==# 'nofile' ? 'I' : ''  " no intro when starting vim
 let &g:shiftwidth = 2  " default 2 spaces
 let &g:softtabstop = 2  " default 2 spaces
@@ -168,7 +169,7 @@ let s:panel_filetypes = [
   \ 'ale-info', 'ale-preview', 'checkhealth', 'codi', 'diff', 'fugitive', 'fugitiveblame', 'git', 'gitcommit',
 \ ]  " for popup toggle
 let s:panel_filetypes += [
-  \ 'help', 'netrw', 'job', '*lsp-hover', 'man', 'mru', 'panel', 'qf', 'undotree', 'taglist', 'vim-plug'
+  \ 'help', 'netrw', 'job', '*lsp-hover', 'man', 'mru', 'panel', 'qf', 'undotree', 'stdout', 'taglist', 'vim-plug'
 \ ]
 
 " Flake8 ignore list (also apply to autopep8):
@@ -333,8 +334,8 @@ let g:MRU_Open_File_Relative = 1
 
 " Buffer selection and management
 " Note: Here :WipeBufs replaces :Wipeout plugin since has more sources
-command! -nargs=0 ShowBufs call window#show_bufs()
-command! -nargs=0 WipeBufs call window#wipe_bufs()
+command! -nargs=0 ShowBufs call file#show_bufs()
+command! -nargs=0 WipeBufs call file#wipe_bufs()
 noremap <Leader>q <Cmd>ShowBufs<CR>
 noremap <Leader>Q <Cmd>WipeBufs<CR>
 nnoremap <F5> <Cmd>Windows<CR>
@@ -478,10 +479,8 @@ cnoremap <F9> <Esc><Cmd>Commands<CR>
 " Note: For some reason even though :help :mes claims count N shows the N most recent
 " message, for some reason using 1 shows empty line and 2 shows previous plus newline.
 for s:key in ['[[', ']]'] | silent! exe 'unmap! g' . s:key | endfor
-noremap g] <Cmd>call switch#reveal(1)<CR>
-noremap g[ <Cmd>call switch#reveal(0)<CR>
-noremap g<Space> <Cmd>call switch#message()<CR>
-noremap <Leader><Space> @:
+noremap z: @:
+noremap z; <Cmd>call switch#message()<CR>
 nnoremap <Leader>; q:
 nnoremap <Leader>/ q/
 nnoremap <Leader>: <Cmd>History:<CR>
@@ -559,7 +558,6 @@ inoremap <silent> <expr> <Backspace> iter#complete_popup('<C-r>=edit#delimit_mat
 " and <Up>/<Down> is scroll-like (vertically scroll history after clearing options).
 augroup complete_setup
   au!
-  au CmdlineLeave * let b:show_message = 1
   au CmdlineEnter,CmdlineLeave * let b:complete_state = 0
 augroup END
 cnoremap <silent> <expr> <Tab> iter#complete_cmdline("\<Tab>", 1)
@@ -587,12 +585,11 @@ cnoremap <silent> <expr> <BS> iter#complete_cmdline("\<BS>")
 " Note: Throughout vimrc marks y and z are reserved for internal map utilities. Here
 " use 'y' for mouse click location and 'z' for visual mode entrance location, then
 " start new visual selection between 'y' and 'z'. Generally 'y' should be temporary
-for s:char in ['v', 'V']
-  exe 'noremap ' . s:char . ' <Esc>mz' . s:char
-endfor
+for s:map in ['//', '/?', '?/', '??'] | silent! exe 'unmap g' . s:map | endfor
+for s:key in ['v', 'V'] | exe 'noremap ' . s:key . ' <Esc>mz' . s:key | endfor
+nnoremap zn gE/<C-r>/<CR><Cmd>noh<CR>mzgn
+nnoremap zN W?<C-r>/<CR><Cmd>noh<CR>mzgN
 noremap <C-v> <Esc><Cmd>WrapToggle 0<CR>mz<C-v>
-nnoremap gn gE/<C-r>/<CR><Cmd>noh<CR>mzgn
-nnoremap gN W?<C-r>/<CR><Cmd>noh<CR>mzgN
 vnoremap <LeftMouse> <LeftMouse>my<Cmd>exe 'keepjumps normal! `z' . visualmode() . '`y' \| delmark y<CR>
 nnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR>
 vnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
@@ -612,7 +609,7 @@ command! -nargs=0 ClearTabs call stack#clear_stack('tab') | call stack#update_ta
 command! -nargs=0 ShowTabs call stack#update_tabs() | call stack#show_stack('tab')
 command! -nargs=? PopTabs call stack#pop_stack('tab', <f-args>)
 silent! exe 'cunmap <Up>' | silent! exe 'cunmap <Down>'
-noremap <Tab><CR> <Cmd>call stack#reset_tabs()<CR><Cmd>call stack#update_tabs(2)<CR>
+noremap <Tab><Space> <Cmd>call stack#reset_tabs()<CR><Cmd>call stack#update_tabs(2)<CR>
 noremap <F1> <Cmd>call stack#scroll_tabs(-v:count1)<CR>
 noremap <F2> <Cmd>call stack#scroll_tabs(v:count1)<CR>
 
@@ -624,8 +621,7 @@ augroup jumplist_setup
   au CursorHold,TextChanged,InsertLeave * if mode() !~# '^no' | call mark#update_jumps() | endif
 augroup END
 command! -bang -nargs=0 Jumps call mark#fzf_jumps(<bang>0)
-noremap g; <Cmd>BLines<CR>
-noremap z; <Cmd>call mark#fzf_jumps()<CR>
+noremap gn <Cmd>call mark#fzf_jumps()<CR>
 noremap <C-j> <Cmd>call mark#next_jump(-v:count1)<CR>
 noremap <C-k> <Cmd>call mark#next_jump(v:count1)<CR>
 noremap <Down> <Cmd>call mark#next_jump(-v:count1)<CR>
@@ -635,12 +631,21 @@ noremap <Up> <Cmd>call mark#next_jump(v:count1)<CR>
 " Note: This accounts for iterm function-key maps and karabiner arrow-key maps
 " change entries removed. Here <F5>/<F6> are <Ctrl-/>/<Ctrl-\> in iterm
 command! -bang -nargs=0 Changes call mark#fzf_changes(<bang>0)
-noremap g: <Cmd>Lines<CR>
-noremap z: <Cmd>call mark#fzf_changes()<CR>
+noremap gN <Cmd>call mark#fzf_changes()<CR>
 noremap <C-h> <Cmd>call mark#next_change(-v:count1)<CR>
 noremap <C-l> <Cmd>call mark#next_change(v:count1)<CR>
 noremap <Left> <Cmd>call mark#next_change(-v:count1)<CR>
 noremap <Right> <Cmd>call mark#next_change(v:count1)<CR>
+
+" Navigate lines and searches
+" Note: This overrides default vim-tags g/ and g? maps. Allows selecting range with
+" input motion. Useful for debugging text objexts or when scope algorithm fails.
+noremap <expr> g; edit#sel_lines_expr(0)
+noremap <expr> g: edit#sel_lines_expr(1)
+noremap g;; /<C-r>=tags#get_scope()<CR>
+noremap g:: ?<C-r>=tags#get_scope()<CR>
+noremap g/ <Cmd>BLines<CR>
+noremap g? <Cmd>Lines<CR>
 
 " Navigate matches/sentences/paragraphs without adding to jumplist
 " Note: Core vim idea is that these commands take us far away from cursor but
@@ -710,10 +715,12 @@ noremap z) zb
 " &foldlevel for fortran python and tex files (e.g. always open \begin{document}).
 command! -bang -nargs=? Refold call fold#update_folds(<bang>0, <f-args>)
 for s:key in ['z', 'f', 'F', 'n', 'N'] | silent! exe 'unmap! z' . s:key | endfor
-noremap gz <Cmd>Folds<CR>
+noremap zA zn
+noremap za zN<Cmd>call fold#update_folds(0)<CR>
 noremap zx <Cmd>call fold#update_folds(0, 1)<CR>
 noremap zX <Cmd>call fold#update_folds(0, 2)<CR>
 noremap zZ <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>
+noremap gz <Cmd>Folds<CR>
 
 " Toggle folds under cursor non-recursively after updating
 " Note: Here fold#toggle_range_expr() calls fold#update_folds() before toggling.
@@ -739,7 +746,6 @@ noremap zC <Cmd>call fold#toggle_current(1)<CR>
 noremap zO <Cmd>call fold#toggle_current(0)<CR>
 noremap z/ <Cmd>call switch#opensearch(1)<CR>
 noremap z? <Cmd>call switch#opensearch(0)<CR>
-noremap zN zN<Cmd>call fold#update_folds(0)<CR>
 
 " Change fold level
 " Note: Here fold#update_level() without arguments calls fold#update_folds()
@@ -767,11 +773,11 @@ noremap zj <Cmd>keepjumps normal! ]z<CR>
 command! -bang -nargs=0 Marks call mark#fzf_marks(<bang>0)
 command! -nargs=* SetMarks call mark#set_marks(<f-args>)
 command! -nargs=* DelMarks call mark#del_marks(<f-args>)
-noremap <expr> g_ v:count ? '`' . utils#translate_name('`') : '<Cmd>call mark#fzf_marks()<CR>'
-noremap <Leader>- <Cmd>call mark#del_marks(get(g:, 'mark_name', 'A'))<CR>
-noremap <Leader>_ <Cmd>call mark#del_marks(utils#translate_name('`'))<CR>
-noremap _ <Cmd>call mark#set_marks(utils#translate_name('m'))<CR>
-noremap z_ <Cmd>call mark#del_marks()<CR>
+noremap z_ <Cmd>call mark#fzf_marks()<CR>
+noremap <expr> g_ v:count ? '`' . utils#translate_count('`') : '<Cmd>call mark#fzf_marks()<CR>'
+noremap <Leader>- <Cmd>call mark#del_marks()<CR>
+noremap <Leader>_ <Cmd>call mark#del_marks(get(g:, 'mark_name', 'A'))<CR>
+noremap _ <Cmd>call mark#set_marks(utils#translate_count('m'))<CR>
 noremap <C-n> <Cmd>call mark#next_mark(-v:count1)<CR>
 noremap <F12> <Cmd>call mark#next_mark(v:count1)<CR>
 
@@ -959,52 +965,52 @@ imap <expr> <F10> peekaboo#peek(1, "\<C-r>", 0)
 nmap <expr> <F10> peekaboo#peek(1, '"', 0)
 vmap <expr> <F10> peekaboo#peek(1, '"', 0)
 
-" Record macro by pressing Q (we use lowercase for quitting popup windows)
-" and execute macro using ,. Also disable multi-window recordings.
-" Note: Visual counts are ignored when followed by operations or recording
-" Warning: Critical to use 'nmap' and 'vmap' since do not want operator-mode
-nnoremap <expr> Q 'q' . (empty(reg_recording()) ? utils#translate_name('q') : '')
-nnoremap <expr> , '@' . utils#translate_name('@')
-vnoremap <expr> Q 'q' . (empty(reg_recording()) ? utils#translate_name('q') : '')
-vnoremap <expr> , '@' . utils#translate_name('@')
-
 " Declare alphabetic registers with count (consistent with mark utilities)
 " Note: Pressing ' or " followed by number uses numbered previous-deletion register,
 " and pressing ' or " followed by normal-mode command uses black hole or clipboard.
 " Note: Pressing double '' or \"\" triggers native or peekaboo register selection. The
 " latter is handled inside utils by returning the corresponding <Plug> mapping.
-nnoremap <expr> ' (v:count ? '<Esc>' : '') . utils#translate_name('', '_')
-nnoremap <expr> " (v:count ? '<Esc>' : '') . utils#translate_name('q', '*')
-vnoremap <expr> ' utils#translate_name('', '_')
-vnoremap <expr> " utils#translate_name('q', '*')
+noremap <expr> ' (v:count ? '<Esc>' : '') . utils#translate_count('', '_')
+noremap <expr> " (v:count ? '<Esc>' : '') . utils#translate_count('q', '*')
+vnoremap <expr> ' utils#translate_count('', '_')
+vnoremap <expr> " utils#translate_count('q', '*')
 
 " Change text, specify registers with counts.
 " Note: Uppercase registers are same as lowercase but saved in viminfo.
-nnoremap <expr> c (v:count ? '<Esc>' : '') . utils#translate_name('') . edit#insert_mode('c')
-nnoremap <expr> C (v:count ? '<Esc>' : '') . utils#translate_name('') . edit#insert_mode('C')
-vnoremap <expr> c utils#translate_name('') . edit#insert_mode('c')
-vnoremap <expr> C utils#translate_name('') . edit#insert_mode('C')
+nnoremap <expr> c (v:count ? '<Esc>' : '') . utils#translate_count('') . edit#insert_mode('c')
+nnoremap <expr> C (v:count ? '<Esc>' : '') . utils#translate_count('') . edit#insert_mode('C')
+vnoremap <expr> c utils#translate_count('') . edit#insert_mode('c')
+vnoremap <expr> C utils#translate_count('') . edit#insert_mode('C')
 
 " Delete text, specify registers with counts (no more dd mapping)
 " Note: Visual counts are ignored, and cannot use <Esc> because that exits visual mode
-nnoremap <expr> d (v:count ? '<Esc>' : '') . utils#translate_name('') . 'd'
-nnoremap <expr> D (v:count ? '<Esc>' : '') . utils#translate_name('') . 'D'
-vnoremap <expr> d utils#translate_name('') . 'd'
-vnoremap <expr> D utils#translate_name('') . 'D'
+nnoremap <expr> d (v:count ? '<Esc>' : '') . utils#translate_count('') . 'd'
+nnoremap <expr> D (v:count ? '<Esc>' : '') . utils#translate_count('') . 'D'
+vnoremap <expr> d utils#translate_count('') . 'd'
+vnoremap <expr> D utils#translate_count('') . 'D'
 
 " Yank text, specify registers with counts (no more yy mappings)
 " Note: Here 'Y' yanks to end of line, matching 'C' and 'D' instead of 'yy' synonym
-nnoremap <expr> y (v:count ? '<Esc>' : '') . utils#translate_name('') . 'y'
-nnoremap <expr> Y (v:count ? '<Esc>' : '') . utils#translate_name('') . 'y$'
-vnoremap <expr> y utils#translate_name('') . 'y'
-vnoremap <expr> Y utils#translate_name('') . 'y'
+nnoremap <expr> y (v:count ? '<Esc>' : '') . utils#translate_count('') . 'y'
+nnoremap <expr> Y (v:count ? '<Esc>' : '') . utils#translate_count('') . 'y$'
+vnoremap <expr> y utils#translate_count('') . 'y'
+vnoremap <expr> Y utils#translate_count('') . 'y'
 
 " Paste from the nth previously deleted or changed text.
 " Note: This was adapated from https://stackoverflow.com/a/31411902/4970632
-nnoremap <expr> p utils#translate_name('') . 'p'
-nnoremap <expr> P utils#translate_name('') . 'P'
-vnoremap <expr> p utils#translate_name('') . 'p<Cmd>let @+=@0 \| let @"=@0<CR>'
-vnoremap <expr> P utils#translate_name('') . 'P<Cmd>let @+=@0 \| let @"=@0<CR>'
+nnoremap <expr> p utils#translate_count('') . 'p'
+nnoremap <expr> P utils#translate_count('') . 'P'
+vnoremap <expr> p utils#translate_count('') . 'p<Cmd>let @+=@0 \| let @"=@0<CR>'
+vnoremap <expr> P utils#translate_count('') . 'P<Cmd>let @+=@0 \| let @"=@0<CR>'
+
+" Record macro by pressing Q with optional count
+" and execute macro using ,. Also disable multi-window recordings.
+" Note: Visual counts are ignored when followed by operations or recording
+" Warning: Critical to use 'nmap' and 'vmap' since do not want operator-mode
+nnoremap <expr> Q (empty(reg_recording()) ? utils#translate_count('q') : '')
+nnoremap <expr> , utils#translate_count('@')
+vnoremap <expr> Q (empty(reg_recording()) ? utils#translate_count('q') : '')
+vnoremap <expr> , utils#translate_count('@')
 
 " Join v:count lines with coinjoin.vim and keep cursor column
 " Note: Here e.g. '2J' joins 'next two lines' instead of 'current plus one'
@@ -1035,8 +1041,8 @@ nnoremap <Leader><Tab> <Cmd>call switch#expandtab()<CR>
 " Increase and decrease indent to level v:count
 " Note: To avoid overwriting fugitive inline-diff mappings implement these as
 " buffer-local .vim/autoload/common.vim maps. Also map brackets.
-nnoremap <expr> > '<Esc>' . edit#indent_items_expr(0, v:count1)
-nnoremap <expr> < '<Esc>' . edit#indent_items_expr(1, v:count1)
+nnoremap <expr> > '<Esc>' . edit#indent_lines_expr(0, v:count1)
+nnoremap <expr> < '<Esc>' . edit#indent_lines_expr(1, v:count1)
 
 " Insert empty lines around cursor
 " Note: See 'vim-unimpaired' for original. This is similar to vim-succinct 'e' object
@@ -1079,8 +1085,8 @@ nnoremap <expr> gi switch#paste() . edit#insert_mode('i')
 nnoremap <expr> gI switch#paste() . edit#insert_mode('I')
 nnoremap <expr> go switch#paste() . edit#insert_mode('o')
 nnoremap <expr> gO switch#paste() . edit#insert_mode('O')
-nnoremap <expr> gc switch#paste() . utils#translate_name('') . edit#insert_mode('c')
-nnoremap <expr> gC switch#paste() . utils#translate_name('') . edit#insert_mode('C')
+nnoremap <expr> gc switch#paste() . utils#translate_count('') . edit#insert_mode('c')
+nnoremap <expr> gC switch#paste() . utils#translate_count('') . edit#insert_mode('C')
 
 " Toggle caps lock, copy mode, and conceal mode
 " Turn on for filetypes containing raw possibly heavily wrapped data
@@ -1093,10 +1099,22 @@ augroup copy_setup
 augroup END
 command! -nargs=? CopyToggle call switch#copy(<args>)
 command! -nargs=? ConcealToggle call switch#conceal(<args>)  " mainly just for tex
+cnoremap <expr> <C-v> switch#caps()
+inoremap <expr> <C-v> switch#caps()
+noremap g[ <Cmd>call switch#reveal(0)<CR>
+noremap g] <Cmd>call switch#reveal(1)<CR>
 nnoremap <Leader>c <Cmd>call switch#copy()<CR>
 nnoremap <Leader>C <Cmd>call switch#conceal()<CR>
-cnoremap <expr> <C-v> edit#lang_map()
-inoremap <expr> <C-v> edit#lang_map()
+
+" Remove single character
+" Note: This omits single-character deletions from register by default
+nnoremap <expr> gx edit#insert_mode('gi')
+nnoremap <expr> cx '"_' . edit#insert_mode('c') . 'l'
+nnoremap <expr> cX '"_' . edit#insert_mode('c') . 'h'
+nnoremap dx x
+nnoremap dX X
+noremap x "_x
+noremap X "_X
 
 " ReST section comment headers
 " Note: <Plug> name cannot be subset of other name or results in delay
@@ -1129,13 +1147,9 @@ command! -range -nargs=? WrapItems <line1>,<line2>call edit#wrap_items(<args>)
 noremap <expr> gq edit#wrap_lines_expr(v:count)
 noremap <expr> gQ edit#wrap_items_expr(v:count)
 
-" Change or check single character
+" Show character and search for characters
 " Note: \x7F-\x9F are actually displayable but not part of ISO standard so not shown
 " by vim (also used as dummy no-match in comment.vim). See https://www.ascii-code.com
-noremap x "_x
-noremap X "_X
-nnoremap <expr> gx edit#insert_mode('gi')
-nnoremap <expr> cx '"_' . edit#insert_mode('s')
 map ` <Plug>(characterize)
 noremap ~ ga
 noremap g` /[^\x00-\x7F]<CR>
@@ -1591,7 +1605,7 @@ for s:plugin in s:fork_plugins
   let s:name = 'lukelbd/' . s:plugin
   if isdirectory(s:path) | call s:plug_local(s:path) | else | call plug#(s:name) | endif
 endfor
-let g:toggle_map = 'za'  " adjust toggle mapping (note this is repeatable)
+let g:toggle_map = 'g<Space>'  " adjust toggle mapping (note this is repeatable)
 let g:scrollwrapped_nomap = 1  " instead have advanced iter#scroll_infer maps
 let g:scrollwrapped_wrap_filetypes = s:copy_filetypes + ['tex', 'text']
 exe 'noremap + <C-a>' | exe 'noremap - <C-x>'
@@ -1796,14 +1810,10 @@ if s:plug_active('vim-tags')
   command! -bang -nargs=* ShowTable
     \ echo call('tags#table_kinds', <bang>0 ? ['all'] : [<f-args>])
     \ | echo call('tags#table_tags', <bang>0 ? ['all'] : [<f-args>])
-  nnoremap gy <Cmd>BTags<CR>
-  nnoremap gY <Cmd>Tags<CR>
   nnoremap <Leader>t <Cmd>ShowTable<CR>
   nnoremap <Leader>T <Cmd>ShowTable!<CR>
-  noremap <expr> g/ edit#search_lines_expr(0)
-  noremap <expr> g? edit#search_lines_expr(1)
-  noremap g// /<C-r>=tags#get_scope()<CR>
-  noremap g?? ?<C-r>=tags#get_scope()<CR>
+  nnoremap gy <Cmd>BTags<CR>
+  nnoremap gY <Cmd>Tags<CR>
   let s:major = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
   let s:minor = {'fortran': 'ekltvEL', 'python': 'xviI', 'vim': 'vnC', 'tex': 'gioetBCN'}
   let g:tags_cursor_map = '<CR>'  " default is <Leader><CR>
@@ -2220,14 +2230,14 @@ if s:plug_active('vim-fugitive')
   noremap <Leader>O <Cmd>call git#safe_commit(1, 'commit')<CR>
   noremap <Leader>p <Cmd>call git#safe_commit(0, 'stash push --include-untracked')<CR>
   noremap <Leader>P <Cmd>call git#safe_commit(1, 'stash push --include-untracked')<CR>
-  noremap <Leader>h <Cmd>call git#run_map(0, 0, '', 'diff -- :/')<CR>
-  noremap <Leader>H <Cmd>call git#run_map(0, 0, '', 'stage -- :/')<CR>
-  noremap <Leader>j <Cmd>call git#run_map(0, 0, '', 'diff -- %')<CR>
-  noremap <Leader>J <Cmd>call git#run_map(0, 0, '', 'stage -- %')<CR>
-  noremap <Leader>k <Cmd>call git#run_map(0, 0, '', 'diff --staged -- %')<CR>
-  noremap <Leader>K <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- %')<CR>
-  noremap <Leader>l <Cmd>call git#run_map(0, 0, '', 'diff --staged -- :/')<CR>
-  noremap <Leader>L <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- :/')<CR>
+  noremap <Leader>l <Cmd>call git#run_map(0, 0, '', 'diff -- %')<CR>
+  noremap <Leader>L <Cmd>call git#run_map(0, 0, '', 'stage -- %')<CR>
+  noremap <Leader>k <Cmd>call git#run_map(0, 0, '', 'diff -- :/')<CR>
+  noremap <Leader>K <Cmd>call git#run_map(0, 0, '', 'stage -- :/')<CR>
+  noremap <Leader>h <Cmd>call git#run_map(0, 0, '', 'diff --staged -- %')<CR>
+  noremap <Leader>H <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- %')<CR>
+  noremap <Leader>j <Cmd>call git#run_map(0, 0, '', 'diff --staged -- :/')<CR>
+  noremap <Leader>J <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- :/')<CR>
   noremap <Leader>b <Cmd>call git#run_map(0, 0, '', 'branches')<CR>
   noremap <Leader>B <Cmd>call git#run_map(0, 0, '', 'switch -')<CR>
   let g:fugitive_legacy_commands = 1  " include deprecated :Git status to go with :Git

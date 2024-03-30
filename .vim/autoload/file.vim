@@ -205,12 +205,7 @@ endfunction
 " also takes forever. Also have run into problems with it on some vim versions.
 function! file#open_drop(...) abort
   let current = expand('%:p')
-  if a:0 && !type(a:1)
-    let [quiet, paths] = [a:1, a:000[1:]]
-  else
-    let [quiet, paths] = [0, a:000]
-  endif
-  for path in paths
+  for path in a:000
     let nrs = []  " tab and window number
     let abs = fnamemodify(path, ':p')
     for tnr in range(1, tabpagenr('$'))  " iterate through each tab
@@ -232,7 +227,7 @@ function! file#open_drop(...) abort
     else  " create new tab
       call feedkeys("\<Cmd>silent edit " . path . "\<CR>", 'n')
     end
-    if !quiet && !blank && !panel && !fugitive && abs !=# current
+    if !blank && !panel && !fugitive && abs !=# current
       call file#echo_path('path', path)
     endif
   endfor

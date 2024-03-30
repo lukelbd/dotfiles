@@ -201,7 +201,8 @@ endfunction
 " Todo: Use below regexes to generate suggestion lists based on file text. Should
 " iterate over file lines then suggest any <import>.method matches found for all
 " imports names. Could also combine <variable>.method with every possible prefix.
-function! s:parse_name(item)
+function! python#doc_translate(item) abort
+  if &l:filetype !=# 'python' | return a:item | endif
   let winview = winsaveview()
   let parts = split(a:item, '\.')
   let module = parts[0]
@@ -218,69 +219,61 @@ function! s:parse_name(item)
   call winrestview(winview)
   return join(parts, '.')
 endfunction
-function! python#doc_name(...) abort
+function! python#doc_options(...) abort
   let line = getline('.')  " current line
-  let parse = &l:filetype ==# 'python'
   let current = get(b:, 'doc_name', '')  " see shell.vim
-  if a:0  " input value
-    let item = a:1
-  elseif !parse && empty(current)
-    let item = ''
-  else  " cursor word in pydoc page or python file
+  if a:0 || empty(current) && &l:filetype !=# 'python'
+    let item = a:0 ? a:1 : ''
+  else  " not in pydoc page or python file
     let head = matchstr(line[:col('.') - 1], '\h\(\w\|\.\)*$')
     let tail = matchstr(line[col('.'):], '^\w*')
     let item = head . tail
   endif
   let item = empty(item) ? get(s:, 'doc_prev', '') : item
-  let item = parse ? s:parse_name(item) : item
-  if empty(current) || item =~# current || current =~# item
-    let name = item
-  elseif item =~# '^[a-z]\w*\.[A-Z]\w\+'  " cursor item is full class name
-    let name = item
-  else  " infer from header line
-    let header = matchstr(getline(1), '\s\+\zs\h\(\w\|\.\)*\ze:$')  " '.' is keyword in man
-    let package = matchstr(getline(1), '\s\+\zs\h\w*\ze\(\.\h\w*\)*:$')
-    if empty(header)
-      let name = item  " fallback
-    elseif getline(1) =~# 'Help on \(module\|package\)'
-      let name = current . '.' . item  " e.g. xarray.<name>
-    elseif empty(package) || item =~# '^[a-z_]\+$'
-      let name = header . '.' . item  " e.g. pd.DataFrame.read_csv
-    else  " reference package
-      let name = package . '.' . item
-    endif
-  endif
-  return name
+  let item = python#doc_translate(item)
+  let header = matchstr(getline(1), '\s\+\zs\h\(\w\|\.\)*\ze:$')
+  let package = matchstr(getline(1), '\s\+\zs\h\w*\ze\(\.\h\w*\)*:$')
+  let opts = [current . '.' . item]  " e.g. xr.DataArray.method
+  if !empty(header) | call add(opts, header . '.' . item) | endif  " e.g. pandas.read_csv
+  if !empty(package) | call add(opts, package . '.' . item) | endif
+  call add(opts, item) | return uniq(opts)  " fallback to full name
 endfunction
 
 " Browse documentation with man-style pydoc pages
 " Note: This is still useful over Lsp e.g. for generalized help page browsing. And
 " everything is standardized to man-format so has consistency with man utilities.
 function! python#doc_page(...) abort
+  let opts = python#doc_options()  " item under cursor
   if !a:0  " user input page
-    let page = utils#input_default('Pydoc page', python#doc_name(), 'python#doc_source')
+    let page = utils#input_default('Pydoc page', opts[-1], 'python#doc_source')
   else  " navigation page
-    let page = empty(a:1) ? python#doc_name() : a:1
+    let page = empty(a:1) ? opts[-1] : a:1
   endif
-  let parse = &l:filetype ==# 'python'
   if empty(page) | return 1 | endif
-  if parse | let page = s:parse_name(page) | endif
-  let bnr = bufnr()  " current buffer
-  let pnr = bufnr(page)  " WARNING: only matches start of string
-  let new = !bufexists(page)  " WARNING: only matches exact string
-  if new  " create new buffer
-    let result = systemlist('pydoc ' . shellescape(page))
-    let result = map(result, 'substitute(v:val, ''^\( \{4}\)* |  '', ''\1'', ''ge'')')
-    let msg = "Error: Pydoc page '" . page . "' not found"
-    if len(result) <= 5 | echohl ErrorMsg | echom msg | echohl None | return 1 | endif
+  let page = python#doc_translate(page)
+  let opts = python#doc_options(page)
+  let result = []  " default result
+  if !bufexists(page)   " WARNING: only matches exact string
+    for iopt in opts
+      let result = systemlist('pydoc ' . shellescape(iopt))
+      let result = map(result, {idx, val -> substitute(val, '^\( \{4}\)* |  ', '\1', 'ge')})
+      if len(result) >= 5 | let page = iopt | break | endif
+    endfor
+    if len(result) < 5
+      let msg = 'Error: Pydoc page not found: '  " show options
+      let msg .= join(map(opts, {idx, val -> string(val)}), ', ')
+      echohl ErrorMsg | echom msg | echohl None | return 1
+    endif
   endif
+  let exists = bufexists(page)
   let s:doc_prev = page  " previously browsed
+  let [bnr, pnr] = [bufnr(), bufnr(page)]  " WARNING: only matches start of string
   if !empty(get(b:, 'doc_name', ''))  " existing path shell.vim
-    silent exe new ? 'enew | file ' . page : pnr . 'buffer'
+    silent exe exists ? pnr . 'buffer' : 'enew | file ' . page
   else
-    silent exe new ? 'tabedit ' . page : 'tabedit | ' . pnr . 'buffer'
+    silent exe exists ? 'tabedit | ' . pnr . 'buffer' : 'tabedit ' . page
   endif
-  if new | call append(0, result) | goto | endif | let b:doc_name = page  " critical
+  if !exists | call append(0, result) | goto | endif | let b:doc_name = page
   setlocal nobuflisted bufhidden=hide buftype=nofile filetype=man | return 0
 endfunction
 function! python#doc_source(...) abort

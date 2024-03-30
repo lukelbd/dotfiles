@@ -53,6 +53,24 @@ function! switch#autosave(...) abort
   call call('s:echo_state', ['Autosave', toggle, suppress])
 endfunction
 
+" Toggle insert and command-mode caps lock
+" See: http://vim.wikia.com/wiki/Insert-mode_only_Caps_Lock which uses
+" iminsert to enable/disable lnoremap, with iminsert changed from 0 to 1
+function! switch#caps(...) abort
+  let state = &l:iminsert == 1  " toggled by i_<Ctrl-^> and c_<Ctrl-^>
+  let toggle = a:0 > 0 ? a:1 : 1 - state
+  if toggle
+    for nr in range(char2nr('A'), char2nr('Z'))
+      exe 'lnoremap <buffer> ' . nr2char(nr + 32) . ' ' . nr2char(nr)
+      exe 'lnoremap <buffer> ' . nr2char(nr) . ' ' . nr2char(nr + 32)
+    endfor
+    augroup caps_lock
+      au!
+      au InsertLeave,CmdwinLeave * setlocal iminsert=0 | autocmd! caps_lock
+    augroup END
+  endif | return "\<C-^>"
+endfunction
+
 " Toggle conceal characters on and off
 " Note: Hide message because result is obvious and for consistency with copy mode
 " call s:echo_state('Conceal mode', toggle)
@@ -239,16 +257,18 @@ endfunction
 " Note: For some reason even though :help :mes claims count N shows the N most recent
 " message, for some reason using 1 shows empty line and 2 shows previous plus newline.
 function! switch#message(...) abort
-  let state = get(b:, 'show_message', 1)
-  let toggle = a:0 > 0 ? a:1 : 1 - state
+  let cnt = v:count ? v:count1 : 20
+  let recent = reverse(split(execute(cnt . 'mes'), "\n"))
+  let recent = get(filter(recent, '!empty(trim(v:val))'), 0, '')
+  let state = exists('b:message') && recent ==# b:message
+  let toggle = a:0 > 0 ? a:1 : v:count ? 1 : 1 - state
   if toggle  " show message
-    let recent = split(execute('2mes'), "\n")
-    echo join(recent[-1:], '')
+    exe cnt . 'mes'
+    let b:message = recent
   else  " dad joke
-    let url = 'curl https://icanhazdadjoke.com/'
-    echo system(url)
+    echo system('curl https://icanhazdadjoke.com/')
+    let b:message = ''
   endif
-  let b:show_message = toggle
 endfunction
 
 " Toggle temporary paste mode

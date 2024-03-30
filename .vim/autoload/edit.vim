@@ -10,6 +10,9 @@ function! edit#delimit_mate(key, ...) abort
   let keys = call('delimitMate#' . name, a:000)
   return substitute(keys, "\<Esc>", "\<C-c>", 'g')
 endfunction
+function! edit#echo_range(msg, num) range abort
+  echo a:msg . (a:msg =~# '\s' ? ' on' : '') . ' ' . a:num . ' line(s)'
+endfunction
 function! edit#how_much(...) abort
   return utils#motion_func('HowMuch#HowMuch', a:000)
 endfunction
@@ -28,19 +31,6 @@ function! edit#forward_delete(...) abort
   return repeat("\<Delete>", cnt)
 endfunction
 
-" Indent lines by count
-" Note: Native vim indent uses count to move over number of lines, but redundant
-" with e.g. 'd2k', so instead use count to denote indentation level.
-function! edit#indent_items(dedent, count) range abort
-  let irange = a:firstline . ',' . a:lastline  " use native vim message
-  let indent = repeat(a:dedent ? '<' : '>', a:count)
-  exe irange . indent
-endfunction
-" For <expr> map accepting motion
-function! edit#indent_items_expr(...) abort
-  return utils#motion_func('edit#indent_items', a:000)
-endfunction
-
 " Restore insert mode after undo
 " Note: This restores cursor position after insert-mode undo. First queue translation
 " with edit#insert_mode() then run edit#insert_undo() on InsertLeave (e.g. after 'ciw')
@@ -57,8 +47,20 @@ function! edit#insert_undo(...) abort
   else  " end-of-line restore
     let iundo = 'a'
   endif
-  let b:insert_mode = iundo
-  return "\<C-g>u"
+  let b:insert_mode = iundo | return "\<C-g>u"
+endfunction
+
+" Indent lines by count
+" Note: Native vim indent uses count to move over number of lines, but redundant
+" with e.g. 'd2k', so instead use count to denote indentation level.
+function! edit#indent_lines(dedent, count) range abort
+  let irange = a:firstline . ',' . a:lastline  " use native vim message
+  let indent = repeat(a:dedent ? '<' : '>', a:count)
+  exe irange . indent
+endfunction
+" For <expr> map accepting motion
+function! edit#indent_lines_expr(...) abort
+  return utils#motion_func('edit#indent_lines', a:000)
 endfunction
 
 " Join v:count next lines
@@ -76,59 +78,10 @@ function! edit#join_lines(before, spaces, ...) abort
   call feedkeys("\<Cmd>" . cursor . "\<CR>", 'n')
 endfunction
 
-" Toggle insert and command-mode caps lock
-" See: http://vim.wikia.com/wiki/Insert-mode_only_Caps_Lock which uses
-" iminsert to enable/disable lnoremap, with iminsert changed from 0 to 1
-function! edit#lang_map() abort
-  let b:caps_lock = exists('b:caps_lock') ? 1 - b:caps_lock : 1
-  if b:caps_lock
-    for s:c in range(char2nr('A'), char2nr('Z'))
-      exe 'lnoremap <buffer> ' . nr2char(s:c + 32) . ' ' . nr2char(s:c)
-      exe 'lnoremap <buffer> ' . nr2char(s:c) . ' ' . nr2char(s:c + 32)
-    endfor
-    augroup caps_lock
-      au!
-      au InsertLeave,CmdwinLeave * setlocal iminsert=0 | let b:caps_lock = 0 | autocmd! caps_lock
-    augroup END
-  endif
-  return "\<C-^>"
-endfunction
-
-" Search replace without history
-" Note: Substitute 'n' would give exact count but then have to repeat twice, too slow
-" Note: Critical to replace reverse line-by-line in case substitution has newlines
-function! edit#sub_replace(msg, ...) range abort
-  let nlines = 0  " pattern count
-  let search = @/  " hlsearch pattern
-  let winview = winsaveview()
-  let pairs = copy(a:000)
-  for line in range(a:lastline, a:firstline, -1)
-    for idx in range(0, a:0 - 2, 2)
-      let jdx = idx + 1  " replacement index
-      let sub = type(pairs[idx]) == 2 ? pairs[idx]() : pairs[idx]
-      let rep = jdx >= a:0 ? '' : type(pairs[jdx]) == 2 ? pairs[jdx]() : pairs[jdx]
-      let cmd = line . 's@' . sub . '@' . rep . '@gel'
-      let nlines += !empty(execute('keepjumps ' . cmd))  " or exact with 'n'?
-      call histdel('/', -1)  " preserve history
-    endfor
-  endfor
-  call edit#echo_range(a:msg, nlines)
-  let @/ = search
-  call winrestview(winview)
-endfunction
-" For <expr> map accepting motion
-function! edit#sub_replace_expr(...) abort
-  return utils#motion_func('edit#sub_replace', a:000)
-endfunction
-" Echo the number of matches
-function! edit#echo_range(msg, num) range abort
-  echo a:msg . (a:msg =~# '\s' ? ' on' : '') . ' ' . a:num . ' line(s)'
-endfunction
-
 " Search sort or reverse the input lines
 " Note: Adaptation of hard-to-remember :g command shortcut. Adapted
 " from super old post: https://vim.fandom.com/wiki/Reverse_order_of_lines
-function! edit#search_lines(...) abort range
+function! edit#sel_lines(...) abort range
   let range = printf('\%%>%dl\%%<%dl', a:firstline - 1, a:lastline + 1)
   echom 'Keys: ' . (a:0 && a:1 ? '?' : '/') . range
   call feedkeys((a:0 && a:1 ? '?' : '/') . range, 'n')
@@ -145,8 +98,8 @@ function! edit#reverse_lines() range abort  " vint: -ProhibitUnnecessaryDoubleQu
   call edit#echo_range('Reversed', a:lastline - a:firstline + 1)
 endfunction
 " For <expr> map accepting motion
-function! edit#search_lines_expr(...) abort
-  return utils#motion_func('edit#search_lines', a:000)
+function! edit#sel_lines_expr(...) abort
+  return utils#motion_func('edit#sel_lines', a:000)
 endfunction
 function! edit#sort_lines_expr() range abort
   return utils#motion_func('edit#sort_lines', a:000)
@@ -181,6 +134,33 @@ function! edit#spell_check(...) abort
       exe 'normal! ' . nr . 'z='
     endif
   endif
+endfunction
+
+" Search replace without history
+" Note: Substitute 'n' would give exact count but then have to repeat twice, too slow
+" Note: Critical to replace reverse line-by-line in case substitution has newlines
+function! edit#sub_replace(msg, ...) range abort
+  let nlines = 0  " pattern count
+  let search = @/  " hlsearch pattern
+  let winview = winsaveview()
+  let pairs = copy(a:000)
+  for line in range(a:lastline, a:firstline, -1)
+    for idx in range(0, a:0 - 2, 2)
+      let jdx = idx + 1  " replacement index
+      let sub = type(pairs[idx]) == 2 ? pairs[idx]() : pairs[idx]
+      let rep = jdx >= a:0 ? '' : type(pairs[jdx]) == 2 ? pairs[jdx]() : pairs[jdx]
+      let cmd = line . 's@' . sub . '@' . rep . '@gel'
+      let nlines += !empty(execute('keepjumps ' . cmd))  " or exact with 'n'?
+      call histdel('/', -1)  " preserve history
+    endfor
+  endfor
+  call edit#echo_range(a:msg, nlines)
+  let @/ = search
+  call winrestview(winview)
+endfunction
+" For <expr> map accepting motion
+function! edit#sub_replace_expr(...) abort
+  return utils#motion_func('edit#sub_replace', a:000)
 endfunction
 
 " Swap characters or lines

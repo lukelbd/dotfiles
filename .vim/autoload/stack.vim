@@ -47,9 +47,9 @@ function! stack#show_item(head, name, ...) abort
     let tabnr = win_id2tabwin(winid)[0]
     let label = RelativePath(a:name) . ' (' . (tabnr ? tabnr : '*') . ')'
   endif
-  let prefix = toupper(a:head[0]) . a:head[1:] . ': '
-  let suffix = a:0 > 1 ? ' (' . (a:1 + 1) . '/' . a:2 . ')' : ''
-  redraw | echom prefix . label . suffix
+  let head = toupper(a:head[0]) . a:head[1:] . ': '
+  let tail = a:0 ? ' (' . (a:1 + 1) . '/' . a:2 . ')' : ''
+  exe a:0 ? 'redraw' : '' | echom head . label . tail
 endfunction
 
 " Update the requested buffer stack
@@ -135,7 +135,7 @@ function! stack#reset_tabs() abort
   endfor
 endfunction
 function! stack#scroll_sink(...) abort
-  call call('file#open_drop', [1] + a:000)  " triggers TabLeave and TabEnter
+  silent call call('file#open_drop', a:000)  " triggers TabLeave and TabEnter
   let b:tab_name = expand('%:p')
   for bnr in tabpagebuflist()
     call setbufvar(bnr, 'tab_scroll', 1)

@@ -26,8 +26,8 @@ function! shell#help_page(...) abort
   let type = &l:filetype
   let bnr = bufnr()
   let cmd = join(args, ' ')
-  if type !=# 'popup'
-    tabedit | setlocal nobuflisted bufhidden=hide buftype=nofile filetype=popup
+  if type !=# 'stdout'
+    tabedit | setlocal nobuflisted bufhidden=hide buftype=nofile filetype=stdout
   endif
   if bufexists(cmd)
     silent exe bufnr(cmd) . 'buffer'
@@ -35,16 +35,14 @@ function! shell#help_page(...) abort
     let result = split(system(cmd . ' 2>&1'), "\n") | call append(0, result) | goto
   endif
   if line('$') > 3
-    silent exe 'file ' . fnameescape(cmd)
-    return 0
+    silent exe 'file ' . fnameescape(cmd) | return 0
   else
-    if type !=# 'popup' |
-      silent quit! | call file#open_drop(1, bufname(bnr))
+    if type !=# 'stdout'  " see above
+      silent quit! | silent call file#open_drop(bufname(bnr))
     endif
     echohl ErrorMsg
     echom "Error: Help info '" . cmd . "' not found"
-    echohl None
-    return 1
+    echohl None | return 1
   endif
 endfunction
 function! shell#fzf_help() abort
@@ -86,17 +84,14 @@ function! shell#man_page(...) abort
       if has('macunix') && page !=# 'builtin' | call dist#man#GetPage('', 'bash') | endif
       goto | call search('^ \{7}' . page . ' [.*$', '')
     endif
-    silent exe 'file ' . name
-    return 0
+    silent exe 'file ' . name | return 0
   else
     if type !=# 'man'
-      silent quit!
-      call file#open_drop(1, bufname(bnr))
+      silent quit! | silent call file#open_drop(bufname(bnr))
     endif
     echohl ErrorMsg
     echom "Error: Man page '" . page . "' not found"
-    echohl None
-    return 1
+    echohl None | return 1
   endif
 endfunction
 function! shell#fzf_man() abort
@@ -107,11 +102,9 @@ function! shell#fzf_man() abort
     \ }))
 endfunction
 
-" Setup job popup window
-" Note: The '.job' extension should trigger popup windows. Also add 'set -x' to
-" display commands and no-op ':' to signal completion.
-" Note: The '/bin/sh' is critical to permit chained commands e.g. with && or
-" || otherwise they are interpreted as literals.
+" Show results in panel
+" Note: Add 'set -x' to display commands and no-op ':' to signal completion. The
+" '/bin/sh' is needed to permit command chains with e.g. && or || otherwise fails.
 " Note: Use 'pty' intead of pipe to prevent output buffering and delayed
 " printing as a result. See https://vi.stackexchange.com/a/20639/8084
 " Note: Job has to be non-local variable or else can terminate
@@ -124,19 +117,19 @@ function! shell#job_win(cmd, ...) abort
     echohl None
     return 1
   endif
-  let popup = a:0 ? a:1 : 1  " whether to show popup window
   let cmds = ['/bin/sh', '-c', 'set -x; ' . a:cmd . '; :']
   let hght = winheight('.') / 4
   let opts = {}  " job options, empty by default
-  if popup  " show popup, or run job
+  if a:0 && a:1  " show panel, or run job
     let logfile = expand('%:t:r') . '.job'
     let lognum = bufwinnr(logfile)
     if lognum == -1  " open a logfile window
       exe hght . 'split ' . logfile
     else  " jump to logfile window and clean its contents
-      exe lognum . 'wincmd w' | 1,$d _
+      exe lognum . 'wincmd w' | %delete
     endif
     let num = bufnr(logfile)
+    call setbufvar(num, '&filetype', 'stdout')
     call setbufvar(num, '&buftype', 'nofile')
     let opts = {
       \ 'in_io': 'null',
@@ -146,7 +139,7 @@ function! shell#job_win(cmd, ...) abort
       \ 'err_buf': num,
       \ 'noblock': 1,
       \ 'pty': 0
-      \ }
+    \ }
   endif
   let b:popup_job = job_start(cmds, opts)
   exe winnr('#') . 'wincmd w'
@@ -189,7 +182,8 @@ function! shell#setup_man(...) abort
     let pnum = matchstr(getline(1), '(\@<=[1-9][a-z]\=)\@=')  " from man syntax
     let [b:man_name, key, cmd] = [[page, pnum], 'man', 'shell#man_page']
   endif
-  noremap <buffer> <CR> <Cmd>call stack#push_stack(key, cmd, '')<CR>
-  noremap <nowait> <buffer> [ <Cmd>call stack#push_stack(key, cmd, -v:count1)<CR>
-  noremap <nowait> <buffer> ] <Cmd>call stack#push_stack(key, cmd, v:count1)<CR>
+  let push = '<Cmd>call stack#push_stack(%s, %s, %s)<CR>'  " template invocation
+  exe 'noremap <buffer> <CR> ' . printf(push, string(key), string(cmd), string(''))
+  exe 'noremap <nowait> <buffer> [ ' . printf(push, string(key), string(cmd), '-v:count1')
+  exe 'noremap <nowait> <buffer> ] ' . printf(push, string(key), string(cmd), 'v:count1')
 endfunction

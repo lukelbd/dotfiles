@@ -49,7 +49,8 @@ function! s:feed_list(changes, iloc, ...) abort
   " vint: -ProhibitUnnecessaryDoubleQuote
   let [key1, key2] = a:changes ? ["g;", "g,"] : ["\<C-o>", "\<C-i>"]
   let [tnr, wnr; rest] = a:0 ? a:000 : [tabpagenr(), winnr(), 0]
-  exe tnr . 'tabnext' | exe wnr . 'wincmd w'
+  silent exe tnr . 'tabnext'
+  silent exe wnr . 'wincmd w'
   let init = tnr == tabpagenr() && wnr == winnr() ? '' : '1000' . key2
   let ikey = a:iloc > 0 ? key2 : key1  " motion key
   let ikeys = a:iloc == 0 ? '' : abs(a:iloc) . ikey
@@ -67,12 +68,12 @@ function! s:next_list(changes, count) abort  " navigate to nth location in list
   let head = toupper(name[0]) . name[1:] . ' location: '
   if jdx >= 0 && jdx < len(opts)  " jump to location
     call s:feed_list(a:changes, opts[jdx]['loc'], tabpagenr(), winnr())
-    call feedkeys("\<Cmd>echom '" . head . (jdx + 1) . '/' . len(opts) . "'\<CR>", 'n')
+    call feedkeys("\<Cmd>redraw | echom '" . head . (jdx + 1) . '/' . len(opts) . "'\<CR>", 'n')
   elseif !iend && a:count == 1 && jdx == len(opts)  " silently restore position
     if bnum != bufnr() | exe bnum . 'buffer' | endif | call cursor(lnum, cnum + 1)
-    call feedkeys("\<Cmd>echom '" . head . jdx . '/' . len(opts) . "'\<CR>", 'n')
+    call feedkeys("\<Cmd>redraw | echom '" . head . jdx . '/' . len(opts) . "'\<CR>", 'n')
   else  " no-op warning message
-    let direc = a:count < 0 ? 'start' : 'end'
+    redraw | let direc = a:count < 0 ? 'start' : 'end'
     echohl WarningMsg | echom 'Error: At ' . direc . ' of ' . name . 'list' | echohl None
   endif
 endfunction
@@ -222,9 +223,9 @@ function! mark#next_mark(...) abort
   let mrk = get(g:, 'mark_name', '')
   if !empty(mrk) && line('.') != line("'" . mrk)
     let cnt -= cnt > 0 ? 1 : -1
-    call mark#goto_mark(mrk)
+    silent call mark#goto_mark(mrk)
   endif
-  call stack#push_stack('mark', 'mark#goto_mark', cnt, 0)
+  call call('stack#push_stack', ['mark', 'mark#goto_mark', cnt, 2])
 endfunction
 function! mark#goto_mark(...) abort
   if !a:0 || empty(a:1) | return | endif
@@ -232,17 +233,15 @@ function! mark#goto_mark(...) abort
   let mrks = getmarklist()
   let mrks = filter(mrks, {idx, val -> val.mark =~# "'" . mrk})
   if empty(mrks)  " avoid 'press enter' due to register
-    let cmd = 'echohl WarningMsg | '
-    let cmd .= 'echom "Error: Mark ''' . mrk . ''' is unset" | '
-    let cmd .= 'echohl None'
+    let msg = string('Error: Mark ' . string(mrk) . ' is unset')
+    let cmd = 'redraw | echohl WarningMsg | echom ' . msg . ' | echohl None'
+    call feedkeys("\<Cmd>" . cmd . "\<CR>", 'n')
   else  " note this does not affect jumplist
-    call file#open_drop(mrks[0]['file'])
-    let pos = string(mrks[0]['pos'])  " string list
-    let cmd = "call setpos('.', " . pos . ')'
+    silent call file#open_drop(mrks[0]['file'])
+    call setpos('.', mrks[0]['pos'])
     if &l:foldopen =~# 'mark' | exe 'normal! zv' | endif
   endif
   let g:mark_name = mrk  " mark stack navigation
-  call feedkeys("\<Cmd>" . cmd . "\<CR>", 'n')
 endfunction
 function! mark#fzf_marks(...) abort
   let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
@@ -278,7 +277,8 @@ function! mark#del_marks(...) abort
     exe 'delmark ' . mrk
     call stack#pop_stack('mark', mrk)
   endfor
-  call feedkeys("\<Cmd>echom 'Deleted marks: " . join(mrks, ' ') . "'\<CR>", 'n')
+  let cmd = "redraw | echom 'Deleted marks: " . join(mrks, ' ') . "'"
+  call feedkeys("\<Cmd>" . cmd . "\<CR>", 'n')
 endfunction
 
 " Iniitialize the marks and highlights
@@ -304,7 +304,8 @@ endfunction
 
 " Add the mark and highlight the line
 function! mark#set_marks(mrk, ...) abort
-  let pos = a:0 ? a:1 : [bufnr(), line('.'), col('.'), 0]  " buffer required
+  let pos = a:0 ? a:1 : [0, line('.'), col('.'), 0]  " buffer required
+  let pos[0] = pos[0] ? pos[0] : bufnr()  " replace zero
   let highlights = get(g:, 'mark_highlights', {})
   let g:mark_name = a:mrk  " mark stack
   let g:mark_highlights = highlights
