@@ -195,9 +195,6 @@ function! fold#update_level(...) abort
 endfunction
 function! fold#update_folds(force, ...) abort
   let queued = get(b:, 'fastfold_queued', 1)  " changed on TextChanged,TextChangedI
-  if &l:foldmethod =~# '^diff\|^marker'
-    return
-  endif
   let winview = winsaveview()
   if queued || a:force
     if &l:diff  " difference mode enabled

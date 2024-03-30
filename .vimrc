@@ -624,8 +624,8 @@ augroup jumplist_setup
   au CursorHold,TextChanged,InsertLeave * if mode() !~# '^no' | call mark#update_jumps() | endif
 augroup END
 command! -bang -nargs=0 Jumps call mark#fzf_jumps(<bang>0)
-noremap z' <Cmd>BLines<CR>
-noremap g' <Cmd>call mark#fzf_jumps()<CR>
+noremap g; <Cmd>BLines<CR>
+noremap z; <Cmd>call mark#fzf_jumps()<CR>
 noremap <C-j> <Cmd>call mark#next_jump(-v:count1)<CR>
 noremap <C-k> <Cmd>call mark#next_jump(v:count1)<CR>
 noremap <Down> <Cmd>call mark#next_jump(-v:count1)<CR>
@@ -635,8 +635,8 @@ noremap <Up> <Cmd>call mark#next_jump(v:count1)<CR>
 " Note: This accounts for iterm function-key maps and karabiner arrow-key maps
 " change entries removed. Here <F5>/<F6> are <Ctrl-/>/<Ctrl-\> in iterm
 command! -bang -nargs=0 Changes call mark#fzf_changes(<bang>0)
-noremap z" <Cmd>Lines<CR>
-noremap g" <Cmd>call mark#fzf_changes()<CR>
+noremap g: <Cmd>Lines<CR>
+noremap z: <Cmd>call mark#fzf_changes()<CR>
 noremap <C-h> <Cmd>call mark#next_change(-v:count1)<CR>
 noremap <C-l> <Cmd>call mark#next_change(v:count1)<CR>
 noremap <Left> <Cmd>call mark#next_change(-v:count1)<CR>
@@ -785,10 +785,10 @@ command! -range=0 -bang -nargs=* -complete=file Grep call call('grep#call_rg', [
 command! -range=0 -bang -nargs=* -complete=file Find call call('grep#call_rg', [<bang>0, <count>, '\<' . expand('<cword>') . '\>', <f-args>])
 command! -range=0 -bang -nargs=+ -complete=file Ag call grep#call_ag(<bang>0, <count>, <f-args>)
 command! -range=0 -bang -nargs=+ -complete=file Rg call grep#call_rg(<bang>0, <count>, <f-args>)
-nnoremap g; <Cmd>call grep#call_grep('rg', 1, 0)<CR>
-nnoremap g: <Cmd>call grep#call_grep('rg', 1, 1)<CR>
-nnoremap z; <Cmd>call grep#call_grep('rg', 0, 2)<CR>
-nnoremap z: <Cmd>call grep#call_grep('rg', 1, 2)<CR>
+nnoremap g' <Cmd>call grep#call_grep('rg', 1, 0)<CR>
+nnoremap g" <Cmd>call grep#call_grep('rg', 1, 1)<CR>
+nnoremap z' <Cmd>call grep#call_grep('rg', 0, 2)<CR>
+nnoremap z" <Cmd>call grep#call_grep('rg', 1, 2)<CR>
 
 " Convenience grep maps and commands
 " Note: Search open files for print statements and project files for others
