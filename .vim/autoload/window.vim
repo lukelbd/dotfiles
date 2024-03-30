@@ -13,15 +13,18 @@ function! window#buffer_source() abort
   let pairs = tags#buffer_paths()
   for idx in range(len(pairs))
     let [tnr, path] = pairs[idx]
-    let process = idx < nprocess
+    let bnr = bufnr(path)
+    let staged = getbufvar(bnr, 'tabline_staged_changes', 0)
+    let unstaged = getbufvar(bnr, 'tabline_staged_changes', 0)
+    let process = idx < nprocess || staged || unstaged
     if exists('*RelativePath')
       let name = RelativePath(path)
     else
       let name = fnamemodify(path, ':~:.')
     endif
     let pad = repeat(' ', ndigits - len(string(tnr)))
-    let flags = TablineFlags(path, process) . ' '  " mostly skip processing
-    let hunks =  getbufvar(bufnr(path), 'gitgutter', {})
+    let flags = TablineFlags(path, process) . ' '  " limit processing
+    let hunks =  getbufvar(bnr, 'gitgutter', {})
     let [acnt, mcnt, rcnt] = get(hunks, 'summary', [0, 0, 0])
     for [key, cnt] in [['+', acnt], ['~', mcnt], ['-', rcnt]]
       if !empty(cnt) | let flags .= key . cnt | endif
@@ -155,6 +158,10 @@ endfunction
 " Select from open tabs
 " Note: This displays a list with the tab number and the file. As with other
 " commands sorts by recent access time for ease of use.
+function! s:jump_tab(item) abort
+  let [tnr, path] = s:parse_tab(a:item)
+  exe tnr . 'tabnext'
+endfunction
 function! s:parse_tab(item) abort
   if !type(a:item) | return [a:item, ''] | endif
   let [tnr; path] = split(a:item, ':')
@@ -165,10 +172,6 @@ function! s:parse_tab(item) abort
   let path = substitute(path, '\(^\s\+\|\s\+$\)', '', 'g')
   call file#echo_path('tab', path)
   return [str2nr(tnr), path]  " returns zero on error
-endfunction
-function! s:jump_tab(item) abort
-  let [tnr, path] = s:parse_tab(a:item)
-  exe tnr . 'tabnext'
 endfunction
 function! window#jump_tab(...) abort
   if a:0 && a:1

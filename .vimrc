@@ -35,7 +35,7 @@ let s:conda = $HOME . '/mambaforge/bin'  " gui vim support
 let $PATH = ($PATH !~# s:conda ? s:conda . ':' : '') . $PATH
 
 " Global settings
-" Warning: Tried setting default 'foldmethod' and 'foldexpr' can cause buffer-local
+" Warning: Setting default 'foldmethod' and 'foldexpr' can cause buffer-local
 " expression folding e.g. simpylfold to disappear and not retrigger, while using
 " setglobal didn't work for filetypes with folding not otherwise auto-triggered (vim)
 set autoindent  " indents new lines
@@ -49,9 +49,9 @@ set completeopt-=preview  " use custom denops-popup-preview plugin
 set confirm  " require confirmation if you try to quit
 set cpoptions=aABceFs  " vim compatibility options
 set cursorline  " highlight cursor line
-set diffopt=filler,context:5,foldcolumn:2,vertical  " vim-difference display options
+set diffopt=filler,context:5,foldcolumn:0,vertical  " vim-difference display options
 set display=lastline  " displays as much of wrapped lastline as possible;
-set esckeys  " make sure enabled, allows keycodes
+set esckeys  " allow keycodes passed with escape
 set fillchars=vert:\|,fold:\ ,foldopen:\>,foldclose:<,eob:~,lastline:@  " e.g. fold markers
 set foldclose=  " use foldclose=all to auto-close folds when leaving
 set foldcolumn=0  " do not show folds, since fastfold dynamically updates
@@ -73,6 +73,8 @@ set listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:·  " other characters: ▸, ·, �
 set matchpairs=(:),{:},[:]  " exclude <> by default for use in comparison operators
 set maxmempattern=50000  " from 1000 to 10000
 set mouse=a  " mouse clicks and scroll allowed in insert mode via escape sequences
+set modeline  " check for local settings e.g. fdm=marker
+set modelines=5  " check last 5 lines of files (default)
 set noautochdir  " disable auto changing
 set noautowrite  " disable auto write for file jumping commands (ask user instead)
 set noautowriteall  " disable autowrite for :exit, :quit, etc. (ask user instead)
@@ -103,7 +105,7 @@ set shiftround  " round to multiple of shift width
 set showcmd  " show operator pending command
 set shortmess=atqcT  " snappy messages, 'a' does a bunch of common stuff
 set showtabline=1  " default 2 spaces
-set signcolumn=number  " show signs in number column
+set signcolumn=auto  " show signs automatically number column
 set smartcase  " search case insensitive, unless has capital letter
 set smartindent  " additional indentation options
 set spellcapcheck=  " disable checking for capital start of sentence
@@ -324,7 +326,7 @@ nnoremap <C-e> <Cmd>call window#close_panes()<CR>
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
 command! -bang -nargs=? Refresh runtime autoload/vim.vim | call vim#config_refresh(<bang>0, <q-args>)
 command! -nargs=? Scripts call utils#get_scripts(0, <q-args>)
-noremap <leader>e <Cmd>call git#safe_edit()<CR>
+noremap <leader>e <Cmd>call file#reload()<CR>
 noremap <Leader>r <Cmd>redraw! \| echo ''<CR>
 noremap <Leader>R <Cmd>Refresh<CR>
 let g:MRU_Open_File_Relative = 1
@@ -439,9 +441,8 @@ noremap [X <Cmd>exe v:count1 . 'Qprev'<CR>
 noremap ]X <Cmd>exe v:count1 . 'Qnext'<CR>
 
 " Helper window style adjustments with less-like shortcuts
-" Note: Also
-" tried 'FugitiveIndex' and 'FugitivePager' but kept getting confusing issues due
-" to e.g. buffer not loaded before autocmds trigger. Instead use below.
+" Note: Also tried 'FugitiveIndex' and 'FugitivePager' but kept getting confusing
+" issues due to e.g. buffer not loaded before autocmds trigger. Instead use below.
 let g:tags_skip_filetypes = s:panel_filetypes
 let g:tabline_skip_filetypes = s:panel_filetypes
 augroup panel_setup
@@ -480,7 +481,7 @@ for s:key in ['[[', ']]'] | silent! exe 'unmap! g' . s:key | endfor
 noremap g] <Cmd>call switch#reveal(1)<CR>
 noremap g[ <Cmd>call switch#reveal(0)<CR>
 noremap g<Space> <Cmd>call switch#message()<CR>
-noremap z<Space> @:
+noremap <Leader><Space> @:
 nnoremap <Leader>; q:
 nnoremap <Leader>/ q/
 nnoremap <Leader>: <Cmd>History:<CR>
@@ -695,40 +696,40 @@ call utils#repeat_map('o', 'zm', 'CasePrevEnd',   "<Cmd>call iter#next_motion('g
 " Screen motion mappings
 " Note: This is consistent with 'zl', 'zL', 'zh', 'zH' horizontal scrolling
 " and lets us use 'zt' for title case 'zb' for boolean toggle.
-noremap <Leader><Space> zzze
+for s:key in ['0', '^', 'g0', 'g$'] | exe 'noremap ' . s:key . ' ' . s:key . 'ze' | endfor
+noremap z<Space> zzze
 noremap z9 ze
 noremap z0 zs
 noremap z( zt
 noremap z) zb
-noremap 0 0ze
 
 " Reset manually open-closed folds accounting for custom overrides
 " Note: Here 'zV' opens all folds from the most recent search
 " Note: Here fold#update_folds() re-enforces special expr fold settings for markdown
 " and python files then applies default toggle status that differs from buffer-wide
 " &foldlevel for fortran python and tex files (e.g. always open \begin{document}).
+command! -bang -nargs=? Refold call fold#update_folds(<bang>0, <f-args>)
 for s:key in ['z', 'f', 'F', 'n', 'N'] | silent! exe 'unmap! z' . s:key | endfor
 noremap gz <Cmd>Folds<CR>
-noremap zg <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>
-noremap zx <Cmd>call fold#update_folds()<CR>zx<Cmd>call fold#regex_levels()<CR>zv
-noremap zX <Cmd>call fold#update_folds()<CR>zX<Cmd>call fold#regex_levels()<CR>
+noremap zx <Cmd>call fold#update_folds(0, 1)<CR>
+noremap zX <Cmd>call fold#update_folds(0, 2)<CR>
+noremap zZ <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>
 
 " Toggle folds under cursor non-recursively after updating
 " Note: Here fold#toggle_range_expr() calls fold#update_folds() before toggling.
 " Note: These will overwrite 'fastfold_fold_command_suffixes' generated fold-updating
 " maps. However now use even faster / more conservative fold#update_folds() method.
-noremap <expr> zz '<Cmd>call fold#update_folds()<CR>' . (foldclosed('.') > 0 ? 'zo' : 'zc')
-nnoremap zcc <Cmd>call fold#update_folds()<CR>zc
-nnoremap zoo <Cmd>call fold#update_folds()<CR>zo
-vnoremap <nowait> zc <Cmd>call fold#update_folds()<CR>zc
-vnoremap <nowait> zo <Cmd>call fold#update_folds()<CR>zo
-nnoremap <expr> za fold#toggle_range_expr(0)
+noremap <expr> zz '<Cmd>call fold#update_folds(0)<CR>' . (foldclosed('.') > 0 ? 'zo' : 'zc')
+nnoremap zcc <Cmd>call fold#update_folds(0)<CR>zc
+nnoremap zoo <Cmd>call fold#update_folds(0)<CR>zo
+vnoremap <nowait> zc <Cmd>call fold#update_folds(0)<CR>zc
+vnoremap <nowait> zo <Cmd>call fold#update_folds(0)<CR>zo
 nnoremap <expr> zc fold#toggle_range_expr(0, 1)
 nnoremap <expr> zo fold#toggle_range_expr(0, 0)
 
 " Toggle folds under cursor recursively (fold#update_folds() called internally)
 " Note: Here 'zi' will close or open all nested folds under cursor up to level
-" parent (use :echom fold#get_current() for debugging). Previously toggled with
+" parent (use :echom fold#current_fold() for debugging). Previously toggled with
 " recursive-open then non-recursive close but annoying e.g. for huge classes.
 " Note: Here 'zC' will close fold only up to current level or for definitions
 " inside class (special case for python). For recursive motion mapping similar
@@ -738,7 +739,7 @@ noremap zC <Cmd>call fold#toggle_current(1)<CR>
 noremap zO <Cmd>call fold#toggle_current(0)<CR>
 noremap z/ <Cmd>call switch#opensearch(1)<CR>
 noremap z? <Cmd>call switch#opensearch(0)<CR>
-noremap zN zN<Cmd>call fold#update_folds()<CR>
+noremap zN zN<Cmd>call fold#update_folds(0)<CR>
 
 " Change fold level
 " Note: Here fold#update_level() without arguments calls fold#update_folds()
@@ -767,12 +768,12 @@ command! -bang -nargs=0 Marks call mark#fzf_marks(<bang>0)
 command! -nargs=* SetMarks call mark#set_marks(<f-args>)
 command! -nargs=* DelMarks call mark#del_marks(<f-args>)
 noremap <expr> g_ v:count ? '`' . utils#translate_name('`') : '<Cmd>call mark#fzf_marks()<CR>'
-noremap <Leader>- <Cmd>call mark#init_marks()<CR><Cmd>call mark#del_marks(get(g:, 'mark_name', 'A'))<CR>
-noremap <Leader>_ <Cmd>call mark#init_marks()<CR><Cmd>call mark#del_marks(utils#translate_name('`'))<CR>
-noremap _ <Cmd>call mark#init_marks()<CR><Cmd>call mark#set_marks(utils#translate_name('m'))<CR>
-noremap z_ <Cmd>call mark#init_marks()<CR><Cmd>call mark#del_marks()<CR>
-noremap <C-n> <Cmd>call mark#init_marks()<CR><Cmd>call mark#next_mark(-v:count1)<CR>
-noremap <F12> <Cmd>call mark#init_marks()<CR><Cmd>call mark#next_mark(v:count1)<CR>
+noremap <Leader>- <Cmd>call mark#del_marks(get(g:, 'mark_name', 'A'))<CR>
+noremap <Leader>_ <Cmd>call mark#del_marks(utils#translate_name('`'))<CR>
+noremap _ <Cmd>call mark#set_marks(utils#translate_name('m'))<CR>
+noremap z_ <Cmd>call mark#del_marks()<CR>
+noremap <C-n> <Cmd>call mark#next_mark(-v:count1)<CR>
+noremap <F12> <Cmd>call mark#next_mark(v:count1)<CR>
 
 " Interactive file jumping with grep commands
 " Note: Maps use default search pattern '@/'. Commands can be called with arguments
@@ -1294,11 +1295,6 @@ let g:conflict_marker_enable_mappings = 0
 call plug#('yegappan/taglist')  " simpler interface plus mult-file support
 call plug#('ludovicchabant/vim-gutentags')  " slows things down without config
 let g:gutentags_enabled = 1
-let g:Tlist_Compact_Format = 1
-let g:Tlist_Enable_Fold_Column = 1
-let g:Tlist_File_Fold_Auto_Close = 1
-let g:Tlist_Use_Right_Window = 1
-let g:Tlist_WinWidth = 40
 " let g:gutentags_enabled = 0
 
 " Fuzzy selection and searching
@@ -1595,7 +1591,7 @@ for s:plugin in s:fork_plugins
   let s:name = 'lukelbd/' . s:plugin
   if isdirectory(s:path) | call s:plug_local(s:path) | else | call plug#(s:name) | endif
 endfor
-let g:toggle_map = 'z<CR>'  " adjust toggle mapping (note this is repeatable)
+let g:toggle_map = 'za'  " adjust toggle mapping (note this is repeatable)
 let g:scrollwrapped_nomap = 1  " instead have advanced iter#scroll_infer maps
 let g:scrollwrapped_wrap_filetypes = s:copy_filetypes + ['tex', 'text']
 exe 'noremap + <C-a>' | exe 'noremap - <C-x>'
@@ -1697,18 +1693,39 @@ if s:plug_active('vim-textobj-user')
     \ 'select-a': 'aE',  'select-a-function': 'textobj#entire#select_a',
     \ 'select-i': 'iE',  'select-i-function': 'textobj#entire#select_i'
   \ }
-  call succinct#add_objects('alpha', s:textobj_alpha, 0, 1, 1)
+  call succinct#add_objects('alpha', s:textobj_alpha, 0, 1)  " do not escape
   call textobj#user#plugin('comment', {'-': s:textobj_comment})  " do not add <Plug> suffix
   call textobj#user#plugin('entire', {'-': s:textobj_entire})  " do not add <Plug> suffix
+endif
+
+" Easy align settings. Support case/esac block parentheses and seimcolons, chained
+" && and || symbols, trailing comments. See file empty.txt for easy-align tests.
+" Note: Use <Left> to stick delimiter to left instead of right and use * to align
+" by all delimiters instead of the default of 1 delimiter.
+" Note: Use :EasyAlign<Delim>is, id, or in for shallowest, deepest, or no indentation
+" and use <Tab> in interactive mode to cycle through these.
+if s:plug_active('vim-easy-align')
+  augroup easy_align_setup
+    au!
+    au BufEnter * let g:easy_align_delimiters['c']['pattern'] = '\s' . comment#get_regex()
+  augroup END
+  map z, <Plug>(EasyAlign)
+  let s:semi_group = {'pattern': ';\+'}
+  let s:case_group = {'pattern': ')', 'stick_to_left': 1, 'left_margin': 0}
+  let s:chain_group = {'pattern': '\(&&\|||\)'}  " hello world
+  let s:comment_group = {'pattern': '\s#'}  " default value
+  let g:easy_align_delimiters = {
+    \ ';': s:semi_group,
+    \ ')': s:case_group,
+    \ '&': s:chain_group,
+    \ 'c': s:comment_group,
+  \ }
 endif
 
 " Toggle comments and whatnot
 " Note: This disable several maps but keeps many others. Remove unmap commands
 " after restarting existing vim sessions.
 if s:plug_active('tcomment_vim')
-  for s:key in ['.', '"', "'", ':', '?', '/', ';']
-    silent! exe 'unmap g.' . s:key
-  endfor
   for s:key1 in ['>', '<'] | for s:key2 in ['b', 'c', '>', '<>']
     silent! exe 'unmap g' . s:key1 . s:key2
   endfor | endfor
@@ -1718,12 +1735,50 @@ if s:plug_active('tcomment_vim')
   nnoremap z.. <Cmd>call comment#toggle_comment()<CR>
   nnoremap z>> <Cmd>call comment#toggle_comment(1)<CR>
   nnoremap z<< <Cmd>call comment#toggle_comment(0)<CR>
+  inoremap <F5> <Space><C-\><C-o>v:TCommentInline mode=#<CR><Delete>
+  inoremap <F6> <Space><C-\><C-o>:TCommentBlock mode=#<CR><Delete>
   let g:tcomment_opleader1 = 'z.'  " default is 'gc'
   let g:tcomment_mapleader1 = ''  " disables <C-_> insert mode maps
   let g:tcomment_mapleader2 = ''  " disables <Leader><Space> normal mode maps
   let g:tcomment_textobject_inlinecomment = ''  " default of 'ic' disables text object
   let g:tcomment_mapleader_uncomment_anyway = 'z<'
   let g:tcomment_mapleader_comment_anyway = 'z>'
+endif
+
+" Vertical taglist and undotree panels
+" Note: Undotree normally triggers on BufEnter but may contribute to slowdowns. Use
+" below to override built-in augroup before enabling buffer.
+" Todo: Currently can only clear history with 'C' in active pane not externally. Need
+" to submit PR for better command. See: https://github.com/mbbill/undotree/issues/158
+if s:plug_active('taglist')
+  let g:Tlist_Compact_Format = 1
+  let g:Tlist_Enable_Fold_Column = 1
+  let g:Tlist_File_Fold_Auto_Close = 1
+  let g:Tlist_Use_Right_Window = 0
+  let g:Tlist_WinWidth = 40
+  noremap g\ <Cmd>TlistToggle<CR>
+endif
+if s:plug_active('undotree')
+  function! Undotree_Augroup() abort  " autoload/undotree.vim s:undotree.Toggle()
+    if undotree#UndotreeIsVisible()
+      augroup Undotree
+        au! | au InsertLeave,TextChanged * call undotree#UndotreeUpdate()
+      augroup END
+    endif
+  endfunction
+  function! Undotree_CustomMap() abort  " autoload/undotree.vim s:undotree.BindKey()
+    exe 'vertical resize ' . window#default_width(1)
+    nmap <buffer> U <Plug>UndotreeRedo
+    noremap <buffer> <nowait> u <C-u>
+    noremap <buffer> <nowait> d <C-d>
+  endfunc
+  let g:undotree_DiffAutoOpen = 0
+  let g:undotree_RelativeTimestamp = 0
+  let g:undotree_SetFocusWhenToggle = 1
+  let g:undotree_ShortIndicators = 1
+  let g:undotree_SplitWidth = 30  " overridden above
+  let g:undotree_WindowLayout = 1  " see :help undotree_WindowLayout
+  noremap z\ <Cmd>UndotreeToggle<CR><Cmd>call Undotree_Augroup()<CR>
 endif
 
 " Tag integration settings
@@ -1745,6 +1800,10 @@ if s:plug_active('vim-tags')
   nnoremap gY <Cmd>Tags<CR>
   nnoremap <Leader>t <Cmd>ShowTable<CR>
   nnoremap <Leader>T <Cmd>ShowTable!<CR>
+  noremap <expr> g/ edit#search_lines_expr(0)
+  noremap <expr> g? edit#search_lines_expr(1)
+  noremap g// /<C-r>=tags#get_scope()<CR>
+  noremap g?? ?<C-r>=tags#get_scope()<CR>
   let s:major = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
   let s:minor = {'fortran': 'ekltvEL', 'python': 'xviI', 'vim': 'vnC', 'tex': 'gioetBCN'}
   let g:tags_cursor_map = '<CR>'  " default is <Leader><CR>
@@ -2186,51 +2245,30 @@ endif
 " by spell maps ]s, ]S (navigate to spell error, or navigate and fix error).
 if s:plug_active('vim-gitgutter')
   command! -nargs=? GitGutterToggle call switch#gitgutter(<args>)
+  command! -bang -range Hunks call git#hunk_stats(<range> ? <line1> : 0, <range> ? <line2> : 0, <bang>0, 1)
   let g:gitgutter_async = 1  " ensure enabled
   let g:gitgutter_map_keys = 0  " disable all maps yo
   let g:gitgutter_max_signs = -1  " maximum number of signs
   let g:gitgutter_preview_win_floating = 0  " toggle preview window
   let g:gitgutter_use_location_list = 0  " use for errors instead
-  call utils#repeat_map('', '[G', 'HunkBackward', '<Cmd>call git#hunk_jump(-v:count1, 1)<CR>')
-  call utils#repeat_map('', ']G', 'HunkForward', '<Cmd>call git#hunk_jump(v:count1, 1)<CR>')
-  noremap [g <Cmd>call git#hunk_jump(-v:count1, 0)<CR>
-  noremap ]g <Cmd>call git#hunk_jump(v:count1, 0)<CR>
+  call utils#repeat_map('', '[G', 'HunkBackward', '<Cmd>call git#hunk_next(-v:count1, 1)<CR>')
+  call utils#repeat_map('', ']G', 'HunkForward', '<Cmd>call git#hunk_next(v:count1, 1)<CR>')
+  noremap [g <Cmd>call git#hunk_next(-v:count1, 0)<CR>
+  noremap ]g <Cmd>call git#hunk_next(v:count1, 0)<CR>
   noremap <Leader>g <Cmd>call git#hunk_show()<CR>
   noremap <Leader>G <Cmd>call switch#gitgutter()<CR>
-  noremap <expr> gh git#hunk_action_expr(1)
-  noremap <expr> gH git#hunk_action_expr(0)
-  nnoremap <nowait> ghh <Cmd>call git#hunk_action(1)<CR>
-  nnoremap <nowait> gHH <Cmd>call git#hunk_action(0)<CR>
+  noremap <expr> gh git#hunk_stage_expr(1)
+  noremap <expr> gH git#hunk_stage_expr(0)
+  nnoremap <nowait> ghh <Cmd>call git#hunk_stage(1)<CR>
+  nnoremap <nowait> gHH <Cmd>call git#hunk_stage(0)<CR>
   noremap zh <Cmd>GitGutter \| echom 'Updated buffer hunks'<CR>
   noremap zH <Cmd>GitGutterAll \| echom 'Updated global hunks'<CR>
+  noremap zgg <Cmd>Hunks<CR>
+  noremap <expr> zg git#hunk_stats_expr()
 endif
 
-" Easy-align with delimiters for case/esac block parentheses and seimcolons, chained
-" && and || symbols, or trailing comments. See file empty.txt for easy-align tests.
-" Note: Use <Left> to stick delimiter to left instead of right and use * to align
-" by all delimiters instead of the default of 1 delimiter.
-" Note: Use :EasyAlign<Delim>is, id, or in for shallowest, deepest, or no indentation
-" and use <Tab> in interactive mode to cycle through these.
-if s:plug_active('vim-easy-align')
-  augroup easy_align_setup
-    au!
-    au BufEnter * let g:easy_align_delimiters['c']['pattern'] = '\s' . comment#get_regex()
-  augroup END
-  map z, <Plug>(EasyAlign)
-  let s:semi_group = {'pattern': ';\+'}
-  let s:case_group = {'pattern': ')', 'stick_to_left': 1, 'left_margin': 0}
-  let s:chain_group = {'pattern': '\(&&\|||\)'}  " hello world
-  let s:comment_group = {'pattern': '\s#'}  " default value
-  let g:easy_align_delimiters = {
-    \ ';': s:semi_group,
-    \ ')': s:case_group,
-    \ '&': s:chain_group,
-    \ 'c': s:comment_group,
-  \ }
-endif
-
-" Configure codi (mathematical notepad) interpreter without history and settings
-" Julia usage bug: https://github.com/metakirby5/codi.vim/issues/120
+" Configure codi (mathematical notepad) without history and settings
+" Julia usage bug: https://github.com/meta Kirby/codi.vim/issues/120
 " Python history bug: https://github.com/metakirby5/codi.vim/issues/85
 " Syncing bug (kludge is workaround): https://github.com/metakirby5/codi.vim/issues/106
 " Note: Recent codi versions use lua-vim which is not provided by conda-forge version.
@@ -2268,36 +2306,28 @@ if s:plug_active('codi.vim')
   \ }
 endif
 
-" Undo tree mapping and settings
-" Note: Undotree normally triggers on BufEnter but may contribute to slowdowns. Use
-" below to override built-in augroup before enabling buffer.
-" Todo: Currently can only clear history with 'C' in active pane not externally. Need
-" to submit PR for better command. See: https://github.com/mbbill/undotree/issues/158
-if s:plug_active('undotree')
-  function! Undotree_Augroup() abort  " autoload/undotree.vim s:undotree.Toggle()
-    if undotree#UndotreeIsVisible()
-      augroup Undotree
-        au! | au InsertLeave,TextChanged * call undotree#UndotreeUpdate()
-      augroup END
-    endif
-  endfunction
-  function! Undotree_CustomMap() abort  " autoload/undotree.vim s:undotree.BindKey()
-    exe 'vertical resize ' . window#default_width(1)
-    nmap <buffer> U <Plug>UndotreeRedo
-    noremap <buffer> <nowait> u <C-u>
-    noremap <buffer> <nowait> d <C-d>
-  endfunc
-  noremap g\ <Cmd>UndotreeToggle<CR><Cmd>call Undotree_Augroup()<CR>
-  let g:undotree_DiffAutoOpen = 0
-  let g:undotree_RelativeTimestamp = 0
-  let g:undotree_SetFocusWhenToggle = 1
-  let g:undotree_ShortIndicators = 1
-  let g:undotree_SplitWidth = 30  " overridden above
-  let g:undotree_WindowLayout = 1  " see :help undotree_WindowLayout
+" Calculations with HowMuch and speeddating
+" Note: This overwrites default increment/decrement plugins declared above. Works
+" by incrementing selected item(s), and if selection includes empty lines then extends
+" them using the step size from preceding lines or using a default step size.
+" Note: Usage is HowMuch#HowMuch(isAppend, withEq, sum, engineType) where isAppend
+" says whether to replace or append, withEq says whether to include equals sign, sum
+" says whether to sum the numbers, and engine is one of 'py', 'bc', 'vim', 'auto'.
+if s:plug_active('HowMuch')
+  nnoremap g++ :call HowMuch#HowMuch(0, 0, 1, 'py')<CR>
+  nnoremap z++ :call HowMuch#HowMuch(1, 1, 1, 'py')<CR>
+  noremap <expr> g+ edit#how_much(0, 0, 1, 'py')
+  noremap <expr> z+ edit#how_much(1, 1, 1, 'py')
+endif
+if s:plug_active('vim-speeddating')
+  map <silent> + <Plug>SpeedDatingUp:call repeat#set("\<Plug>SpeedDatingUp")<CR>
+  map <silent> - <Plug>SpeedDatingDown:call repeat#set("\<Plug>SpeedDatingDown")<CR>
+  noremap <Plug>SpeedDatingFallbackUp <C-a>
+  noremap <Plug>SpeedDatingFallbackDown <C-x>
 endif
 
 " Vim test settings
-" Run tests near cursor or throughout file
+" Todo: Try with more filetypes
 if s:plug_active('vim-test')
   let test#strategy = 'iterm'
   let g:test#python#pytest#options = '--mpl --verbose'
@@ -2310,29 +2340,6 @@ if s:plug_active('vim-test')
   noremap <Leader>] <Cmd>call utils#catch_errors('TestSuite')<CR>
   noremap <Leader>{ <Cmd>call utils#catch_errors('TestFile --mpl-generate')<CR>
   noremap <Leader>} <Cmd>call utils#catch_errors('TestSuite --mpl-generate')<CR>
-endif
-
-" The howmuch.vim plugin. Mnemonic for equation solving is just that parentheses
-" show up in equations. Mnemonic for sums is the straight line at bottom of table.
-" Note: Usage is HowMuch#HowMuch(isAppend, withEq, sum, engineType) where isAppend
-" says whether to replace or append, withEq says whether to include equals sign, sum
-" says whether to sum the numbers, and engine is one of 'py', 'bc', 'vim', 'auto'.
-if s:plug_active('HowMuch')
-  nnoremap g++ :call HowMuch#HowMuch(0, 0, 1, 'py')<CR>
-  nnoremap z++ :call HowMuch#HowMuch(1, 1, 1, 'py')<CR>
-  noremap <expr> g+ edit#how_much(0, 0, 1, 'py')
-  noremap <expr> z+ edit#how_much(1, 1, 1, 'py')
-endif
-
-" Speed dating for incrementing or generating lists of numbers and dates
-" Note: This overwrites default increment/decrement plugins declared above. Works
-" by incrementing selected item(s), and if selection includes empty lines then extends
-" them using the step size from preceding lines or using a default step size.
-if s:plug_active('vim-speeddating')
-  map <silent> + <Plug>SpeedDatingUp:call repeat#set("\<Plug>SpeedDatingUp")<CR>
-  map <silent> - <Plug>SpeedDatingDown:call repeat#set("\<Plug>SpeedDatingDown")<CR>
-  noremap <Plug>SpeedDatingFallbackUp <C-a>
-  noremap <Plug>SpeedDatingFallbackDown <C-x>
 endif
 
 " Session saving and updating (the $ matches marker used in statusline)
@@ -2376,7 +2383,7 @@ augroup color_setup
   au!
   au VimEnter * exe 'runtime after/common.vim' | call mark#init_marks()
 augroup END
-command! -bang -range -count=0 Syntax
+command! -bang -count=0 Syntax
   \ call syntax#sync_lines(<range> == 2 ? abs(<line2> - <line1>) : <count>, <bang>0)
 call utils#repeat_map('', 'zy', 'SyncSmart', ':Syntax<CR>')
 call utils#repeat_map('', 'zY', 'SyncStart', '<Cmd>Syntax!<CR>')
@@ -2449,10 +2456,217 @@ endif
 " See: http://vim.1045645.n5.nabble.com/Clearing-Jumplist-td1152727.html
 augroup clear_jumps
   au!
-  au VimEnter,BufWinEnter * exe 'normal! zvzzze' | if get(w:, 'clear_jumps', 1)
-    \ | silent clearjumps | let w:clear_jumps = 0 | endif
+  " au VimEnter,BufWinEnter * exe 'normal! zvzzze' | if get(w:, 'clear_jumps', 1)
+  "   \ | silent clearjumps | let w:clear_jumps = 0 | endif
 augroup END
 exe 'runtime autoload/repeat.vim'
 call syntax#update_highlights()  " show correct colors while loading
 nohlsearch  " turn off highlighting at startup
 redraw!  " prevent statusline error
+
+" Tables of netrw mappings
+" See: :help netrw-quickmaps
+" ---     -----------------      ----
+" Map     Quick Explanation      Link
+" ---     -----------------      ----
+" <F1>    Causes Netrw to issue help
+" <cr>    Netrw will enter the directory or read the file
+" <del>   Netrw will attempt to remove the file/directory
+" <c-h>   Edit file hiding list
+" <c-l>   Causes Netrw to refresh the directory listing
+" <c-r>   Browse using a gvim server
+" <c-tab> Shrink/expand a netrw/explore window
+"   -     Makes Netrw go up one directory
+"   a     Cycles between normal display, hiding  (suppress display of files matching
+"         g:netrw_list_hide) and showing (display only files which match g:netrw_list_hide)
+"   cd    Make browsing directory the current directory
+"   C     Setting the editing window
+"   d     Make a directory
+"   D     Attempt to remove the file(s)/directory(ies)
+"   gb    Go to previous bookmarked directory
+"   gd    Force treatment as directory
+"   gf    Force treatment as file
+"   gh    Quick hide/unhide of dot-files
+"   gn    Make top of tree the directory below the cursor
+"   gp    Change local-only file permissions
+"   i     Cycle between thin, long, wide, and tree listings
+"   I     Toggle the displaying of the banner
+"   mb    Bookmark current directory
+"   mc    Copy marked files to marked-file target directory
+"   md    Apply diff to marked files (up to 3)
+"   me    Place marked files on arg list and edit them
+"   mf    Mark a file
+"   mF    Unmark files
+"   mg    Apply vimgrep to marked files
+"   mh    Toggle marked file suffices' presence on hiding list
+"   mm    Move marked files to marked-file target directory
+"   mp    Print marked files
+"   mr    Mark files using a shell-style
+"   mt    Current browsing directory becomes markfile target
+"   mT    Apply ctags to marked files
+"   mu    Unmark all marked files
+"   mv    Apply arbitrary vim   command to marked files
+"   mx    Apply arbitrary shell command to marked files
+"   mX    Apply arbitrary shell command to marked files en bloc
+"   mz    Compress/decompress marked files
+"   o     Enter the file/directory under the cursor in a new horizontal split browser.
+"   O     Obtain a file specified by cursor
+"   p     Preview the file
+"   P     Browse in the previously used window
+"   qb    List bookmarked directories and history
+"   qf    Display information on file
+"   qF    Mark files using a quickfix list
+"   qL    Mark files using a
+"   r     Reverse sorting order
+"   R     Rename the designated file(s)/directory(ies)
+"   s     Select sorting style: by name, time, or file size
+"   S     Specify suffix priority for name-sorting
+"   t     Enter the file/directory under the cursor in a new tab
+"   u     Change to recently-visited directory
+"   U     Change to subsequently-visited directory
+"   v     Enter the file/directory under the cursor in a new vertical split browser.
+"   x     View file with an associated program
+"   X     Execute filename under cursor via
+"   %  Open a new file in netrw's current directory
+
+" Tables of mappings
+" See: :help fugitive-maps
+" -----------
+" Global maps
+" -----------
+" <C-R><C-G>  On the command line, recall the path to the current |fugitive-object|
+" ["x]y<C-G>  Yank the path to the current |fugitive-object|
+" .     Start a |:| command line with the file under the cursor prepopulated.
+" gq    Close the status buffer.
+" g?    Show help for |fugitive-maps|.
+" ----------
+" Blame maps
+" ----------
+" g?    Show this help.
+" A     Resize to end of author column.
+" C     Resize to end of commit column.
+" D     Resize to end of date/time column.
+" gq    Close blame, then |:Gedit| to return to work tree version.
+" <CR>  Close blame, and jump to patch that added line (or to blob for boundary commit).
+" o     Jump to patch or blob in horizontal split.
+" O     Jump to patch or blob in new tab.
+" p     Jump to patch or blob in preview window.
+" -     Reblame at commit.
+" ----------------------
+" Staging/unstaging maps
+" ----------------------
+" s     Stage (add) the file or hunk under the cursor.
+" u     Unstage (reset) the file or hunk under the cursor.
+" -     Stage or unstage the file or hunk under the cursor.
+" U     Unstage everything.
+" X     Discard the change under the cursor. This uses `checkout` or `clean` under
+"       the hood. A command is echoed that shows how to undo the change.  Consult
+"       `:messages` to see it again.  During a merge conflict, use 2X to call
+"       `checkout --ours` or 3X to call `checkout --theirs` .
+" =     Toggle an inline diff of the file under the cursor.
+" >     Insert an inline diff of the file under the cursor.
+" <     Remove the inline diff of the file under the cursor.
+" gI    Open .git/info/exclude in a split and add the file under the cursor.  Use a
+"       count to open .gitignore.
+" I|P   Invoke |:Git| add --patch or reset --patch on the file under the cursor. On
+"       untracked files, this instead calls |:Git| add --intent-to-add.
+" dp    Invoke |:Git| diff on the file under the cursor. Deprecated in favor of inline diffs.
+" dd    Perform a |:Gdiffsplit| on the file under the cursor.
+" dv    Perform a |:Gvdiffsplit| on the file under the cursor.
+" ds|dh Perform a |:Ghdiffsplit| on the file under the cursor.
+" dq    Close all but one diff buffer, and |:diffoff|! the last one.
+" d   ? Show this help.
+" ---------------
+" Navigation maps
+" ---------------
+" <CR>  Open the file or |fugitive-object| under the cursor. In a blob, this and
+"       similar maps jump to the patch from the diff where this was added, or where
+"       it was removed if a count was given.  If the line is still in the work tree
+"       version, passing a count takes you to it.
+" o     Open the file or |fugitive-object| under the cursor in a new split.
+" gO    Open the file or |fugitive-object| under the cursor in a new vertical split.
+" O     Open the file or |fugitive-object| under the cursor in a new tab.
+" p     Open the file or |fugitive-object| under the cursor in a preview window. In
+"       the status buffer, 1p is required to bypass the legacy usage instructions.
+" ~     Open the current file in the [count]th first ancestor.
+" P     Open the current file in the [count]th parent.
+" C     Open the commit containing the current file.
+" (     Jump to the previous file, hunk, or revision.
+" )     Jump to the next file, hunk, or revision.
+" [c    Jump to previous hunk, expanding inline diffs automatically.  (This shadows
+"       the Vim built-in |[c| that provides a similar operation in |diff| mode.)
+" ]c    Jump to next hunk, expanding inline diffs automatically.  (This shadows
+"       the Vim built-in |]c| that provides a similar operation in |diff| mode.)
+" [/|[m Jump to previous file, collapsing inline diffs automatically.  (Mnemonic:
+"       '/' appears in filenames, 'm' appears in 'filenames'.)
+" ]/|]m Jump to next file, collapsing inline diffs automatically.  (Mnemonic: '/'
+"       appears in filenames, 'm' appears in 'filenames'.)
+" i     Jump to the next file or hunk, expanding inline diffs automatically.
+" [[    Jump [count] sections backward.
+" ]]    Jump [count] sections forward.
+" []    Jump [count] section ends backward.
+" ][    Jump [count] section ends forward.
+" *     On the first column of a + or - diff line, search for the corresponding -
+"       or + line.  Otherwise, defer to built-in |star|.
+" gU    Jump to file [count] in the 'Unstaged' section.
+" gs    Jump to file [count] in the 'Staged' section.
+" gp    Jump to file [count] in the 'Unpushed' section.
+" gP    Jump to file [count] in the 'Unpulled' section.
+" gr    Jump to file [count] in the 'Rebasing' section.
+" gi    Open .git/info/exclude in a split. Use a count to open .gitignore.
+" -----------
+" Commit maps
+" -----------
+" cc        Create a commit.
+" ca        Amend the last commit and edit the message.
+" ce        Amend the last commit without editing the message.
+" cw        Reword the last commit.
+" cvc       Create a commit with -v.
+" cva       Amend the last commit with -v
+" cf        Create a `fixup!` commit for the commit under the cursor.
+" cF        Create a `fixup!` commit for the commit under the cursor and immediately rebase it.
+" cs        Create a `squash!` commit for the commit under the cursor.
+" cS        Create a `squash!` commit for the commit under the cursor and immediately rebase it.
+" cA        Create a `squash!` commit for the commit under the cursor and edit the message.
+" c<Space>  Populate command line with ':Git commit '. *fugitive_cr*
+" crc       Revert the commit under the cursor.
+" crn       Revert the commit under the cursor in the index and work tree,
+"           but do not actually commit the changes.
+" cr<Space> Populate command line with ':Git revert '. *fugitive_cm*
+" cm<Space> Populate command line with ':Git merge '.
+" c?        Show this help.
+" --------------------
+" Checkout/branch maps
+" --------------------
+" coo       Check out the commit under the cursor.
+" cb<Space> Populate command line with ':Git branch '.
+" co<Space> Populate command line with ':Git checkout '.
+" cb?       Show this help. co?
+" Stash maps
+" czz       Push stash. Pass a [count] of 1 to add `--include-untracked` or 2 to add `--all`.
+" czw       Push stash of the work-tree. Like `czz` with `--keep-index`.
+" czs       Push stash of the stage. Does not accept a count.
+" czA       Apply topmost stash, or stash@{count}.
+" cza       Apply topmost stash, or stash@{count}, preserving the index.
+" czP       Pop topmost stash, or stash@{count}.
+" czp       Pop topmost stash, or stash@{count}, preserving the index.
+" cz<Space> Populate command line with ':Git stash '.
+" cz?       Show this help.
+" -----------
+" Rebase maps
+" -----------
+" ri|u     Perform an interactive rebase. Uses ancestor of commit under cursor
+"          as upstream if available.
+" rf       Perform an autosquash rebase without editing the todo list.  Uses ancestor
+"          of commit under cursor as upstream if available.
+" ru       Perform an interactive rebase against @{upstream}.
+" rp       Perform an interactive rebase against @{push}.
+" rr       Continue the current rebase.
+" rs       Skip the current commit and continue the current rebase.
+" ra       Abort the current rebase.
+" re       Edit the current rebase todo list.
+" rw       Perform an interactive rebase with the commit under the cursor set to `reword`.
+" rm       Perform an interactive rebase with the commit under the cursor set to `edit`.
+" rd       Perform an interactive rebase with the commit under the cursor set to `drop`.
+" r<Space> Populate command line with ':Git rebase '.
+" r?       Show this help.

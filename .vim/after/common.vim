@@ -20,9 +20,6 @@ let s:jump1 = get(maparg('[', '', 0, 1), 'buffer', 0)
 let s:jump2 = get(maparg(']', '', 0, 1), 'buffer', 0)
 let s:indent1 = get(maparg('<', '', 0, 1), 'buffer', 0)
 let s:indent2 = get(maparg('>', '', 0, 1), 'buffer', 0)
-silent! iunmap <buffer> <C-n>
-inoremap <buffer> <F5> <Space><C-\><C-o>v:TCommentInline mode=#<CR><Delete>
-inoremap <buffer> <F6> <Space><C-\><C-o>:TCommentBlock mode=#<CR><Delete>
 if exists('*peekaboo#on') && exists('*peekaboo#on')
   silent! call peekaboo#off()
   silent! call peekaboo#on()
@@ -37,8 +34,6 @@ if !s:indent1 && !s:indent2 | exe 'nnoremap <buffer> == <Esc>=='
 endif
 
 " Update folds and syntax
-" Note: Here fold#regex_levels() resets fold open-close status for some filetypes but
-" unfortunately required because refresh seems to clean out vim-markdown definitions.
 " Note: Here overwrite native foldtext function so that vim-markdown autocommands
 " re-apply it along with other settings. Critical to prevent e.g. javascript.vim
 " from overwriting fold settings: https://github.com/tpope/vim-markdown/pull/173
@@ -46,18 +41,13 @@ endif
 function! Foldtext_markdown(...)
   return call('fold#fold_text', [])
 endfunction
-let s:closed = foldclosed('.')
-let s:winview = winsaveview()
-call fold#update_folds()
-call fold#regex_levels()
-call winrestview(s:winview)
+call fold#update_folds(0, 0)
 silent! doautocmd CursorHold
 silent! doautocmd ConflictMarkerDetect BufReadPost
 silent! doautocmd conflict_marker_setup BufWinEnter
 call syntax#update_groups()
 call syntax#update_matches()
 call syntax#update_highlights()
-if s:closed <= 0 | exe 'silent! normal! zv' | endif
 for s:suffix in ['g', 's', 'S', '%']
   exe 'silent! iunmap <C-g>' . s:suffix
   exe 'silent! iunmap <buffer><C-g>' . s:suffix

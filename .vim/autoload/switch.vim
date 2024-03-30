@@ -76,7 +76,7 @@ function! switch#copy(...) abort
   let toggle = a:0 > 0 ? a:1 : 1 - state
   let suppress = a:0 > 1 ? a:2 : 0
   if state == toggle
-    retur
+    return
   elseif toggle
     for key in keys
       let b:[key] = eval('&l:' . key)

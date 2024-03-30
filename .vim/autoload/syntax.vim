@@ -133,9 +133,10 @@ function! syntax#sync_lines(count, ...) abort
     echom 'Syntax sync: minlines=' . a:count
   else  " sync from tag
     let item = tags#close_tag(line('w0'))
-    let nlines = max([0, get(item, 1, line('w0')) - line('.')])
+    let lnum = empty(item) ? line('w0') : 1
+    let nlines = max([0, line('.') - lnum])
     exe 'syntax sync minlines=' . nlines . ' maxlines=0'
-    echom 'Syntax sync: minlines=' . nlines
+    echom 'Syntax sync: minlines=' . nlines . ' (' . item[0] . ')'
   endif
 endfunction
 
@@ -247,8 +248,8 @@ function! syntax#update_highlights() abort
   call s:highlight_group('ColorColumn', 'gray', 0, '')
   call s:highlight_group('DiffAdd', 'black', '', 'bold')
   call s:highlight_group('DiffChange', 'black', '', '')
-  call s:highlight_group('DiffDelete', '', 'black', '')
-  call s:highlight_group('DiffText', 0, 0, 'inverse')
+  call s:highlight_group('DiffDelete', '', 'black', 'bold')
+  call s:highlight_group('DiffText', 0, 0, 'inverse', '')
   call s:highlight_group('StrikeThrough', 0, 0, 'strikethrough')
   for group in ['Conceal', 'Pmenu', 'Terminal']
     call add(pairs, [group, 'Normal'])

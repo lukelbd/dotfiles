@@ -10,7 +10,6 @@ function! edit#delimit_mate(key, ...) abort
   let keys = call('delimitMate#' . name, a:000)
   return substitute(keys, "\<Esc>", "\<C-c>", 'g')
 endfunction
-" For <expr> map accepting motion
 function! edit#how_much(...) abort
   return utils#motion_func('HowMuch#HowMuch', a:000)
 endfunction
@@ -126,9 +125,15 @@ function! edit#echo_range(msg, num) range abort
   echo a:msg . (a:msg =~# '\s' ? ' on' : '') . ' ' . a:num . ' line(s)'
 endfunction
 
-" Reverse or retab or sort the input lines
+" Search sort or reverse the input lines
 " Note: Adaptation of hard-to-remember :g command shortcut. Adapted
 " from super old post: https://vim.fandom.com/wiki/Reverse_order_of_lines
+function! edit#search_lines(...) abort range
+  let range = printf('\%%>%dl\%%<%dl', a:firstline - 1, a:lastline + 1)
+  echom 'Keys: ' . (a:0 && a:1 ? '?' : '/') . range
+  call feedkeys((a:0 && a:1 ? '?' : '/') . range, 'n')
+  call edit#echo_range('Searching', a:lastline - a:firstline - 1)
+endfunction
 function! edit#sort_lines() range abort  " vint: -ProhibitUnnecessaryDoubleQuote
   let range = a:firstline == a:lastline ? '' : a:firstline . ',' . a:lastline
   exe 'silent ' . range . 'sort'
@@ -140,10 +145,13 @@ function! edit#reverse_lines() range abort  " vint: -ProhibitUnnecessaryDoubleQu
   call edit#echo_range('Reversed', a:lastline - a:firstline + 1)
 endfunction
 " For <expr> map accepting motion
+function! edit#search_lines_expr(...) abort
+  return utils#motion_func('edit#search_lines', a:000)
+endfunction
 function! edit#sort_lines_expr() range abort
   return utils#motion_func('edit#sort_lines', a:000)
 endfunction
-function! edit#reverse_lines_expr(...) abort
+function! edit#reverse_lines_expr() abort
   return utils#motion_func('edit#reverse_lines', a:000)
 endfunction
 

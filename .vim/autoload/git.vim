@@ -2,33 +2,48 @@
 " Utilities for fugitive windows
 "-----------------------------------------------------------------------------"
 " Helper function and aliases
+" Todo: Use bufhidden=delete more frequently, avoid tons of useless buffers
 " Note: Here use 'Git' to open standard status pane and 'Git status' to open
 " pane with diff hunks expanded with '=' and folded with 'zc'.
-let s:git_flags1 = '--graph --abbrev-commit --max-count=50'
-let s:git_flags2 = '--date=relative --branches --decorate'
+let s:git_tall = ['commits', 'log', 'tree', 'trunk']  " vertical commands
 let s:git_editor = ['merge', 'commit', 'oops']  " commands open editor
-let s:git_vertical = ['commits', 'log', 'tree', 'trunk']  " vertical commands
 let s:git_nobreak = ['add', 'stage', 'reset', 'push', 'pull', 'fetch', 'switch', 'restore', 'checkout']
-let s:git_windows = {'show': 0, 'diff': 0, 'merge': 0, 'commit': 0, 'oops': 0, 'status': 0, '': 0.5}
-let s:git_windows = extend(s:git_windows, {'commits': 0.5, 'log': 0.5, 'tree': 0.5, 'trunk': 0.5})
-let s:git_translate = {
-  \ 'blame': 'blame --show-email',
-  \ 'commits': 'log --graph --oneline ' . s:git_flags2,
-  \ 'log': 'log ' . s:git_flags1,
-  \ 'tree': 'log --stat ' . s:git_flags1 . ' ' . s:git_flags2,
-  \ 'trunk': 'log --name-status ' . s:git_flags1 . ' ' . s:git_flags2,
-  \ 'show': 'show --abbrev-commit',
-  \ 'status': '',
-\ }
-function! s:echo_command(args, msg) abort
-  let cmd = 'Git ' . a:args
-  if empty(a:msg)
-    redraw | echom cmd
-  else  " warning message
-    redraw | echohl WarningMsg
-    echom 'Warning: ' . (type(a:msg) ? a:msg : string(cmd) . ' was empty')
-    echohl None
+let s:git_resize = {'show': 0, 'diff': 0, 'merge': 0, 'commit': 0, 'oops': 0, 'status': 0, '': 0.5}
+let s:git_resize = extend(s:git_resize, {'commits': 0.5, 'log': 0.5, 'tree': 0.5, 'trunk': 0.5})
+function! s:run_cmd(bnum, lnum, cmd, ...) abort
+  let input = join(a:000, '')
+  let name = split(input, '', 1)[0]
+  let editor = index(s:git_editor, name) != -1
+  let newbuf = editor || a:bnum != bufnr() || a:cmd =~# '\<v\?split\>'
+  if a:cmd =~# '^echoerr'
+    let msg = substitute(a:cmd, '^echoerr', 'echom', '')
+    redraw | echohl ErrorMsg | exe msg | echohl None
+  elseif !newbuf  " no panel generated
+    let space = index(s:git_nobreak, name) == -1 ? "\n" : ' '
+    redraw | echo 'Git ' . input . space | exe a:cmd
+  else  " panel generated
+    let [width, height] = [winwidth(0), winheight(0)]
+    let resize = get(s:git_resize, name, 1)
+    silent exe a:cmd
+    if a:bnum != bufnr()
+      setlocal bufhidden=delete | if line('$') <= 1 | call window#close_pane(1) | endif
+    endif
+    if a:bnum != bufnr() && input =~# '^blame'  " syncbind is no-op if not vertical
+      exe a:lnum | exe 'normal! z.' | call feedkeys("\<Cmd>syncbind\<CR>", 'n')
+    elseif a:bnum != bufnr() && input =~# '\s\+%'  " open single difference fold
+      call feedkeys('zv', 'n')
+    elseif a:bnum != bufnr() && name ==# 'status'  " open change statistics
+      silent global/^\(Staged\|Unstaged\)\>/normal =zxgg
+    endif
+    if a:bnum == bufnr()
+      exe 'vertical resize ' . width | exe 'resize ' . height | return
+    elseif input =~# '^blame\( %\)\@!' || a:cmd =~# '\<\(vsplit\|vert\(ical\)\?\)\>'
+      exe 'vertical resize ' . window#default_width(resize)
+    else  " bottom panel
+      exe 'resize ' . window#default_height(resize)
+    endif
   endif
+  return newbuf && a:cmd !~# '^echoerr'  " whether echo required
 endfunction
 
 " Override fugitive commands
@@ -61,45 +76,33 @@ endfunction
 " Run fugitive command or mapping
 " Note: Fugitive does not currently use &previewwindow and does not respect <mods>
 " so set window explicitly below. See: https://stackoverflow.com/a/8356605/4970632
-function! git#run_command(msg, line1, count, range, bang, mods, args, ...) abort range
-  let [bnum, width, height] = [bufnr(), winwidth(0), winheight(0)]
-  let [name; flags] = empty(trim(a:args)) ? [''] : split(a:args, '\\\@<!\s\+')
-  let items = [a:line1, a:count, a:range, a:bang]  " fugitive arguments
-  call add(items, empty(a:mods) ? index(s:git_vertical, name) >= 0 ? 'vert botright' : 'botright' : a:mods)
-  call add(items, join([get(s:git_translate, name, name)] + flags, ' '))
-  silent let cmd = call('fugitive#Command', items + a:000)
-  let panel = bnum != bufnr() || cmd =~# '\<v\?split\>' || index(s:git_editor, name) != -1
-  if !panel  " no panel generated
-    let pad = index(s:git_nobreak, name) >= 0 ? ' ' : "\n"
-    redraw | echo 'Git ' . a:args . pad | exe cmd
-  else  " panel generated
-    silent exe cmd | let error = bnum != bufnr() && line('$') <= 1
-    if bnum != bufnr() || index(s:git_editor, name) != -1
-      setlocal bufhidden=delete
-      if error | call window#close_pane(1) | endif
-    endif
-  endif
-  if bnum == bufnr()  " panel not opened
-    exe 'vertical resize ' . width | exe 'resize ' . height
-  elseif a:args =~# '^blame\( %\)\@!' || cmd =~# '\<\(vsplit\|vert\(ical\)\?\)\>'
-    exe 'vertical resize ' . window#default_width(get(s:git_windows, name, 1))
-  else  " bottom panel
-    exe 'resize ' . window#default_height(get(s:git_windows, name, 1))
-  endif
-  if !a:range && a:args =~# '^blame'  " syncbind is no-op if not vertical
-    exe a:line1 | exe 'normal! z.' | call feedkeys("\<Cmd>syncbind\<CR>", 'n')
-  endif
-  if a:args =~# '\s\+%' && bnum != bufnr()  " open single difference fold
-    call feedkeys('zv', 'n')
-  endif
-  if name ==# 'status' && bnum != bufnr()  " open change statistics
-    silent global/^\(Staged\|Unstaged\)\>/normal =zxgg
-  endif
-  if panel  " emit message
-    call s:echo_command(a:args, empty(a:msg) ? error : a:msg)
+let s:git_trim = '--graph --abbrev-commit --max-count=50'
+let s:git_format = '--date=relative --branches --decorate'
+let s:git_translate = {'status': '',
+  \ 'log': 'log ' . s:git_trim,
+  \ 'tree': 'log --stat ' . s:git_trim . ' ' . s:git_format,
+  \ 'trunk': 'log --name-status ' . s:git_trim . ' ' . s:git_format,
+  \ 'show': 'show --abbrev-commit',
+  \ 'blame': 'blame --show-email',
+  \ 'commits': 'log --graph --oneline ' . s:git_format,
+\ }
+function! git#run_command(msg, line1, count, range, bang, mods, cmd, ...) abort range
+  let [bnum, lnum] = [bufnr(), line('.')]
+  let icmd = empty(FugitiveGitDir()) ? '' : a:cmd
+  let [name; flags] = split(icmd, '\\\@<!\s\+', 1)
+  let icmd = get(s:git_translate, name, name) . ' ' . join(flags, ' ')
+  let imod = empty(a:mods) ? index(s:git_tall, name) > 0 ? 'vert botright' : 'botright' : a:mods
+  let args = [a:line1, a:count, a:range, a:bang, imod, icmd]
+  silent let rcmd = call('fugitive#Command', args + a:000)
+  let verbose = s:run_cmd(bnum, lnum, rcmd, a:cmd)
+  let input = 'Git ' . a:cmd
+  let error = 'Warning: ' . (type(a:msg) ? a:msg : string(input) . ' was empty')
+  if verbose && bnum == bufnr()  " empty result
+    redraw | echohl WarningMsg | echom error | echohl None
+  elseif verbose
+    redraw | echom input
   endif
 endfunction
-" For <expr> map accepting motion
 function! git#run_map(range, ...) abort range
   if a:range && a:firstline == a:lastline
     let offset = 5 | let [line1, line2] = [a:firstline - offset, a:lastline + offset]
@@ -113,7 +116,9 @@ function! git#run_map(range, ...) abort range
   endif
   call feedkeys(offset ? abs(offset) . (offset > 0 ? 'j' : 'k') : '', 'n')
 endfunction
+" For <expr> map accepting motion
 function! git#run_map_expr(...) abort
+  let winview = winsaveview()
   return utils#motion_func('git#run_map', a:000)
 endfunction
 
@@ -129,16 +134,6 @@ function! git#complete_msg(lead, line, cursor, ...) abort
   let opts = filter(copy(result.stdout), 'len(v:val)')
   let opts = filter(copy(opts), 'v:val =~# ' . lead)
   return map(opts, 'substitute(v:val, "\s\+", "", "g")')
-endfunction
-function! git#safe_edit() abort
-  let type = get(b:, 'fugitive_type', '')
-  if empty(type)  " edit from disk
-    edit | call fold#update_folds(1) | normal! zv
-  elseif type ==# 'blob'  " return to file
-    call git#safe_return() | normal! zv
-  else  " unknown
-    redraw | echohl ErrorMsg | echom 'Error: Not in fugitive blob' | echohl None
-  endif
 endfunction
 function! git#safe_commit(editor, ...) abort
   let cmd = a:0 ? a:1 : 'commit'  " commit version
@@ -212,11 +207,9 @@ endfunction
 function! git#setup_fugitive() abort
   for val in s:fugitive_remove | silent! exe 'unmap <buffer> ' . val | endfor
   setlocal foldmethod=syntax
-  call fold#update_folds()
-  call fold#regex_levels()
+  call fold#update_folds(0, 0)
   call call('utils#switch_maps', s:fugitive_switch)
 endfunction
-
 
 " Git hunk jumping and previewing
 " Note: Git gutter works by triggering on &updatetime after CursorHold only if
@@ -234,14 +227,7 @@ function! s:hunk_process(...) abort
     let g:gitgutter_async = 1
   endtry
 endfunction
-function! git#hunk_show() abort
-  call s:hunk_process()
-  GitGutterPreviewHunk
-  silent wincmd j
-  call window#setup_preview()
-  redraw | echom 'Hunk difference'
-endfunction
-function! git#hunk_jump(count, stage) abort
+function! git#hunk_next(count, stage) abort
   call s:hunk_process()
   let str = a:count < 0 ? 'Prev' : 'Next'
   let cmd = 'keepjumps GitGutter' . str . 'Hunk'
@@ -249,19 +235,66 @@ function! git#hunk_jump(count, stage) abort
     exe cmd | exe a:stage ? 'GitGutterStageHunk' : ''
   endfor
 endfunction
+function! git#hunk_show() abort
+  call s:hunk_process()
+  GitGutterPreviewHunk
+  silent wincmd j
+  call window#setup_preview()
+  redraw  " ensure message shows
+  echom 'Hunk difference'
+endfunction
 
-" Git gutter staging and unstaging
+" Git gutter statistics over input lines
+" Note: Here g:gitgutter['hunks'] are [from_start, from_count, to_start, to_count]
+" lists i.e. starting line and counts before and after changes. Adapated s:isadded()
+" s:isremoved() etc. methods from autoload/gitgutter/diff.vim for partitioning into
+" simple added/changed/removed groups (or just 'changed') as shown below.
+function! git#hunk_stats(lmin, lmax, ...) range abort
+  let [cnts, delta] = [[0, 0, 0], '']
+  let verbose = a:0 > 1 ? a:2 : 0
+  let single = a:0 > 0 ? a:1 : 0
+  let line1 = a:lmin < 0 ? a:firstline : a:lmin ? a:lmin : 1
+  let line2 = a:lmax < 0 ? a:lastline : a:lmax ? a:lmax : line('$')
+  let idxs = single ? [0, 0, 0] : [0, 1, 2]  " single delta
+  let signs = single ? ['~'] : ['+', '~', '-']
+  let hunks = &l:diff ? [] : gitgutter#hunk#hunks(bufnr())
+  for [hunk0, count0, hunk1, count1] in hunks
+    let hunk2 = count1 ? hunk1 + count1 - 1 : hunk1
+    let [clip1, clip2] = [max([hunk1, line1]), min([hunk2, line2])]
+    if clip2 < clip1 | continue | endif
+    let offset = (hunk2 - clip2) + (clip1 - hunk1)  " count change
+    let cnt0 = max([count0 - offset, 0])
+    let cnt1 = max([count1 - offset, 0])
+    let cnts[idxs[0]] += max([cnt1 - cnt0, 0])  " added
+    let cnts[idxs[1]] += min([cnt0, cnt1])  " modified
+    let cnts[idxs[2]] += max([cnt0 - cnt1, 0])  " removed
+  endfor
+  for idx in range(len(cnts))
+    if !cnts[idx] | continue | endif
+    let delta .= signs[idx] . cnts[idx]
+  endfor
+  if verbose
+    let range = a:lmin || a:lmax ? ' (lines ' . line1 . ' to ' . line2 . ')' : ''
+    echom 'Hunks: ' . delta . range
+  endif
+  return delta
+endfunction
+" For <expr> map accepting motion
+function! git#hunk_stats_expr(...) abort
+  let args = [-1, -1, a:0 ? a:1 : 0, 1]
+  return utils#motion_func('git#hunk_stats', args, 1)
+endfunction
+
+" Git gutter staging and unstaging over input lines
 " Note: Currently GitGutterStageHunk only supports partial staging of additions
 " specified by visual selection, not different hunks. This supports both, iterates in
 " reverse in case lines change. See: https://github.com/airblade/vim-gitgutter/issues/279
-" Note: Created below by studying s:process_hunk() and gitgutter#diff#process_hunks()
-" in autoload/gitgutter/diff.vim. Hunks are stored in g:gitgutter['hunks'] list of
-" 4-item [from_start, from_count, to_start, to_count] lists i.e. the starting line and
-" counts before and after changes. Addition-only hunks have from_count '0' and to_count
+" Note: Created below by studying s:process_hunk() and gitgutter#diff#process_hunks().
+" in autoload/gitgutter/diff.vim. Addition-only hunks have from_count '0' and to_count
 " non-zero since no text was present before the change. Also note gitgutter#hunk#stage()
 " requires cursor inside lines and fails when specifying lines outside of addition hunk
 " (see s:hunk_op) so explicitly navigate lines below before calling stage commands.
-function! git#hunk_action(stage) abort range
+function! git#hunk_stage(stage) abort range
   let action = a:stage ? 'Stage' : 'Undo'
   let cmd = 'GitGutter' . action . 'Hunk'
   call s:hunk_process()
@@ -293,148 +326,6 @@ function! git#hunk_action(stage) abort range
   endif
 endfunction
 " For <expr> map accepting motion
-function! git#hunk_action_expr(...) abort
-  return utils#motion_func('git#hunk_action', a:000)
+function! git#hunk_stage_expr(...) abort
+  return utils#motion_func('git#hunk_stage', a:000)
 endfunction
-
-" Tables of fugitive mappings
-" See: :help fugitive-maps
-" -----------
-" Global maps
-" -----------
-" <C-R><C-G>  On the command line, recall the path to the current |fugitive-object|
-" ["x]y<C-G>  Yank the path to the current |fugitive-object|
-" .     Start a |:| command line with the file under the cursor prepopulated.
-" gq    Close the status buffer.
-" g?    Show help for |fugitive-maps|.
-" ----------
-" Blame maps
-" ----------
-" g?    Show this help.
-" A     Resize to end of author column.
-" C     Resize to end of commit column.
-" D     Resize to end of date/time column.
-" gq    Close blame, then |:Gedit| to return to work tree version.
-" <CR>  Close blame, and jump to patch that added line (or to blob for boundary commit).
-" o     Jump to patch or blob in horizontal split.
-" O     Jump to patch or blob in new tab.
-" p     Jump to patch or blob in preview window.
-" -     Reblame at commit.
-" ----------------------
-" Staging/unstaging maps
-" ----------------------
-" s     Stage (add) the file or hunk under the cursor.
-" u     Unstage (reset) the file or hunk under the cursor.
-" -     Stage or unstage the file or hunk under the cursor.
-" U     Unstage everything.
-" X     Discard the change under the cursor. This uses `checkout` or `clean` under
-"       the hood. A command is echoed that shows how to undo the change.  Consult
-"       `:messages` to see it again.  During a merge conflict, use 2X to call
-"       `checkout --ours` or 3X to call `checkout --theirs` .
-" =     Toggle an inline diff of the file under the cursor.
-" >     Insert an inline diff of the file under the cursor.
-" <     Remove the inline diff of the file under the cursor.
-" gI    Open .git/info/exclude in a split and add the file under the cursor.  Use a
-"       count to open .gitignore.
-" I|P   Invoke |:Git| add --patch or reset --patch on the file under the cursor. On
-"       untracked files, this instead calls |:Git| add --intent-to-add.
-" dp    Invoke |:Git| diff on the file under the cursor. Deprecated in favor of inline diffs.
-" dd    Perform a |:Gdiffsplit| on the file under the cursor.
-" dv    Perform a |:Gvdiffsplit| on the file under the cursor.
-" ds|dh Perform a |:Ghdiffsplit| on the file under the cursor.
-" dq    Close all but one diff buffer, and |:diffoff|! the last one.
-" d   ? Show this help.
-" ---------------
-" Navigation maps
-" ---------------
-" <CR>  Open the file or |fugitive-object| under the cursor. In a blob, this and
-"       similar maps jump to the patch from the diff where this was added, or where
-"       it was removed if a count was given.  If the line is still in the work tree
-"       version, passing a count takes you to it.
-" o     Open the file or |fugitive-object| under the cursor in a new split.
-" gO    Open the file or |fugitive-object| under the cursor in a new vertical split.
-" O     Open the file or |fugitive-object| under the cursor in a new tab.
-" p     Open the file or |fugitive-object| under the cursor in a preview window. In
-"       the status buffer, 1p is required to bypass the legacy usage instructions.
-" ~     Open the current file in the [count]th first ancestor.
-" P     Open the current file in the [count]th parent.
-" C     Open the commit containing the current file.
-" (     Jump to the previous file, hunk, or revision.
-" )     Jump to the next file, hunk, or revision.
-" [c    Jump to previous hunk, expanding inline diffs automatically.  (This shadows
-"       the Vim built-in |[c| that provides a similar operation in |diff| mode.)
-" ]c    Jump to next hunk, expanding inline diffs automatically.  (This shadows
-"       the Vim built-in |]c| that provides a similar operation in |diff| mode.)
-" [/|[m Jump to previous file, collapsing inline diffs automatically.  (Mnemonic:
-"       '/' appears in filenames, 'm' appears in 'filenames'.)
-" ]/|]m Jump to next file, collapsing inline diffs automatically.  (Mnemonic: '/'
-"       appears in filenames, 'm' appears in 'filenames'.)
-" i     Jump to the next file or hunk, expanding inline diffs automatically.
-" [[    Jump [count] sections backward.
-" ]]    Jump [count] sections forward.
-" []    Jump [count] section ends backward.
-" ][    Jump [count] section ends forward.
-" *     On the first column of a + or - diff line, search for the corresponding -
-"       or + line.  Otherwise, defer to built-in |star|.
-" gU    Jump to file [count] in the 'Unstaged' section.
-" gs    Jump to file [count] in the 'Staged' section.
-" gp    Jump to file [count] in the 'Unpushed' section.
-" gP    Jump to file [count] in the 'Unpulled' section.
-" gr    Jump to file [count] in the 'Rebasing' section.
-" gi    Open .git/info/exclude in a split. Use a count to open .gitignore.
-" -----------
-" Commit maps
-" -----------
-" cc        Create a commit.
-" ca        Amend the last commit and edit the message.
-" ce        Amend the last commit without editing the message.
-" cw        Reword the last commit.
-" cvc       Create a commit with -v.
-" cva       Amend the last commit with -v
-" cf        Create a `fixup!` commit for the commit under the cursor.
-" cF        Create a `fixup!` commit for the commit under the cursor and immediately rebase it.
-" cs        Create a `squash!` commit for the commit under the cursor.
-" cS        Create a `squash!` commit for the commit under the cursor and immediately rebase it.
-" cA        Create a `squash!` commit for the commit under the cursor and edit the message.
-" c<Space>  Populate command line with ':Git commit '. *fugitive_cr*
-" crc       Revert the commit under the cursor.
-" crn       Revert the commit under the cursor in the index and work tree,
-"           but do not actually commit the changes.
-" cr<Space> Populate command line with ':Git revert '. *fugitive_cm*
-" cm<Space> Populate command line with ':Git merge '.
-" c?        Show this help.
-" --------------------
-" Checkout/branch maps
-" --------------------
-" coo       Check out the commit under the cursor.
-" cb<Space> Populate command line with ':Git branch '.
-" co<Space> Populate command line with ':Git checkout '.
-" cb?       Show this help. co?
-" Stash maps
-" czz       Push stash. Pass a [count] of 1 to add `--include-untracked` or 2 to add `--all`.
-" czw       Push stash of the work-tree. Like `czz` with `--keep-index`.
-" czs       Push stash of the stage. Does not accept a count.
-" czA       Apply topmost stash, or stash@{count}.
-" cza       Apply topmost stash, or stash@{count}, preserving the index.
-" czP       Pop topmost stash, or stash@{count}.
-" czp       Pop topmost stash, or stash@{count}, preserving the index.
-" cz<Space> Populate command line with ':Git stash '.
-" cz?       Show this help.
-" -----------
-" Rebase maps
-" -----------
-" ri|u     Perform an interactive rebase. Uses ancestor of commit under cursor
-"          as upstream if available.
-" rf       Perform an autosquash rebase without editing the todo list.  Uses ancestor
-"          of commit under cursor as upstream if available.
-" ru       Perform an interactive rebase against @{upstream}.
-" rp       Perform an interactive rebase against @{push}.
-" rr       Continue the current rebase.
-" rs       Skip the current commit and continue the current rebase.
-" ra       Abort the current rebase.
-" re       Edit the current rebase todo list.
-" rw       Perform an interactive rebase with the commit under the cursor set to `reword`.
-" rm       Perform an interactive rebase with the commit under the cursor set to `edit`.
-" rd       Perform an interactive rebase with the commit under the cursor set to `drop`.
-" r<Space> Populate command line with ':Git rebase '.
-" r?       Show this help.

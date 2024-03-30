@@ -135,9 +135,10 @@ endfunction
 " entire block which causes issues with some functions. So use below clunky method.
 " Also ensure functions accept :[range]call function(args) for consistency with vim
 " standard paradigm and so they can be called with e.g. V<motion>:call func().
-function! utils#motion_func(funcname, args) abort
+function! utils#motion_func(funcname, args, ...) abort
   let string = string(a:args)[1:-2]  " remove square brackets
   let string = a:funcname . '(' . string . ')'
+  let s:operator_view = a:0 && a:1 ? winsaveview() : {}
   let s:operator_func = string
   if mode() =~# '^\(v\|V\|\)$'  " call operator function with line range
     return ":call utils#operator_func('')\<CR>"
@@ -154,7 +155,7 @@ endfunction
 " This is generally invoked inside an <expr> mapping (see e.g. python.vim) .
 " Note: Only motions can cause backwards firstline to lastline order. Manual calls
 " to the function will have sorted lines. This sorts the range for safety.
-function! utils#operator_func(type) range abort
+function! utils#operator_func(type, ...) range abort
   if empty(a:type) " default behavior
     let line1 = a:firstline
     let line2 = a:lastline
@@ -167,6 +168,7 @@ function! utils#operator_func(type) range abort
   endif
   let [line1, line2] = sort([line1, line2], 'n')
   exe line1 . ',' . line2 . 'call ' . s:operator_func
+  call winrestview(s:operator_view)
   return ''
 endfunction
 

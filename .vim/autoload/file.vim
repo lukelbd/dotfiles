@@ -292,14 +292,15 @@ function! file#update() abort
     let b:statusline_filechanged = 1
   endif
 endfunction
-function! file#refresh() abort
+function! file#reload() abort
   let type = get(b:, 'fugitive_type', '')
-  if !empty(type)  " return to original file
-    call git#safe_return()
-  else  " reload from disk
-    edit | call fold#update_folds(1)
+  if empty(type)  " edit from disk
+    edit | call fold#update_folds(1, 1)
+  elseif type ==# 'blob'  " return to file
+    exe 'Gedit' | normal! zv
+  else  " unknown
+    redraw | echohl ErrorMsg | echom 'Error: Not in fugitive blob' | echohl None
   endif
-  normal! zv
 endfunction
 function! file#rename(name, bang)
   let b:gitgutter_was_enabled = get(b:, 'gitgutter_was_enabled', 0)

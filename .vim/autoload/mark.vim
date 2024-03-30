@@ -282,18 +282,20 @@ function! mark#del_marks(...) abort
 endfunction
 
 " Iniitialize the marks and highlights
+" Todo: Figure out issues with marks generated on same line
 function! mark#init_marks() abort
   let highlights = get(g:, 'mark_highlights', {})
   let stack = get(g:, 'mark_stack', [])
   let name = get(g:, 'mark_name', get(stack, -1, 'A'))
   let stack = []
   for imark in getmarklist()
-    let iname = imark['mark'][1]
+    let ipos = imark['pos']  " buffer position
+    let iname = imark['mark'][1]  " excluding quote
     if iname =~# '\u' && index(stack, iname) == -1
       call add(stack, iname)
     endif
     if iname =~# '\u' && !has_key(highlights, iname)
-      call mark#set_marks(iname)
+      call mark#set_marks(iname, ipos)
     endif
   endfor
   let g:mark_name = name
@@ -301,14 +303,15 @@ function! mark#init_marks() abort
 endfunction
 
 " Add the mark and highlight the line
-function! mark#set_marks(mrk) abort
+function! mark#set_marks(mrk, ...) abort
+  let pos = a:0 ? a:1 : [bufnr(), line('.'), col('.'), 0]  " buffer required
   let highlights = get(g:, 'mark_highlights', {})
   let g:mark_name = a:mrk  " mark stack
   let g:mark_highlights = highlights
-  call feedkeys('m' . a:mrk, 'n')  " apply the mark
+  call setpos("'" . a:mrk, pos)  " apply the mark
   call stack#pop_stack('mark', a:mrk)  " update mark stack
   call stack#push_stack('mark', '', a:mrk, 0)  " update mark stack
-  let name = 'mark_'. (a:mrk =~# '\u' ? 'upper_'. a:mrk : 'lower_' . a:mrk)
+  let name = 'mark_' . (a:mrk =~# '\u' ? 'upper_' . a:mrk : 'lower_' . a:mrk)
   let base = a:mrk =~# '\u' ? 65 : 97
   let idx = a:mrk =~# '\a' ? char2nr(a:mrk) - base : 0
   if has_key(highlights, a:mrk)
@@ -324,7 +327,7 @@ function! mark#set_marks(mrk) abort
   if s:use_signs
     let sid = s:sign_id | let s:sign_id += 1
     call add(highlights[a:mrk], sid)
-    call sign_place(sid, '', name, '%', {'lnum': line('.')})  " empty group critical
+    call sign_place(sid, '', name, pos[0], {'lnum': pos[1]})  " empty group critical
   else
     let regex = '.*\%''' . a:mrk . '.*'
     let hlid = matchadd(name, regex, 0)
