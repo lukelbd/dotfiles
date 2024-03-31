@@ -338,8 +338,8 @@ command! -nargs=0 ShowBufs call file#show_bufs()
 command! -nargs=0 WipeBufs call file#wipe_bufs()
 noremap <Leader>q <Cmd>ShowBufs<CR>
 noremap <Leader>Q <Cmd>WipeBufs<CR>
-nnoremap <F5> <Cmd>Windows<CR>
-nnoremap <F6> <Cmd>Buffers<CR>
+nnoremap <F5> <Cmd>Buffers<CR>
+nnoremap <F6> <Cmd>Windows<CR>
 
 " Tab selection and management
 " Note: Previously used e.g. '<tab>1' maps but not parse count on one keypress
@@ -480,7 +480,7 @@ cnoremap <F9> <Esc><Cmd>Commands<CR>
 " message, for some reason using 1 shows empty line and 2 shows previous plus newline.
 for s:key in ['[[', ']]'] | silent! exe 'unmap! g' . s:key | endfor
 noremap z: @:
-noremap z; <Cmd>call switch#message()<CR>
+noremap z; <Cmd>20message<CR>
 nnoremap <Leader>; q:
 nnoremap <Leader>/ q/
 nnoremap <Leader>: <Cmd>History:<CR>
@@ -618,7 +618,7 @@ noremap <F2> <Cmd>call stack#scroll_tabs(v:count1)<CR>
 " See: https://stackoverflow.com/a/27194972/4970632
 augroup jumplist_setup
   au!
-  au CursorHold,TextChanged,InsertLeave * if mode() !~# '^no' | call mark#update_jumps() | endif
+  au CursorHold,TextChanged,InsertLeave * if utils#none_pending() | call mark#update_jumps() | endif
 augroup END
 command! -bang -nargs=0 Jumps call mark#fzf_jumps(<bang>0)
 noremap gn <Cmd>call mark#fzf_jumps()<CR>
@@ -880,7 +880,7 @@ vnoremap <expr> \<Tab> call('edit#sub_replace_expr', g:sub_tabs)
 
 " Replace consecutive spaces on current line with
 " one space only if they're not part of indentation
-let g:sub_ssqueeze = ['Squeezed consecutive spaces', '\S\@<=\(^ \+\)\@<! \{2,}', '']
+let g:sub_ssqueeze = ['Squeezed consecutive spaces', '\S\@<=\(^ \+\)\@<! \{2,}', ' ']
 let g:sub_sstrip = ['Stripped spaces', '\S\@<=\(^ \+\)\@<! \+', '']
 nnoremap <expr> \s call('edit#sub_replace_expr', g:sub_ssqueeze)
 nnoremap <expr> \S call('edit#sub_replace_expr', g:sub_sstrip)
@@ -966,14 +966,13 @@ nmap <expr> <F10> peekaboo#peek(1, '"', 0)
 vmap <expr> <F10> peekaboo#peek(1, '"', 0)
 
 " Declare alphabetic registers with count (consistent with mark utilities)
-" Note: Pressing ' or " followed by number uses numbered previous-deletion register,
-" and pressing ' or " followed by normal-mode command uses black hole or clipboard.
-" Note: Pressing double '' or \"\" triggers native or peekaboo register selection. The
-" latter is handled inside utils by returning the corresponding <Plug> mapping.
-noremap <expr> ' (v:count ? '<Esc>' : '') . utils#translate_count('', '_')
-noremap <expr> " (v:count ? '<Esc>' : '') . utils#translate_count('q', '*')
+" Warning: Critical to use 'nmap' and 'vmap' since do not want operator-mode
+" Note: Pressing ' or " followed by number uses macro in registers 0 to 9 and
+" pressing ' or " followed by normal-mode command uses black hole or clipboard.
+nnoremap <expr> ' (v:count ? '<Esc>' : '') . utils#translate_count('', '_')
+nnoremap <expr> " (v:count ? '<Esc>' : '') . utils#translate_count('@', '*')
 vnoremap <expr> ' utils#translate_count('', '_')
-vnoremap <expr> " utils#translate_count('q', '*')
+vnoremap <expr> " utils#translate_count('@', '*')
 
 " Change text, specify registers with counts.
 " Note: Uppercase registers are same as lowercase but saved in viminfo.
@@ -1003,15 +1002,6 @@ nnoremap <expr> P utils#translate_count('') . 'P'
 vnoremap <expr> p utils#translate_count('') . 'p<Cmd>let @+=@0 \| let @"=@0<CR>'
 vnoremap <expr> P utils#translate_count('') . 'P<Cmd>let @+=@0 \| let @"=@0<CR>'
 
-" Record macro by pressing Q with optional count
-" and execute macro using ,. Also disable multi-window recordings.
-" Note: Visual counts are ignored when followed by operations or recording
-" Warning: Critical to use 'nmap' and 'vmap' since do not want operator-mode
-nnoremap <expr> Q (empty(reg_recording()) ? utils#translate_count('q') : '')
-nnoremap <expr> , utils#translate_count('@')
-vnoremap <expr> Q (empty(reg_recording()) ? utils#translate_count('q') : '')
-vnoremap <expr> , utils#translate_count('@')
-
 " Join v:count lines with coinjoin.vim and keep cursor column
 " Note: Here e.g. '2J' joins 'next two lines' instead of 'current plus one'
 noremap <silent> J <Cmd>call edit#join_lines(0, 0)<CR>
@@ -1026,6 +1016,15 @@ call utils#repeat_map('n', 'cl', 'SwapRight', '<Cmd>call edit#swap_chars(0)<CR>'
 call utils#repeat_map('n', 'ck', 'SwapAbove', '<Cmd>call edit#swap_lines(1)<CR>')
 call utils#repeat_map('n', 'cj', 'SwapBelow', '<Cmd>call edit#swap_lines(0)<CR>')
 call utils#repeat_map('n', 'cL', 'SliceLine', 'myi<CR><Esc><Cmd>keepjumps normal! `y<Cmd>delmark y<CR>')
+
+" Record macro by pressing Q with optional count
+" Note: This permits e.g. 1, or '1, for specific macros. Note cannot run 'q' from autoload
+nnoremap <expr> , v:register ==# '"' ? utils#translate_count('@') : '@' . v:register
+vnoremap <expr> , v:register ==# '"' ? utils#translate_count('@') : '@' . v:register
+nnoremap <expr> Q empty(reg_recording()) ? utils#translate_count('q')
+  \ : 'q<Cmd>call utils#set_translate(' . string(reg_recording()) . ', "q")<CR>'
+nnoremap <expr> Q empty(reg_recording()) ? utils#translate_count('q')
+  \ : 'q<Cmd>call utils#set_translate(' . string(reg_recording()) . ', "q")<CR>'
 
 " Spaces and tabs for particular filetypes.
 " Note: For some reason must be manually enabled for vim and shell scripts. Not
@@ -2466,9 +2465,10 @@ endif
 " See: http://vim.1045645.n5.nabble.com/Clearing-Jumplist-td1152727.html
 augroup clear_jumps
   au!
-  " au VimEnter,BufWinEnter * exe 'normal! zvzzze' | if get(w:, 'clear_jumps', 1)
-  "   \ | silent clearjumps | let w:clear_jumps = 0 | endif
+  au VimEnter,BufWinEnter * exe 'normal! zvzzze' | if get(w:, 'clear_jumps', 1)
+    \ | silent clearjumps | let w:clear_jumps = 0 | endif
 augroup END
+noremap <Leader><Leader> <Cmd>echo system('curl https://icanhazdadjoke.com/')<CR>
 exe 'runtime autoload/repeat.vim'
 call syntax#update_highlights()  " show correct colors while loading
 nohlsearch  " turn off highlighting at startup

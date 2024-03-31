@@ -42,12 +42,12 @@ function! switch#autosave(...) abort
   if state == toggle
     return
   elseif toggle
-    exe 'augroup autosave_' . bufnr()
-    exe 'au!' | exe 'autocmd InsertLeave,TextChanged <buffer> silent call file#update()'
+    exe 'augroup autosave_' . bufnr() | exe 'au!'
+    exe 'autocmd InsertLeave,TextChanged <buffer> silent call file#update()'
     exe 'augroup END'
   else
-    exe 'augroup autosave_' . bufnr()
-    exe 'au!' | exe 'augroup END'
+    exe 'augroup autosave_' . bufnr() | exe 'au!'
+    exe 'augroup END'
   endif
   let b:autosave_enabled = toggle
   call call('s:echo_state', ['Autosave', toggle, suppress])
@@ -251,24 +251,6 @@ function! switch#lang(...) abort
     setlocal spelllang=en_us
   endif
   call call('s:echo_state', ['UK English', toggle, suppress])
-endfunction
-
-" Toggle most recent :mes and echo (but optionally suppress) arbitrary toggles
-" Note: For some reason even though :help :mes claims count N shows the N most recent
-" message, for some reason using 1 shows empty line and 2 shows previous plus newline.
-function! switch#message(...) abort
-  let cnt = v:count ? v:count1 : 20
-  let recent = reverse(split(execute(cnt . 'mes'), "\n"))
-  let recent = get(filter(recent, '!empty(trim(v:val))'), 0, '')
-  let state = exists('b:message') && recent ==# b:message
-  let toggle = a:0 > 0 ? a:1 : v:count ? 1 : 1 - state
-  if toggle  " show message
-    exe cnt . 'mes'
-    let b:message = recent
-  else  " dad joke
-    echo system('curl https://icanhazdadjoke.com/')
-    let b:message = ''
-  endif
 endfunction
 
 " Toggle temporary paste mode

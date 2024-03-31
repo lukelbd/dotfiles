@@ -165,17 +165,19 @@ function! s:range_keepjumps() abort  " used to update jumplist on CursorHold
 endfunction
 function! mark#update_jumps() abort
   let [keep1, keep2] = s:range_keepjumps()  " current cursor bounds
-  let [jline, jlines] = [line("''"), []]  " line of previous jump
-  let [items, iloc] = getjumplist()
-  if !empty(items) && !empty(jline)
-    call extend(jlines, [jline, get(items, iloc, items[-1])['lnum']])
+  let [jumps, jloc] = getjumplist()
+  let jprev = line("''")
+  if empty(jumps) || empty(jprev)  " force update current jump
+    let jlines = []
+  else  " previous jump and stack position
+    let jlines = [jprev, get(jumps, jloc, jumps[-1])['lnum']]
   endif
-  if empty(filter(jlines, {iloc, val -> val >= keep1 && val <= keep2}))
+  if empty(filter(jlines, {idx, val -> val >= keep1 && val <= keep2}))
     call feedkeys("\<Cmd>normal! m'\<CR>", 'n')
   endif
 endfunction
 
-" Overrides of FZF :Jumps and :Changes
+" Override fzf :Jumps and :Changes
 " Note: Changelist is managed from the top-down by filtering out double and empty-line
 " entries or entries with invalid lines, then navigating using using open_drop and
 " setpos('.', ...) instead of the native g,/g; keys. Compare with jumplist above.
@@ -215,30 +217,22 @@ function! mark#fzf_changes(...) abort
   return call(snr . 'fzf', ['changes', options, a:000])
 endfunction
 
-" Override of FZF :Marks to implement :Drop switching
+" Override fzf :Marks to implement :Drop switching
 " Note: Normally the fzf function calls `A-Z, and while vim permits multi-file marks,
 " it does not have an option to open in existing tabs like 'showbufs' for loclist,
-function! mark#next_mark(...) abort
-  let cnt = a:0 ? a:1 : v:count1
-  let mrk = get(g:, 'mark_name', '')
-  if !empty(mrk) && line('.') != line("'" . mrk)
-    let cnt -= cnt > 0 ? 1 : -1
-    silent call mark#goto_mark(mrk)
-  endif
-  call call('stack#push_stack', ['mark', 'mark#goto_mark', cnt, 2])
-endfunction
 function! mark#goto_mark(...) abort
   if !a:0 || empty(a:1) | return | endif
   let mrk = matchstr(a:1, '\S')
-  let mrks = getmarklist()
+  let mrks = getmarklist()  " list of dictionaries
   let mrks = filter(mrks, {idx, val -> val.mark =~# "'" . mrk})
-  if empty(mrks)  " avoid 'press enter' due to register
+  let missing = !empty(mrks) && mrks[0].pos[0] && !bufexists(mrks[0].pos[0])
+  if missing || empty(mrks)  " avoid 'press enter' due to register
     let msg = string('Error: Mark ' . string(mrk) . ' is unset')
     let cmd = 'redraw | echohl WarningMsg | echom ' . msg . ' | echohl None'
     call feedkeys("\<Cmd>" . cmd . "\<CR>", 'n')
   else  " note this does not affect jumplist
-    silent call file#open_drop(mrks[0]['file'])
-    call setpos('.', mrks[0]['pos'])
+    silent call file#open_drop(mrks[0].file)
+    call setpos('.', mrks[0].pos)
     if &l:foldopen =~# 'mark' | exe 'normal! zv' | endif
   endif
   let g:mark_name = mrk  " mark stack navigation
@@ -255,13 +249,37 @@ function! mark#fzf_marks(...) abort
   return call(snr . 'fzf', ['marks', options, a:000])
 endfunction
 
-" Remove the mark and its highlighting
+" Iterate over marks
+" Note: This skips over marks with non-existent buffers and does an initial jump
+" to the 'current' mark if cursor is not on the same line.
+function! mark#next_mark(...) abort
+  let stack = get(g:, 'mark_stack', [])
+  let name = get(g:, 'mark_name', '')
+  let cnt = a:0 ? a:1 : v:count1
+  if !empty(name)
+    let pos = getpos("'" . name)
+    let [bnum, lnum] = [bufnr('.'), line('.')]
+    if !pos[0] && pos[0] != bnum || pos[1] != lnum
+      let offset = cnt > 0 ? -1 : 1
+      call mark#goto_mark(name)
+      if pos[0] && pos[0] != bnum  " include in scroll if successful
+        if pos[0] == bufnr() | let cnt += offset | endif
+      else  " include in scroll if successful
+        if pos[1] == line('.') | let cnt += offset | endif
+      endif
+    endif
+  endif
+  call call('stack#push_stack', ['mark', 'mark#goto_mark', cnt, 2])
+endfunction
+
+" Remove marks and highlighting
+" Note: Here g:mark_name is not managed by stack utilities
 function! s:match_delete(id)
-   if !s:use_signs
-      call matchdelete(a:id)
-   else
-      exe 'sign unplace ' . a:id
-   endif
+  if !s:use_signs
+    call matchdelete(a:id)
+  else
+    exe 'sign unplace ' . a:id
+  endif
 endfunction
 function! mark#del_marks(...) abort
   let highlights = get(g:, 'mark_highlights', {})
@@ -274,35 +292,28 @@ function! mark#del_marks(...) abort
     if has_key(highlights, mrk)
       call remove(highlights, mrk)
     endif
-    exe 'delmark ' . mrk
     call stack#pop_stack('mark', mrk)
+    exe 'delmark ' . mrk
   endfor
   let cmd = "redraw | echom 'Deleted marks: " . join(mrks, ' ') . "'"
+  let g:mark_name = get(get(g:, 'mark_stack', []), -1, '')
   call feedkeys("\<Cmd>" . cmd . "\<CR>", 'n')
 endfunction
 
-" Iniitialize the marks and highlights
-" Todo: Figure out issues with marks generated on same line
+" Add marks and sign column highlighting
+" Note: This also runs on vim startup using marks saved to viminfo
 function! mark#init_marks() abort
   let highlights = get(g:, 'mark_highlights', {})
-  let stack = get(g:, 'mark_stack', [])
-  let name = get(g:, 'mark_name', get(stack, -1, 'A'))
-  let stack = []
   for imark in getmarklist()
     let ipos = imark['pos']  " buffer position
     let iname = imark['mark'][1]  " excluding quote
-    if iname =~# '\u' && index(stack, iname) == -1
-      call add(stack, iname)
-    endif
     if iname =~# '\u' && !has_key(highlights, iname)
       call mark#set_marks(iname, ipos)
     endif
-  endfor
-  let g:mark_name = name
-  let g:mark_stack = stack
+  endfor  " WARNING: following lines must be last
+  let default = get(get(g:, 'mark_stack', []), -1, 'A')
+  let g:mark_name = get(g:, 'mark_name', default)
 endfunction
-
-" Add the mark and highlight the line
 function! mark#set_marks(mrk, ...) abort
   let pos = a:0 ? a:1 : [0, line('.'), col('.'), 0]  " buffer required
   let pos[0] = pos[0] ? pos[0] : bufnr()  " replace zero
