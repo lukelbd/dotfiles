@@ -357,7 +357,7 @@ function! utils#translate_count(mode, ...) abort
     let label = name =~# '^\d$' ? getreg(name) : v:count ? 'count ' . v:count : ''
   endif
   let head = a:mode =~# '[m`]' ? 'Mark' : name =~# '^\d$' ? 'Macro' : 'Register'
-  let keys = v:count ? "\<Esc>" : ''
+  let keys = v:count && a:mode ==# 'n' ? "\<Esc>" : ''
   let keys .= !a:0 && a:mode =~# '[q@]' ? a:mode : ''
   let keys .= a:0 || a:mode !~# '[q@m`]' ? '"' : ''
   if !empty(msg)
