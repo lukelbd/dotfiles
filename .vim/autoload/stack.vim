@@ -119,8 +119,14 @@ function! stack#push_stack(head, func, ...) abort
     let args = type(stack[jdx]) == 3 ? stack[jdx] : [stack[jdx]]
     let scroll = 1
   endif
-  let status = empty(a:func) ? 0 : call(a:func, args)
-  if status != 0 | return | endif
+  if !empty(a:func)
+    if verbose  " ignore message
+      silent let status = call(a:func, args)
+    else  " preserve message
+      let status = call(a:func, args)
+    endif
+    if status != 0 | return | endif
+  endif
   call stack#update_stack(a:head, scroll, jdx, verbose)
 endfunction
 

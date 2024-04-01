@@ -1,25 +1,24 @@
 "-----------------------------------------------------------------------------"
 " Utilities for ctags management
 "-----------------------------------------------------------------------------"
-" Iterate over window tag stack
-" See: https://github.com/junegunn/fzf.vim/issues/240
+" Iterate over tag stack preserving start location
 " Todo: Consider adding 'tag stack search' fzf command and adding maps to below. For
 " now just have 'stack of tags' and loop through them with native vim-stack utility.
-function! tag#next_stack(...) abort
-  let itags = gettagstack(win_getid())
+" See: https://github.com/junegunn/fzf.vim/issues/240
+function! tag#next_tag(...) abort
   let cnt = a:0 ? a:1 : v:count1
-  let idx = itags.curidx + cnt
-  if idx > itags.length | endif
-  for _ in range(abs(cnt))
-    for item in get(itags, 'items', [])  " search tag stack
-      let ipath = expand('#' . item.bufnr . ':p')
-      let itags = taglist(item, ipath)
-      " setglobal tagfunc=tags#tag_func  " previous idea
-      " if item.tagname !=# name | continue | endif
-      if empty(itags) | continue | endif
-      return tags#goto_tag(0, ipath, item.cmd, item.tagname)
-    endfor
-  endfor
+  let stack = get(g:, 'tag_stack', [])
+  let iloc = get(g:, 'tag_loc', 0)
+  if cnt < 0 && iloc >= len(stack) - 1
+    let label = '<top>'
+    let top = get(stack, -1, [])  " apply 'top' similar to vim 'from'
+    if get(top, 2, '') ==# label
+      call stack#pop_stack('tag', top)
+    endif
+    let g:tag_name = [expand('%:p'), line('.'), label]
+    call stack#push_stack('tag', '', '', 0)  " see also mark.vim
+  endif
+  return stack#push_stack('tag', 'tags#goto_tag', cnt)
 endfunction
 
 " Override fzf :Btags and :Tags

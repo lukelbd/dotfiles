@@ -336,13 +336,12 @@ function! mark#init_marks() abort
   let g:mark_name = get(g:, 'mark_name', default)
 endfunction
 function! mark#set_marks(mrk, ...) abort
+  let highlights = get(g:, 'mark_highlights', {})
   let pos = a:0 ? a:1 : [0, line('.'), col('.'), 0]  " buffer required
   let pos[0] = pos[0] ? pos[0] : bufnr()  " replace zero
-  let highlights = get(g:, 'mark_highlights', {})
-  let g:mark_name = a:mrk  " required for below push stack
-  let g:mark_highlights = highlights
   call setpos("'" . a:mrk, pos)  " apply the mark
   call stack#pop_stack('mark', a:mrk)  " remove previous
+  let g:mark_name = a:mrk  " required for push
   call stack#push_stack('mark', '', '', 0)  " apply g:mark_name
   let name = 'mark_' . (a:mrk =~# '\u' ? 'upper_' . a:mrk : 'lower_' . a:mrk)
   let base = a:mrk =~# '\u' ? 65 : 97
@@ -366,4 +365,5 @@ function! mark#set_marks(mrk, ...) abort
     let hlid = matchadd(name, regex, 0)
     call add(highlights[a:mrk], hlid)
   endif
+  let g:mark_highlights = highlights
 endfunction

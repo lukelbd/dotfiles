@@ -3,7 +3,8 @@
 " Note: Use karabiner to convert ctrl-j/k/h/l into arrow keys. So anything
 " mapped to these control combinations below must also be assigned to arrow keys.
 " Note: Use iterm to convert impossible or normal-mode-incompatible ctrl+key combos
-" to function keys (settings -> keys -> key bindings -> 'send hex codes') various hex codes.
+" to function keys (settings -> keys -> key bindings -> 'send hex codes') using hex
+" codes obtained from below links, :help t_k1-9, and :help t_F1+9.
 " See: https://github.com/c-bata/go-prompt/blob/82a9122/input.go#L94-L125
 " See: https://eevblog.com/forum/microcontrollers/mystery-of-vt100-keyboard-codes/
 " F1: 0x1b 0x4f 0x50 (Ctrl-,) (5-digit codes failed)
@@ -341,18 +342,18 @@ command! -nargs=0 ShowBufs call file#show_bufs()
 command! -nargs=0 WipeBufs call file#wipe_bufs()
 noremap <Leader>q <Cmd>ShowBufs<CR>
 noremap <Leader>Q <Cmd>WipeBufs<CR>
-nnoremap <F5> <Cmd>Buffers<CR>
-nnoremap <F6> <Cmd>Windows<CR>
+nnoremap g, <Cmd>History<CR>
+nnoremap g. <Cmd>call file#open_used()<CR>
 
 " Tab selection and management
 " Note: Previously used e.g. '<tab>1' maps but not parse count on one keypress
 " Note: Here :History includes v:oldfiles and open buffers
 for s:key in range(1, 10) | exe 'silent! unmap <Tab>' . s:key | endfor
 for s:key in ['.', ',', '>', '<'] | exe 'silent! xunmap z' . s:key | endfor
-nnoremap g. <Cmd>call window#jump_tab(v:count)<CR>
-nnoremap g> <Cmd>call window#move_tab(v:count)<CR>
-nnoremap g, <Cmd>History<CR>
-nnoremap g< <Cmd>call file#open_used()<CR>
+nnoremap <F5> <Cmd>call window#jump_tab(v:count)<CR>
+nnoremap <F6> <Cmd>call window#move_tab(v:count)<CR>
+noremap g> <Cmd>Windows<CR>
+noremap g< <Cmd>Buffers<CR>
 
 " Tab and window jumping
 nnoremap <Tab>, <Cmd>exe max([tabpagenr() - v:count1, 1]) . 'tabnext'<CR>
@@ -597,7 +598,7 @@ augroup END
 command! -nargs=0 ClearTabs call stack#clear_stack('tab') | call stack#update_tabs()
 command! -nargs=0 ShowTabs call stack#update_tabs() | call stack#show_stack('tab')
 command! -nargs=? PopTabs call stack#pop_stack('tab', <f-args>)
-noremap <Tab>/ <Cmd>call stack#reset_tabs()<CR><Cmd>call stack#update_tabs(2)<CR>
+noremap <Tab><Tab> <Cmd>call stack#reset_tabs()<CR><Cmd>call stack#update_tabs(2)<CR>
 noremap <F1> <Cmd>call stack#scroll_tabs(-v:count1)<CR>
 noremap <F2> <Cmd>call stack#scroll_tabs(v:count1)<CR>
 
@@ -642,13 +643,14 @@ noremap g? <Cmd>Lines<CR>
 " tags resulting from direct invocation of :tag and <C-]> commands.
 command! -complete=file -nargs=* ShowIgnores
   \ echom 'Tag ignores: ' . join(tag#parse_ignores(0, <f-args>), ' ')
-command! -complete=dir -nargs=* UpdatePaths
-  \ call tag#update_paths(<f-args>)
+command! -complete=dir -nargs=* UpdatePaths call tag#update_paths(<f-args>)
 command! -nargs=0 ClearStack call stack#clear_stack('tag')
 command! -nargs=0 ShowStack call stack#show_stack('tag')
 command! -nargs=? PopStack call stack#pop_stack('tag', <f-args>)
-noremap <F3> <Cmd>call stack#push_stack('tag', 'tags#goto_tag', -v:count1)<CR>
-noremap <F4> <Cmd>call stack#push_stack('tag', 'tags#goto_tag', v:count1)<CR>
+noremap <F3> <Cmd>call tag#next_tag(-v:count1)<CR>
+noremap <F4> <Cmd>call tag#next_tag(v:count1)<CR>
+noremap [{ <Cmd>exe v:count1 . 'tag'<CR>
+noremap ]} <Cmd>exe v:count1 . 'pop'<CR>
 
 " Toggle and navigate visual mode
 " Note: Select mode (e.g. by typing 'gh') is same as visual but enters insert mode
@@ -657,13 +659,13 @@ noremap <F4> <Cmd>call stack#push_stack('tag', 'tags#goto_tag', v:count1)<CR>
 " use 'y' for mouse click location and 'z' for visual mode entrance location, then
 " start new visual selection between 'y' and 'z'. Generally 'y' should be temporary
 for s:key in ['v', 'V'] | exe 'noremap ' . s:key . ' <Esc>mz' . s:key | endfor
+noremap <C-v> <Esc><Cmd>WrapToggle 0<CR>mz<C-v>
 nnoremap zn gE/<C-r>/<CR><Cmd>noh<CR>mzgn
 nnoremap zN W?<C-r>/<CR><Cmd>noh<CR>mzgN
-noremap <C-v> <Esc><Cmd>WrapToggle 0<CR>mz<C-v>
-vnoremap <LeftMouse> <LeftMouse>my<Cmd>exe 'keepjumps normal! `z' . visualmode() . '`y' \| delmark y<CR>
 nnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR>
 vnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
 vnoremap <CR> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
+vnoremap <LeftMouse> <LeftMouse>my<Cmd>exe 'keepjumps normal! `z' . visualmode() . '`y' \| delmark y<CR>
 
 " Navigate matches/sentences/paragraphs without adding to jumplist
 " Note: Core vim idea is that these commands take us far away from cursor but
