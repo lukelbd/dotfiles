@@ -211,7 +211,7 @@ endfunction
 " Show helper windows
 " Note: These are for lsp management and viewing directory contents
 function! window#setup_dir() abort
-  call utils#switch_maps(['<CR>', 't', 'n'], ['t', '<CR>', 'n'])
+  call utils#map_from(['n', 't', '<CR>'], ['n', '<CR>', 't'])
   for char in 'fbFL' | silent! exe 'unmap <buffer> q' . char | endfor
 endfunction
 function! window#show_dir(cmd, local) abort
@@ -264,7 +264,7 @@ endfunction
 " this causes vim to crash and breaks the terminal. Instead never auto-close windows
 " and simply get in habit of closing entire tabs with session#close_tab().
 function! window#setup_panel(...) abort
-  setlocal nonumber norelativenumber nocursorline signcolumn=yes 
+  setlocal nonumber norelativenumber nocursorline signcolumn=no foldcolumn=0
   let g:ft_man_folding_enable = 1  " see :help Man
   let [nleft, nright] = [window#count_panes('h'), window#count_panes('l')]
   nnoremap <buffer> q <Cmd>silent! call window#close_pane()<CR>
@@ -272,7 +272,7 @@ function! window#setup_panel(...) abort
   if a:0 && a:1  " editable window
     return
   else  " standard window
-    setlocal nolist colorcolumn=
+    setlocal nolist colorcolumn= signcolumn=yes
   endif
   for [char, frac] in [['d', 0.5], ['u', -0.5]]
     exe 'noremap <expr> <nowait> <buffer> ' . char . ' iter#scroll_normal(' . frac . ')'

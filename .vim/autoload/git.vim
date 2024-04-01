@@ -1,52 +1,93 @@
 "-----------------------------------------------------------------------------"
 " Utilities for fugitive windows
 "-----------------------------------------------------------------------------"
-" Helper function and aliases
-" Todo: Use bufhidden=delete more frequently, avoid tons of useless buffers
-" Note: Here use 'Git' to open standard status pane and 'Git status' to open
-" pane with diff hunks expanded with '=' and folded with 'zc'.
-let s:git_tall = ['commits', 'log', 'tree', 'trunk']  " vertical commands
-let s:git_editor = ['merge', 'commit', 'oops']  " commands open editor
-let s:git_nobreak = ['add', 'stage', 'reset', 'push', 'pull', 'fetch', 'switch', 'restore', 'checkout']
-let s:git_resize = {'show': 0, 'diff': 0, 'merge': 0, 'commit': 0, 'oops': 0, 'status': 0, '': 0.5}
-let s:git_resize = extend(s:git_resize, {'commits': 0.5, 'log': 0.5, 'tree': 0.5, 'trunk': 0.5})
-function! s:run_cmd(bnum, lnum, cmd, ...) abort
-  let input = join(a:000, '')
-  let name = split(input, '', 1)[0]
-  let editor = index(s:git_editor, name) != -1
-  let newbuf = editor || a:bnum != bufnr() || a:cmd =~# '\<v\?split\>'
-  if a:cmd =~# '^echoerr'
-    let msg = substitute(a:cmd, '^echoerr', 'echom', '')
-    redraw | echohl ErrorMsg | exe msg | echohl None
-  elseif !newbuf  " no panel generated
-    let space = index(s:git_nobreak, name) == -1 ? "\n" : ' '
-    redraw | echo 'Git ' . input . space | exe a:cmd
-  else  " panel generated
-    let [width, height] = [winwidth(0), winheight(0)]
-    let resize = get(s:git_resize, name, 1)
-    silent exe a:cmd
-    if a:bnum != bufnr()
-      setlocal bufhidden=delete | if line('$') <= 1 | call window#close_pane(1) | endif
-    endif
-    if a:bnum != bufnr() && input =~# '^blame'  " syncbind is no-op if not vertical
-      exe a:lnum | exe 'normal! z.' | call feedkeys("\<Cmd>syncbind\<CR>", 'n')
-    elseif a:bnum != bufnr() && input =~# '\s\+%'  " open single difference fold
-      call feedkeys('zv', 'n')
-    elseif a:bnum != bufnr() && name ==# 'status'  " open change statistics
-      silent global/^\(Staged\|Unstaged\)\>/normal =zxgg
-    endif
-    if a:bnum == bufnr()
-      exe 'vertical resize ' . width | exe 'resize ' . height | return
-    elseif input =~# '^blame\( %\)\@!' || a:cmd =~# '\<\(vsplit\|vert\(ical\)\?\)\>'
-      exe 'vertical resize ' . window#default_width(resize)
-    else  " bottom panel
-      exe 'resize ' . window#default_height(resize)
-    endif
+" Global settings
+" Note: Fugitive maps get re-applied when re-opening existing fugitive buffers due to
+" its FileType autocommands, so should not have issues modifying already-modified maps.
+" Note: Many mappings call script-local functions with strings like 'tabedit', and
+" initially tried replacing with 'Drop', but turns out these all call fugitive
+" internal commands like :Gtabedit and :Gedit (and there is no :Gdrop). So now
+" overwrite :Gtabedit in .vimrc. Also considered replacing 'tabedit' with 'drop' in
+" maps and having fugitive use :Gdrop, but was getting error where after tab switch
+" an empty panel was opened in the git window. Might want to revisit.
+" let rhs = substitute(rhs, '\C\<tabe\a*', 'drop', 'g')  " use :Git drop?
+let s:log_trim = '--graph --abbrev-commit --max-count=50'
+let s:log_format = '--date=relative --branches --decorate'
+let s:cmd_vert = ['commits', 'log', 'tree', 'trunk']  " vertical commands
+let s:cmd_editor = ['merge', 'commit', 'oops']  " commands open editor
+let s:cmd_oneline = ['add', 'stage', 'reset', 'push', 'pull', 'fetch', 'switch', 'restore', 'checkout']
+let s:cmd_resize = {
+  \ '': 0.5, 'commits': 0.5, 'log': 0.5, 'tree': 0.5, 'trunk': 0.5,
+  \ 'show': 0, 'diff': 0, 'merge': 0, 'commit': 0, 'oops': 0, 'status': 0,
+\ }
+let s:cmd_translate = {'status': '',
+  \ 'log': 'log ' . s:log_trim,
+  \ 'tree': 'log --stat ' . s:log_trim . ' ' . s:log_format,
+  \ 'trunk': 'log --name-status ' . s:log_trim . ' ' . s:log_format,
+  \ 'show': 'show --abbrev-commit',
+  \ 'blame': 'blame --show-email',
+  \ 'commits': 'log --graph --oneline ' . s:log_format,
+\ }
+let s:map_remove = ['dq', '<<', '>>', '==', '<F1>', '<F2>']
+let s:map_from = [
+  \ ['n', '<2-LeftMouse>', 'O'],
+  \ ['n', '<CR>', 'O'],
+  \ ['n', 'O', '<CR>'],
+  \ ['nx', ';', '.'],
+  \ ['nx', '.', '-'],
+  \ ['nox', '{', '[c'],
+  \ ['nox', '}', ']c'],
+  \ ['nox', '(', '[m'],
+  \ ['nox', ')', ']m'],
+  \ ['nx', '[g', '('],
+  \ ['nx', ']g', ')'],
+  \ ['nx', ',', '=', ":\<C-u>call fold#update_folds(0, 1)\<CR>"],
+  \ ['nx', '=', '=', ":\<C-u>call fold#update_folds(0, 1)\<CR>"],
+\ ]
+
+" Helper setup functions for commands
+" See: https://github.com/sgeb/vim-diff-fold/
+" Works with normal, context, unified, rcs, ed, subversion and git diffs.
+" For rcs diffs folds only files (rcs has no hunks in the common sense)
+" Uses foldlevel=1 ==> file foldlevel=2 ==> hunk. Note context diffs need special
+" treatment, as hunks are defined via context (after '***************'), and checking
+" for '*** ' or ('--- ') only does not work, as file lines have the same marker.
+function! git#setup_panel() abort  " also used for general diff filetypes
+  for val in s:map_remove | silent! exe 'unmap <buffer> ' . val | endfor
+  let &l:foldexpr = 'git#setup_folds(v:lnum)'
+  let &l:foldmethod = &l:filetype ==# 'fugitive' ? 'syntax' : 'expr'
+  call call('utils#map_from', &l:filetype ==# 'diff' ? [] : s:map_from)
+  call fold#update_folds(0, 0)  " re-apply defaults after setting foldexpr
+endfunction
+function! git#setup_blame() abort
+  let regex = '^\x\{8}\s\+\d\+\s\+(\zs<\S\+>\s\+'
+  call matchadd('Conceal', regex, 0, -1, {'conceal': ''})
+  if window#count_panes('h') == 1
+    call feedkeys("\<Cmd>vertical resize " . window#default_width(1) . "\<CR>", 'n')
   endif
-  return newbuf && a:cmd !~# '^echoerr'  " whether echo required
+endfunction
+function! git#setup_commit(...) abort
+  exe 'resize ' . window#default_height()
+  call switch#autosave(1, 1)  " suppress message
+  setlocal colorcolumn=73
+  goto | startinsert  " first row column
+endfunction
+function! git#setup_folds(lnum) abort
+  let line = getline(a:lnum)
+  if line =~# '^\(diff\|Index\)'     " file
+    return '>1'
+  elseif line =~# '^\(@@\|\d\)'  " hunk
+    return '>2'
+  elseif line =~# '^\*\*\* \d\+,\d\+ \*\*\*\*$' " context: file1
+    return '>2'
+  elseif line =~# '^--- \d\+,\d\+ ----$'     " context: file2
+    return '>2'
+  else
+    return '='
+  endif
 endfunction
 
-" Override fugitive commands
+" Override native fugitive commands
 " Note: Native fugitive command is declared with :command! Git -nargs=? -range=-1
 " fugitive#Command(<line1>, <count>, +'<range>', <bang>0, '<mods>', <q-args>)
 " where <line1> is cursor line, <count> is -1 if no range supplied and <line2>
@@ -55,7 +96,7 @@ endfunction
 " 2 for e.g. :10,20Git) where +'<range>' forces this to integer. Here, use simpler
 " implicit distinction between calls with/without range where we simply test the
 " equality of <line1> and <line2>, or allow a force-range a:range argument.
-function! git#command_setup() abort
+function! git#setup_commands() abort
   command! -buffer
     \ -bar -bang -nargs=? -range=-1 -complete=customlist,fugitive#Complete
     \ G call git#run_command(0, <line1>, <count>, +'<range>', <bang>0, '<mods>', <q-args>)
@@ -73,25 +114,56 @@ function! git#command_setup() abort
   endfor
 endfunction
 
+" Run and process results of fugitive operation
+" Todo: Use bufhidden=delete more frequently, avoid tons of useless buffers
+" Note: Here use 'Git' to open standard status pane and 'Git status' to open
+" pane with diff hunks expanded with '=' and folded with 'zc'.
+function! s:run_cmd(bnum, lnum, cmd, ...) abort
+  let input = join(a:000, '')
+  let name = split(input, '', 1)[0]
+  let editor = index(s:cmd_editor, name) != -1
+  let newbuf = editor || a:bnum != bufnr() || a:cmd =~# '\<v\?split\>'
+  if a:cmd =~# '^echoerr'
+    let msg = substitute(a:cmd, '^echoerr', 'echom', '')
+    redraw | echohl ErrorMsg | exe msg | echohl None
+  elseif !newbuf  " no panel generated
+    let space = index(s:cmd_oneline, name) != -1 ? ' ' : "\n"
+    redraw | echo 'Git ' . input . space | exe a:cmd
+  else  " panel generated
+    let [width, height] = [winwidth(0), winheight(0)]
+    let resize = get(s:cmd_resize, name, 1)
+    silent exe a:cmd | let newbuf = a:bnum != bufnr()
+    if newbuf
+      setlocal bufhidden=delete | if line('$') <= 1 | call window#close_pane(1) | endif
+    endif
+    if bufnr() == a:bnum
+      if input =~# '^blame'  " syncbind is no-op if not vertical
+        exe a:lnum | exe 'normal! z.' | call feedkeys("\<Cmd>syncbind\<CR>", 'n')
+      elseif newbuf && input =~# '\s\+%'  " open single difference fold
+        call feedkeys('zv', 'n')
+      elseif newbuf && name ==# 'status'  " open change statistics
+        call feedkeys('gg=', 'm')
+      endif
+      exe 'vertical resize ' . width | exe 'resize ' . height
+    elseif input =~# '^blame\( %\)\@!' || a:cmd =~# '\<\(vsplit\|vert\(ical\)\?\)\>'
+      exe 'vertical resize ' . window#default_width(resize)
+    else  " bottom panel
+      exe 'resize ' . window#default_height(resize)
+    endif
+  endif
+  return newbuf && a:cmd !~# '^echoerr'  " whether echo required
+endfunction
+
 " Run fugitive command or mapping
 " Note: Fugitive does not currently use &previewwindow and does not respect <mods>
 " so set window explicitly below. See: https://stackoverflow.com/a/8356605/4970632
-let s:git_trim = '--graph --abbrev-commit --max-count=50'
-let s:git_format = '--date=relative --branches --decorate'
-let s:git_translate = {'status': '',
-  \ 'log': 'log ' . s:git_trim,
-  \ 'tree': 'log --stat ' . s:git_trim . ' ' . s:git_format,
-  \ 'trunk': 'log --name-status ' . s:git_trim . ' ' . s:git_format,
-  \ 'show': 'show --abbrev-commit',
-  \ 'blame': 'blame --show-email',
-  \ 'commits': 'log --graph --oneline ' . s:git_format,
-\ }
+" Run from command line
 function! git#run_command(msg, line1, count, range, bang, mods, cmd, ...) abort range
   let [bnum, lnum] = [bufnr(), line('.')]
   let icmd = empty(FugitiveGitDir()) ? '' : a:cmd
   let [name; flags] = split(icmd, '\\\@<!\s\+', 1)
-  let icmd = get(s:git_translate, name, name) . ' ' . join(flags, ' ')
-  let imod = empty(a:mods) ? index(s:git_tall, name) > 0 ? 'vert botright' : 'botright' : a:mods
+  let icmd = get(s:cmd_translate, name, name) . ' ' . join(flags, ' ')
+  let imod = empty(a:mods) ? index(s:cmd_vert, name) > 0 ? 'vert botright' : 'botright' : a:mods
   let args = [a:line1, a:count, a:range, a:bang, imod, icmd]
   silent let rcmd = call('fugitive#Command', args + a:000)
   let verbose = s:run_cmd(bnum, lnum, rcmd, a:cmd)
@@ -103,6 +175,7 @@ function! git#run_command(msg, line1, count, range, bang, mods, cmd, ...) abort 
     redraw | echom input
   endif
 endfunction
+" Run from normal mode
 function! git#run_map(range, ...) abort range
   if a:range && a:firstline == a:lastline
     let offset = 5 | let [line1, line2] = [a:firstline - offset, a:lastline + offset]
@@ -135,7 +208,7 @@ function! git#complete_msg(lead, line, cursor, ...) abort
   let opts = filter(copy(opts), 'v:val =~# ' . lead)
   return map(opts, 'substitute(v:val, "\s\+", "", "g")')
 endfunction
-function! git#safe_commit(editor, ...) abort
+function! git#commit_wrap(editor, ...) abort
   let cmd = a:0 ? a:1 : 'commit'  " commit version
   let flag = cmd =~# '^stash' ? [] : ['--staged']
   let args = ['diff', '--quiet']  " see: https://stackoverflow.com/a/1587877/4970632
@@ -164,51 +237,6 @@ function! git#safe_commit(editor, ...) abort
     let cmd .= ' --message ' . shellescape(msg)
   endif
   call git#run_command(0, line('.'), -1, 0, 0, '', cmd)
-endfunction
-
-" Git panel window setup
-" Note: Fugitive maps get re-applied when re-opening existing fugitive buffers due to
-" its FileType autocommands, so should not have issues modifying already-modified maps.
-" Note: Many mappings call script-local functions with strings like 'tabedit', and
-" initially tried replacing with 'Drop', but turns out these all call fugitive
-" internal commands like :Gtabedit and :Gedit (and there is no :Gdrop). So now
-" overwrite :Gtabedit in .vimrc. Also considered replacing 'tabedit' with 'drop' in
-" maps and having fugitive use :Gdrop, but was getting error where after tab switch
-" an empty panel was opened in the git window. Might want to revisit.
-" let rhs = substitute(rhs, '\C\<tabe\a*', 'drop', 'g')  " use :Git drop?
-let s:fugitive_remove = ['dq', '<<', '>>', '==', '<F1>', '<F2>']
-let s:fugitive_switch = [
-  \ ['<CR>', 'O', 'n'],
-  \ ['O', '<2-LeftMouse>', 'n'],
-  \ ['O', '<CR>', 'n'],
-  \ ['(', '[', 'nx', {'nowait': 1}],
-  \ [')', ']', 'nx', {'nowait': 1}],
-  \ ['[c', '{', 'nox'],
-  \ [']c', '}', 'nox'],
-  \ ['[m', '(', 'nox'],
-  \ [']m', ')', 'nox'],
-  \ ['=', ',', 'nx'],
-  \ ['-', '.', 'nx'],
-  \ ['.', ';', 'n'],
-\ ]
-function! git#setup_blame() abort
-  let regex = '^\x\{8}\s\+\d\+\s\+(\zs<\S\+>\s\+'
-  call matchadd('Conceal', regex, 0, -1, {'conceal': ''})
-  if window#count_panes('h') == 1
-    call feedkeys("\<Cmd>vertical resize " . window#default_width(1) . "\<CR>", 'n')
-  endif
-endfunction
-function! git#setup_commit(...) abort
-  exe 'resize ' . window#default_height()
-  call switch#autosave(1, 1)  " suppress message
-  setlocal colorcolumn=73
-  goto | startinsert  " first row column
-endfunction
-function! git#setup_fugitive() abort
-  for val in s:fugitive_remove | silent! exe 'unmap <buffer> ' . val | endfor
-  setlocal foldmethod=syntax
-  call fold#update_folds(0, 0)
-  call call('utils#switch_maps', s:fugitive_switch)
 endfunction
 
 " Git hunk jumping and previewing

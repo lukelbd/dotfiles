@@ -89,6 +89,7 @@ function! vim#init_session(...)
 endfunction
 
 " Show and setup vim help page
+" Warning: Use feedkeys() in case e.g. run these from 'git' panel.
 " Note: All vim tag utilities including <C-]>, :pop, :tag work by searching 'tags' files
 " and updating the tag 'stack' (effectively a cache). Seems that $VIMRUNTIME/docs/tags
 " is included with vim by default, and this is always used no matter the value of &tags
@@ -100,8 +101,8 @@ function! vim#show_help(...) abort
 endfunction
 function! vim#show_runtime(name, ...) abort
   let path = $VIMRUNTIME . '/' . a:name . '/' . (a:0 ? a:1 : &l:filetype) . '.vim'
-  call file#open_drop(path) | call window#setup_panel()
-  if a:0 && a:1 =~# 'test' | exe 'source %' | endif
+  call file#open_drop(path) | call feedkeys("\<Cmd>call window#setup_panel()\<CR>", 'n')
+  if a:0 && a:1 =~# 'test' | call feedkeys("\<Cmd>source %\<CR>", 'n') | endif
 endfunction
 function! vim#setup_help() abort
   wincmd L | vert resize 88 | nnoremap <buffer> <CR> <C-]>
@@ -109,12 +110,13 @@ function! vim#setup_help() abort
   nnoremap <nowait> <buffer> <silent> ] <Cmd>tag<CR>
 endfunction
 function! vim#setup_cmdwin() abort
+  call switch#copy(1, 1)  " hide special characters
+  nnoremap <buffer> <C-s> <Nop>
+  inoremap <buffer> <expr> <CR> "\<C-m>"
   nnoremap <buffer> <expr> <CR> (line('.') == line('$') ? '<Up>' : '' ) . '<C-c><CR>'
   nnoremap <buffer> <expr> ; (line('.') == line('$') ? '<Up>' : '' ) . '<C-c><CR>'
   nnoremap <buffer> <expr> / (line('.') == line('$') ? '<Up>' : '' ) . '<C-c><CR>'
   nnoremap <buffer> <Plug>ExecuteFile1 <C-c><CR>
-  inoremap <buffer> <expr> <CR> "\<C-m>"
-  nnoremap <buffer> <C-s> <Nop>
 endfunction
 
 " Source file, lines, or motion

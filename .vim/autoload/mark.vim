@@ -258,7 +258,7 @@ function! mark#next_mark(...) abort
   let cnt = a:0 ? a:1 : v:count1
   if !empty(name)
     let pos = getpos("'" . name)
-    let [bnum, lnum] = [bufnr('.'), line('.')]
+    let [bnum, lnum] = [bufnr(), line('.')]
     if !pos[0] && pos[0] != bnum || pos[1] != lnum
       let offset = cnt > 0 ? -1 : 1
       call mark#goto_mark(name)

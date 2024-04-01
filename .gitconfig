@@ -194,10 +194,10 @@
 	staged = false
 	stash = false
 	stashed = false
+	stored = false
 	stat = false
 	status = false
 	summary = false
-	saved = false
 	tag = false
 [push]
 	default = upstream

@@ -83,6 +83,15 @@ endfunction
 " in parentheses that can be tab expanded, selects it when user presses enter, or
 " replaces it when user starts typing text or backspace. This is a bit nicer than
 " filling input prompt with default value, simply start typing to drop the default
+function! utils#input_default(prompt, ...) abort
+  let complete = a:0 > 1 ? a:2 : ''
+  let default = a:0 > 0 ? a:1 : ''
+  let paren = a:prompt =~# ')$' || empty(default) ? '' : ' (' . default . ')'
+  let prompt = a:prompt . paren . ': '
+  let s:complete_opts = [1, default, complete] + a:000[2:]
+  call feedkeys("\<Tab>", 't')  " auto-complete getchar() results
+  return input(prompt, '', 'customlist,utils#input_complete')
+endfunction
 function! utils#input_complete(lead, line, cursor)
   let [initial, default, complete; rest] = s:complete_opts
   let force = get(rest, 0, 0)
@@ -123,14 +132,50 @@ function! utils#input_complete(lead, line, cursor)
   endif
   return opts
 endfunction
-function! utils#input_default(prompt, ...) abort
-  let complete = a:0 > 1 ? a:2 : ''
-  let default = a:0 > 0 ? a:1 : ''
-  let paren = a:prompt =~# ')$' || empty(default) ? '' : ' (' . default . ')'
-  let prompt = a:prompt . paren . ': '
-  let s:complete_opts = [1, default, complete] + a:000[2:]
-  call feedkeys("\<Tab>", 't')  " auto-complete getchar() results
-  return input(prompt, '', 'customlist,utils#input_complete')
+
+" Add mappings from other buffer-local mappings
+" Note: Vim help recommends capturing full map settings using maparg(lhs, 'n', 0, 1)
+" then re-adding using mapset(). This is a little easier than working with strings
+" returned by maparg(lhs, 'n') which requires using escape(map, '"<') then evaluating
+" the resulting string with eval('"' . map . '"'). However in the dictionary case, the
+" 'rhs' entry uses <sid> instead of <snr>nr, and when calling mapset(), the *current
+" script* id is used rather than the id in the dict. Have to fix this manually.
+function! s:eval_map(map) abort
+  let rhs = get(a:map, 'rhs', '')
+  let sid = get(a:map, 'sid', '')  " see above
+  let snr = '<snr>' . sid . '_'
+  let rhs = substitute(rhs, '\c<sid>', snr, 'g')
+  return rhs
+endfunction
+function! utils#map_from(...) abort
+  let fails = []
+  let queue = {}  " delay assignment until iteration
+  for [imodes, ilhs, isrc; iopts] in a:000
+    let iopt = get(iopts, 0, '')
+    let iadd = type(iopt) > 1 ? '' : iopt
+    for imode in imodes  " string or list of chars
+      let item = maparg(isrc, imode, 0, 1)
+      if !get(item, 'buffer', 0)  " ignore global maps
+        call add(fails, imode . ':' . isrc) | continue
+      endif
+      let irhs = s:eval_map(item) . iadd
+      let iraw = eval('"' . substitute(ilhs, '^<', '\\<', '') . '"')
+      call extend(item, {'lhs': ilhs, 'lhsraw': iraw, 'rhs': irhs})
+      call extend(item, type(iopt) > 1 ? copy(iopt) : {})
+      let items = get(queue, imode, [])
+      let queue[imode] = add(items, item)
+    endfor
+  endfor
+  for [imode, items] in items(queue)
+    for item in items
+      call mapset(imode, 0, item)
+    endfor
+  endfor
+  if !empty(fails)
+    redraw | echohl WarningMsg
+    echom 'Warning: Could not find source maps ' . join(map(fails, 'string(v:val)'), ', ')
+    echohl None | return 1
+  endif
 endfunction
 
 " Call over the visual line range or user motion line range (see e.g. python.vim)
@@ -202,40 +247,6 @@ function! utils#repeat_map(mode, lhs, name, rhs) abort
     exe noremap . ' <Plug>' . a:name . ' ' . a:rhs . repeat
     exe noremap . ' <Plug>Repeat' . a:name . ' ' . a:rhs
   endif
-endfunction
-
-" Switch buffer-local panel mappings
-" Note: Vim help recommends capturing full map settings using maparg(lhs, 'n', 0, 1)
-" then re-adding using mapset(). This is a little easier than working with strings
-" returned by maparg(lhs, 'n') which requires using escape(map, '"<') then evaluating
-" the resulting string with eval('"' . map . '"'). However in the dictionary case, the
-" 'rhs' entry uses <sid> instead of <snr>nr, and when calling mapset(), the *current
-" script* id is used rather than the id in the dict. Have to fix this manually.
-function! s:eval_map(map) abort
-  let rhs = get(a:map, 'rhs', '')
-  let sid = get(a:map, 'sid', '')  " see above
-  let snr = '<snr>' . sid . '_'
-  let rhs = substitute(rhs, '\c<sid>', snr, 'g')
-  return rhs
-endfunction
-function! utils#switch_maps(...) abort
-  let queue = {}  " delay assignment until iteration
-  for [map1, map2, imodes; iopts] in a:000
-    for imode in imodes  " string or list of chars
-      let raw = eval('"' . substitute(map2, '^<', '\\<', '') . '"')
-      let item = maparg(map1, imode, 0, 1)
-      let items = get(queue, imode, [])
-      call extend(item, {'rhs': s:eval_map(item), 'lhs': map2, 'lhsraw': raw})
-      call extend(item, empty(iopts) ? {} : iopts[0])
-      call add(items, item)
-      let queue[imode] = items
-    endfor
-  endfor
-  for [imode, items] in items(queue)
-    for item in items
-      call mapset(imode, 0, item)
-    endfor
-  endfor
 endfunction
 
 " Helper translation functions

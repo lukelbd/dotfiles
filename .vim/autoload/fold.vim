@@ -7,16 +7,16 @@
 " e.g. for python classes or tex environments occupying entire document and to
 " enforce universal standard default of foldlevel=0 without hiding everything.
 scriptencoding utf-8
-let s:defaults = [
+let s:maxlines = 100  " maxumimum lines to search
+let s:initials = [
   \ ['python', '^class\>', '', 1],
   \ ['fortran', '^\s*\(module\|program\)\>', '', 1],
-  \ ['fugitive', '^\(Staged\|Unstaged\|Unpushed\|Unpulled\|Untracked\)\>', '', 1],
   \ ['tex', '^\s*\\begin{document}', '', 1],
   \ ['tex', '^\s*\\begin{frame}', '^\s*\\begin{block}', 2],
   \ ['tex', '^\s*\\\(sub\)*section\>', '^\s*\\begin{frame}', 2],
 \ ]
 function! fold#init(...) abort
-  for [ftype, regex1, regex2, level] in s:defaults
+  for [ftype, regex1, regex2, level] in s:initials
     if &l:diff || ftype !=# &l:filetype | continue | endif
     if !empty(regex2) && !search(regex2, 'nwc') | continue | endif
     for lnum in range(1, line('$'))  " open default folds
@@ -54,7 +54,7 @@ function! fold#current(...) abort  " current &foldlevel fold
     exe next | let line2 = line('.')
   endif
   let recurse = 0  " detect recursive call
-  for [ftype, regex1, regex2, level] in s:defaults
+  for [ftype, regex1, regex2, level] in s:initials
     if ftype !=# &l:filetype || level - 1 != toplevel | continue | endif
     if !empty(regex2) && !search(regex2, 'nwc') | continue | endif
     if getline(line1) =~# regex1 | let recurse = 1 | break | endif
@@ -67,51 +67,79 @@ function! fold#current(...) abort  " current &foldlevel fold
   endif
 endfunction
 
-" Helper functions for fold text
+" Global default fold text
 " Note: This applies closing delimiters e.g. if line ends with parentheses
-" Note: This concatenates python docstring lines and uses frametitle from
-" beamer presentations or labels from tex figures. Should add to this.
-let s:nmax = 100  " maxumimum number of lines to search
-let s:closes = {'[': ']', '(': ')', '{': '}', '<': '>'}
-let s:docstring = '["'']\{3}'  " docstring expression
+function! s:get_delims(label, ...) abort
+  let delims = {'[': ']', '(': ')', '{': '}', '<': '>'}  " delimiter mapping
+  let regex = '\([[({<]*\)\s*$'  " opening delimiter regex
+  let items = call('matchlist', [a:label, regex] + a:000)
+  let delim1 = split(get(items, 1, ''), '\zs', 1)
+  let delim2 = map(copy(delim1), {idx, val -> get(delims, val, '')})
+  if &l:filetype ==# 'python' && get(delim1, -1, '') ==# ')'
+    call add(delim2, a:label =~# '^\s*\(def\|class\)\>' ? ':' : '')
+  endif
+  return [join(delim1, ''), join(delim2, '')]
+endfunction
 function! fold#get_text(line, ...) abort
-  let regex = a:0 && a:1 ? '\(^\s*\|\s*$\)' : '\s*$'
+  let char = comment#get_char()
+  let ftype = get(b:, 'fugitive_type', '')
+  let regex = a:0 && a:1 ? '\(^\s*\|' : '\('
+  let regex .= '\S\@<=\s*' . comment#get_regex()
+  let regex .= strwidth(char) == 1 ? '[^' . char . ']*$' : '.*$'
+  let regex .= '\|\s*$\)'  " delimiter trim
   let label = substitute(getline(a:line), regex, '', 'g')
-  let regex = '\S\@<=\s*' . comment#get_regex()
-  let regex .= len(comment#get_char()) == 1 ? '[^' . comment#get_char() . ']*$' : '.*$'
-  let label = substitute(label, regex, '', 'g')
+  if &l:filetype =~# '^git$\|^fugitive$'
+    let label = substitute(label, '^\(@@.\{-}@@\).*$', '\1', '')
+  endif
+  if !a:0  " avoid recursion
+    let label1 = fold#get_text(a:line, 1)
+    let [delim1, outer] = s:get_delims(label1)
+    if label1 ==# delim1
+      let label2 = fold#get_text(a:line + 1, 1)
+      let [delim2, _] = s:get_delims(label2)
+      if label2 !=# delim2
+        let inner = substitute(label2, '\s*\([[({<]*\)\s*$', '', 'g')
+        let label = label . ' ' . inner . ' ··· ' . outer  " e.g. json folds
+      endif
+    endif
+  endif
   return label
 endfunction
+
+" Filetype specific fold text
+" Note: This concatenates python docstring lines and uses frametitle from
+" beamer presentations or labels from tex figures. Should add to this.
 function! fold#get_text_python(line, ...) abort
-  let label = fold#get_text(a:line)
+  let regex = '["'']\{3}'  " docstring expression
+  let label = fold#get_text(a:line, 0)
   let width = get(g:, 'linelength', 88) - 10  " minimum width
-  if label =~# '^try:\s*$\|' . s:docstring . '\s*$'  " append lines
-    for lnum in range(a:line + 1, a:0 ? a:1 : a:line + s:nmax)
+  if label =~# '^try:\s*$\|' . regex . '\s*$'  " append lines
+    for lnum in range(a:line + 1, a:0 ? a:1 : a:line + s:maxlines)
       let doc = fold#get_text(lnum, 1)  " remove indent
       let doc = substitute(doc, '[-=]\{3,}', '', 'g')
-      let head = label =~# s:docstring . '\s*$'
-      let tail = doc =~# '^\s*' . s:docstring
+      let head = label =~# regex . '\s*$'
+      let tail = doc =~# '^\s*' . regex
       let label .= repeat(' ', !head && !tail && !empty(doc)) . doc
       if tail || len(label) > width || label =~# '^try:' | break | endif
     endfor
   endif
   let l:subs = []  " see: https://vi.stackexchange.com/a/16491/8084
-  let result = substitute(label, s:docstring, '\=add(l:subs, submatch(0))', 'gn')
+  let result = substitute(label, regex, '\=add(l:subs, submatch(0))', 'gn')
   let label .= len(l:subs) % 2 ? '···' . substitute(l:subs[0], '^[frub]*', '', 'g') : ''
   return label  " closed docstring
 endfunction
 function! fold#get_text_tex(line, ...)
-  let [line, label] = [a:line, fold#get_text(a:line)]
+  let [line, label] = [a:line, fold#get_text(a:line, 0)]
   let indent = substitute(label, '\S.*$', '', 'g')
   if label =~# 'begingroup\|begin\s*{\s*\(frame\|figure\|table\|center\)\*\?\s*}'
     let regex = label =~# '{\s*frame\*\?\s*}' ? '^\s*\\frametitle' : '^\s*\\label'
-    for lnum in range(a:line + 1, a:0 ? a:1 : a:line + s:nmax)
+    for lnum in range(a:line + 1, a:0 ? a:1 : a:line + s:maxlines)
       let bool = getline(lnum) =~# regex
-      if bool | let [line, label] = [lnum, fold#get_text(lnum)] | break | endif
+      if bool | let [line, label] = [lnum, fold#get_text(lnum, 0)] | break | endif
     endfor
   endif
   if label =~# '{\s*\(%.*\)\?$'  " append lines
-    for lnum in range(line + 1, a:0 ? a:1 : line + s:nmax)
+    for lnum in range(line + 1, a:0 ? a:1 : line + s:maxlines)
       let bool = lnum == line + 1 || label[-1:] ==# '{'
       let label .= (bool ? '' : ' ') . fold#get_text(lnum, 1)
     endfor
@@ -125,16 +153,6 @@ endfunction
 " Generate truncated fold text. In future should include error cound information.
 " Note: Since gitgutter signs are not shown over closed folds include summary of
 " changes in fold text. See https://github.com/airblade/vim-gitgutter/issues/655
-function! s:get_delims(label, ...) abort
-  let regex = '\([[({<]*\)\s*$'  " opening delimiter
-  let items = call('matchlist', [a:label, regex] + a:000)
-  let dopen = split(get(items, 1, ''), '\zs', 1)
-  let dclose = map(copy(dopen), {idx, val -> get(s:closes, val, '')})
-  if &l:filetype ==# 'python' && get(dopen, -1, '') ==# ')'
-    call add(dclose, a:label =~# '^\s*\(def\|class\)\>' ? ':' : '')
-  endif
-  return [join(dopen, ''), join(dclose, '')]
-endfunction
 function! fold#fold_text(...) abort
   if a:0 && a:1  " debugging mode
     let [line1, line2, level] = fold#current()
@@ -151,20 +169,20 @@ function! fold#fold_text(...) abort
   let stats = hunk . level . dots . lines  " default statistics
   if &l:diff  " fill with maximum width
     let [label, stats] = [level . dots . lines, repeat('~', maxlen - strwidth(stats) - 2)]
-  elseif !exists('*fold#get_text_' . &l:filetype)
+  elseif exists('*fold#get_text_' . &l:filetype)
+    let label = fold#get_text_{&l:filetype}(line1, min([line1 + s:maxlines, line2]))
+  else  " global default label
     let label = fold#get_text(line1)
-  else  " filetype specific label
-    let label = fold#get_text_{&l:filetype}(line1, min([line1 + s:nmax, line2]))
   endif
-  let [dopen, dclose] = s:get_delims(label)
+  let [delim1, delim2] = s:get_delims(label)
   let width = maxlen - strwidth(stats) - 1
-  let label = empty(dclose) ? label : label . '···' . dclose
+  let label = empty(delim2) ? label : label . '···' . delim2
   if strwidth(label) >= width  " truncate fold text
-    let dcheck = strpart(label, width - 4 - strwidth(dclose), 1)
-    let dclose = dcheck ==# dopen ? '' : dclose
-    let dcheck = strpart(label, width - 4 - strwidth(dclose))
-    let label = strpart(label, 0, width - 5 - strwidth(dclose))
-    let label = label . '···' . dclose . '  '
+    let dcheck = strpart(label, width - 4 - strwidth(delim2), 1)
+    let delim2 = dcheck ==# delim1 ? '' : delim2
+    let dcheck = strpart(label, width - 4 - strwidth(delim2))
+    let label = strpart(label, 0, width - 5 - strwidth(delim2))
+    let label = label . '···' . delim2 . '  '
   endif
   let space = repeat(' ', width - strwidth(label))
   return strcharpart(label . space . stats, leftidx)
@@ -214,7 +232,7 @@ function! fold#update_folds(force, ...) abort
   endif
   if a:0
     if a:1 > 0  " apply defaults
-      let &l:foldlevel = &l:foldlevelstart
+      let &l:foldlevel = !empty(get(b:, 'fugitive_type', ''))
     endif
     call fold#init()
     if a:1 <= 1  " open under cursor

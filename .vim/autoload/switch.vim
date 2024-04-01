@@ -90,21 +90,23 @@ endfunction
 " Note: Hide switch message during autoload
 function! switch#copy(...) abort
   let keys = ['list', 'number', 'scrolloff', 'relativenumber', 'signcolumn', 'foldcolumn']
-  let state = empty(filter(copy(keys), "eval('&l:' . v:val)"))
+  let props1 = get(b:, 'settings', {})
+  let props2 = {} | for key in keys | let props2[key] = eval('&l:' . key) | endfor
+  let state = empty(filter(copy(props2), {key, val -> val !=# '0' && val !=# 'no'}))
   let toggle = a:0 > 0 ? a:1 : 1 - state
   let suppress = a:0 > 1 ? a:2 : 0
   if state == toggle
     return
   elseif toggle
+    let b:settings = props2
     for key in keys
-      let b:[key] = eval('&l:' . key)
-      exe 'let &l:' . key . '=' . (key ==# 'signcolumn' ? string('no') : '0')
+      exe 'let &l:' . key . '=' . string(key ==# 'signcolumn' ? 'no' : 0)
     endfor
   else
     for key in keys
-      let value = get(b:, key, eval('&g:' . key))
-      exe 'let &l:' . key . '=' . (key ==# 'signcolumn' ? string(value) : value)
+      exe 'let &l:' . key . '=' . string(get(props1, key, eval('&g:' . key)))
     endfor
+    let b:settings = {}
   endif
   call call('s:echo_state', ['Copy mode', toggle, suppress])
 endfunction

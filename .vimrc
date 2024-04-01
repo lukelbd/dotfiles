@@ -52,11 +52,11 @@ set cursorline  " highlight cursor line
 set diffopt=filler,context:5,foldcolumn:0,vertical  " vim-difference display options
 set display=lastline  " displays as much of wrapped lastline as possible;
 set esckeys  " allow keycodes passed with escape
-set fillchars=vert:\|,fold:\ ,foldopen:\>,foldclose:<,eob:~,lastline:@  " e.g. fold markers
+set fillchars=eob:~,vert:\|,lastline:@,fold:\ ,foldopen:\>,foldclose:<
 set foldclose=  " use foldclose=all to auto-close folds when leaving
 set foldcolumn=0  " do not show folds, since fastfold dynamically updates
 set foldlevelstart=0  " hide folds when opening (then 'foldlevel' sets current status)
-set foldnestmax=5  " allow only a few folding levels
+set foldnestmax=6  " allow only some folds
 set foldopen=insert,mark,quickfix,tag,undo  " opening folds on cursor movement, disallow block folds
 set foldtext=fold#fold_text()  " default function for generating text shown on fold line
 set guicursor+=a:blinkon0  " skip blinking cursor
@@ -67,8 +67,7 @@ set hlsearch  " highlight as you search forward
 set ignorecase  " ignore case in search patterns
 set incsearch  " show matches incrementally when using e.g. :sub
 set lazyredraw  " skip redraws during macro and function calls
-set list  " show hidden characters
-set listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:·  " other characters: ▸, ·, ¬, ↳, ⤷, ⬎, ↘, ➝, ↦,⬊
+set listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:·  " other options: ▸, ·, ¬, ↳, ⬎, ↘, ➝, ↦,⬊
 set matchpairs=(:),{:},[:]  " exclude <> by default for use in comparison operators
 set maxmempattern=50000  " from 1000 to 10000
 set mouse=a  " mouse clicks and scroll allowed in insert mode via escape sequences
@@ -88,24 +87,19 @@ set noswapfile " no more swap files, instead use session
 set notimeout  " wait forever when doing multi-key *mappings*
 set nowrap  " global wrap setting possibly overwritten by wraptoggle
 set nrformats=alpha  " never interpret numbers as 'octal'
-set number  " show line numbers
-set numberwidth=4  " number column minimum width
 set path=.  " used in various built-in searching utilities, file_in_path complete opt
 set previewheight=20  " default preview window height
 set pumheight=10  " maximum popup menu height
 set pumwidth=10  " minimum popup menu width
 set redrawtime=5000  " sometimes takes a long time, let it happen
-set relativenumber  " relative line numbers for navigation
 set restorescreen  " restore screen after exiting vim
-set scrolloff=4  " screen lines above and below cursor
 set selectmode=  " disable 'select mode' slm, allow only visual mode for that stuff
 set sessionoptions=tabpages,terminal,winsize  " restrict session options for speed
-set shell=/usr/bin/env\ bash
+set shell=/usr/bin/env\ bash  " first bash found on $PATH
 set shiftround  " round to multiple of shift width
 set showcmd  " show operator pending command
 set shortmess=atqcT  " snappy messages, 'a' does a bunch of common stuff
 set showtabline=1  " default 2 spaces
-set signcolumn=auto  " show signs automatically number column
 set smartcase  " search case insensitive, unless has capital letter
 set smartindent  " additional indentation options
 set spellcapcheck=  " disable checking for capital start of sentence
@@ -139,8 +133,14 @@ let &g:expandtab = 1  " global expand tab (respect tab toggling)
 let &g:foldenable = 1  " global fold enable (respect 'zn' toggling)
 let &g:iskeyword = '@,48-57,_,192-255'  " default keywords
 let &g:iminsert = 0  " disable language maps (used for caps lock)
+let &g:list = 1  " show characters by default
+let &g:number = 1  " show line numbers
+let &g:relativenumber = 1  " show relative line numbers
+let &g:numberwidth = 4  " number column minimum width
+let &g:scrolloff = 4  " screen lines above and below cursor
 let &g:shortmess .= &buftype ==# 'nofile' ? 'I' : ''  " no intro when starting vim
 let &g:shiftwidth = 2  " default 2 spaces
+let &g:signcolumn = 'auto'  " show signs automatically number column
 let &g:softtabstop = 2  " default 2 spaces
 let &g:spell = 0  " global spell disable (only use text files)
 let &g:tabstop = 2  " default 2 spaces
@@ -458,8 +458,8 @@ augroup panel_setup
   au FileType netrw call window#setup_dir()
   au FileType man call shell#setup_man()
   au FileType gitcommit call git#setup_commit()
-  au FileType fugitiveblame call git#setup_blame() | call git#setup_fugitive()
-  au FileType git,fugitive call git#setup_fugitive()
+  au FileType fugitiveblame call git#setup_blame() | call git#setup_panel()
+  au FileType git,diff,fugitive call git#setup_panel()
   for s:ftype in s:panel_filetypes
     let s:modifiable = s:ftype ==# 'gitcommit'
     exe 'au FileType ' . s:ftype . ' call window#setup_panel(' . s:modifiable . ')'
@@ -688,7 +688,7 @@ call utils#repeat_map('o', 'ge', 'AlphaNextEnd',   "<Cmd>call iter#next_motion('
 call utils#repeat_map('o', 'gm', 'AlphaPrevEnd',   "<Cmd>call iter#next_motion('ge, 0, v:operator)<CR>")
 
 " Move between groups of characters with the same case
-" This is helpful when refactoring or renaming variables
+" Note: This is helpful when refactoring and renaming variables
 noremap zw <Cmd>call iter#next_motion('w', 1)<CR>
 noremap zb <Cmd>call iter#next_motion('b', 1)<CR>
 noremap ze <Cmd>call iter#next_motion('e', 1)<CR>
@@ -699,20 +699,24 @@ call utils#repeat_map('o', 'ze', 'CaseNextEnd',   "<Cmd>call iter#next_motion('e
 call utils#repeat_map('o', 'zm', 'CasePrevEnd',   "<Cmd>call iter#next_motion('ge, 1, v:operator)<CR>")
 
 " Screen motion mappings
-" Note: This is consistent with 'zl', 'zL', 'zh', 'zH' horizontal scrolling
-" and lets us use 'zt' for title case 'zb' for boolean toggle.
+" Note: Here use parentheses since 9/0 are used by color scheme switcher
 for s:key in ['0', '^', 'g0', 'g$'] | exe 'noremap ' . s:key . ' ' . s:key . 'ze' | endfor
-noremap z<Space> zzze
-noremap z9 ze
-noremap z0 zs
-noremap z( zt
-noremap z) zb
+noremap g<Space> zzze
+noremap g( ze
+noremap g) zs
+noremap z( zb
+noremap z) zt
 
 " Reset manually open-closed folds accounting for custom overrides
-" Note: Here 'zV' opens all folds from the most recent search
+" Note: Also call fold#update_folds() in common.vim but with 0 to avoid resetting level
+" when calling config_refresh(). So call again below whenever buffer enters window.
 " Note: Here fold#update_folds() re-enforces special expr fold settings for markdown
 " and python files then applies default toggle status that differs from buffer-wide
 " &foldlevel for fortran python and tex files (e.g. always open \begin{document}).
+augroup fold_setup
+  au!
+  au BufWinEnter * call fold#update_folds(0, 1)
+augroup END
 command! -bang -nargs=? Refold call fold#update_folds(<bang>0, <f-args>)
 for s:key in ['z', 'f', 'F', 'n', 'N'] | silent! exe 'unmap! z' . s:key | endfor
 noremap zA zn
@@ -955,6 +959,7 @@ augroup undo_setup
 augroup END
 inoremap <expr> <F11> '<Cmd>undo<CR><Esc>' . edit#insert_mode()
 inoremap <expr> <F12> edit#insert_undo()
+noremap . <Cmd>if !repeat#run(v:count) \| echoerr repeat#errmsg() \| endif<CR>
 nmap u <Cmd>call repeat#wrap('u', v:count)<CR>
 nmap U <Cmd>call repeat#wrap("\<C-r>", v:count)<CR>
 
@@ -995,12 +1000,12 @@ nnoremap <expr> Y (v:count ? '<Esc>' : '') . utils#translate_count('') . 'y$'
 vnoremap <expr> y utils#translate_count('') . 'y'
 vnoremap <expr> Y utils#translate_count('') . 'y'
 
-" Paste from the nth previously deleted or changed text.
-" Note: This was adapated from https://stackoverflow.com/a/31411902/4970632
+" Paste from the nth previously deleted or changed text
+" Note: v_P does not overwrite register: https://stackoverflow.com/a/74935585/4970632
 nnoremap <expr> p utils#translate_count('') . 'p'
 nnoremap <expr> P utils#translate_count('') . 'P'
-vnoremap <expr> p utils#translate_count('') . 'p<Cmd>let @+=@0 \| let @"=@0<CR>'
-vnoremap <expr> P utils#translate_count('') . 'P<Cmd>let @+=@0 \| let @"=@0<CR>'
+vnoremap <expr> p utils#translate_count('') . 'P'
+vnoremap <expr> P utils#translate_count('') . 'P'
 
 " Join v:count lines with coinjoin.vim and keep cursor column
 " Note: Here e.g. '2J' joins 'next two lines' instead of 'current plus one'
@@ -1605,7 +1610,7 @@ for s:plugin in s:fork_plugins
   let s:name = 'lukelbd/' . s:plugin
   if isdirectory(s:path) | call s:plug_local(s:path) | else | call plug#(s:name) | endif
 endfor
-let g:toggle_map = 'g<Space>'  " adjust toggle mapping (note this is repeatable)
+let g:toggle_map = 'z<Space>'  " adjust toggle mapping (note this is repeatable)
 let g:scrollwrapped_nomap = 1  " instead have advanced iter#scroll_infer maps
 let g:scrollwrapped_wrap_filetypes = s:copy_filetypes + ['tex', 'text']
 exe 'noremap + <C-a>' | exe 'noremap - <C-x>'
@@ -2211,7 +2216,7 @@ endif
 if s:plug_active('vim-fugitive')
   augroup fugitive_setup
     au!
-    au BufEnter * call git#command_setup()
+    au BufEnter * call git#setup_commands()
   augroup END
   noremap zl <Cmd>BCommits<CR>
   noremap zL <Cmd>Commits<CR>
@@ -2224,20 +2229,20 @@ if s:plug_active('vim-fugitive')
   noremap <Leader>Y <Cmd>call git#run_map(0, 0, '', 'log')<CR>
   noremap <Leader>u <Cmd>call git#run_map(0, 0, '', 'push origin')<CR>
   noremap <Leader>U <Cmd>call git#run_map(0, 0, '', 'pull origin')<CR>
-  noremap <Leader>i <Cmd>call git#safe_commit(0, 'oops')<CR>
-  noremap <Leader>I <Cmd>call git#safe_commit(1, 'oops')<CR>
-  noremap <Leader>o <Cmd>call git#safe_commit(0, 'commit')<CR>
-  noremap <Leader>O <Cmd>call git#safe_commit(1, 'commit')<CR>
-  noremap <Leader>p <Cmd>call git#safe_commit(0, 'stash push --include-untracked')<CR>
-  noremap <Leader>P <Cmd>call git#safe_commit(1, 'stash push --include-untracked')<CR>
-  noremap <Leader>l <Cmd>call git#run_map(0, 0, '', 'diff -- %')<CR>
-  noremap <Leader>L <Cmd>call git#run_map(0, 0, '', 'stage -- %')<CR>
-  noremap <Leader>k <Cmd>call git#run_map(0, 0, '', 'diff -- :/')<CR>
-  noremap <Leader>K <Cmd>call git#run_map(0, 0, '', 'stage -- :/')<CR>
+  noremap <Leader>i <Cmd>call git#commit_wrap(0, 'oops')<CR>
+  noremap <Leader>I <Cmd>call git#commit_wrap(1, 'oops')<CR>
+  noremap <Leader>o <Cmd>call git#commit_wrap(0, 'commit')<CR>
+  noremap <Leader>O <Cmd>call git#commit_wrap(1, 'commit')<CR>
+  noremap <Leader>p <Cmd>call git#commit_wrap(0, 'stash push --include-untracked')<CR>
+  noremap <Leader>P <Cmd>call git#commit_wrap(1, 'stash push --include-untracked')<CR>
   noremap <Leader>h <Cmd>call git#run_map(0, 0, '', 'diff --staged -- %')<CR>
-  noremap <Leader>H <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- %')<CR>
-  noremap <Leader>j <Cmd>call git#run_map(0, 0, '', 'diff --staged -- :/')<CR>
+  noremap <Leader>H <Cmd>call git#run_map(0, 0, '', 'diff --staged -- :/')<CR>
+  noremap <Leader>l <Cmd>call git#run_map(0, 0, '', 'diff -- %')<CR>
+  noremap <Leader>L <Cmd>call git#run_map(0, 0, '', 'diff -- :/')<CR>
+  noremap <Leader>j <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- %')<CR>
   noremap <Leader>J <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- :/')<CR>
+  noremap <Leader>k <Cmd>call git#run_map(0, 0, '', 'stage -- %')<CR>
+  noremap <Leader>K <Cmd>call git#run_map(0, 0, '', 'stage -- :/')<CR>
   noremap <Leader>b <Cmd>call git#run_map(0, 0, '', 'branches')<CR>
   noremap <Leader>B <Cmd>call git#run_map(0, 0, '', 'switch -')<CR>
   let g:fugitive_legacy_commands = 1  " include deprecated :Git status to go with :Git
@@ -2259,7 +2264,8 @@ if s:plug_active('vim-gitgutter')
   let g:gitgutter_async = 1  " ensure enabled
   let g:gitgutter_map_keys = 0  " disable all maps yo
   let g:gitgutter_max_signs = -1  " maximum number of signs
-  let g:gitgutter_preview_win_floating = 0  " toggle preview window
+  let g:gitgutter_preview_win_floating = 1  " toggle preview window
+  let g:gitgutter_floating_window_options = {'minwidth': g:linelength}
   let g:gitgutter_use_location_list = 0  " use for errors instead
   call utils#repeat_map('', '[G', 'HunkBackward', '<Cmd>call git#hunk_next(-v:count1, 1)<CR>')
   call utils#repeat_map('', ']G', 'HunkForward', '<Cmd>call git#hunk_next(v:count1, 1)<CR>')
@@ -2405,8 +2411,8 @@ noremap <Leader>8 <Cmd>Colorize<CR>
 command! -nargs=? -complete=color Scheme call syntax#next_scheme(<f-args>)
 command! -count=1 Sprev call syntax#next_scheme(-<count>)
 command! -count=1 Snext call syntax#next_scheme(<count>)
-call utils#repeat_map('n', 'g(', 'Sprev', ':<C-u>Sprev<CR>')
-call utils#repeat_map('n', 'g)', 'Snext', ':<C-u>Snext<CR>')
+call utils#repeat_map('n', 'z9', 'Sprev', ':<C-u>Sprev<CR>')
+call utils#repeat_map('n', 'z0', 'Snext', ':<C-u>Snext<CR>')
 noremap <Leader>9 <Cmd>Colors<CR>
 noremap <Leader>0 <Cmd>exe 'Scheme ' . g:colors_default<CR>
 
