@@ -298,7 +298,7 @@ export MPLCONFIGDIR=$HOME/.matplotlib  # same on every machine
 # research utilities or general ideas in 'shared', and project-specific utilities
 # and ideas in 'research'. Could also try 'papers' and 'projects' but this works.
 _dirs_models=(ncparallel mppnccombine)
-_dirs_shared=(reanalysis-data cmip-data observed idealized coupled)
+_dirs_shared=(climate-data cmip-data observed idealized coupled)
 _dirs_research=(timescales persistence constraints relationships hierarchy carbon-cycle)
 for _name in "${_dirs_models[@]}"; do
   if [ -r "$HOME/models/$_name" ]; then
