@@ -46,7 +46,7 @@ function! calc#setup_codi(toggle) abort
     augroup END
   else
     let cmds = exists('##TextChanged') ? 'InsertLeave,TextChanged' : 'InsertLeave'
-    call feedkeys("\<Cmd>exe 'vertical resize ' . window#default_width()\<CR>", 'n')
+    call feedkeys("\<Cmd>exe 'vertical resize ' . window#default_width(0)\<CR>", 'n')
     exe 'augroup codi_' . bufnr()
       au!
       exe 'au ' . cmds . ' <buffer> call codi#update()'

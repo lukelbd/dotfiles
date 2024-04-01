@@ -138,14 +138,14 @@ function! window#default_size(width, ...) abort
   let panes = call('window#count_panes', direcs)
   let size = size - panes + 1  " e.g. 2 panes == 1 divider
   let space = float2nr(ceil(0.23 * size))
-  if panes == 1
+  if panes == 1  " single window
     return size
-  elseif a:0 && type(a:1) == 5
+  elseif a:0 && type(a:1)  " scaled window
     return a:1 * size
-  elseif a:0 && a:1 || !a:0 && panel
-    return space
-  else  " main window
+  elseif a:0 && a:1 || !a:0 && !panel  " main window
     return size - space
+  else  " panel window
+    return space
   endif
 endfunction
 function! window#default_width(...) abort
@@ -216,8 +216,8 @@ function! window#setup_dir() abort
 endfunction
 function! window#show_dir(cmd, local) abort
   let base = a:local ? fnamemodify(resolve(@%), ':p:h') : tag#find_root(@%)
-  exe a:cmd . ' ' . base | exe 'vert resize ' . window#default_width(1)
-  exe 'resize ' . window#default_height(1) | goto
+  exe a:cmd . ' ' . base | exe 'vert resize ' . window#default_width(0)
+  exe 'resize ' . window#default_height(0) | goto
 endfunction
 function! window#show_health() abort
   exe 'CheckHealth'

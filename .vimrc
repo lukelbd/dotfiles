@@ -362,8 +362,10 @@ nnoremap <Tab>h <Cmd>silent! wincmd h<CR>
 nnoremap <Tab>l <Cmd>silent! wincmd l<CR>
 
 " Tab and window resizing
-nnoremap <Tab>1 <Cmd>exe 'resize ' . window#default_height()<CR>
+nnoremap <Tab><Space> <Cmd>exe 'resize ' . window#default_height()<CR>
   \<Cmd>exe 'vert resize ' . window#default_width()<CR>
+nnoremap <Tab>1 <Cmd>exe 'resize ' . window#default_height(1)<CR>
+  \<Cmd>exe 'vert resize ' . window#default_width(1)<CR>
 nnoremap <Tab>2 <Cmd>exe 'resize ' . window#default_height(0.5)<CR>
   \<Cmd>exe 'vert resize ' . window#default_width(0.5)<CR>
 nnoremap <Tab>3 <Cmd>exe 'resize ' . window#default_height(0)<CR>
@@ -388,8 +390,8 @@ nnoremap <Tab>i <Cmd>call file#open_init('Drop', 1)<CR>
 nnoremap <Tab>y <Cmd>call file#open_init('Files', 1)<CR>
 nnoremap <Tab>- <Cmd>call file#open_init('Split', 1)<CR>
 nnoremap <Tab>= <Cmd>call file#open_init('Split', 0)<CR>
-nnoremap <Tab>/ <Cmd>call window#show_dir('topleft vsplit', 1)<CR>
 nnoremap <Tab>\ <Cmd>call window#show_dir('topleft vsplit', 0)<CR>
+nnoremap <Tab>\| <Cmd>call window#show_dir('topleft vsplit', 1)<CR>
 
 " Open file in current directory or some input directory
 " Note: Anything that is not :Files gets passed to :Drop command
@@ -539,16 +541,16 @@ augroup END
 inoremap <silent> <expr> <C-q> iter#complete_popup('<Cmd>pclose<CR>')
 inoremap <silent> <expr> <C-w> iter#complete_popup('<Cmd>pclose<CR>')
 inoremap <silent> <expr> <Tab> iter#complete_popup('<C-]><Tab>', 2, 1)
-inoremap <silent> <expr> <S-Tab> iter#complete_popup(edit#forward_delete(0), 0, 1)
+inoremap <silent> <expr> <S-Tab> iter#complete_popup(edit#insert_delete(0), 0, 1)
 inoremap <silent> <expr> <F2> iter#complete_popup(ddc#map#manual_complete(), 2, 1)
-inoremap <silent> <expr> <F1> iter#complete_popup(edit#forward_delete(0), 0, 1)
-inoremap <silent> <expr> <Delete> iter#complete_popup(edit#forward_delete(1), 1)
+inoremap <silent> <expr> <F1> iter#complete_popup(edit#insert_delete(0), 0, 1)
+inoremap <silent> <expr> <Delete> iter#complete_popup(edit#insert_delete(1), 1)
 inoremap <silent> <expr> <C-g><CR> iter#complete_popup('<CR>')
 inoremap <silent> <expr> <C-g><Space> iter#complete_popup('<Space>')
 inoremap <silent> <expr> <C-g><BackSpace> iter#complete_popup('<BackSpace>')
-inoremap <silent> <expr> <CR> iter#complete_popup('<C-]><C-r>=edit#delimit_mate("r")<CR>', 1, 1)
-inoremap <silent> <expr> <Space> iter#complete_popup('<C-]><C-r>=edit#delimit_mate("s")<CR>', 1)
-inoremap <silent> <expr> <Backspace> iter#complete_popup('<C-r>=edit#delimit_mate("b")<CR>', 1)
+inoremap <silent> <expr> <CR> iter#complete_popup('<C-]><C-r>=edit#insert_char("r")<CR>', 1, 1)
+inoremap <silent> <expr> <Space> iter#complete_popup('<C-]><C-r>=edit#insert_char("s")<CR>', 1)
+inoremap <silent> <expr> <Backspace> iter#complete_popup('<C-r>=edit#insert_char("b")<CR>', 1)
 
 " Command mode wild menu completion
 " Note: This prevents annoyance where multiple old completion options can be shown
@@ -609,7 +611,7 @@ command! -nargs=0 ClearTabs call stack#clear_stack('tab') | call stack#update_ta
 command! -nargs=0 ShowTabs call stack#update_tabs() | call stack#show_stack('tab')
 command! -nargs=? PopTabs call stack#pop_stack('tab', <f-args>)
 silent! exe 'cunmap <Up>' | silent! exe 'cunmap <Down>'
-noremap <Tab><Space> <Cmd>call stack#reset_tabs()<CR><Cmd>call stack#update_tabs(2)<CR>
+noremap <Tab>/ <Cmd>call stack#reset_tabs()<CR><Cmd>call stack#update_tabs(2)<CR>
 noremap <F1> <Cmd>call stack#scroll_tabs(-v:count1)<CR>
 noremap <F2> <Cmd>call stack#scroll_tabs(v:count1)<CR>
 
@@ -877,28 +879,28 @@ nnoremap <expr> \r edit#reverse_lines_expr()
 for s:mode in ['n', 'v'] | exe s:mode . 'map \w \t' | endfor  " ambiguous maps
 let g:sub_trail = ['Removed trailing spaces', '\s\+\ze$', '']  " analogous to surround
 let g:sub_tabs = ['Translated tabs', '\t', {-> repeat(' ', &l:tabstop)}]
-nnoremap <expr> \t call('edit#sub_replace_expr', g:sub_trail)
-vnoremap <expr> \t call('edit#sub_replace_expr', g:sub_trail)
-nnoremap <expr> \<Tab> call('edit#sub_replace_expr', g:sub_tabs)
-vnoremap <expr> \<Tab> call('edit#sub_replace_expr', g:sub_tabs)
+nnoremap <expr> \t call('edit#search_replace_expr', g:sub_trail)
+vnoremap <expr> \t call('edit#search_replace_expr', g:sub_trail)
+nnoremap <expr> \<Tab> call('edit#search_replace_expr', g:sub_tabs)
+vnoremap <expr> \<Tab> call('edit#search_replace_expr', g:sub_tabs)
 
 " Replace consecutive spaces on current line with
 " one space only if they're not part of indentation
 let g:sub_ssqueeze = ['Squeezed consecutive spaces', '\S\@<=\(^ \+\)\@<! \{2,}', ' ']
 let g:sub_sstrip = ['Stripped spaces', '\S\@<=\(^ \+\)\@<! \+', '']
-nnoremap <expr> \s call('edit#sub_replace_expr', g:sub_ssqueeze)
-nnoremap <expr> \S call('edit#sub_replace_expr', g:sub_sstrip)
-vnoremap <expr> \s call('edit#sub_replace_expr', g:sub_ssqueeze)
-vnoremap <expr> \S call('edit#sub_replace_expr', g:sub_sstrip)
+nnoremap <expr> \s call('edit#search_replace_expr', g:sub_ssqueeze)
+nnoremap <expr> \S call('edit#search_replace_expr', g:sub_sstrip)
+vnoremap <expr> \s call('edit#search_replace_expr', g:sub_ssqueeze)
+vnoremap <expr> \S call('edit#search_replace_expr', g:sub_sstrip)
 
 " Remove empty lines
 " Replace consecutive newlines with single newline
 let g:sub_esqueeze = ['Squeezed consecutive empty lines', '\(\n\s*\n\)\(\s*\n\)\+', '\1']
 let g:sub_estrip = ['Stripped empty lines', '^\s*$\n', '']
-nnoremap <expr> \e call('edit#sub_replace_expr', g:sub_esqueeze)
-vnoremap <expr> \e call('edit#sub_replace_expr', g:sub_esqueeze)
-nnoremap <expr> \E call('edit#sub_replace_expr', g:sub_estrip)
-vnoremap <expr> \E call('edit#sub_replace_expr', g:sub_estrip)
+nnoremap <expr> \e call('edit#search_replace_expr', g:sub_esqueeze)
+vnoremap <expr> \e call('edit#search_replace_expr', g:sub_esqueeze)
+nnoremap <expr> \E call('edit#search_replace_expr', g:sub_estrip)
+vnoremap <expr> \E call('edit#search_replace_expr', g:sub_estrip)
 
 " Delete first-level and second-level commented text
 " Critical to put in same group since these change the line count
@@ -911,10 +913,10 @@ let g:sub_dcomments = [
     \ '\(^\s*' . comment#get_regex() . '\s*' . comment#get_regex()
     \ . '.\+$\n\|\s\+' . comment#get_regex() . '\s*' . comment#get_regex() . '.\+$\)'
   \ }, '']
-nnoremap <expr> \c call('edit#sub_replace_expr', g:sub_comments)
-vnoremap <expr> \c call('edit#sub_replace_expr', g:sub_comments)
-nnoremap <expr> \C call('edit#sub_replace_expr', g:sub_dcomments)
-vnoremap <expr> \C call('edit#sub_replace_expr', g:sub_dcomments)
+nnoremap <expr> \c call('edit#search_replace_expr', g:sub_comments)
+vnoremap <expr> \c call('edit#search_replace_expr', g:sub_comments)
+nnoremap <expr> \C call('edit#search_replace_expr', g:sub_dcomments)
+vnoremap <expr> \C call('edit#search_replace_expr', g:sub_dcomments)
 
 " Replace useless bibtex entries
 " Previously localized to bibtex ftplugin but no major reason not to include here
@@ -926,10 +928,10 @@ let g:sub_dbibtex = [
   \ 'Removed doi/unused bibtex entries', '^\s*'
   \ . '\(abstract\|annotate\|copyright\|doi\|file\|language\|keywords\|note\|shorttitle\|url\|urldate\)'
   \ . '\s*=\s*{\_.\{-}},\?\n', '']
-nnoremap <expr> \x call('edit#sub_replace_expr', g:sub_bibtex)
-vnoremap <expr> \x call('edit#sub_replace_expr', g:sub_bibtex)
-nnoremap <expr> \X call('edit#sub_replace_expr', g:sub_dbibtex)
-vnoremap <expr> \X call('edit#sub_replace_expr', g:sub_dbibtex)
+nnoremap <expr> \x call('edit#search_replace_expr', g:sub_bibtex)
+vnoremap <expr> \x call('edit#search_replace_expr', g:sub_bibtex)
+nnoremap <expr> \X call('edit#search_replace_expr', g:sub_dbibtex)
+vnoremap <expr> \X call('edit#search_replace_expr', g:sub_dbibtex)
 
 " Fix unicode quotes and dashes, trailing dashes due to a pdf copy
 " Underscore is easiest one to switch if using that Karabiner map
@@ -937,14 +939,14 @@ let g:sub_breaks = ['Converted dashed word breaks', '\(\w\)[-–]\s\+', '\1']
 let g:sub_dashes = ['Converted unicode em dashes', '–', '--']
 let g:sub_dsingle = ['Converted unicode single quotes', '‘', '`', '’', "'"]
 let g:sub_ddouble = ['Converted unicode double quotes', '“', '``', '”', "''"]
-nnoremap <expr> \_ call('edit#sub_replace_expr', g:sub_breaks)
-vnoremap <expr> \_ call('edit#sub_replace_expr', g:sub_breaks)
-nnoremap <expr> \- call('edit#sub_replace_expr', g:sub_dashes)
-vnoremap <expr> \- call('edit#sub_replace_expr', g:sub_dashes)
-nnoremap <expr> \' call('edit#sub_replace_expr', g:sub_dsingle)
-vnoremap <expr> \' call('edit#sub_replace_expr', g:sub_dsingle)
-nnoremap <expr> \" call('edit#sub_replace_expr', g:sub_ddouble)
-vnoremap <expr> \" call('edit#sub_replace_expr', g:sub_ddouble)
+nnoremap <expr> \_ call('edit#search_replace_expr', g:sub_breaks)
+vnoremap <expr> \_ call('edit#search_replace_expr', g:sub_breaks)
+nnoremap <expr> \- call('edit#search_replace_expr', g:sub_dashes)
+vnoremap <expr> \- call('edit#search_replace_expr', g:sub_dashes)
+nnoremap <expr> \' call('edit#search_replace_expr', g:sub_dsingle)
+vnoremap <expr> \' call('edit#search_replace_expr', g:sub_dsingle)
+nnoremap <expr> \" call('edit#search_replace_expr', g:sub_ddouble)
+vnoremap <expr> \" call('edit#search_replace_expr', g:sub_ddouble)
 
 
 "-----------------------------------------------------------------------------"
@@ -1009,18 +1011,18 @@ vnoremap <expr> P utils#translate_count('') . 'P'
 
 " Join v:count lines with coinjoin.vim and keep cursor column
 " Note: Here e.g. '2J' joins 'next two lines' instead of 'current plus one'
-noremap <silent> J <Cmd>call edit#join_lines(0, 0)<CR>
-noremap <silent> K <Cmd>call edit#join_lines(1, 0)<CR>
-noremap <silent> gJ <Cmd>call edit#join_lines(0, 1)<CR>
-noremap <silent> gK <Cmd>call edit#join_lines(1, 1)<CR>
+noremap <silent> J <Cmd>call edit#conjoin_lines(0, 0)<CR>
+noremap <silent> K <Cmd>call edit#conjoin_lines(1, 0)<CR>
+noremap <silent> gJ <Cmd>call edit#conjoin_lines(0, 1)<CR>
+noremap <silent> gK <Cmd>call edit#conjoin_lines(1, 1)<CR>
 
 " Swap characters or lines
 " Mnemonic is 'cut line' at cursor, character under cursor will be deleted
-call utils#repeat_map('n', 'ch', 'SwapLeft', '<Cmd>call edit#swap_chars(1)<CR>')
-call utils#repeat_map('n', 'cl', 'SwapRight', '<Cmd>call edit#swap_chars(0)<CR>')
-call utils#repeat_map('n', 'ck', 'SwapAbove', '<Cmd>call edit#swap_lines(1)<CR>')
-call utils#repeat_map('n', 'cj', 'SwapBelow', '<Cmd>call edit#swap_lines(0)<CR>')
-call utils#repeat_map('n', 'cL', 'SliceLine', 'myi<CR><Esc><Cmd>keepjumps normal! `y<Cmd>delmark y<CR>')
+call utils#repeat_map('n', 'ch', 'ChangeLeft', '<Cmd>call edit#switch_chars(1)<CR>')
+call utils#repeat_map('n', 'cl', 'ChangeRight', '<Cmd>call edit#switch_chars(0)<CR>')
+call utils#repeat_map('n', 'ck', 'ChangeAbove', '<Cmd>call edit#switch_lines(1)<CR>')
+call utils#repeat_map('n', 'cj', 'ChangeBelow', '<Cmd>call edit#switch_lines(0)<CR>')
+call utils#repeat_map('n', 'cL', 'ChangeSplit', 'myi<CR><Esc><Cmd>keepjumps normal! `y<Cmd>delmark y<CR>')
 
 " Record macro by pressing Q with optional count
 " Note: This permits e.g. 1, or '1, for specific macros. Note cannot run 'q' from autoload
@@ -1786,7 +1788,7 @@ if s:plug_active('undotree')
     endif
   endfunction
   function! Undotree_CustomMap() abort  " autoload/undotree.vim s:undotree.BindKey()
-    exe 'vertical resize ' . window#default_width(1)
+    exe 'vertical resize ' . window#default_width(0)
     nmap <buffer> U <Plug>UndotreeRedo
     noremap <buffer> <nowait> u <C-u>
     noremap <buffer> <nowait> d <C-d>

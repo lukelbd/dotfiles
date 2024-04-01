@@ -329,52 +329,61 @@ endfunction
 " Note: This supports e.g. pasting macro keys with e.g. 1"p then quickly editing them
 " and copying back into macro register with e.g. 1"dil. Also rotates yanks, changes,
 " and deletions across a-z registers and macros across 1-9 registers (see above)
-function! utils#translate_register(...) abort
-  let default = a:0 ? a:1 : ''
-  let labels = {'1': 'st', '2': 'nd', '3': 'rd'}
-  let char = utils#input_default('Register', '', '', 1)
-  if char =~# '^[''"]$'  " select vim register name
-    let name = utils#input_default('Register (native)', '', '', 1)
-  elseif char =~# '^\d$'  " select macro number register
-    let name = char
-  else  " pass default to operator
-    let name = char =~? '^[dcyp]$' ? default : '' | call feedkeys(char, 'm')
-  endif
-  if name ==# '_'
+function! s:get_label(name) abort
+  let label = ''  " default label
+  if a:name ==# '_'
     let label = 'blackhole'
-  elseif name =~# '[+*]'
+  elseif a:name =~# '[+*]'
     let label = 'clipboard'
-  elseif name =~# '\d'  " use character to pick number register
-    let label = name . get(labels, name, 'th') . ' macro'
-  else  " default label
-    let label = ''
+  elseif a:name =~# '\d'  " use character to pick number register
+    let label = getreg(a:name)
+  elseif v:count
+    let label = v:count ? 'count ' . v:count : ''
   endif
-  return [name, label]
+  return label
+endfunction
+function! s:get_input(mode, name) abort
+  let char = utils#input_default('Register', '', '', 1)
+  if char =~? '^[dcyp]$'  " default register
+    call feedkeys(char, 'm') | return a:name
+  endif
+  if char =~# '^[''"]$'  " select vim register name
+    let char = utils#input_default('Register (native)', '', '', 1)
+  endif
+  if char !~? '^[0-9a-z*+%.:/"-]$'
+    call feedkeys(char, 'm') | return ''
+  elseif char =~# '^\d$'  " select macro number register
+    return s:translate_count(a:mode, str2nr(char))[0]
+  else
+    return char
+  endif
 endfunction
 function! utils#translate_count(mode, ...) abort
   if v:register !=# '"' | return '' | endif  " avoid recursion
   let [name, _, _, cmax] = s:translate_count(a:mode, v:count)
-  let [name, label] = !a:0 || v:count ? [name, ''] : utils#translate_register(a:1)
-  if !v:count && a:mode !~# '[m`q@]'
+  let name = !a:0 || v:count ? name : s:get_input(a:mode, a:1)
+  redraw | if empty(name)  " clear message
+    echo '' | return ''
+  elseif !v:count && a:mode !~# '[m`q@]'
     call utils#setup_registers()  " queue register changes
   endif
-  let msg = '' | if v:count > cmax  " emit warning
-    let msg .= ' Truncating count ' . v:count . ' to ' . string(name) . ' (count ' . cmax . ')'
+  let label = s:get_label(name)
+  let group = a:mode =~# '[m`]' ? 'Mark' : name =~# '^\d$' ? 'Macro' : 'Register'
+  let warn = '' | if v:count > cmax  " emit warning
+    let warn .= ' Truncating count ' . v:count . ' to ' . string(name) . ' (count ' . cmax . ')'
   endif
   if a:mode ==# 'm' && index(map(getmarklist(), 'v:val.mark'), "'" . name) != -1
-    let msg .= ' Overwriting mark ' . string(name) . ' (count ' . v:count . ')'
+    let warn .= ' Overwriting mark ' . string(name) . ' (count ' . v:count . ')'
   endif
-  if !empty(name) && empty(label)
-    let label = name =~# '^\d$' ? getreg(name) : v:count ? 'count ' . v:count : ''
+  if !empty(warn)
+    echohl WarningMsg | echom 'Warning: ' . trim(warn) | echohl None
+  else  " show register
+    echom group . ': ' . name[0] . (empty(label) ? '' : ' (' . label . ')')
   endif
-  let head = a:mode =~# '[m`]' ? 'Mark' : name =~# '^\d$' ? 'Macro' : 'Register'
-  let keys = v:count && a:mode ==# 'n' ? "\<Esc>" : ''
-  let keys .= !a:0 && a:mode =~# '[q@]' ? a:mode : ''
-  let keys .= a:0 || a:mode !~# '[q@m`]' ? '"' : ''
-  if !empty(msg)
-    redraw | echohl WarningMsg | echom 'Warning: ' . trim(msg) | echohl None
-  elseif !empty(name) && !empty(label)  " mark name label
-    redraw | echom head . ': ' . name[0] . ' (' . label . ')'
+  if !a:0 && a:mode =~# '[q@]'
+    let name = a:mode . name  " e.g. q1 @1
+  elseif a:0 || a:mode !~# '[q@m`]'
+    let name = '"' . name
   endif
-  return keys . name
+  return v:count && mode() ==# 'n' ? "\<Esc>" . name : name
 endfunction

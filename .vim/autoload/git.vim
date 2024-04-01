@@ -18,7 +18,7 @@ let s:cmd_editor = ['merge', 'commit', 'oops']  " commands open editor
 let s:cmd_oneline = ['add', 'stage', 'reset', 'push', 'pull', 'fetch', 'switch', 'restore', 'checkout']
 let s:cmd_resize = {
   \ '': 0.5, 'commits': 0.5, 'log': 0.5, 'tree': 0.5, 'trunk': 0.5,
-  \ 'show': 0, 'diff': 0, 'merge': 0, 'commit': 0, 'oops': 0, 'status': 0,
+  \ 'show': 1, 'diff': 1, 'merge': 1, 'commit': 1, 'oops': 1, 'status': 1,
 \ }
 let s:cmd_translate = {'status': '',
   \ 'log': 'log ' . s:log_trim,
@@ -63,11 +63,11 @@ function! git#setup_blame() abort
   let regex = '^\x\{8}\s\+\d\+\s\+(\zs<\S\+>\s\+'
   call matchadd('Conceal', regex, 0, -1, {'conceal': ''})
   if window#count_panes('h') == 1
-    call feedkeys("\<Cmd>vertical resize " . window#default_width(1) . "\<CR>", 'n')
+    call feedkeys("\<Cmd>vertical resize " . window#default_width(0) . "\<CR>", 'n')
   endif
 endfunction
 function! git#setup_commit(...) abort
-  exe 'resize ' . window#default_height()
+  exe 'resize ' . window#default_height(1)
   call switch#autosave(1, 1)  " suppress message
   setlocal colorcolumn=73
   goto | startinsert  " first row column
@@ -131,7 +131,7 @@ function! s:run_cmd(bnum, lnum, cmd, ...) abort
     redraw | echo 'Git ' . input . space | exe a:cmd
   else  " panel generated
     let [width, height] = [winwidth(0), winheight(0)]
-    let resize = get(s:cmd_resize, name, 1)
+    let resize = get(s:cmd_resize, name, 0)  " default panel size
     silent exe a:cmd | let newbuf = a:bnum != bufnr()
     if newbuf
       setlocal bufhidden=delete | if line('$') <= 1 | call window#close_pane(1) | endif

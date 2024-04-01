@@ -5,11 +5,6 @@
 " Note: Native delimitMate#ExpandReturn() issues <Esc> then fails to split brackets due
 " to InsertLeave autocommand that repositions cursor. Use <C-c> to avoid InsertLeave.
 let s:delimit_mate = {'s': 'ExpandSpace', 'r': 'ExpandReturn', 'b': 'BS'}
-function! edit#delimit_mate(key, ...) abort
-  let name = get(s:delimit_mate, a:key, a:key)
-  let keys = call('delimitMate#' . name, a:000)
-  return substitute(keys, "\<Esc>", "\<C-c>", 'g')
-endfunction
 function! edit#echo_range(msg, num) range abort
   echo a:msg . (a:msg =~# '\s' ? ' on' : '') . ' ' . a:num . ' line(s)'
 endfunction
@@ -17,26 +12,55 @@ function! edit#how_much(...) abort
   return utils#motion_func('HowMuch#HowMuch', a:000)
 endfunction
 
-" Forward delete by indent whitespace in insert mode
+" Indent lines by count
+" Note: Native vim indent uses count to move over number of lines, but redundant
+" with e.g. 'd2k', so instead use count to denote indentation level.
+" Indent or join v:count next lines
+" Note: This joins v:count following lines, optionally above or below. Note
+" mapping with <silent> and using :\<C-u> is critical for visual command.
+function! edit#conjoin_lines(before, spaces, ...) abort
+  let njoin = a:0 ? a:1 : v:count1 + (v:count > 1)
+  let nmove = a:0 ? a:1 : v:count1
+  let key = a:spaces ? 'gJ' : 'J'
+  let head = mode() =~? '^n' ? a:before ? nmove . 'k' . njoin : njoin : ''
+  let name = mode() =~? '^n' ? 'Normal' : 'Visual'
+  let conjoin = 'call conjoin#join' . name . '(' . string(key) . ')'
+  let cursor = "call cursor('.', " . col('.') . ')'
+  call feedkeys(head . ":\<C-u>" . conjoin . "\<CR>", 'n')
+  call feedkeys("\<Cmd>" . cursor . "\<CR>", 'n')
+endfunction
+" Indent input lines
+function! edit#indent_lines(dedent, count) range abort
+  return a:firstline . ',' . a:lastline . repeat(a:dedent ? '<' : '>', a:count)
+endfunction
+" For <expr> map accepting motion
+function! edit#indent_lines_expr(...) abort
+  return utils#motion_func('edit#indent_lines', a:000)
+endfunction
+
+" Insert mode delete and undo
+" Note: This restores cursor position after insert-mode undo. First queue translation
+" with edit#insert_mode() then run edit#insert_undo() on InsertLeave (e.g. after 'ciw')
 " Note: Remove single tab or up to &tabstop spaces to the right of cursor. This
 " enforces consistency with 'softtab' backspace-by-tabs behavior.
-function! edit#forward_delete(...) abort
-  let icol = col('.') - 1  " vint: -ProhibitUsingUndeclaredVariable
-  let line = getline('.')
-  let line = line[icol:icol + &tabstop - 1]
+function! edit#insert_mode(...) abort
+  let imode = a:0 ? a:1 : get(b:, 'insert_mode', '')
+  let b:insert_mode = imode  " save character
+  return imode
+endfunction
+function! edit#insert_char(key, ...) abort
+  let name = get(s:delimit_mate, a:key, a:key)
+  let keys = call('delimitMate#' . name, a:000)
+  return substitute(keys, "\<Esc>", "\<C-c>", 'g')
+endfunction
+function! edit#insert_delete(...) abort  " vint: -ProhibitUsingUndeclaredVariable
+  let [idx, text] = [col('.') - 1, getline('.')]
+  let text = text[idx:idx + &tabstop - 1]
   let regex = '^\(\t\| \{,' . &tabstop . '}\).*$'
-  let pad = substitute(line, regex, '\1', '')
+  let pad = substitute(text, regex, '\1', '')
   let cnt = empty(pad) ? a:0 && a:1 : len(pad)
   let head = cnt && pumvisible() ? "\<C-e>" : ''
   return repeat("\<Delete>", cnt)
-endfunction
-
-" Restore insert mode after undo
-" Note: This restores cursor position after insert-mode undo. First queue translation
-" with edit#insert_mode() then run edit#insert_undo() on InsertLeave (e.g. after 'ciw')
-function! edit#insert_mode(...) abort
-  let imode = a:0 ? a:1 : get(b:, 'insert_mode', '')  " default to previous
-  let b:insert_mode = imode | return imode
 endfunction
 function! edit#insert_undo(...) abort
   let imode = a:0 ? a:1 : get(b:, 'insert_mode', '')  " default to queued
@@ -50,32 +74,37 @@ function! edit#insert_undo(...) abort
   let b:insert_mode = iundo | return "\<C-g>u"
 endfunction
 
-" Indent lines by count
-" Note: Native vim indent uses count to move over number of lines, but redundant
-" with e.g. 'd2k', so instead use count to denote indentation level.
-function! edit#indent_lines(dedent, count) range abort
-  let irange = a:firstline . ',' . a:lastline  " use native vim message
-  let indent = repeat(a:dedent ? '<' : '>', a:count)
-  exe irange . indent
+" Switch adjacent characters or lines
+" Note: This keeps existing registers and folds. If calling on line with closed fold
+" will transfer entire fold contents and define new FastFold-managed manual folds.
+function! edit#move_chars(...) abort
+  let idx = a:0 && a:1 ? cnum - 1 : cnum
+  let [cnum, line] = [col('.'), getline('.')]
+  if idx > 0 && idx < len(line)
+    let line = line[:idx - 2] . line[idx] . line[idx - 1] . line[idx + 1:]
+    call setline('.', line)
+  endif
 endfunction
-" For <expr> map accepting motion
-function! edit#indent_lines_expr(...) abort
-  return utils#motion_func('edit#indent_lines', a:000)
-endfunction
-
-" Join v:count next lines
-" Note: This joins v:count following lines, optionally above or below. Note
-" mapping with <silent> and using :\<C-u> is critical for visual command.
-function! edit#join_lines(before, spaces, ...) abort
-  let njoin = a:0 ? a:1 : v:count1 + (v:count > 1)
-  let nmove = a:0 ? a:1 : v:count1
-  let key = a:spaces ? 'gJ' : 'J'
-  let head = mode() =~? '^n' ? a:before ? nmove . 'k' . njoin : njoin : ''
-  let name = mode() =~? '^n' ? 'Normal' : 'Visual'
-  let conjoin = 'call conjoin#join' . name . '(' . string(key) . ')'
-  let cursor = "call cursor('.', " . col('.') . ')'
-  call feedkeys(head . ":\<C-u>" . conjoin . "\<CR>", 'n')
-  call feedkeys("\<Cmd>" . cursor . "\<CR>", 'n')
+function! edit#move_lines(...) abort
+  let [line1, delta] = [line('.'), a:0 && a:1 ? -1 : 1]
+  if line1 + delta < 1 || line1 + delta > line('$') | return | endif
+  let [line11, line12] = [foldclosed(line1), foldclosedend(line1)]
+  let [line11, line12] = line11 > 0 ? [line11, line12] : [line1, line1]
+  let line2 = delta > 0 ? line12 + delta : line11 + delta
+  let [fold1, fold2] = [foldlevel(line1) > 0, foldlevel(line2) > 0]
+  let [close1, close2] = [foldclosed(line1) > 0, foldclosed(line2) > 0]
+  let [line21, line22] = [foldclosed(line2), foldclosedend(line2)]
+  let [line21, line22] = line21 > 0 ? [line21, line22] : [line2, line2]
+  let [line1, line2] = delta > 0 ? [line11, line22] : [line21, line12]
+  let [text1, text2] = [getline(line11, line12), getline(line21, line22)]
+  call deletebufline(bufnr(), line1, line2)  " delete without register
+  call append(line1 - 1, delta > 0 ? text2 + text1 : text1 + text2)
+  let range1 = (line11 + delta * len(text2)) . ',' . (line12 + delta * len(text2))
+  let range2 = (line21 - delta * len(text1)) . ',' . (line22 - delta * len(text1))
+  let manual = &l:foldmethod ==# 'manual'  " e.g. fast fold enabled
+  if manual && fold1 | exe range1 . 'fold' | exe range1 . (close1 ? 'foldclose' : 'foldopen') | endif
+  if manual && fold2 | exe range2 . 'fold' | exe range2 . (close2 ? 'foldclose' : 'foldopen') | endif
+  exe line21 | exe close1 ? '' : 'normal! zv'
 endfunction
 
 " Search sort or reverse the input lines
@@ -111,7 +140,7 @@ endfunction
 " Spell check under cursor
 " Note: This improves '1z=' to return nothing when called on valid words.
 " Note: If nothing passed and no manual count then skip otherwise continue.
-function! edit#spell_bad(...) abort
+function! s:spell_check(...) abort
   let word = a:0 ? a:1 : expand('<cword>')
   let [fixed, which] = spellbadword(word)
   return !empty(fixed)
@@ -119,12 +148,12 @@ endfunction
 function! edit#spell_next(count) abort
   let keys = a:count < 0 ? '[s' : ']s'
   for _ in range(abs(a:count))
-    exe edit#spell_bad() ? '' : 'keepjumps normal! ' . keys
+    exe s:spell_check() ? '' : 'keepjumps normal! ' . keys
     call edit#spell_check(1)
   endfor
 endfunction
 function! edit#spell_check(...) abort
-  if a:0 || v:count || edit#spell_bad()
+  if a:0 || v:count || s:spell_check()
     let nr = a:0 ? a:1 : v:count1
     let nr = nr ? string(nr) : ''
     echom 'Spell check: ' . expand('<cword>')
@@ -139,19 +168,19 @@ endfunction
 " Search replace without history
 " Note: Substitute 'n' would give exact count but then have to repeat twice, too slow
 " Note: Critical to replace reverse line-by-line in case substitution has newlines
-function! edit#sub_replace(msg, ...) range abort
-  let nlines = 0  " pattern count
-  let search = @/  " hlsearch pattern
+function! edit#search_replace(msg, ...) range abort
+  let nlines = 0 " pattern count
+  let search = @/ " hlsearch pattern
   let winview = winsaveview()
   let pairs = copy(a:000)
   for line in range(a:lastline, a:firstline, -1)
     for idx in range(0, a:0 - 2, 2)
-      let jdx = idx + 1  " replacement index
+      let jdx = idx + 1 " replacement index
       let sub = type(pairs[idx]) == 2 ? pairs[idx]() : pairs[idx]
       let rep = jdx >= a:0 ? '' : type(pairs[jdx]) == 2 ? pairs[jdx]() : pairs[jdx]
       let cmd = line . 's@' . sub . '@' . rep . '@gel'
-      let nlines += !empty(execute('keepjumps ' . cmd))  " or exact with 'n'?
-      call histdel('/', -1)  " preserve history
+      let nlines += !empty(execute('keepjumps ' . cmd)) " or exact with 'n'?
+      call histdel('/', -1) " preserve history
     endfor
   endfor
   call edit#echo_range(a:msg, nlines)
@@ -159,52 +188,8 @@ function! edit#sub_replace(msg, ...) range abort
   call winrestview(winview)
 endfunction
 " For <expr> map accepting motion
-function! edit#sub_replace_expr(...) abort
-  return utils#motion_func('edit#sub_replace', a:000)
-endfunction
-
-" Swap characters or lines
-" Note: This keeps existing registers and folds. If calling on line with closed fold
-" will transfer entire fold contents and define new FastFold-managed manual folds.
-function! edit#swap_chars(...) abort
-  let cnum = col('.')
-  let text = getline('.')
-  let idx = a:0 && a:1 ? cnum - 1 : cnum
-  if idx > 0 && idx < len(text)
-    let text = text[:idx - 2] . text[idx] . text[idx - 1] . text[idx + 1:]
-    call setline('.', text)
-  endif
-endfunction
-function! edit#swap_lines(...) abort
-  let delta = a:0 && a:1 ? -1 : 1
-  let line1 = line('.')
-  if line1 + delta < 1 || line1 + delta > line('$')
-    return
-  endif
-  if foldclosed(line1) > 0
-    let [line11, line12] = [foldclosed(line1), foldclosedend(line1)]
-  else
-    let [line11, line12] = [line1, line1]
-  endif
-  let fold = &l:foldmethod ==# 'manual'  " e.g. fast fold enabled
-  let line2 = delta > 0 ? line12 + delta : line11 + delta
-  let [fold1, fold2] = [foldlevel(line1) > 0, foldlevel(line2) > 0]
-  let [close1, close2] = [foldclosed(line1) > 0, foldclosed(line2) > 0]
-  if foldclosed(line2) > 0
-    let [line21, line22] = [foldclosed(line2), foldclosedend(line2)]
-  else
-    let [line21, line22] = [line2, line2]
-  endif
-  let [line1, line2] = delta > 0 ? [line11, line22] : [line21, line12]
-  let [text1, text2] = [getline(line11, line12), getline(line21, line22)]
-  call deletebufline(bufnr(), line1, line2)  " delete without register
-  call append(line1 - 1, delta > 0 ? text2 + text1 : text1 + text2)
-  let range1 = (line11 + delta * len(text2)) . ',' . (line12 + delta * len(text2))
-  let range2 = (line21 - delta * len(text1)) . ',' . (line22 - delta * len(text1))
-  if fold && fold1 | exe range1 . 'fold' | exe range1 . (close1 ? 'foldclose' : 'foldopen') | endif
-  if fold && fold2 | exe range2 . 'fold' | exe range2 . (close2 ? 'foldclose' : 'foldopen') | endif
-  exe line21
-  exe close1 ? '' : 'normal! zv'
+function! edit#search_replace_expr(...) abort
+  return utils#motion_func('edit#search_replace', a:000)
 endfunction
 
 " Wrap the lines to 'count' columns rather than 'text width'
