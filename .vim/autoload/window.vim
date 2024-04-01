@@ -254,25 +254,23 @@ function! window#setup_preview(...) abort
   endfor
 endfunction
 
-" Setup panel windows. Mode can be 0 (not editable) or 1 (editable).
-" Warning: Setting 'modifiable' tends to cause errors e.g. for log files run with
-" shell#job_win() or other internal stuff. So instead just disable normal mode
-" commands that could accidentally modify text (aside from d used for scrolling).
+" Setup panel windows
+" Note: Handle 'copy toggle' settings from vimrc (although nolist still required e.g.
+" for man pages for some reason). Tried setting 'nomodifiable' but causes errors for
+" e.g. shell#job_win() logs, so instead manually disable common normal-mode maps.
 " Warning: Critical error happens if try to auto-quit when only panel window is
 " left... fzf will take up the whole window in small terminals, and even when fzf
 " immediately runs and closes as e.g. with non-tex BufNewFile template detection,
 " this causes vim to crash and breaks the terminal. Instead never auto-close windows
 " and simply get in habit of closing entire tabs with session#close_tab().
 function! window#setup_panel(...) abort
-  setlocal nonumber norelativenumber nocursorline signcolumn=no foldcolumn=0
+  setlocal nolist nocursorline colorcolumn=
   let g:ft_man_folding_enable = 1  " see :help Man
   let [nleft, nright] = [window#count_panes('h'), window#count_panes('l')]
   nnoremap <buffer> q <Cmd>silent! call window#close_pane()<CR>
   nnoremap <buffer> <C-w> <Cmd>silent! call window#close_pane()<CR>
   if a:0 && a:1  " editable window
     return
-  else  " standard window
-    setlocal nolist colorcolumn= signcolumn=yes
   endif
   for [char, frac] in [['d', 0.5], ['u', -0.5]]
     exe 'noremap <expr> <nowait> <buffer> ' . char . ' iter#scroll_normal(' . frac . ')'

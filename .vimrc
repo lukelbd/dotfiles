@@ -478,6 +478,7 @@ xmap <F9> <Plug>(fzf-maps-x)
 imap <F9> <Plug>(fzf-maps-i)
 nnoremap <F9> <Cmd>Maps<CR>
 cnoremap <F9> <Esc><Cmd>Commands<CR>
+noremap <Leader><F9> <Cmd>Commands<CR>
 
 " Vim help and history windows
 " Note: For some reason even though :help :mes claims count N shows the N most recent
@@ -583,22 +584,6 @@ cnoremap <silent> <expr> <BS> iter#complete_cmdline("\<BS>")
 "-----------------------------------------------------------------------------"
 " Navigation and searching shortcuts
 "-----------------------------------------------------------------------------"
-" Toggle and navigate visual mode
-" Note: Select mode (e.g. by typing 'gh') is same as visual but enters insert mode
-" when you start typing, to emulate typing after click-and-drag. Never use it.
-" Note: Throughout vimrc marks y and z are reserved for internal map utilities. Here
-" use 'y' for mouse click location and 'z' for visual mode entrance location, then
-" start new visual selection between 'y' and 'z'. Generally 'y' should be temporary
-for s:map in ['//', '/?', '?/', '??'] | silent! exe 'unmap g' . s:map | endfor
-for s:key in ['v', 'V'] | exe 'noremap ' . s:key . ' <Esc>mz' . s:key | endfor
-nnoremap zn gE/<C-r>/<CR><Cmd>noh<CR>mzgn
-nnoremap zN W?<C-r>/<CR><Cmd>noh<CR>mzgN
-noremap <C-v> <Esc><Cmd>WrapToggle 0<CR>mz<C-v>
-vnoremap <LeftMouse> <LeftMouse>my<Cmd>exe 'keepjumps normal! `z' . visualmode() . '`y' \| delmark y<CR>
-nnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR>
-vnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
-vnoremap <CR> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
-
 " Navigate recent tabs and wildmenu options with <C-,>/<C-.>
 " Warning: The g:tab_stack variable is used by tags#buffer_sort() to put recently
 " used tabs in stack at higher priority than others. Critical to keep variables.
@@ -612,7 +597,6 @@ augroup END
 command! -nargs=0 ClearTabs call stack#clear_stack('tab') | call stack#update_tabs()
 command! -nargs=0 ShowTabs call stack#update_tabs() | call stack#show_stack('tab')
 command! -nargs=? PopTabs call stack#pop_stack('tab', <f-args>)
-silent! exe 'cunmap <Up>' | silent! exe 'cunmap <Down>'
 noremap <Tab>/ <Cmd>call stack#reset_tabs()<CR><Cmd>call stack#update_tabs(2)<CR>
 noremap <F1> <Cmd>call stack#scroll_tabs(-v:count1)<CR>
 noremap <F2> <Cmd>call stack#scroll_tabs(v:count1)<CR>
@@ -622,7 +606,7 @@ noremap <F2> <Cmd>call stack#scroll_tabs(v:count1)<CR>
 " See: https://stackoverflow.com/a/27194972/4970632
 augroup jumplist_setup
   au!
-  au CursorHold,TextChanged,InsertLeave * if utils#none_pending() | call mark#update_jumps() | endif
+  au CursorHold,TextChanged,InsertLeave * if utils#none_pending() | call mark#push_jump() | endif
 augroup END
 command! -bang -nargs=0 Jumps call mark#fzf_jumps(<bang>0)
 noremap gn <Cmd>call mark#fzf_jumps()<CR>
@@ -644,12 +628,42 @@ noremap <Right> <Cmd>call mark#next_change(v:count1)<CR>
 " Navigate lines and searches
 " Note: This overrides default vim-tags g/ and g? maps. Allows selecting range with
 " input motion. Useful for debugging text objexts or when scope algorithm fails.
+for s:map in ['//', '/?', '?/', '??'] | silent! exe 'unmap g' . s:map | endfor
+command! -bang -nargs=* Lines call mark#fzf_lines(<q-args>, <bang>0)
 noremap <expr> g; edit#sel_lines_expr(0)
 noremap <expr> g: edit#sel_lines_expr(1)
 noremap g;; /<C-r>=tags#get_scope()<CR>
 noremap g:: ?<C-r>=tags#get_scope()<CR>
 noremap g/ <Cmd>BLines<CR>
 noremap g? <Cmd>Lines<CR>
+
+" Navigate across recent tag jumps
+" Note: This works by overriding both fzf and internal tag jumping utils. Ignores
+" tags resulting from direct invocation of :tag and <C-]> commands.
+command! -complete=file -nargs=* ShowIgnores
+  \ echom 'Tag ignores: ' . join(tag#parse_ignores(0, <f-args>), ' ')
+command! -complete=dir -nargs=* UpdatePaths
+  \ call tag#update_paths(<f-args>)
+command! -nargs=0 ClearStack call stack#clear_stack('tag')
+command! -nargs=0 ShowStack call stack#show_stack('tag')
+command! -nargs=? PopStack call stack#pop_stack('tag', <f-args>)
+noremap <F3> <Cmd>call stack#push_stack('tag', 'tags#goto_tag', -v:count1)<CR>
+noremap <F4> <Cmd>call stack#push_stack('tag', 'tags#goto_tag', v:count1)<CR>
+
+" Toggle and navigate visual mode
+" Note: Select mode (e.g. by typing 'gh') is same as visual but enters insert mode
+" when you start typing, to emulate typing after click-and-drag. Never use it.
+" Note: Throughout vimrc marks y and z are reserved for internal map utilities. Here
+" use 'y' for mouse click location and 'z' for visual mode entrance location, then
+" start new visual selection between 'y' and 'z'. Generally 'y' should be temporary
+for s:key in ['v', 'V'] | exe 'noremap ' . s:key . ' <Esc>mz' . s:key | endfor
+nnoremap zn gE/<C-r>/<CR><Cmd>noh<CR>mzgn
+nnoremap zN W?<C-r>/<CR><Cmd>noh<CR>mzgN
+noremap <C-v> <Esc><Cmd>WrapToggle 0<CR>mz<C-v>
+vnoremap <LeftMouse> <LeftMouse>my<Cmd>exe 'keepjumps normal! `z' . visualmode() . '`y' \| delmark y<CR>
+nnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR>
+vnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
+vnoremap <CR> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
 
 " Navigate matches/sentences/paragraphs without adding to jumplist
 " Note: Core vim idea is that these commands take us far away from cursor but
@@ -1020,11 +1034,11 @@ noremap <silent> gK <Cmd>call edit#conjoin_lines(1, 1)<CR>
 
 " Swap characters or lines
 " Mnemonic is 'cut line' at cursor, character under cursor will be deleted
-call utils#repeat_map('n', 'ch', 'ChangeLeft', '<Cmd>call edit#switch_chars(1)<CR>')
-call utils#repeat_map('n', 'cl', 'ChangeRight', '<Cmd>call edit#switch_chars(0)<CR>')
-call utils#repeat_map('n', 'ck', 'ChangeAbove', '<Cmd>call edit#switch_lines(1)<CR>')
-call utils#repeat_map('n', 'cj', 'ChangeBelow', '<Cmd>call edit#switch_lines(0)<CR>')
-call utils#repeat_map('n', 'cL', 'ChangeSplit', 'myi<CR><Esc><Cmd>keepjumps normal! `y<Cmd>delmark y<CR>')
+call utils#repeat_map('n', 'ch', 'MoveLeft', '<Cmd>call edit#move_chars(1)<CR>')
+call utils#repeat_map('n', 'cl', 'MoveRight', '<Cmd>call edit#move_chars(0)<CR>')
+call utils#repeat_map('n', 'ck', 'MoveAbove', '<Cmd>call edit#move_lines(1)<CR>')
+call utils#repeat_map('n', 'cj', 'MoveBelow', '<Cmd>call edit#move_lines(0)<CR>')
+call utils#repeat_map('n', 'cL', 'MoveSplit', 'myi<CR><Esc><Cmd>keepjumps normal! `y<Cmd>delmark y<CR>')
 
 " Record macro by pressing Q with optional count
 " Note: This permits e.g. 1, or '1, for specific macros. Note cannot run 'q' from autoload
@@ -1106,7 +1120,7 @@ nnoremap <expr> gC switch#paste() . utils#translate_count('') . edit#insert_mode
 " Toggle caps lock, copy mode, and conceal mode
 " Note: This enforces defaults without requiring 'set' in vimrc or ftplugin that
 " override session settings. Tried BufNewFile,BufWritePost but they can fail.
-let s:copy_filetypes = s:data_filetypes + s:info_filetypes
+let s:copy_filetypes = s:data_filetypes + s:info_filetypes + s:panel_filetypes
 augroup copy_setup
   au!
   au BufWinEnter * call switch#copy(index(s:copy_filetypes, &l:filetype) >= 0, 1)
@@ -1810,14 +1824,13 @@ endif
 " nnoremap <Leader>t <Cmd>CurrentTag<CR>
 " nnoremap <Leader>T <Cmd>call switch#tags()<CR>
 if s:plug_active('vim-tags')
-  command! -nargs=? TagToggle call switch#tags(<args>)
-  command! -bang -nargs=* ShowTable
-    \ echo call('tags#table_kinds', <bang>0 ? ['all'] : [<f-args>])
-    \ | echo call('tags#table_tags', <bang>0 ? ['all'] : [<f-args>])
+  command! -bang -nargs=* ShowTable let s:args = <bang>0 ? ['all'] : [<f-args>]
+    \ | echo call('tags#table_kinds', s:args) . "\n" . call('tags#table_tags', s:args)
+  command! -count -nargs=? TagToggle call call('switch#tags', <range> ? [<count>] : [<args>])
   nnoremap <Leader>t <Cmd>ShowTable<CR>
   nnoremap <Leader>T <Cmd>ShowTable!<CR>
-  nnoremap gy <Cmd>BTags<CR>
-  nnoremap gY <Cmd>Tags<CR>
+  nnoremap zt <Cmd>UpdatePaths \| UpdateTags \| GutentagsUpdate<CR><Cmd>echom 'Updated buffer tags'<CR>
+  nnoremap zT <Cmd>UpdatePaths \| UpdateTags! \| GutentagsUpdate!<CR><Cmd>echom 'Updated project tags'<CR>
   let s:major = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
   let s:minor = {'fortran': 'ekltvEL', 'python': 'xviI', 'vim': 'vnC', 'tex': 'gioetBCN'}
   let g:tags_cursor_map = '<CR>'  " default is <Leader><CR>
@@ -1845,13 +1858,12 @@ if s:plug_active('vim-gutentags')
     au User GutentagsUpdated call tag#update_paths()
     au BufCreate,BufReadPost * call tag#update_paths(expand('<afile>'))
   augroup END
-  command! -complete=dir -nargs=* UpdatePaths call tag#update_paths(<f-args>)
-  command! -nargs=? ShowIgnores echom 'Ignored patterns: ' . join(tag#parse_ignores(0, <q-args>), ' ')
-  nnoremap zt <Cmd>UpdateTags \| GutentagsUpdate<CR><Cmd>echom 'Updated buffer tags'<CR>
-  nnoremap zT <Cmd>UpdateTags! \| GutentagsUpdate!<CR><Cmd>echom 'Updated project tags'<CR>
-  " let g:gutentags_cache_dir = '~/.vim_tags_cache'  " alternative cache specification
-  " let g:gutentags_ctags_tagfile = 'tags'  " used with cache dir
-  " let g:gutentags_file_list_command = 'git ls-files'  " alternative to exclude ignores
+  command! -bang -nargs=* BTags call
+    \ tag#fzf_btags(<q-args>, fzf#vim#with_preview({'placeholder': '{2}:{3..}'}), <bang>0)
+  command! -bang -nargs=* Tags call
+    \ tag#fzf_tags(<q-args>, fzf#vim#with_preview({'placeholder': '--tag {2}:{-1}:{3..}' }), <bang>0)
+  nnoremap gy <Cmd>BTags<CR>
+  nnoremap gY <Cmd>Tags<CR>
   let g:gutentags_background_update = 1  " disable for debugging, printing updates
   let g:gutentags_ctags_auto_set_tags = 0  " tag#update_paths() handles this instead
   let g:gutentags_ctags_executable = 'ctags'  " note this respects .ctags config
@@ -1864,6 +1876,9 @@ if s:plug_active('vim-gutentags')
   let g:gutentags_generate_on_missing = 1  " update tags when no vimtags file found
   let g:gutentags_generate_on_empty_buffer = 0  " do not update tags when opening vim
   let g:gutentags_project_root_finder = 'tag#find_root'
+  " let g:gutentags_cache_dir = '~/.vim_tags_cache'  " alternative cache specification
+  " let g:gutentags_ctags_tagfile = 'tags'  " used with cache dir
+  " let g:gutentags_file_list_command = 'git ls-files'  " alternative to exclude ignores
 endif
 
 " Enable syntax folding options
@@ -2224,8 +2239,8 @@ if s:plug_active('vim-fugitive')
   noremap gL <Cmd>call git#run_map(0, 0, '', 'blame')<CR>
   noremap <Leader>' <Cmd>call git#run_map(0, 0, '', '')<CR>
   noremap <Leader>" <Cmd>call git#run_map(0, 0, '', 'status')<CR>
-  noremap <Leader>y <Cmd>call git#run_map(0, 0, '', 'tree')<CR>
-  noremap <Leader>Y <Cmd>call git#run_map(0, 0, '', 'log')<CR>
+  noremap <Leader>y <Cmd>call git#run_map(0, 0, '', 'trunk')<CR>
+  noremap <Leader>Y <Cmd>call git#run_map(0, 0, '', 'tree')<CR>
   noremap <Leader>u <Cmd>call git#run_map(0, 0, '', 'push origin')<CR>
   noremap <Leader>U <Cmd>call git#run_map(0, 0, '', 'pull origin')<CR>
   noremap <Leader>i <Cmd>call git#commit_wrap(0, 'oops')<CR>
@@ -2379,15 +2394,15 @@ endif
 " Show syntax under cursor and syntax types
 " Note: The first map prints information, the second two maps open windows, the
 " other maps open tabs.
-command! -nargs=? ShowStack call syntax#show_stack(<f-args>)
-command! -nargs=0 ShowGroups exe 'help highlight-groups' | exe 'normal! zt'
-command! -nargs=0 ShowNames exe 'help group-name' | exe 'normal! zt'
+command! -nargs=? ShowGroups call syntax#show_stack(<f-args>)
+command! -nargs=0 ShowNames exe 'help highlight-groups' | exe 'normal! zt'
+command! -nargs=0 ShowBases exe 'help group-name' | exe 'normal! zt'
 command! -nargs=0 ShowColors call vim#show_runtime('syntax', 'colortest')
 command! -nargs=0 ShowSyntax call vim#show_runtime('syntax')
 command! -nargs=0 ShowPlugin call vim#show_runtime('ftplugin')
-noremap <Leader>` <Cmd>ShowStack<CR>
-noremap <Leader>1 <Cmd>ShowGroups<CR>
-noremap <Leader>2 <Cmd>ShowNames<CR>
+noremap <Leader>` <Cmd>ShowGroups<CR>
+noremap <Leader>1 <Cmd>ShowNames<CR>
+noremap <Leader>2 <Cmd>ShowBases<CR>
 noremap <Leader>3 <Cmd>ShowColors<CR>
 noremap <Leader>4 <Cmd>ShowSyntax<CR>
 noremap <Leader>5 <Cmd>ShowPlugin<CR>

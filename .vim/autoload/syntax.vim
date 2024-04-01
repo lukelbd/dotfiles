@@ -203,7 +203,8 @@ endfunction
 " Note: Cannot use e.g. aliases 'bg' or 'fg' in terminal since often unset, and cannot
 " use transparent 'NONE' in gui vim since undefined, so swap them here.
 function! s:highlight_group(group, back, front, ...) abort
-  let defaults = {'black': '#000000', 'gray': '#333333', 'white': '#ffffff'}
+  let defaults = {'Black': '#000000', 'White': '#ffffff', 'Gray': '#444444'}
+  call extend(defaults, {'DarkGray': '#222222', 'LightGray': '#666666'})
   let name = has('gui_running') ? 'gui' : 'cterm'
   let text = a:0 && type(a:1) ? empty(a:1) ? 'None' : a:1 : ''
   let args = empty(text) ? [] : [name . '=' . text]
@@ -213,7 +214,7 @@ function! s:highlight_group(group, back, front, ...) abort
     elseif has('gui_running')  " hex color
       let code = get(g:, 'statusline_' . a:back, get(defaults, a:back, '#808080'))
     else  " color name
-      let code = substitute(a:back, '^\(\a\)\(\a*\)$', '\u\1\l\2', '')
+      let code = a:back
     endif
     call add(args, name . 'bg=' . code)
   endif
@@ -223,7 +224,7 @@ function! s:highlight_group(group, back, front, ...) abort
     elseif has('gui_running')  " hex color
       let code = get(g:, 'statusline_' . a:front, get(defaults, a:front, '#808080'))
     else  " color name
-      let code = substitute(a:front, '^\(\a\)\(\a*\)$', '\u\1\l\2', '')
+      let code = a:front
     endif
     call add(args, name . 'fg=' . code)
   endif
@@ -242,19 +243,19 @@ endfunction
 function! syntax#update_highlights() abort
   let pairs = []  " highlight links
   call s:highlight_group('Normal', '', '', '')
-  call s:highlight_group('LineNR', '', 'black', '')
-  call s:highlight_group('Folded', '', 'white', 'bold')
-  call s:highlight_group('CursorLine', 'black', 0, '')
-  call s:highlight_group('ColorColumn', 'gray', 0, '')
-  call s:highlight_group('DiffAdd', 'black', '', 'bold')
-  call s:highlight_group('DiffChange', 'black', '', '')
-  call s:highlight_group('DiffDelete', '', 'black', 'bold')
+  call s:highlight_group('LineNR', '', has('gui_running') ? 'Gray' : 'Black', '')
+  call s:highlight_group('CursorLine', has('gui_running') ? 'DarkGray' : 'Black', 0, '')
+  call s:highlight_group('ColorColumn', has('gui_running') ? 'LightGray' : 'Gray', 0, '')
+  call s:highlight_group('Folded', '', 'White', 'bold')
+  call s:highlight_group('DiffAdd', 'Black', '', 'bold')
+  call s:highlight_group('DiffChange', 'Black', '', '')
+  call s:highlight_group('DiffDelete', '', 'Black', 'bold')
   call s:highlight_group('DiffText', 0, 0, 'inverse', '')
   call s:highlight_group('StrikeThrough', 0, 0, 'strikethrough')
   for group in ['Conceal', 'Pmenu', 'Terminal']
     call add(pairs, [group, 'Normal'])
   endfor
-  for group in ['SignColumn', 'FoldColumn', 'CursorLineNR', 'CursorLineFold', 'Comment', 'NonText', 'SpecialKey']
+  for group in ['Comment', 'SignColumn', 'FoldColumn', 'CursorLineNR', 'CursorLineFold', 'NonText', 'SpecialKey']
     call add(pairs, [group, 'LineNR'])
   endfor
   for group in ['ALEErrorLine', 'ALEWarningLine', 'ALEInfoLine']  " see above

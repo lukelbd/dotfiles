@@ -205,9 +205,10 @@ endfunction
 " also takes forever. Also have run into problems with it on some vim versions.
 function! file#open_drop(...) abort
   let current = expand('%:p')
-  for path in a:000
-    let nrs = []  " tab and window number
+  for iarg in a:000
+    let path = type(iarg) ? iarg : bufname(iarg)
     let abs = fnamemodify(path, ':p')
+    let nrs = []  " tab and window number
     for tnr in range(1, tabpagenr('$'))  " iterate through each tab
       for bnr in tabpagebuflist(tnr)
         if abs ==# expand('#' . bnr . ':p')

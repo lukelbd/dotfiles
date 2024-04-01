@@ -15,7 +15,7 @@ function! s:get_stack(head, ...) abort  " remove in future
   let idx = a:head ==# 'tab' ? get(g:, 'recent_loc', -1) : -1
   let stack = get(g:, a:head . '_stack', stack)
   let idx = get(g:, a:head . '_loc', idx)
-  let key = a:head . '_name'  " variable name
+  let key = a:head . '_name'  " set by input function
   let name = !a:0 ? '' : type(a:1) ? a:1 : getbufvar(a:1, key, get(g:, key, ''))
   let nmax = min([a:0 < 2 ? 0 : a:2 >= 0 ? a:2 : len(stack), len(stack)])
   let part = nmax ? reverse(copy(stack))[:nmax - 1] : []
@@ -39,7 +39,7 @@ function! stack#show_stack(head) abort
 endfunction
 function! stack#show_item(head, name, ...) abort
   if type(a:name) == 3
-    let label = join(a:name, ':')
+    let label = join(map(copy(a:name), {_, val -> filereadable(val) ? RelativePath(val) : val}), ':')
   elseif !bufexists(a:name)
     let label = string(a:name)
   else  " tab page then path
@@ -101,10 +101,10 @@ function! stack#pop_stack(head, name) abort
 endfunction
 function! stack#push_stack(head, func, ...) abort
   let [stack, idx; rest] = s:get_stack(a:head)
-  let verbose = a:0 > 1 ? a:2 : 1  " verbose mode
-  if !a:0 || type(a:1)  " user-input or default e.g. stack#push_stack(...[, ''])
+  let verbose = a:0 > 1 ? a:2 : 1
+  if !a:0 || type(a:1)  " fzf-sink, user-input, or default e.g. push_stack(...[, ''])
     let jdx = -1
-    let args = a:0 ? [a:1] : []
+    let args = !a:0 ? [] : type(a:1) == type([]) ? a:1 : [a:1]
     let scroll = 0
   else  " next or previous e.g. stack#push_stack(..., [1|-1])
     let jdx = idx + a:1  " arbitrary offset
@@ -116,7 +116,7 @@ function! stack#push_stack(head, func, ...) abort
       echohl None | return
     endif
     let jdx = min([max([jdx, 0]), len(stack) - 1])
-    let args = [stack[jdx]]
+    let args = type(stack[jdx]) == 3 ? stack[jdx] : [stack[jdx]]
     let scroll = 1
   endif
   let status = empty(a:func) ? 0 : call(a:func, args)
@@ -129,16 +129,19 @@ endfunction
 " is only true after scrolling to a window and before leaving that window (TabLeave).
 " Note: This only triggers after spending time on window instead of e.g. browsing
 " across tabs with maps, similar to jumplist. Then can access jumps in each window.
-function! stack#reset_tabs() abort
-  for bnr in tabpagebuflist()  " tab page buffers
-    call setbufvar(bnr, 'tab_scroll', 0)
-  endfor
+function! s:tab_name() abort
+  let name = bufname()
+  let name = filereadable(name) || isdirectory(name) ? expand('%:p') : name
+  let b:tab_name = name  " buffer name or absolute path
 endfunction
-function! stack#scroll_sink(...) abort
+function! s:tab_scroll(...) abort
   silent call call('file#open_drop', a:000)  " triggers TabLeave and TabEnter
-  let b:tab_name = expand('%:p')
+  for bnr in tabpagebuflist() | call setbufvar(bnr, 'tab_scroll', 1) | endfor
+  call s:tab_name()  " apply tab_name
+endfunction
+function! stack#reset_tabs() abort
   for bnr in tabpagebuflist()
-    call setbufvar(bnr, 'tab_scroll', 1)
+    call setbufvar(bnr, 'tab_scroll', 0)
   endfor
 endfunction
 function! stack#scroll_tabs(...) abort
@@ -147,14 +150,14 @@ function! stack#scroll_tabs(...) abort
   if !get(b:, 'tab_scroll', 0)
     call stack#update_tabs()  " possibly float to top
   endif
-  call stack#push_stack('tab', function('stack#scroll_sink'), scroll)
+  call stack#push_stack('tab', function('s:tab_scroll'), scroll)
 endfunction
 function! stack#update_tabs(...) abort  " set current buffer
   let skip = index(g:tags_skip_filetypes, &filetype)
   let verbose = a:0 ? a:1 : 0  " disabled by default
   let scroll = get(b:, 'tab_scroll', 0)
-  let b:tab_name = expand('%:p')  " required for update stack
-  let b:tab_scroll = scroll  " in case unset
+  let b:tab_scroll = scroll  " update in case
+  call s:tab_name()  " apply tab_name
   if skip != -1 || line('$') <= 1 || empty(&filetype)
     if len(tabpagebuflist()) > 1 | return | endif
   endif

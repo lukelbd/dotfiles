@@ -57,13 +57,17 @@ endfunction
 " Note: See also .bashrc man(). These utils are expanded from vim-superman.
 " Note: Apple will have empty line then BUILTIN(1) on second line, but linux
 " will show as first line BASH_BUILTINS(1), so we search the first two lines.
+function! s:get_page(...) abort
+  silent call call('dist#man#GetPage', a:000)  " native utility
+  call stack#pop_stack('tab', bufnr())  " avoid premature addition to stack
+endfunction
 function! shell#man_page(...) abort
   let bnr = bufnr()
   if a:0 && empty(a:1)  " input man
     let page = matchstr(expand('<cWORD>'), '\f\+')  " from man syntax
     let pnum = matchstr(expand('<cWORD>'), '(\@<=[1-9][a-z]\=)\@=')  " from man syntax
-  elseif a:0  " input page or [page, number]
-    let [page, pnum] = type(a:1) == 1 ? [a:1, 0] : a:1
+  elseif a:0  " input page and/or number
+    let [page, pnum] = type(a:1) == 1 ? [a:1, 0] : a:000
   else  " default man
     let [page, pnum] = [utils#input_default('Man page', expand('<cword>'), 'shellcmd'), 0]
   endif
@@ -76,12 +80,12 @@ function! shell#man_page(...) abort
   endif
   if bufexists(name)
     exe bufnr(name) . 'buffer'
-  else
-    call call('dist#man#GetPage', [''] + args)
+  else  " load new man page
+    call call('s:get_page', [''] + args)
   endif
   if line('$') > 1
     if getline(1) =~# 'BUILTIN' || getline(2) =~# 'BUILTIN'
-      if has('macunix') && page !=# 'builtin' | call dist#man#GetPage('', 'bash') | endif
+      if has('macunix') && page !=# 'builtin' | call s:get_page('', 'bash') | endif
       goto | call search('^ \{7}' . page . ' [.*$', '')
     endif
     silent exe 'file ' . name | return 0

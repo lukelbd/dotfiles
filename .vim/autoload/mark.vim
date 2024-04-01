@@ -136,54 +136,34 @@ function! s:list_source(changes) abort
   return table
 endfunction
 
-" Push current location to top of jumplist
-" Warning: The zk/zj/[z/]z motions update jumplist, found out via trial and error
-" even though not in :help jump-motions. And note setpos() does not change jumplist
-" Note: This prevents resetting when navigating backwards and forwards through
-" jumplist or when navigating within paragraph of most recently set jump. Also remap
-" 'jumping' motions n/N/{/}/(/)/`/[[/]] by prepending :keepjumps to reduce entries.
-" Note: Jumplist is managed from the bottom-up by remapping normal-mode 'jumping'
-" motions and conditionally updating jumplist on CursorHold. Still navigate the
-" actual jumplist using <C-o>/<C-i> navigation keys. Compare to changelist below.
-function! s:range_keepjumps() abort  " used to update jumplist on CursorHold
-  let line = line('.')  " cursor line
-  let winview = winsaveview()
-  let text1 = line == 1 ? 1 : line("'{'") + 1
-  let text2 = line == line('$') ? line('$') : line("'}")
-  exe 'keepjumps normal! [z' | let fold1 = line('.')
-  exe 'keepjumps normal! ]z' | let fold2 = line('.')
-  if fold1 == line && fold2 == line  " try outer folds
-    exe line | exe 'keepjumps normal! zk'
-    let fold1 = line('.') == line ? 1 : line('.') + 1
-    exe line | exe 'keepjumps normal! zj'
-    let fold2 = line('.') == line ? line('$') : line('.') - 1
-  endif
-  call winrestview(winview)
-  let line1 = max([text1, fold1])
-  let line2 = min([text2, fold2])
-  return [line1, line2]
+" Override fzf :Lines
+" Note: This implements navigation across existing open windows and tabs. Native
+" version handles buffer switching separately from s:action_for() invocation.
+function! s:lines_sink(arg) abort
+  if len(a:arg) <= 1 | return | endif
+  let parts = split(a:arg[-1], "\t", 1)
+  silent call file#open_drop(str2nr(parts[0])) | exe parts[2]
 endfunction
-function! mark#update_jumps() abort
-  let [keep1, keep2] = s:range_keepjumps()  " current cursor bounds
-  let [jumps, jloc] = getjumplist()
-  let jprev = line("''")
-  if empty(jumps) || empty(jprev)  " force update current jump
-    let jlines = []
-  else  " previous jump and stack position
-    let jlines = [jprev, get(jumps, jloc, jumps[-1])['lnum']]
-  endif
-  if empty(filter(jlines, {idx, val -> val >= keep1 && val <= keep2}))
-    call feedkeys("\<Cmd>normal! m'\<CR>", 'n')
-  endif
+function! mark#fzf_lines(query, ...) abort
+  let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
+  if empty(snr) | return | endif
+  let [show, lines] = fzf#vim#_lines(1)
+  let flags = '--layout=reverse-list --tiebreak=index --extended'
+  let flags .= ' --nth ' . (show ? 3 : 2) . '.. --query ' . shellescape(a:query)
+  let options = {
+    \ 'source': lines,
+    \ 'sink*': function('s:lines_sink'),
+    \ 'options': flags . ' --ansi --tabstop=1 --prompt "Lines> "',
+  \ }
+  return call(snr . 'fzf', ['lines', options, a:000])
 endfunction
 
 " Override fzf :Jumps and :Changes
+" Note: This fixes issue where getbufline() output can be empty (filter assumes this
+" is non-empty) and because default flag --bind start:post:etc caused error.
 " Note: Changelist is managed from the top-down by filtering out double and empty-line
 " entries or entries with invalid lines, then navigating using using open_drop and
 " setpos('.', ...) instead of the native g,/g; keys. Compare with jumplist above.
-" Note: This is needed to fix issue where getbufline() output can be empty (filter
-" function calls this function and assumes non-empty) and because the default FZF flag
-" --bind start:pos:etc was yielding errors. Not sure why but maybe issue with .fzf fork
 function! mark#next_jump(...) abort
   return call('s:next_list', [0] + a:000)
 endfunction
@@ -215,6 +195,47 @@ function! mark#fzf_changes(...) abort
     \ 'options': '+m -x --ansi --cycle --scroll-off 999 --sync --header-lines=1 --tiebreak=index --prompt "Changes> "',
   \ }
   return call(snr . 'fzf', ['changes', options, a:000])
+endfunction
+
+" Push current location to top of jumplist
+" Warning: The zk/zj/[z/]z motions update jumplist, found out via trial and error
+" even though not in :help jump-motions. And note setpos() does not change jumplist
+" Note: This prevents resetting when navigating backwards and forwards through
+" jumplist or when navigating within paragraph of most recently set jump. Also remap
+" 'jumping' motions n/N/{/}/(/)/`/[[/]] by prepending :keepjumps to reduce entries.
+" Note: Jumplist is managed from the bottom-up by remapping normal-mode 'jumping'
+" motions and conditionally updating jumplist on CursorHold. Still navigate the
+" actual jumplist using <C-o>/<C-i> navigation keys. Compare to changelist below.
+function! s:range_keepjumps() abort  " used to update jumplist on CursorHold
+  let line = line('.')  " cursor line
+  let winview = winsaveview()
+  let text1 = line == 1 ? 1 : line("'{'") + 1
+  let text2 = line == line('$') ? line('$') : line("'}")
+  exe 'keepjumps normal! [z' | let fold1 = line('.')
+  exe 'keepjumps normal! ]z' | let fold2 = line('.')
+  if fold1 == line && fold2 == line  " try outer folds
+    exe line | exe 'keepjumps normal! zk'
+    let fold1 = line('.') == line ? 1 : line('.') + 1
+    exe line | exe 'keepjumps normal! zj'
+    let fold2 = line('.') == line ? line('$') : line('.') - 1
+  endif
+  call winrestview(winview)
+  let line1 = max([text1, fold1])
+  let line2 = min([text2, fold2])
+  return [line1, line2]
+endfunction
+function! mark#push_jump() abort
+  let [keep1, keep2] = s:range_keepjumps()  " current cursor bounds
+  let [jumps, jloc] = getjumplist()
+  let jprev = line("''")
+  if empty(jumps) || empty(jprev)  " force update current jump
+    let jlines = []
+  else  " previous jump and stack position
+    let jlines = [jprev, get(jumps, jloc, jumps[-1])['lnum']]
+  endif
+  if empty(filter(jlines, {idx, val -> val >= keep1 && val <= keep2}))
+    call feedkeys("\<Cmd>normal! m'\<CR>", 'n')
+  endif
 endfunction
 
 " Override fzf :Marks to implement :Drop switching
@@ -318,11 +339,11 @@ function! mark#set_marks(mrk, ...) abort
   let pos = a:0 ? a:1 : [0, line('.'), col('.'), 0]  " buffer required
   let pos[0] = pos[0] ? pos[0] : bufnr()  " replace zero
   let highlights = get(g:, 'mark_highlights', {})
-  let g:mark_name = a:mrk  " mark stack
+  let g:mark_name = a:mrk  " required for below push stack
   let g:mark_highlights = highlights
   call setpos("'" . a:mrk, pos)  " apply the mark
-  call stack#pop_stack('mark', a:mrk)  " update mark stack
-  call stack#push_stack('mark', '', a:mrk, 0)  " update mark stack
+  call stack#pop_stack('mark', a:mrk)  " remove previous
+  call stack#push_stack('mark', '', '', 0)  " apply g:mark_name
   let name = 'mark_' . (a:mrk =~# '\u' ? 'upper_' . a:mrk : 'lower_' . a:mrk)
   let base = a:mrk =~# '\u' ? 65 : 97
   let idx = a:mrk =~# '\a' ? char2nr(a:mrk) - base : 0

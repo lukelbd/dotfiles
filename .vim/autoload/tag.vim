@@ -1,6 +1,69 @@
 "-----------------------------------------------------------------------------"
 " Utilities for ctags management
 "-----------------------------------------------------------------------------"
+" Iterate over window tag stack
+" See: https://github.com/junegunn/fzf.vim/issues/240
+" Todo: Consider adding 'tag stack search' fzf command and adding maps to below. For
+" now just have 'stack of tags' and loop through them with native vim-stack utility.
+function! tag#next_stack(...) abort
+  let itags = gettagstack(win_getid())
+  let cnt = a:0 ? a:1 : v:count1
+  let idx = itags.curidx + cnt
+  if idx > itags.length | endif
+  for _ in range(abs(cnt))
+    for item in get(itags, 'items', [])  " search tag stack
+      let ipath = expand('#' . item.bufnr . ':p')
+      let itags = taglist(item, ipath)
+      " setglobal tagfunc=tags#tag_func  " previous idea
+      " if item.tagname !=# name | continue | endif
+      if empty(itags) | continue | endif
+      return tags#goto_tag(0, ipath, item.cmd, item.tagname)
+    endfor
+  endfor
+endfunction
+
+" Override fzf :Btags and :Tags
+" Note: This is similar to fzf except uses custom sink that adds results to window
+" tag stack for navigation with ctrl-bracket maps and tag/pop commands.
+function! tag#fzf_btags(query, ...) abort
+  let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
+  if empty(snr) | return | endif
+  let args = copy(a:000)
+  let cmd = 'ctags -f - --sort=yes --excmd=number %s 2>/dev/null | sort -s -k 5'
+  let cmd = printf(cmd, fzf#shellescape(expand('%')))
+  let flags = "-m -d '\t' --with-nth 1,4.. -n 1 --layout=reverse-list"
+  let flags .= ' --preview-window +{3}-/2 --query ' . shellescape(a:query)
+  let options = {
+    \ 'source': call(snr . 'btags_source', [[cmd]]),
+    \ 'sink': function('tags#push_tag'),
+    \ 'options': flags . ' --prompt "BTags> "',
+  \ }
+  return call(snr . 'fzf', ['btags', options, a:000])
+endfunction
+function! tag#fzf_tags(query, ...) abort
+  if !executable('perl')
+    echohl ErrorMsg | echom 'Error: Tags command requires perl' | echohl None | return
+  endif
+  let cmd = expand('~/.vim/plugged/fzf.vim/bin/tags.pl')
+  let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
+  if empty(snr) | return | endif
+  let paths = map(tagfiles(), 'fnamemodify(v:val, ":p")')
+  let [nbytes, maxbytes] = [0, 1024 * 1024 * 200]
+  for path in paths
+    let nbytes += getfsize(path)
+    if nbytes > maxbytes | break | endif
+  endfor
+  let flags = "-m -d '\t' --nth 1..2 --tiebreak=begin"
+  let flags .= nbytes > maxbytes ? ' --algo=v1' : ''
+  let args = map([a:query] + paths, 'fzf#shellescape(v:val)')
+  let options = {
+    \ 'source': join(['perl', fzf#shellescape(cmd)] + args, ' '),
+    \ 'sink': function('tags#push_tag'),
+    \ 'options': flags . ' --prompt "Tags> "',
+  \ }
+  return call(snr . 'fzf', ['tags', options, a:000])
+endfunction
+
 " Search for the 'root' directory to store the ctags file
 " Note: Root detectors are copied from g:gutentags_add_default_root_markers.
 " Note: Previously tried just '__init__.py' for e.g. conda-managed packages and
@@ -50,9 +113,8 @@ endfunction
 " does not work, ignores all other exclude flags, and vim-gutentags can only
 " handle excludes anyway, so just bypass all patterns starting with '!'.
 function! tag#parse_ignores(join, ...) abort
-  if a:0 && !empty(a:1) " input path
-    let paths = [a:1]
-  else
+  let paths = copy(a:000)
+  if empty(paths)
     let project = split(system('git rev-parse --show-toplevel'), "\n")
     let suffix = empty(project) ? [] : [project[0] . '/.gitignore']
     let paths = ['~/.ignore', '~/.wildignore', '~/.gitignore'] + suffix
@@ -75,9 +137,7 @@ function! tag#parse_ignores(join, ...) abort
       endfor
     endif
   endfor
-  let ignores = uniq(ignores)  " .ignore and .gitignore are often duplicates
-  let ignores = a:join ? join(ignores, ' ') : ignores
-  return ignores
+  return a:join ? join(ignores, ' ') : ignores
 endfunction
 
 " Update tags variable (requires g:gutentags_ctags_auto_set_tags = 0)
