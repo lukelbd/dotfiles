@@ -156,6 +156,9 @@ let s:fork_plugins = []  " add to this during development!
 let s:vim_plugins = [
   \ 'vim-succinct', 'vim-tags', 'vim-statusline', 'vim-tabline', 'vim-scrollwrapped', 'vim-toggle',
 \ ]  " custom vim plugins
+let s:tab_filetypes = [
+  \ 'xml', 'make', 'gitconfig', 'text',
+\ ]  " use literal tabs
 let s:info_filetypes = [
   \ 'bib', 'log', 'qf'
 \ ]  " for wrapping and copy toggle
@@ -462,9 +465,8 @@ augroup panel_setup
   au FileType gitcommit call git#setup_commit()
   au FileType fugitiveblame call git#setup_blame() | call git#setup_panel()
   au FileType git,diff,fugitive call git#setup_panel()
-  for s:ftype in s:panel_filetypes
-    let s:modifiable = s:ftype ==# 'gitcommit'
-    exe 'au FileType ' . s:ftype . ' call window#setup_panel(' . s:modifiable . ')'
+  for s:type in s:panel_filetypes | let s:arg = s:type ==# 'gitcommit'
+    exe 'au FileType ' . s:type . ' call window#setup_panel(' . s:arg . ')'
   endfor
 augroup END
 
@@ -1044,19 +1046,16 @@ noremap x "_x
 noremap X "_X
 
 " Spaces and tabs for particular filetypes.
-" Note: For some reason must be manually enabled for vim and shell scripts. Not
-" sure why but should explore other plugins.
+" Note: This enforces defaults without requiring 'set' during session refresh.
 augroup expandtab_setup
   au!
-  au FileType vim,tex,sh call switch#expandtab(0, 1)
-  au FileType xml,make,text,gitconfig call switch#expandtab(1, 1)
+  au BufWinEnter * call switch#expandtab(index(s:tab_filetypes, &l:filetype) >= 0, 1)
 augroup END
 command! -nargs=? TabToggle call switch#expandtab(<args>)
 nnoremap <Leader><Tab> <Cmd>call switch#expandtab()<CR>
 
 " Increase and decrease indent to level v:count
-" Note: To avoid overwriting fugitive inline-diff mappings implement these as
-" buffer-local .vim/autoload/common.vim maps. Also map brackets.
+" Note: To avoid overwriting fugitive inline-diff maps also add these to common.vim
 nnoremap <expr> > '<Esc>' . edit#indent_lines_expr(0, v:count1)
 nnoremap <expr> < '<Esc>' . edit#indent_lines_expr(1, v:count1)
 
@@ -1105,8 +1104,8 @@ nnoremap <expr> gc switch#paste() . utils#translate_count('') . edit#insert_mode
 nnoremap <expr> gC switch#paste() . utils#translate_count('') . edit#insert_mode('C')
 
 " Toggle caps lock, copy mode, and conceal mode
-" Note: This enforces defaults without requiring 'set' lines in vimrc that override
-" session-specific settings. Tried BufNewFile,BufWritePost but they can fail.
+" Note: This enforces defaults without requiring 'set' in vimrc or ftplugin that
+" override session settings. Tried BufNewFile,BufWritePost but they can fail.
 let s:copy_filetypes = s:data_filetypes + s:info_filetypes
 augroup copy_setup
   au!
@@ -1185,11 +1184,10 @@ for s:spellfile in glob('~/.vim/spell/*.add', 1, 1)
 endfor
 
 " Toggle spell checking
-" Turn on for filetypes containing text destined for users
+" Note: This enforces defaults without requiring 'set' during session refresh.
 augroup spell_setup
   au!
-  let s:filetypes = join(s:lang_filetypes, ',')
-  exe 'au FileType ' . s:filetypes . ' setlocal spell'
+  au BufWinEnter * let &l:spell = index(s:lang_filetypes, &l:filetype) >= 0
 augroup END
 command! SpellToggle call switch#spell(<args>)
 command! LangToggle call switch#lang(<args>)

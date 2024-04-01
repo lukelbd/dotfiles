@@ -128,14 +128,16 @@ function! switch#ddc(...) abort
 endfunction
 
 " Toggle literal tab characters on and off
+" Note: Also enforces initial default width for files with literal tabs
 function! switch#expandtab(...) abort
   let state = &l:expandtab
   let toggle = a:0 > 0 ? 1 - a:1 : 1 - state  " 'on' means literal tabs i.e. no expandtab
   let suppress = a:0 > 1 ? a:2 : 0
-  if state == toggle
-    return
-  else
+  if state != toggle
     let &l:expandtab = toggle
+  endif
+  if !toggle && suppress
+    setlocal tabstop=2 softtabstop=2 shiftwidth=2
   endif
   call call('s:echo_state', ['Literal tabs', 1 - toggle, suppress])
 endfunction

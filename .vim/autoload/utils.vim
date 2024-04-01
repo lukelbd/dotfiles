@@ -377,7 +377,7 @@ function! utils#translate_count(mode, ...) abort
   endif
   if !empty(warn)
     echohl WarningMsg | echom 'Warning: ' . trim(warn) | echohl None
-  else  " show register
+  elseif name !=# '"'  " show register
     echom group . ': ' . name[0] . (empty(label) ? '' : ' (' . label . ')')
   endif
   if !a:0 && a:mode =~# '[q@]'
