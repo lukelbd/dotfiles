@@ -350,7 +350,7 @@ function! s:get_input(mode, name) abort
   if char =~# '^[''"]$'  " select vim register name
     let char = utils#input_default('Register (native)', '', '', 1)
   endif
-  if char !~? '^[0-9a-z*+%.:/"-]$'
+  if len(char) != 1 || char !~? '\p\|\t'
     call feedkeys(char, 'm') | return ''
   elseif char =~# '^\d$'  " select macro number register
     return s:translate_count(a:mode, str2nr(char))[0]

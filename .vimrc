@@ -156,7 +156,7 @@ let s:fork_plugins = []  " add to this during development!
 let s:vim_plugins = [
   \ 'vim-succinct', 'vim-tags', 'vim-statusline', 'vim-tabline', 'vim-scrollwrapped', 'vim-toggle',
 \ ]  " custom vim plugins
-let s:copy_filetypes = [
+let s:info_filetypes = [
   \ 'bib', 'log', 'qf'
 \ ]  " for wrapping and copy toggle
 let s:data_filetypes = [
@@ -1033,6 +1033,16 @@ nnoremap <expr> Q empty(reg_recording()) ? utils#translate_count('q')
 nnoremap <expr> Q empty(reg_recording()) ? utils#translate_count('q')
   \ : 'q<Cmd>call utils#set_translate(' . string(reg_recording()) . ', "q")<CR>'
 
+" Remove single character
+" Note: This omits single-character deletions from register by default
+nnoremap <expr> gx edit#insert_mode('gi')
+nnoremap <expr> cx '"_' . edit#insert_mode('c') . 'l'
+nnoremap <expr> cX '"_' . edit#insert_mode('c') . 'h'
+nnoremap dx x
+nnoremap dX X
+noremap x "_x
+noremap X "_X
+
 " Spaces and tabs for particular filetypes.
 " Note: For some reason must be manually enabled for vim and shell scripts. Not
 " sure why but should explore other plugins.
@@ -1095,32 +1105,21 @@ nnoremap <expr> gc switch#paste() . utils#translate_count('') . edit#insert_mode
 nnoremap <expr> gC switch#paste() . utils#translate_count('') . edit#insert_mode('C')
 
 " Toggle caps lock, copy mode, and conceal mode
-" Turn on for filetypes containing raw possibly heavily wrapped data
+" Note: This enforces defaults without requiring 'set' lines in vimrc that override
+" session-specific settings. Tried BufNewFile,BufWritePost but they can fail.
+let s:copy_filetypes = s:data_filetypes + s:info_filetypes
 augroup copy_setup
   au!
-  let s:filetypes = join(s:data_filetypes + s:copy_filetypes, ',')
-  exe 'au FileType ' . s:filetypes . ' call switch#copy(1, 1)'
-  let s:filetypes = 'tmux'  " file sub types that otherwise inherit copy toggling
-  exe 'au FileType ' . s:filetypes . ' call switch#copy(0, 1)'
+  au BufWinEnter * call switch#copy(index(s:copy_filetypes, &l:filetype) >= 0, 1)
 augroup END
 command! -nargs=? CopyToggle call switch#copy(<args>)
 command! -nargs=? ConcealToggle call switch#conceal(<args>)  " mainly just for tex
 cnoremap <expr> <C-v> switch#caps()
 inoremap <expr> <C-v> switch#caps()
-noremap g[ <Cmd>call switch#reveal(0)<CR>
-noremap g] <Cmd>call switch#reveal(1)<CR>
 nnoremap <Leader>c <Cmd>call switch#copy()<CR>
 nnoremap <Leader>C <Cmd>call switch#conceal()<CR>
-
-" Remove single character
-" Note: This omits single-character deletions from register by default
-nnoremap <expr> gx edit#insert_mode('gi')
-nnoremap <expr> cx '"_' . edit#insert_mode('c') . 'l'
-nnoremap <expr> cX '"_' . edit#insert_mode('c') . 'h'
-nnoremap dx x
-nnoremap dX X
-noremap x "_x
-noremap X "_X
+noremap g[ <Cmd>call switch#reveal(0)<CR>
+noremap g] <Cmd>call switch#reveal(1)<CR>
 
 " ReST section comment headers
 " Note: <Plug> name cannot be subset of other name or results in delay
@@ -1249,9 +1248,9 @@ call plug#begin('~/.vim/plugged')
 
 " Sessions and history. Use 'vim-session' bash function to restore from
 " .vimsession or start new session with that file, or 'vim' then ':so .vimsession'.
-" See: https://github.com/junegunn/vim-peekaboo/issues/84
 " Note: Here mru can be used to replace current file in window with files from recent
 " popup list. Useful e.g. if lsp or fugitive plugins accidentally replace buffer.
+" See: https://github.com/junegunn/vim-peekaboo/issues/84
 " call plug#('thaerkh/vim-workspace')
 " call plug#('gioele/vim-autoswap')  " deals with swap files automatically; no longer use them so unnecessary
 " call plug#('xolox/vim-reload')  " easier to write custom reload function
@@ -1614,7 +1613,7 @@ for s:plugin in s:fork_plugins
 endfor
 let g:toggle_map = 'z<Space>'  " adjust toggle mapping (note this is repeatable)
 let g:scrollwrapped_nomap = 1  " instead have advanced iter#scroll_infer maps
-let g:scrollwrapped_wrap_filetypes = s:copy_filetypes + ['tex', 'text']
+let g:scrollwrapped_wrap_filetypes = s:info_filetypes + ['tex', 'text']
 exe 'noremap + <C-a>' | exe 'noremap - <C-x>'
 noremap <Leader>w <Cmd>WrapToggle<CR>
 
@@ -2345,7 +2344,8 @@ if s:plug_active('vim-speeddating')
 endif
 
 " Vim test settings
-" Todo: Try with more filetypes
+" Note: This uses pytest-mpl to generate tests
+" Todo: Configure this for other filetypes and testers
 if s:plug_active('vim-test')
   let test#strategy = 'iterm'
   let g:test#python#pytest#options = '--mpl --verbose'
@@ -2361,7 +2361,7 @@ if s:plug_active('vim-test')
 endif
 
 " Session saving and updating (the $ matches marker used in statusline)
-" Obsession .vimsession activates vim-obsession BufEnter and VimLeavePre
+" Note: :Obsession .vimsession activates vim-obsession BufEnter and VimLeavePre
 " autocommands and saved session files call let v:this_session=expand("<sfile>:p")
 " (so that v:this_session is always set when initializing with vim -S .vimsession)
 if s:plug_active('vim-obsession')  " must manually preserve cursor position
@@ -2477,8 +2477,7 @@ augroup clear_jumps
   au VimEnter,BufWinEnter * exe 'normal! zvzzze' | if get(w:, 'clear_jumps', 1)
     \ | silent clearjumps | let w:clear_jumps = 0 | endif
 augroup END
-noremap <Leader><Leader> <Cmd>echo system('curl https://icanhazdadjoke.com/')<CR>
 exe 'runtime autoload/repeat.vim'
-call syntax#update_highlights()  " show correct colors while loading
-nohlsearch  " turn off highlighting at startup
-redraw!  " prevent statusline error
+noremap <Leader><Leader> <Cmd>echo system('curl https://icanhazdadjoke.com/')<CR>
+if !v:vim_did_enter | nohlsearch | endif
+call syntax#update_highlights() | redraw!

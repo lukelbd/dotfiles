@@ -73,7 +73,6 @@ endfunction
 
 " Toggle conceal characters on and off
 " Note: Hide message because result is obvious and for consistency with copy mode
-" call s:echo_state('Conceal mode', toggle)
 function! switch#conceal(...) abort
   let state = &conceallevel > 0
   let toggle = a:0 > 0 ? a:1 : 1 - state
@@ -87,7 +86,7 @@ function! switch#conceal(...) abort
 endfunction
 
 " Tgogle special characters and columns on-off
-" Note: Hide switch message during autoload
+" Warning: Enforce settings even if state == toggle for consistency
 function! switch#copy(...) abort
   let keys = ['list', 'number', 'scrolloff', 'relativenumber', 'signcolumn', 'foldcolumn']
   let props1 = get(b:, 'settings', {})
@@ -95,9 +94,7 @@ function! switch#copy(...) abort
   let state = empty(filter(copy(props2), {key, val -> val !=# '0' && val !=# 'no'}))
   let toggle = a:0 > 0 ? a:1 : 1 - state
   let suppress = a:0 > 1 ? a:2 : 0
-  if state == toggle
-    return
-  elseif toggle
+  if toggle
     let b:settings = props2
     for key in keys
       exe 'let &l:' . key . '=' . string(key ==# 'signcolumn' ? 'no' : 0)
