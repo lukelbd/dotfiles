@@ -81,6 +81,10 @@ function! stack#clear_stack(head) abort
 endfunction
 function! stack#update_stack(head, scroll, ...) abort
   let [stack, idx, name, kdx] = s:get_index(a:head, bufnr(), a:scroll ? -1 : 5)
+  if a:head ==# 'tab'
+    let g:debugs = get(g:, 'debugs', [])
+    call add(g:debugs, 'Update stack: ' . name)
+  endif
   let verbose = a:0 > 1 ? a:2 : 0  " verbose mode
   if empty(name) | return | endif
   if a:0 && a:1 >= 0 && a:1 < len(stack)  " scroll to input index
@@ -102,9 +106,10 @@ endfunction
 " Note: Here 1 (0) goes backward (forward) in history, else goes to a default next
 " buffer. Functions should return non-zero on failure (either manually or through
 " vim error triggered on function with abort-label, which returns -1 by default).
-function! stack#pop_stack(head, name) abort
-  let convert = type(a:name) == 1 && a:name =~# '^\d\+$'
-  let [num, nmax, name] = [0, 100, convert ? str2nr(a:name) : a:name]
+function! stack#pop_stack(head, ...) abort
+  let name = a:0 ? a:1 : stack#get_name(a:head)
+  let convert = type(name) == 1 && name =~# '^\d\+$'
+  let [num, nmax, name] = [0, 100, convert ? str2nr(name) : name]
   while num < nmax
     let [stack, idx, name, kdx] = s:get_index(a:head, name, -1)
     if kdx == -1 | break | endif  " remove current item, generally
@@ -118,7 +123,7 @@ function! stack#push_stack(head, func, ...) abort
   let verbose = a:0 > 1 ? a:2 : 1
   if !a:0 || type(a:1)  " fzf-sink, user-input, or default e.g. push_stack(...[, ''])
     let jdx = -1
-    let args = !a:0 ? [] : type(a:1) == type([]) ? a:1 : [a:1]
+    let args = !a:0 ? [] : type(a:1) == 3 ? a:1 : [a:1]
     let scroll = 0
   else  " next or previous e.g. stack#push_stack(..., [1|-1])
     let jdx = idx + a:1  " arbitrary offset
@@ -141,45 +146,40 @@ function! stack#push_stack(head, func, ...) abort
     endif
     if status != 0 | return | endif
   endif
+  let [stack, idx] = s:get_stack(a:head)  " in case triggered
   call stack#update_stack(a:head, scroll, jdx, verbose)
 endfunction
 
 " Reset recent files
-" Note: Recent stack will always be in sync before scrolling, since b:tab_scroll
-" is only true after scrolling to a window and before leaving that window (TabLeave).
+" Note: Previously used complicated 'scroll state' method but now just float current
+" location to top of stack on CursorHold but always scroll with explicit commands.
 " Note: This only triggers after spending time on window instead of e.g. browsing
 " across tabs with maps, similar to jumplist. Then can access jumps in each window.
-function! s:tab_name() abort
-  let name = bufname()
-  let name = filereadable(name) || isdirectory(name) ? expand('%:p') : name
-  let b:tab_name = name  " buffer name or absolute path
-endfunction
-function! s:tab_scroll(...) abort
-  silent call call('file#open_drop', a:000)  " triggers TabLeave and TabEnter
-  for bnr in tabpagebuflist() | call setbufvar(bnr, 'tab_scroll', 1) | endfor
-  call s:tab_name()  " apply tab_name
-endfunction
-function! stack#reset_tabs() abort
-  for bnr in tabpagebuflist()
-    call setbufvar(bnr, 'tab_scroll', 0)
-  endfor
-endfunction
 function! stack#scroll_tabs(...) abort
-  let bnr = bufnr()
-  let scroll = a:0 ? a:1 : v:count1
-  if !get(b:, 'tab_scroll', 0)
-    call stack#update_tabs()  " possibly float to top
-  endif
-  call stack#push_stack('tab', function('s:tab_scroll'), scroll)
-endfunction
-function! stack#update_tabs(...) abort  " set current buffer
+  let cnt = a:0 ? a:1 : v:count1
+  call stack#update_tabs(1)  " update stack and avoid recursion
+  try
+    set eventignore=BufEnter,BufLeave
+    call stack#push_stack('tab', function('file#open_drop'), cnt)
+  finally
+    set eventignore=
+  endtry
+  call stack#update_tabs(1, 2)
+endfunction  " possibly not a file
+function! stack#update_tabs(scroll, ...) abort  " set current buffer
+  let verb = a:0 ? a:1 : 0  " disable message by default
   let skip = index(g:tags_skip_filetypes, &filetype)
-  let verbose = a:0 ? a:1 : 0  " disabled by default
-  let scroll = get(b:, 'tab_scroll', 0)
-  let b:tab_scroll = scroll  " update in case
-  call s:tab_name()  " apply tab_name
   if skip != -1 || line('$') <= 1 || empty(&filetype)
     if len(tabpagebuflist()) > 1 | return | endif
   endif
-  call stack#update_stack('tab', scroll, -1, verbose)
+  let bname = bufname()  " possibly not a file
+  let g:debugs = get(g:, 'debugs', [])
+  call add(g:debugs, 'Update tabs: ' . bname)
+  let exist = filereadable(bname) || isdirectory(bname)
+  let name = exist && !empty(bname) ? fnamemodify(bname, ':p') : bname
+  for bnr in tabpagebuflist()
+    if !empty(name) | call setbufvar(bnr, 'tab_name', name) | endif
+  endfor
+  call stack#update_stack('tab', a:scroll, -1, verb)
+  let g:tab_time = localtime()  " previous update time
 endfunction

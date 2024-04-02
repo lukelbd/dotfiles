@@ -344,17 +344,17 @@ command! -nargs=0 WipeBufs call file#wipe_bufs()
 noremap <Leader>q <Cmd>ShowBufs<CR>
 noremap <Leader>Q <Cmd>WipeBufs<CR>
 nnoremap g, <Cmd>History<CR>
-nnoremap g. <Cmd>call file#open_used()<CR>
+nnoremap g< <Cmd>call file#open_used()<CR>
 
 " Tab selection and management
 " Note: Previously used e.g. '<tab>1' maps but not parse count on one keypress
 " Note: Here :History includes v:oldfiles and open buffers
 for s:key in range(1, 10) | exe 'silent! unmap <Tab>' . s:key | endfor
 for s:key in ['.', ',', '>', '<'] | exe 'silent! xunmap z' . s:key | endfor
-nnoremap <F5> <Cmd>call window#jump_tab(v:count)<CR>
-nnoremap <F6> <Cmd>call window#move_tab(v:count)<CR>
-noremap g> <Cmd>Windows<CR>
-noremap g< <Cmd>Buffers<CR>
+nnoremap g. <Cmd>call window#jump_tab(v:count)<CR>
+nnoremap g> <Cmd>call window#move_tab(v:count)<CR>
+nnoremap g/ <Cmd>Windows<CR>
+nnoremap g? <Cmd>Buffers<CR>
 
 " Tab and window jumping
 nnoremap <Tab>, <Cmd>exe max([tabpagenr() - v:count1, 1]) . 'tabnext'<CR>
@@ -591,15 +591,16 @@ cnoremap <silent> <expr> <BS> iter#complete_cmdline("\<BS>")
 " used tabs in stack at higher priority than others. Critical to keep variables.
 augroup recents_setup
   au!
-  au TabLeave * call stack#reset_tabs()  " reset scroll variables before leaving tab
-  au CursorHold * call stack#update_tabs()
-  au BufWinLeave * call stack#pop_stack('tab', bufnr(expand('<afile>')))
-  au VimEnter * silent call stack#clear_stack('tab') | call stack#update_tabs()
+  au VimEnter * silent call stack#clear_stack('tab') | call stack#update_tabs(0)
+  au CursorHold * if localtime() - get(g:, 'tab_time', 0) > 10 | call stack#update_tabs(0) | endif
+  au BufWinLeave * call stack#pop_stack('tab', expand('<afile>'))
+  au BufLeave * call stack#update_tabs(0)  " update unless suppressed by scroll
+  au BufEnter * call stack#update_tabs(0)  " update unless suppressed by scroll
 augroup END
-command! -nargs=0 ClearTabs call stack#clear_stack('tab') | call stack#update_tabs()
-command! -nargs=0 ShowTabs call stack#update_tabs() | call stack#show_stack('tab')
+command! -nargs=0 ClearTabs call stack#clear_stack('tab') | call stack#update_tabs(0)
+command! -nargs=0 ShowTabs call stack#show_stack('tab')
 command! -nargs=? PopTabs call stack#pop_stack('tab', <f-args>)
-noremap <Tab><Tab> <Cmd>call stack#reset_tabs()<CR><Cmd>call stack#update_tabs(2)<CR>
+noremap <Tab><Tab> <Cmd>call stack#update_tabs(0, 2)<CR>
 noremap <F1> <Cmd>call stack#scroll_tabs(-v:count1)<CR>
 noremap <F2> <Cmd>call stack#scroll_tabs(v:count1)<CR>
 
@@ -611,7 +612,7 @@ augroup jumplist_setup
   au CursorHold,TextChanged,InsertLeave * if utils#none_pending() | call mark#push_jump() | endif
 augroup END
 command! -bang -nargs=0 Jumps call mark#fzf_jumps(<bang>0)
-noremap gn <Cmd>call mark#fzf_jumps()<CR>
+noremap zn <Cmd>call mark#fzf_jumps()<CR>
 noremap <C-j> <Cmd>call mark#next_jump(-v:count1)<CR>
 noremap <C-k> <Cmd>call mark#next_jump(v:count1)<CR>
 noremap <Down> <Cmd>call mark#next_jump(-v:count1)<CR>
@@ -621,7 +622,7 @@ noremap <Up> <Cmd>call mark#next_jump(v:count1)<CR>
 " Note: This accounts for iterm function-key maps and karabiner arrow-key maps
 " change entries removed. Here <F5>/<F6> are <Ctrl-/>/<Ctrl-\> in iterm
 command! -bang -nargs=0 Changes call mark#fzf_changes(<bang>0)
-noremap gN <Cmd>call mark#fzf_changes()<CR>
+noremap zN <Cmd>call mark#fzf_changes()<CR>
 noremap <C-h> <Cmd>call mark#next_change(-v:count1)<CR>
 noremap <C-l> <Cmd>call mark#next_change(v:count1)<CR>
 noremap <Left> <Cmd>call mark#next_change(-v:count1)<CR>
@@ -636,8 +637,8 @@ noremap <expr> g; edit#sel_lines_expr(0)
 noremap <expr> g: edit#sel_lines_expr(1)
 noremap g;; /<C-r>=tags#get_scope()<CR>
 noremap g:: ?<C-r>=tags#get_scope()<CR>
-noremap g/ <Cmd>BLines<CR>
-noremap g? <Cmd>Lines<CR>
+noremap gn <Cmd>BLines<CR>
+noremap gN <Cmd>Lines<CR>
 
 " Navigate across recent tag jumps
 " Note: Apply in vimrc to avoid overwriting. This works by overriding both fzf and
@@ -647,7 +648,7 @@ command! -complete=file -nargs=* ShowIgnores
 command! -complete=dir -nargs=* UpdatePaths call tag#update_paths(<f-args>)
 command! -nargs=0 ClearStack call stack#clear_stack('tag')
 command! -nargs=0 ShowStack call stack#show_stack('tag')
-command! -nargs=? PopStack call stack#pop_stack('tag', <f-args>)
+command! -nargs=* PopStack call stack#pop_stack('tag', <f-args>)
 noremap <F3> <Cmd>call tag#next_stack(-v:count1)<CR>
 noremap <F4> <Cmd>call tag#next_stack(v:count1)<CR>
 noremap [{ <Cmd>exe v:count1 . 'tag'<CR>
@@ -661,8 +662,8 @@ noremap ]} <Cmd>exe v:count1 . 'pop'<CR>
 " start new visual selection between 'y' and 'z'. Generally 'y' should be temporary
 for s:key in ['v', 'V'] | exe 'noremap ' . s:key . ' <Esc>mz' . s:key | endfor
 noremap <C-v> <Esc><Cmd>WrapToggle 0<CR>mz<C-v>
-nnoremap zn gE/<C-r>/<CR><Cmd>noh<CR>mzgn
-nnoremap zN W?<C-r>/<CR><Cmd>noh<CR>mzgN
+nnoremap z/ gE/<C-r>/<CR><Cmd>noh<CR>mzgn
+nnoremap z? W?<C-r>/<CR><Cmd>noh<CR>mzgN
 nnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR>
 vnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
 vnoremap <CR> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
@@ -766,11 +767,12 @@ nnoremap <expr> zo fold#toggle_range_expr(0, 0)
 " Note: Here 'zC' will close fold only up to current level or for definitions
 " inside class (special case for python). For recursive motion mapping similar
 " to 'zc' and 'zo' could use e.g. noremap <expr> zC fold#toggle_range_expr(1, 1)
+noremap / <Cmd>let b:open_search = 0<CR>/
+noremap ? <Cmd>let b:open_search = 0<CR>?
+noremap <F5> <Cmd>call switch#opensearch()<CR>
 noremap zi <Cmd>call fold#toggle_nested()<CR>
 noremap zC <Cmd>call fold#toggle_current(1)<CR>
 noremap zO <Cmd>call fold#toggle_current(0)<CR>
-noremap z/ <Cmd>call switch#opensearch(1)<CR>
-noremap z? <Cmd>call switch#opensearch(0)<CR>
 
 " Change fold level
 " Note: Here fold#update_level() without arguments calls fold#update_folds()
@@ -1134,8 +1136,7 @@ cnoremap <expr> <C-v> switch#caps()
 inoremap <expr> <C-v> switch#caps()
 nnoremap <Leader>c <Cmd>call switch#copy()<CR>
 nnoremap <Leader>C <Cmd>call switch#conceal()<CR>
-noremap g[ <Cmd>call switch#reveal(0)<CR>
-noremap g] <Cmd>call switch#reveal(1)<CR>
+noremap <F6> <Cmd>call switch#reveal()<CR>
 
 " ReST section comment headers
 " Note: <Plug> name cannot be subset of other name or results in delay
@@ -1708,21 +1709,25 @@ if s:plug_active('vim-textobj-user')
   vmap av <Plug>(textobj-numeral-a)
   omap iv <Plug>(textobj-numeral-i)
   vmap iv <Plug>(textobj-numeral-i)
+  omap a. <Plug>(textobj-comment-a)
+  vmap a. <Plug>(textobj-comment-a)
+  omap i. <Plug>(textobj-comment-i)
+  vmap i. <Plug>(textobj-comment-i)
   let g:textobj#sentence#select = 's'  " smarter sentence selection FooBarBaz
   let g:textobj#sentence#move_p = '('  " smarter sentence navigation
   let g:textobj#sentence#move_n = ')'  " smarter sentence navigation
   let g:vim_textobj_parameter_mapping = 'k'  " i.e. 'keyword' or 'keyword argument'
   let s:textobj_alpha = {
-    \ 'g': '\(\<\|[^0-9A-Za-z]\)\r\([^0-9A-Za-z]\|\>\)',
-    \ 'h': '\(\<\|[^0-9a-z]\@=\)\r\([^0-9a-z]\@=\|\>\)',
+    \ 'g': '\(\<\|[^0-9A-Za-z]\@<=[0-9A-Za-z]\@=\)\r\(\>\|[^0-9A-Za-z]\)',
+    \ 'h': '\(\<\|[0-9a-z]\@<=[^0-9a-z]\@=\)\r\(\>\|[0-9a-z]\@<=[^0-9a-z]\@=\)',
+  \ }  " 'ag' includes e.g. trailing underscore similar to 'a word'
+  let s:textobj_entire = {
+    \ 'select-a': 'aE',  'select-a-function': 'textobj#entire#select_a',
+    \ 'select-i': 'iE',  'select-i-function': 'textobj#entire#select_i'
   \ }
   let s:textobj_comment = {
     \ 'select-i': 'iC', 'select-i-function': 'textobj#comment#select_i',
     \ 'select-a': 'aC', 'select-a-function': 'textobj#comment#select_a',
-  \ }
-  let s:textobj_entire = {
-    \ 'select-a': 'aE',  'select-a-function': 'textobj#entire#select_a',
-    \ 'select-i': 'iE',  'select-i-function': 'textobj#entire#select_i'
   \ }
   call succinct#add_objects('alpha', s:textobj_alpha, 0, 1)  " do not escape
   call textobj#user#plugin('comment', {'-': s:textobj_comment})  " do not add <Plug> suffix
@@ -1823,21 +1828,25 @@ endif
 " nnoremap <Leader>t <Cmd>CurrentTag<CR>
 " nnoremap <Leader>T <Cmd>call switch#tags()<CR>
 if s:plug_active('vim-tags')
+  exe 'silent! unmap gyy' | exe 'silent! unmap zyy'
+  command! -count -nargs=? TagToggle
+    \ call call('switch#tags', <range> ? [<count>] : [<args>])
   command! -bang -nargs=* ShowTable let s:args = <bang>0 ? ['all'] : [<f-args>]
     \ | echo call('tags#table_kinds', s:args) . "\n" . call('tags#table_tags', s:args)
-  command! -count -nargs=? TagToggle call call('switch#tags', <range> ? [<count>] : [<args>])
   nnoremap <Leader>t <Cmd>ShowTable<CR>
   nnoremap <Leader>T <Cmd>ShowTable!<CR>
   nnoremap zt <Cmd>UpdatePaths \| UpdateTags \| GutentagsUpdate<CR><Cmd>echom 'Updated buffer tags'<CR>
   nnoremap zT <Cmd>UpdatePaths \| UpdateTags! \| GutentagsUpdate!<CR><Cmd>echom 'Updated project tags'<CR>
-  nnoremap gy <Cmd>call tag#fzf_stack()<CR>
-  nnoremap gY <Cmd>call tags#select_tag(1)<CR>
+  nnoremap gy <Cmd>call tags#select_tag(0)<CR>
+  nnoremap gY <Cmd>call tags#select_tag(2)<CR>
+  nnoremap zy <Cmd>call tags#select_tag(1)<CR>
+  nnoremap zY <Cmd>call tag#fzf_stack()<CR>
   let s:major = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
   let s:minor = {'fortran': 'ekltvEL', 'python': 'xviI', 'vim': 'vnC', 'tex': 'gioetBCN'}
   let g:tags_keep_jumps = 1  " default is zero
+  let g:tags_bselect_map = 'gy'  " default is <Leader><Leader>
+  let g:tags_select_map = 'gY'  " default is <Leader><Tab>
   let g:tags_cursor_map = '<CR>'  " default is <Leader><CR>
-  let g:tags_select_map = 'gT'  " <Cmd>SelectTag!<CR>
-  let g:tags_bselect_map = 'gt'  " <Cmd>SelectTag<CR>
   let g:tags_major_kinds = s:major
   let g:tags_minor_kinds = s:minor
   let g:tags_prev_local_map = '[w'  " keyword jumping
@@ -1863,8 +1872,8 @@ if s:plug_active('vim-gutentags')
     \ tag#fzf_btags(<q-args>, fzf#vim#with_preview({'placeholder': '{2}:{3..}'}), <bang>0)
   command! -bang -nargs=* Tags call
     \ tag#fzf_tags(<q-args>, fzf#vim#with_preview({'placeholder': '--tag {2}:{-1}:{3..}' }), <bang>0)
-  nnoremap <C-r> <Cmd>BTags<CR>
-  nnoremap <C-t> <Cmd>Tags<CR>
+  nnoremap gt <Cmd>BTags<CR>
+  nnoremap gT <Cmd>Tags<CR>
   let g:gutentags_background_update = 1  " disable for debugging, printing updates
   let g:gutentags_ctags_auto_set_tags = 0  " tag#update_paths() handles this instead
   let g:gutentags_ctags_executable = 'ctags'  " note this respects .ctags config
@@ -2233,11 +2242,11 @@ if s:plug_active('vim-fugitive')
     au!
     au BufEnter * call git#setup_commands()
   augroup END
-  noremap zl <Cmd>BCommits<CR>
-  noremap zL <Cmd>Commits<CR>
-  noremap <expr> gl git#run_map_expr(2, 0, '', 'blame ')
-  noremap gll <Cmd>call git#run_map(2, 0, '', 'blame ')<CR>
-  noremap gL <Cmd>call git#run_map(0, 0, '', 'blame')<CR>
+  noremap gl <Cmd>BCommits<CR>
+  noremap gL <Cmd>Commits<CR>
+  noremap zL <Cmd>call git#run_map(0, 0, '', 'blame')<CR>
+  nnoremap zll <Cmd>call git#run_map(2, 0, '', 'blame ')<CR>
+  noremap <expr> zl git#run_map_expr(2, 0, '', 'blame ')
   noremap <Leader>' <Cmd>call git#run_map(0, 0, '', '')<CR>
   noremap <Leader>" <Cmd>call git#run_map(0, 0, '', 'status')<CR>
   noremap <Leader>y <Cmd>call git#run_map(0, 0, '', 'trunk')<CR>
@@ -2276,6 +2285,7 @@ endif
 if s:plug_active('vim-gitgutter')
   command! -nargs=? GitGutterToggle call switch#gitgutter(<args>)
   command! -bang -range Hunks call git#hunk_stats(<range> ? <line1> : 0, <range> ? <line2> : 0, <bang>0, 1)
+  exe 'silent! unmap zgg'
   let g:gitgutter_async = 1  " ensure enabled
   let g:gitgutter_map_keys = 0  " disable all maps yo
   let g:gitgutter_max_signs = -1  " maximum number of signs
@@ -2286,16 +2296,16 @@ if s:plug_active('vim-gitgutter')
   call utils#repeat_map('', ']G', 'HunkForward', '<Cmd>call git#hunk_next(v:count1, 1)<CR>')
   noremap [g <Cmd>call git#hunk_next(-v:count1, 0)<CR>
   noremap ]g <Cmd>call git#hunk_next(v:count1, 0)<CR>
-  noremap <Leader>g <Cmd>call git#hunk_show()<CR>
-  noremap <Leader>G <Cmd>call switch#gitgutter()<CR>
+  noremap <Leader>g <Cmd>call switch#gitgutter()<CR>
   noremap <expr> gh git#hunk_stage_expr(1)
   noremap <expr> gH git#hunk_stage_expr(0)
   nnoremap <nowait> ghh <Cmd>call git#hunk_stage(1)<CR>
   nnoremap <nowait> gHH <Cmd>call git#hunk_stage(0)<CR>
-  noremap zh <Cmd>GitGutter \| echom 'Updated buffer hunks'<CR>
-  noremap zH <Cmd>GitGutterAll \| echom 'Updated global hunks'<CR>
-  noremap zgg <Cmd>Hunks<CR>
-  noremap <expr> zg git#hunk_stats_expr()
+  noremap <expr> zh git#hunk_stats_expr()
+  noremap zhh <Cmd>Hunks<CR>
+  noremap zH <Cmd>call git#hunk_show()<CR>
+  noremap zg <Cmd>GitGutter \| echom 'Updated buffer hunks'<CR>
+  noremap zG <Cmd>GitGutterAll \| echom 'Updated global hunks'<CR>
 endif
 
 " Configure codi (mathematical notepad) without history and settings
@@ -2417,8 +2427,8 @@ augroup color_setup
 augroup END
 command! -bang -count=0 Syntax
   \ call syntax#sync_lines(<range> == 2 ? abs(<line2> - <line1>) : <count>, <bang>0)
-call utils#repeat_map('', 'zy', 'SyncSmart', ':Syntax<CR>')
-call utils#repeat_map('', 'zY', 'SyncStart', '<Cmd>Syntax!<CR>')
+call utils#repeat_map('', '<C-r>', 'SyncSmart', ':Syntax<CR>')
+call utils#repeat_map('', '<C-t>', 'SyncStart', '<Cmd>Syntax!<CR>')
 noremap <Leader>8 <Cmd>Colorize<CR>
 
 " Scroll color schemes and toggle colorize

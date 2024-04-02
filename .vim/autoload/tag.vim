@@ -1,10 +1,95 @@
 "-----------------------------------------------------------------------------"
 " Utilities for ctags management
 "-----------------------------------------------------------------------------"
+" Select from tags in the current window stack
+" Note: This finds tag kinds using taglist() and ignores missing files.
+" See: https://github.com/junegunn/fzf.vim/issues/240
+function! tag#fzf_stack() abort
+  let items = []
+  let stack = gettagstack(win_getid())
+  for item in get(stack, 'items', [])  " search tag stack
+    let iname = item.tagname
+    let ipath = expand('#' . item.bufnr . ':p')
+    if !filereadable(ipath) | continue | endif
+    call extend(items, taglist(iname, ipath))
+  endfor
+  let paths = map(copy(items), 'v:val.filename')
+  let level = len(uniq(sort(paths))) > 1 ? 2 : 0
+  if level > 0
+    let expr = '[v:val.filename, v:val.cmd, v:val.name, v:val.kind]'
+  else
+    let expr = '[v:val.cmd, v:val.name, v:val.kind]'
+  endif
+  let opts = map(copy(items), expr)
+  return tags#select_tag(level, opts, 1)
+endfunction
+
+" Override fzf :Btags and :Tags
+" Note: This is similar to fzf except uses custom sink that adds results to window
+" tag stack for navigation with ctrl-bracket maps and tag/pop commands.
+function! tag#fzf_btags(query, ...) abort
+  let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
+  if empty(snr) | return | endif
+  let args = copy(a:000)
+  let cmd = 'ctags -f - --sort=yes --excmd=number %s 2>/dev/null | sort -s -k 5'
+  let cmd = printf(cmd, fzf#shellescape(expand('%')))
+  let flags = "-m -d '\t' --with-nth 1,4.. --nth 1"
+  let flags .= ' --preview-window +{3}-/2 --query ' . shellescape(a:query)
+  let options = {
+    \ 'source': call(snr . 'btags_source', [[cmd]]),
+    \ 'sink': function('tags#push_tag', [0]),
+    \ 'options': flags . ' --prompt "BTags> "',
+  \ }
+  return call(snr . 'fzf', ['btags', options, a:000])
+endfunction
+function! tag#fzf_tags(query, ...) abort
+  if !executable('perl')
+    echohl ErrorMsg | echom 'Error: Tags command requires perl' | echohl None | return
+  endif
+  let cmd = expand('~/.vim/plugged/fzf.vim/bin/tags.pl')
+  let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
+  if empty(snr) | return | endif
+  let paths = map(tagfiles(), 'fnamemodify(v:val, ":p")')
+  let [nbytes, maxbytes] = [0, 1024 * 1024 * 200]
+  for path in paths
+    let nbytes += getfsize(path)
+    if nbytes > maxbytes | break | endif
+  endfor
+  let flags = "-m -d '\t' --with-nth ..4 --nth ..2"
+  let flags .= nbytes > maxbytes ? ' --algo=v1' : ''
+  let args = map([a:query] + paths, 'fzf#shellescape(v:val)')
+  let options = {
+    \ 'source': join(['perl', fzf#shellescape(cmd)] + args, ' '),
+    \ 'sink': function('tags#push_tag', [0]),
+    \ 'options': flags . ' --prompt "Tags> "',
+  \ }
+  return call(snr . 'fzf', ['tags', options, a:000])
+endfunction
+
+" Navigate to the 'from' position in the tag stack
+" Note: This only jumps if the destination 'from' line contains the tag (i.e. not
+" jumping to an outdated position or from a random fzf call) or if at the bottom.
+function! tag#from_stack(name, ...) abort
+  let path = expand('%:p')
+  let stack = gettagstack(win_getid())
+  for item in get(stack, 'items', [])  " search tag stack
+    let iname = item.tagname
+    let ipath = expand('#' . item.bufnr . ':p')
+    if ipath !=# path | continue | endif
+    if iname !=# a:name | continue | endif
+    if !has_key(stack, 'from') | continue | endif
+    let [bnr, lnum, cnum, onum] = stack.from
+    let text = getbufline(bnr, lnum)
+    if a:0 && a:1 || text =~# escape(iname, '[]\.*$~')
+      if bnr | silent call file#open_drop(bnr) | endif
+      call cursor(lnum, cnum, onum) | return
+    endif
+  endfor
+endfunction
+
 " Iterate over tags (see also mark#next_mark)
-" Note: This implicitly adds 'current' location to top of stack before navigation
-" Todo: Consider adding 'tag stack search' fzf command or supporting navigation
-" across 'from' position throughout stack instead of just at the bottom of stack.
+" Note: This implicitly adds 'current' location to top of stack before navigation,
+" and additionally jumps to the tag stack 'from' position when navigating backwards.
 function! tag#next_stack(...) abort
   let cnt = a:0 ? a:1 : v:count1
   let item = stack#get_item('tag')
@@ -40,72 +125,13 @@ function! tag#next_stack(...) abort
       let cnt += offset
     endif
   endif
-  return stack#push_stack('tag', function('tags#iter_tag', [cnt]), cnt)
-endfunction
-
-" Select from tags in the current window stack
-" Note: This finds tag kinds using taglist() and ignores missing files.
-" See: https://github.com/junegunn/fzf.vim/issues/240
-function! tag#fzf_stack() abort
-  let items = []
-  let itags = gettagstack(win_getid())
-  for item in get(itags, 'items', [])  " search tag stack
-    let iname = item.tagname
-    let ipath = expand('#' . item.bufnr . ':p')
-    if !filereadable(ipath) | continue | endif
-    call extend(items, taglist(iname, ipath))
-  endfor
-  let paths = map(copy(items), 'v:val.filename')
-  let level = len(uniq(sort(paths))) > 1 ? 2 : 0
-  if level > 0
-    let expr = '[v:val.filename, v:val.cmd, v:val.name, v:val.kind]'
-  else
-    let expr = '[v:val.cmd, v:val.name, v:val.kind]'
+  call stack#push_stack('tag', function('tags#iter_tag', [cnt]), cnt)
+  let [iloc, _] = stack#get_loc('tag')
+  let force = iloc == 0  " enforce 'from' strictly
+  let item = stack#get_item('tag')
+  if cnt < 0 && !empty(item)  " mimic :pop behavior
+    call tag#from_stack(item[2], force)
   endif
-  let opts = map(copy(items), expr)
-  return tags#select_tag(level, opts, 1)
-endfunction
-
-" Override fzf :Btags and :Tags
-" Note: This is similar to fzf except uses custom sink that adds results to window
-" tag stack for navigation with ctrl-bracket maps and tag/pop commands.
-function! tag#fzf_btags(query, ...) abort
-  let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
-  if empty(snr) | return | endif
-  let args = copy(a:000)
-  let cmd = 'ctags -f - --sort=yes --excmd=number %s 2>/dev/null | sort -s -k 5'
-  let cmd = printf(cmd, fzf#shellescape(expand('%')))
-  let flags = "-m -d '\t' --with-nth 1,4.. -n 1 --layout=reverse-list"
-  let flags .= ' --preview-window +{3}-/2 --query ' . shellescape(a:query)
-  let options = {
-    \ 'source': call(snr . 'btags_source', [[cmd]]),
-    \ 'sink': function('tags#push_tag', [0]),
-    \ 'options': flags . ' --prompt "BTags> "',
-  \ }
-  return call(snr . 'fzf', ['btags', options, a:000])
-endfunction
-function! tag#fzf_tags(query, ...) abort
-  if !executable('perl')
-    echohl ErrorMsg | echom 'Error: Tags command requires perl' | echohl None | return
-  endif
-  let cmd = expand('~/.vim/plugged/fzf.vim/bin/tags.pl')
-  let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
-  if empty(snr) | return | endif
-  let paths = map(tagfiles(), 'fnamemodify(v:val, ":p")')
-  let [nbytes, maxbytes] = [0, 1024 * 1024 * 200]
-  for path in paths
-    let nbytes += getfsize(path)
-    if nbytes > maxbytes | break | endif
-  endfor
-  let flags = "-m -d '\t' --nth 1..2 --layout=reverse-list --tiebreak=begin"
-  let flags .= nbytes > maxbytes ? ' --algo=v1' : ''
-  let args = map([a:query] + paths, 'fzf#shellescape(v:val)')
-  let options = {
-    \ 'source': join(['perl', fzf#shellescape(cmd)] + args, ' '),
-    \ 'sink': function('tags#push_tag', [0]),
-    \ 'options': flags . ' --prompt "Tags> "',
-  \ }
-  return call(snr . 'fzf', ['tags', options, a:000])
 endfunction
 
 " Search for the 'root' directory to store the ctags file

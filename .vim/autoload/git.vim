@@ -62,9 +62,9 @@ endfunction
 function! git#setup_blame() abort
   let regex = '^\x\{8}\s\+\d\+\s\+(\zs<\S\+>\s\+'
   call matchadd('Conceal', regex, 0, -1, {'conceal': ''})
-  if window#count_panes('h') == 1
-    call feedkeys("\<Cmd>vertical resize " . window#default_width(0) . "\<CR>", 'n')
-  endif
+  " if window#count_panes('h') == 1
+  "   call feedkeys("\<Cmd>vertical resize " . window#default_width(0) . "\<CR>", 'n')
+  " endif
 endfunction
 function! git#setup_commit(...) abort
   exe 'resize ' . window#default_height(1)
@@ -163,7 +163,13 @@ function! git#run_command(msg, line1, count, range, bang, mods, cmd, ...) abort 
   let icmd = empty(FugitiveGitDir()) ? '' : a:cmd
   let [name; flags] = split(icmd, '\\\@<!\s\+', 1)
   let icmd = get(s:cmd_translate, name, name) . ' ' . join(flags, ' ')
-  let imod = empty(a:mods) ? index(s:cmd_vert, name) > 0 ? 'vert botright' : 'botright' : a:mods
+  if !empty(a:mods) || a:cmd =~# '^blame\( %\)\@!'
+    let imod = a:mods
+  elseif index(s:cmd_vert, name) > 0
+    let imod = 'vert botright'
+  else
+    let imod = 'botright'
+  endif
   let args = [a:line1, a:count, a:range, a:bang, imod, icmd]
   silent let rcmd = call('fugitive#Command', args + a:000)
   let verbose = s:run_cmd(bnum, lnum, rcmd, a:cmd)

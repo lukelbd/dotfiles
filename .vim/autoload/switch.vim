@@ -204,12 +204,10 @@ function! switch#opensearch(...) abort
   let suppress = a:0 > 1 ? a:2 : 0
   let winview = winsaveview()
   if toggle  " :global previous search
-    silent! %foldclose!
-    global//silent! normal! zv
+    call fold#update_folds(0, 2) | global//silent! normal! zv
     call feedkeys("\<Cmd>set hlsearch\<CR>", 'n')
   else  " keep hlsearch enabled
-    silent! %foldclose!
-    silent! normal! zv
+    call fold#update_folds(0, 1)
     call feedkeys("\<Cmd>set hlsearch\<CR>", 'n')
   endif
   call winrestview(winview)
