@@ -167,6 +167,9 @@ function! stack#scroll_tabs(...) abort
   call stack#update_tabs(1, 2)
 endfunction  " possibly not a file
 function! stack#update_tabs(scroll, ...) abort  " set current buffer
+  if !v:vim_did_enter
+    return
+  endif
   let verb = a:0 ? a:1 : 0  " disable message by default
   let skip = index(g:tags_skip_filetypes, &filetype)
   if skip != -1 || line('$') <= 1 || empty(&filetype)

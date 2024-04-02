@@ -11,14 +11,14 @@
 " F2: 0x1b 0x4f 0x51 (Ctrl-.)
 " F3: 0x1b 0x4f 0x52 (Ctrl-[)
 " F4: 0x1b 0x4f 0x53 (Ctrl-])
-" F5: 0x1b 0x5b 0x31 0x35 0x7e (Ctrl-/) (3-digit codes failed)
-" F6: 0x1b 0x5b 0x31 0x37 0x7e (Ctrl-\)
-" F7: 0x1b 0x5b 0x31 0x38 0x7e (Ctrl--)
-" F8: 0x1b 0x5b 0x31 0x39 0x7e (Ctrl-=)
-" F9: 0x1b 0x5b 0x32 0x30 0x7e (Ctrl-;)
-" F10: 0x1b 0x5b 0x32 0x31 0x7e (Ctrl-')
-" F11: 0x1b 0x5b 0x32 0x33 0x7e (Ctrl-i) (forum codes required)
-" F12: 0x1b 0x5b 0x32 0x34 0x7e (Ctrl-m)
+" F5: 0x1b 0x5b 0x31 0x35 0x7e (Ctrl-;) (3-digit codes failed)
+" F6: 0x1b 0x5b 0x31 0x37 0x7e (Ctrl-')
+" F7: 0x1b 0x5b 0x31 0x38 0x7e (Ctrl-i)
+" F8: 0x1b 0x5b 0x31 0x39 0x7e (Ctrl-m)
+" F9: 0x1b 0x5b 0x32 0x30 0x7e
+" F10: 0x1b 0x5b 0x32 0x31 0x7e
+" F11: 0x1b 0x5b 0x32 0x33 0x7e (forum codes required)
+" F12: 0x1b 0x5b 0x32 0x34 0x7e
 "-----------------------------------------------------------------------------"
 " Critical stuff
 " Note: See .vim/after/common.vim and .vim/after/filetype.vim for overrides of
@@ -246,7 +246,7 @@ let &t_ZR = "\e[23m"  " italics end
 " * Enter and Underscore scrolls down on first non-blank character
 for s:key in [
   \ '@', 'q', 'Q', 'K', 'ZZ', 'ZQ', '][', '[]',
-  \ '<C-p>', '<C-n>', '<C-a>', '<C-x>', '<C-t>',
+  \ '<C-p>', '<C-n>', '<C-a>', '<C-x>', '<C-t>', '<C-r>',
   \ '<Delete>', '<Backspace>', '<CR>', '_',
 \ ]
   if empty(maparg(s:key, 'n'))
@@ -332,7 +332,7 @@ nnoremap <C-e> <Cmd>call window#close_panes()<CR>
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
 command! -bang -nargs=? Refresh runtime autoload/vim.vim | call vim#config_refresh(<bang>0, <q-args>)
 command! -nargs=? Scripts call utils#get_scripts(0, <q-args>)
-noremap <leader>e <Cmd>call file#reload()<CR>
+noremap <leader>E <Cmd>call file#reload()<CR>
 noremap <Leader>r <Cmd>redraw! \| echo ''<CR>
 noremap <Leader>R <Cmd>Refresh<CR>
 let g:MRU_Open_File_Relative = 1
@@ -405,9 +405,9 @@ command! -nargs=* -complete=file Drop call file#open_drop(<f-args>)
 command! -nargs=* -complete=file Open call file#open_continuous('Drop', <f-args>)
 command! -nargs=* -complete=file Split call file#open_continuous('botright split', <f-args>)
 command! -nargs=* -complete=file Vsplit call file#open_continuous('botright vsplit', <f-args>)
-nnoremap <F7> <Cmd>exe 'Split ' . fnameescape(fnamemodify(resolve(@%), ':p:h'))<CR>
-nnoremap <F8> <Cmd>exe 'Split ' . fnameescape(tag#find_root(@%))<CR>
-nnoremap <F11> <Cmd>exe 'Open ' . fnameescape(fnamemodify(resolve(@%), ':p:h'))<CR>
+nnoremap <C-r> <Cmd>exe 'Split ' . fnameescape(tag#find_root(@%))<CR>
+nnoremap <C-t> <Cmd>exe 'Vsplit ' . fnameescape(tag#find_root(@%))<CR>
+nnoremap <F7> <Cmd>exe 'Open ' . fnameescape(fnamemodify(resolve(@%), ':p:h'))<CR>
 nnoremap <C-y> <Cmd>exe 'Files ' . fnameescape(fnamemodify(resolve(@%), ':p:h'))<CR>
 nnoremap <C-o> <Cmd>exe 'Open ' . fnameescape(tag#find_root(@%))<CR>
 nnoremap <C-p> <Cmd>exe 'Files ' . fnameescape(tag#find_root(@%))<CR>
@@ -475,12 +475,12 @@ augroup END
 " Mapping and command windows
 " This uses iterm mapping of <F6> to <C-;> and works in all modes
 " See: https://stackoverflow.com/a/41168966/4970632
-omap <F9> <Plug>(fzf-maps-o)
-xmap <F9> <Plug>(fzf-maps-x)
-imap <F9> <Plug>(fzf-maps-i)
-nnoremap <F9> <Cmd>Maps<CR>
-cnoremap <F9> <Esc><Cmd>Commands<CR>
-noremap <Leader><F9> <Cmd>Commands<CR>
+omap <F5> <Plug>(fzf-maps-o)
+xmap <F5> <Plug>(fzf-maps-x)
+imap <F5> <Plug>(fzf-maps-i)
+nnoremap <F5> <Cmd>Maps<CR>
+cnoremap <F5> <Esc><Cmd>Commands<CR>
+noremap <Leader><F5> <Cmd>Commands<CR>
 
 " Vim help and history windows
 " Note: For some reason even though :help :mes claims count N shows the N most recent
@@ -591,11 +591,9 @@ cnoremap <silent> <expr> <BS> iter#complete_cmdline("\<BS>")
 " used tabs in stack at higher priority than others. Critical to keep variables.
 augroup recents_setup
   au!
-  au VimEnter * silent call stack#clear_stack('tab') | call stack#update_tabs(0)
   au CursorHold * if localtime() - get(g:, 'tab_time', 0) > 10 | call stack#update_tabs(0) | endif
   au BufWinLeave * call stack#pop_stack('tab', expand('<afile>'))
-  au BufLeave * call stack#update_tabs(0)  " update unless suppressed by scroll
-  au BufEnter * call stack#update_tabs(0)  " update unless suppressed by scroll
+  au BufEnter,BufLeave * call stack#update_tabs(0)  " next update
 augroup END
 command! -nargs=0 ClearTabs call stack#clear_stack('tab') | call stack#update_tabs(0)
 command! -nargs=0 ShowTabs call stack#show_stack('tab')
@@ -612,7 +610,7 @@ augroup jumplist_setup
   au CursorHold,TextChanged,InsertLeave * if utils#none_pending() | call mark#push_jump() | endif
 augroup END
 command! -bang -nargs=0 Jumps call mark#fzf_jumps(<bang>0)
-noremap zn <Cmd>call mark#fzf_jumps()<CR>
+noremap gn <Cmd>call mark#fzf_jumps()<CR>
 noremap <C-j> <Cmd>call mark#next_jump(-v:count1)<CR>
 noremap <C-k> <Cmd>call mark#next_jump(v:count1)<CR>
 noremap <Down> <Cmd>call mark#next_jump(-v:count1)<CR>
@@ -622,7 +620,7 @@ noremap <Up> <Cmd>call mark#next_jump(v:count1)<CR>
 " Note: This accounts for iterm function-key maps and karabiner arrow-key maps
 " change entries removed. Here <F5>/<F6> are <Ctrl-/>/<Ctrl-\> in iterm
 command! -bang -nargs=0 Changes call mark#fzf_changes(<bang>0)
-noremap zN <Cmd>call mark#fzf_changes()<CR>
+noremap gN <Cmd>call mark#fzf_changes()<CR>
 noremap <C-h> <Cmd>call mark#next_change(-v:count1)<CR>
 noremap <C-l> <Cmd>call mark#next_change(v:count1)<CR>
 noremap <Left> <Cmd>call mark#next_change(-v:count1)<CR>
@@ -637,8 +635,8 @@ noremap <expr> g; edit#sel_lines_expr(0)
 noremap <expr> g: edit#sel_lines_expr(1)
 noremap g;; /<C-r>=tags#get_scope()<CR>
 noremap g:: ?<C-r>=tags#get_scope()<CR>
-noremap gn <Cmd>BLines<CR>
-noremap gN <Cmd>Lines<CR>
+noremap g/ <Cmd>BLines<CR>
+noremap g? <Cmd>Lines<CR>
 
 " Navigate across recent tag jumps
 " Note: Apply in vimrc to avoid overwriting. This works by overriding both fzf and
@@ -662,8 +660,8 @@ noremap ]} <Cmd>exe v:count1 . 'pop'<CR>
 " start new visual selection between 'y' and 'z'. Generally 'y' should be temporary
 for s:key in ['v', 'V'] | exe 'noremap ' . s:key . ' <Esc>mz' . s:key | endfor
 noremap <C-v> <Esc><Cmd>WrapToggle 0<CR>mz<C-v>
-nnoremap z/ gE/<C-r>/<CR><Cmd>noh<CR>mzgn
-nnoremap z? W?<C-r>/<CR><Cmd>noh<CR>mzgN
+nnoremap zn gE/<C-r>/<CR><Cmd>noh<CR>mzgn
+nnoremap zN W?<C-r>/<CR><Cmd>noh<CR>mzgN
 nnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR>
 vnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
 vnoremap <CR> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
@@ -769,7 +767,6 @@ nnoremap <expr> zo fold#toggle_range_expr(0, 0)
 " to 'zc' and 'zo' could use e.g. noremap <expr> zC fold#toggle_range_expr(1, 1)
 noremap / <Cmd>let b:open_search = 0<CR>/
 noremap ? <Cmd>let b:open_search = 0<CR>?
-noremap <F5> <Cmd>call switch#opensearch()<CR>
 noremap zi <Cmd>call fold#toggle_nested()<CR>
 noremap zC <Cmd>call fold#toggle_current(1)<CR>
 noremap zO <Cmd>call fold#toggle_current(0)<CR>
@@ -806,7 +803,7 @@ noremap <Leader>- <Cmd>call mark#del_marks()<CR>
 noremap <Leader>_ <Cmd>call mark#del_marks(get(g:, 'mark_name', 'A'))<CR>
 noremap _ <Cmd>call mark#set_marks(utils#translate_count('m'))<CR>
 noremap <C-n> <Cmd>call mark#next_mark(-v:count1)<CR>
-noremap <F12> <Cmd>call mark#next_mark(v:count1)<CR>
+noremap <F8> <Cmd>call mark#next_mark(v:count1)<CR>
 
 " Interactive file jumping with grep commands
 " Note: Maps use default search pattern '@/'. Commands can be called with arguments
@@ -980,8 +977,8 @@ augroup undo_setup
   au!
   au InsertEnter * call edit#insert_undo()
 augroup END
-inoremap <expr> <F11> '<Cmd>undo<CR><Esc>' . edit#insert_mode()
-inoremap <expr> <F12> edit#insert_undo()
+inoremap <expr> <F7> '<Cmd>undo<CR><Esc>' . edit#insert_mode()
+inoremap <expr> <F8> edit#insert_undo()
 nmap . <Plug>(RepeatDot)
 nmap u <Plug>(RepeatUndo)
 nmap U <Plug>(RepeatRedo)
@@ -989,9 +986,9 @@ nmap U <Plug>(RepeatRedo)
 " Operator register and display utilities
 " Note: For some reason cannot set g:peekaboo_ins_prefix = '' and simply have <C-r>
 " trigger the mapping. See https://vi.stackexchange.com/q/5803/8084
-imap <expr> <F10> peekaboo#peek(1, "\<C-r>", 0)
-nmap <expr> <F10> peekaboo#peek(1, '"', 0)
-vmap <expr> <F10> peekaboo#peek(1, '"', 0)
+imap <expr> <F6> peekaboo#peek(1, "\<C-r>", 0)
+nmap <expr> <F6> peekaboo#peek(1, '"', 0)
+vmap <expr> <F6> peekaboo#peek(1, '"', 0)
 
 " Declare alphabetic registers with count (consistent with mark utilities)
 " Warning: Critical to use 'nmap' and 'vmap' since do not want operator-mode
@@ -1136,7 +1133,9 @@ cnoremap <expr> <C-v> switch#caps()
 inoremap <expr> <C-v> switch#caps()
 nnoremap <Leader>c <Cmd>call switch#copy()<CR>
 nnoremap <Leader>C <Cmd>call switch#conceal()<CR>
-noremap <F6> <Cmd>call switch#reveal()<CR>
+noremap \| <Cmd>call switch#reveal()<CR>
+noremap g[ <Cmd>call switch#opensearch(0)<CR>
+noremap g] <Cmd>call switch#opensearch(1)<CR>
 
 " ReST section comment headers
 " Note: <Plug> name cannot be subset of other name or results in delay
@@ -1771,8 +1770,8 @@ if s:plug_active('tcomment_vim')
   nnoremap z.. <Cmd>call comment#toggle_comment()<CR>
   nnoremap z>> <Cmd>call comment#toggle_comment(1)<CR>
   nnoremap z<< <Cmd>call comment#toggle_comment(0)<CR>
-  inoremap <F5> <Space><C-\><C-o>v:TCommentInline mode=#<CR><Delete>
-  inoremap <F6> <Space><C-\><C-o>:TCommentBlock mode=#<CR><Delete>
+  inoremap <C-g>c <Space><C-\><C-o>v:TCommentInline mode=#<CR><Delete>
+  inoremap <C-g>C <Space><C-\><C-o>:TCommentBlock mode=#<CR><Delete>
   let g:tcomment_opleader1 = 'z.'  " default is 'gc'
   let g:tcomment_mapleader1 = ''  " disables <C-_> insert mode maps
   let g:tcomment_mapleader2 = ''  " disables <Leader><Space> normal mode maps
@@ -2427,8 +2426,9 @@ augroup color_setup
 augroup END
 command! -bang -count=0 Syntax
   \ call syntax#sync_lines(<range> == 2 ? abs(<line2> - <line1>) : <count>, <bang>0)
-call utils#repeat_map('', '<C-r>', 'SyncSmart', ':Syntax<CR>')
-call utils#repeat_map('', '<C-t>', 'SyncStart', '<Cmd>Syntax!<CR>')
+noremap <Leader>e <Cmd>Syntax<CR>
+noremap <Leader>6 <Cmd>Syntax 100<CR>
+noremap <Leader>7 <Cmd>Syntax!<CR>
 noremap <Leader>8 <Cmd>Colorize<CR>
 
 " Scroll color schemes and toggle colorize

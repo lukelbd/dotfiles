@@ -77,9 +77,9 @@ function! tag#from_stack(name, ...) abort
     let ipath = expand('#' . item.bufnr . ':p')
     if ipath !=# path | continue | endif
     if iname !=# a:name | continue | endif
-    if !has_key(stack, 'from') | continue | endif
-    let [bnr, lnum, cnum, onum] = stack.from
-    let text = getbufline(bnr, lnum)
+    if !has_key(item, 'from') | continue | endif
+    let [bnr, lnum, cnum, onum] = item.from
+    let text = get(getbufline(bnr, lnum), 0, '')
     if a:0 && a:1 || text =~# escape(iname, '[]\.*$~')
       if bnr | silent call file#open_drop(bnr) | endif
       call cursor(lnum, cnum, onum) | return

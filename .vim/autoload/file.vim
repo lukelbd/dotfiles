@@ -176,10 +176,12 @@ function! s:open_continuous(cmd, ...) abort
   if empty(paths) && a:0 == 1 || len(paths) == 1 && isdirectory(paths[0])
     let base = get(paths, 0, '.')
     let paths = []  " only continue in recursion
+    let prompt = file#format_dir(base, 1)
+    let prompt = string(a:cmd . '> ' . prompt)
     call fzf#run(fzf#wrap({
       \ 'sink*': function('s:open_continuous', [a:cmd, base]),
       \ 'source': file#glob_files(base, 1),
-      \ 'options': "--multi --no-sort --prompt='" . file#format_dir(base, 1) . "'",
+      \ 'options': '--multi --no-sort --prompt=' . string(prompt),
       \ }))
   endif
   " Open file(s), or if it is already open just to that tab
