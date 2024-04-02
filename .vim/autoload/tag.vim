@@ -1,24 +1,62 @@
 "-----------------------------------------------------------------------------"
 " Utilities for ctags management
 "-----------------------------------------------------------------------------"
-" Iterate over tag stack preserving start location
-" Todo: Consider adding 'tag stack search' fzf command and adding maps to below. For
-" now just have 'stack of tags' and loop through them with native vim-stack utility.
-" See: https://github.com/junegunn/fzf.vim/issues/240
-function! tag#next_tag(...) abort
+" Iterate over tags (see also mark#next_mark)
+" Todo: Consider adding 'tag stack search' fzf command or supporting navigation
+" across 'from' position throughout stack instead of just at the bottom of stack.
+function! tag#next_stack(...) abort
   let cnt = a:0 ? a:1 : v:count1
-  let stack = get(g:, 'tag_stack', [])
+  let name = get(g:, 'tag_name', [])  " see also mark#next_mark()
   let iloc = get(g:, 'tag_loc', 0)
-  if cnt < 0 && iloc >= len(stack) - 1
-    let label = '<top>'
-    let top = get(stack, -1, [])  " apply 'top' similar to vim 'from'
-    if get(top, 2, '') ==# label
-      call stack#pop_stack('tag', top)
-    endif
-    let g:tag_name = [expand('%:p'), line('.'), label]
-    call stack#push_stack('tag', '', '', 0)  " see also mark.vim
+  let ilen = len(get(g:, 'tag_stack', []))
+  let itag = get(name, 2, '')
+  let ctag = tags#find_tag(line('.'))
+  let pseudo = '<top>'  " pseudo-tag for top of stack
+  let current = !empty(itag) && itag ==# get(ctag, 0, '')
+  if cnt < 0 && ilen > 0 && iloc >= ilen - 1 && !current
+    if itag ==# pseudo | call stack#pop_stack('tag', name) | endif  " remove previous
+    let name = [expand('%:p'), [line('.'), col('.')], pseudo]
+    let g:tag_name = name  " push_stack() adds this to the stack
+    call stack#push_stack('tag', '', '', 0)
   endif
-  return stack#push_stack('tag', 'tags#goto_tag', cnt)
+  if !empty(name)  " see also mark.vim
+    let [pos1, pos2] = [get(name, 1, 0), [line('.'), col('.')]]
+    let cursor = type(pos1) <= 1 ? pos1 == pos2[0] : pos1 == pos2
+    let ignore = current || itag ==# pseudo && iloc >= ilen - 1 && cnt >= 0
+    if !cursor && !ignore  " drop <from> tag below
+      let offset = cnt > 0 ? -1 : 1
+      if abs(cnt) <= 1  " note this also resets <from>
+        call call('tags#iter_tag', [1] + name)
+      else  " suppress message
+        silent call call('tags#iter_tag', [1] + name)
+      endif
+      let cnt += offset
+    endif
+  endif
+  return stack#push_stack('tag', function('tags#iter_tag', [cnt]), cnt)
+endfunction
+
+" Select from tags in the current window stack
+" Note: This finds tag kinds using taglist() and ignores missing files.
+" See: https://github.com/junegunn/fzf.vim/issues/240
+function! tag#fzf_stack() abort
+  let items = []
+  let itags = gettagstack(win_getid())
+  for item in get(itags, 'items', [])  " search tag stack
+    let iname = item.tagname
+    let ipath = expand('#' . item.bufnr . ':p')
+    if !filereadable(ipath) | continue | endif
+    call extend(items, taglist(iname, ipath))
+  endfor
+  let paths = map(copy(items), 'v:val.filename')
+  let level = len(uniq(sort(paths))) > 1 ? 2 : 0
+  if level > 0
+    let expr = '[v:val.filename, v:val.cmd, v:val.name, v:val.kind]'
+  else
+    let expr = '[v:val.cmd, v:val.name, v:val.kind]'
+  endif
+  let opts = map(copy(items), expr)
+  return tags#select_tag(level, opts, 1)
 endfunction
 
 " Override fzf :Btags and :Tags
@@ -34,7 +72,7 @@ function! tag#fzf_btags(query, ...) abort
   let flags .= ' --preview-window +{3}-/2 --query ' . shellescape(a:query)
   let options = {
     \ 'source': call(snr . 'btags_source', [[cmd]]),
-    \ 'sink': function('tags#push_tag'),
+    \ 'sink': function('tags#push_tag', [0]),
     \ 'options': flags . ' --prompt "BTags> "',
   \ }
   return call(snr . 'fzf', ['btags', options, a:000])

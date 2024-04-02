@@ -43,7 +43,8 @@ set autoindent  " indents new lines
 set backspace=indent,eol,start  " backspace by indent
 set breakindent  " visually indent wrapped lines
 set buflisted  " list all buffers by default
-set cmdheight=1  " increse to avoid pressing enter to continue 
+set cmdheight=1  " increase to avoid pressing enter to continue
+set cmdwinheight=13  " i.e. show 12 previous commands (but changed by maps below)
 set colorcolumn=89,121  " color column after recommended length of 88
 set complete=.,w,b,u,t,i,k  " prevent slowdowns with ddc
 set completeopt-=preview  " use custom denops-popup-preview plugin
@@ -487,8 +488,8 @@ noremap <Leader><F9> <Cmd>Commands<CR>
 for s:key in ['[[', ']]'] | silent! exe 'unmap! g' . s:key | endfor
 noremap z: @:
 noremap z; <Cmd>20message<CR>
-nnoremap <Leader>; q:
-nnoremap <Leader>/ q/
+nnoremap <Leader>; <Cmd>let &cmdwinheight = window#default_height(0)<CR>q:
+nnoremap <Leader>/ <Cmd>let &cmdwinheight = window#default_height(0)<CR>q/
 nnoremap <Leader>: <Cmd>History:<CR>
 nnoremap <Leader>? <Cmd>History/<CR>
 nnoremap <Leader>v <Cmd>call vim#show_help()<CR>
@@ -639,16 +640,16 @@ noremap g/ <Cmd>BLines<CR>
 noremap g? <Cmd>Lines<CR>
 
 " Navigate across recent tag jumps
-" Note: This works by overriding both fzf and internal tag jumping utils. Ignores
-" tags resulting from direct invocation of :tag and <C-]> commands.
+" Note: Apply in vimrc to avoid overwriting. This works by overriding both fzf and
+" internal tag jumping utils. Ignores tags resulting from direct :tag or <C-]>
 command! -complete=file -nargs=* ShowIgnores
   \ echom 'Tag ignores: ' . join(tag#parse_ignores(0, <f-args>), ' ')
 command! -complete=dir -nargs=* UpdatePaths call tag#update_paths(<f-args>)
 command! -nargs=0 ClearStack call stack#clear_stack('tag')
 command! -nargs=0 ShowStack call stack#show_stack('tag')
 command! -nargs=? PopStack call stack#pop_stack('tag', <f-args>)
-noremap <F3> <Cmd>call tag#next_tag(-v:count1)<CR>
-noremap <F4> <Cmd>call tag#next_tag(v:count1)<CR>
+noremap <F3> <Cmd>call tag#next_stack(-v:count1)<CR>
+noremap <F4> <Cmd>call tag#next_stack(v:count1)<CR>
 noremap [{ <Cmd>exe v:count1 . 'tag'<CR>
 noremap ]} <Cmd>exe v:count1 . 'pop'<CR>
 
@@ -979,9 +980,9 @@ augroup undo_setup
 augroup END
 inoremap <expr> <F11> '<Cmd>undo<CR><Esc>' . edit#insert_mode()
 inoremap <expr> <F12> edit#insert_undo()
-noremap . <Cmd>if !repeat#run(v:count) \| echoerr repeat#errmsg() \| endif<CR>
-nmap u <Cmd>call repeat#wrap('u', v:count)<CR>
-nmap U <Cmd>call repeat#wrap("\<C-r>", v:count)<CR>
+nmap . <Plug>(RepeatDot)
+nmap u <Plug>(RepeatUndo)
+nmap U <Plug>(RepeatRedo)
 
 " Operator register and display utilities
 " Note: For some reason cannot set g:peekaboo_ins_prefix = '' and simply have <C-r>
@@ -1642,24 +1643,10 @@ silent! delcommand SplitjoinSplit
 "-----------------------------------------------------------------------------"
 " Plugin sttings
 "-----------------------------------------------------------------------------"
-" Sneak between two-character patterns
-" Note: Tried easy motion but way too complicated / slows everything down
-" See: https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
-if s:plug_active('vim-sneak') || s:plug_active('vim-indexed-search')
-  map f <Plug>Sneak_f
-  map F <Plug>Sneak_F
-  map t <Plug>Sneak_t
-  map T <Plug>Sneak_T
-  nmap s <Plug>Sneak_s
-  nmap S <Plug>Sneak_S
-  vmap s <Plug>Sneak_s
-  vmap S <Plug>Sneak_S
-  let g:sneak#label = 1  " show labels on matches for quicker jumping
-  let g:sneak#s_next = 1  " press s/f/t repeatedly to jump matches until next motion
-  let g:sneak#f_reset = 0  " keep f search separate from s
-  let g:sneak#t_reset = 0  " keep t search separate from s
-  let g:sneak#absolute_dir = 1  " same search direction no matter initial direction
-  let g:sneak#use_ic_scs = 0  " search always case-sensitive, similar to '*' or popup
+" Highlighting matches
+" Note: Here vim-tags searching integrates with indexed-search and vim-succinct
+" surround delimiters integrate with matchup '%' keys.
+if s:plug_active('vim-matchup') || s:plug_active('vim-indexed-search')
   let g:indexed_search_center = 0  " disable centered match jumping
   let g:indexed_search_colors = 0  " disable colors for speed
   let g:indexed_search_dont_move = 1  " irrelevant due to custom mappings
@@ -1668,24 +1655,6 @@ if s:plug_active('vim-sneak') || s:plug_active('vim-indexed-search')
   let g:indexed_search_shortmess = 1  " shorter message
   let g:indexed_search_numbered_only = 1  " only show numbers
   let g:indexed_search_n_always_searches_forward = 1  " see also vim-sneak
-endif
-
-" Matching and searching settings
-" Note: Here vim-tags searching integrates with indexed-search and vim-succinct
-" surround delimiters integrate with matchup '%' keys.
-" Note: Most custom delimiters defined in succinct.vim and ftplugin files. Also use
-" custom names for several mappings and define textobj mappings.
-if s:plug_active('vim-succinct') || s:plug_active('vim-matchup')
-  " imap <S-Tab> <Plug>delimitMateS-Tab
-  " imap <S-Tab> <Plug>delimitMateJumpMany
-  let g:delimitMate_expand_cr = 2  " expand even if non empty
-  let g:delimitMate_expand_space = 1
-  let g:delimitMate_jump_expansion = 1
-  let g:delimitMate_excluded_regions = 'String'  " disabled inside by default
-  let g:succinct_surround_map = '<C-s>'
-  let g:succinct_snippet_map = '<C-e>'
-  let g:succinct_prevdelim_map = '<F3>'  " set manually above
-  let g:succinct_nextdelim_map = '<F4>'  " set manually above
   let g:matchup_delim_nomids = 1  " skip e.g. 'else' during % jumps and text objects
   let g:matchup_delim_noskips = 1  " skip e.g. 'if' 'endif' in comments
   let g:matchup_matchparen_enabled = 1  " enable matchupt matching on startup
@@ -1693,6 +1662,34 @@ if s:plug_active('vim-succinct') || s:plug_active('vim-matchup')
   let g:matchup_surround_enabled = 1  " enable 'ds%' 'cs%' mappings
   let g:matchup_transmute_enabled = 0  " issues with tex, use vim-succinct instead
   let g:matchup_text_obj_linewise_operators = ['y', 'd', 'c', 'v', 'V', "\<C-v>"]
+endif
+
+" Navigation and delimiters
+" Note: Tried easy motion but way too complicated / slows everything down
+" See: https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
+if s:plug_active('vim-succinct') || s:plug_active('vim-sneak')
+  map f <Plug>Sneak_f
+  map F <Plug>Sneak_F
+  map t <Plug>Sneak_t
+  map T <Plug>Sneak_T
+  nmap s <Plug>Sneak_s
+  nmap S <Plug>Sneak_S
+  vmap s <Plug>Sneak_s
+  vmap S <Plug>Sneak_S
+  inoremap <F3> <Plug>PrevDelim
+  inoremap <F4> <Plug>NextDelim
+  let g:sneak#label = 1  " show labels on matches for quicker jumping
+  let g:sneak#s_next = 1  " press s/f/t repeatedly to jump matches until next motion
+  let g:sneak#f_reset = 0  " keep f search separate from s
+  let g:sneak#t_reset = 0  " keep t search separate from s
+  let g:sneak#absolute_dir = 1  " same search direction no matter initial direction
+  let g:sneak#use_ic_scs = 0  " search always case-sensitive, similar to '*' or popup
+  let g:succinct_surround_map = '<C-s>'
+  let g:succinct_snippet_map = '<C-e>'
+  let g:delimitMate_expand_cr = 2  " expand even if non empty
+  let g:delimitMate_expand_space = 1
+  let g:delimitMate_jump_expansion = 1
+  let g:delimitMate_excluded_regions = 'String'  " disabled inside by default
 endif
 
 " Text object settings
@@ -1833,12 +1830,14 @@ if s:plug_active('vim-tags')
   nnoremap <Leader>T <Cmd>ShowTable!<CR>
   nnoremap zt <Cmd>UpdatePaths \| UpdateTags \| GutentagsUpdate<CR><Cmd>echom 'Updated buffer tags'<CR>
   nnoremap zT <Cmd>UpdatePaths \| UpdateTags! \| GutentagsUpdate!<CR><Cmd>echom 'Updated project tags'<CR>
+  nnoremap gy <Cmd>call tag#fzf_stack()<CR>
+  nnoremap gY <Cmd>call tags#select_tag(1)<CR>
   let s:major = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
   let s:minor = {'fortran': 'ekltvEL', 'python': 'xviI', 'vim': 'vnC', 'tex': 'gioetBCN'}
+  let g:tags_keep_jumps = 1  " default is zero
   let g:tags_cursor_map = '<CR>'  " default is <Leader><CR>
-  let g:tags_bselect_map = 'gt'  " default is <Leader><Leader>
-  let g:tags_select_map = 'gT'  " default is <Leader><Tab>
-  let g:tags_keep_jumps = 1  " default is 0
+  let g:tags_select_map = 'gT'  " <Cmd>SelectTag!<CR>
+  let g:tags_bselect_map = 'gt'  " <Cmd>SelectTag<CR>
   let g:tags_major_kinds = s:major
   let g:tags_minor_kinds = s:minor
   let g:tags_prev_local_map = '[w'  " keyword jumping
@@ -1864,8 +1863,8 @@ if s:plug_active('vim-gutentags')
     \ tag#fzf_btags(<q-args>, fzf#vim#with_preview({'placeholder': '{2}:{3..}'}), <bang>0)
   command! -bang -nargs=* Tags call
     \ tag#fzf_tags(<q-args>, fzf#vim#with_preview({'placeholder': '--tag {2}:{-1}:{3..}' }), <bang>0)
-  nnoremap gy <Cmd>BTags<CR>
-  nnoremap gY <Cmd>Tags<CR>
+  nnoremap <C-r> <Cmd>BTags<CR>
+  nnoremap <C-t> <Cmd>Tags<CR>
   let g:gutentags_background_update = 1  " disable for debugging, printing updates
   let g:gutentags_ctags_auto_set_tags = 0  " tag#update_paths() handles this instead
   let g:gutentags_ctags_executable = 'ctags'  " note this respects .ctags config
@@ -2251,14 +2250,14 @@ if s:plug_active('vim-fugitive')
   noremap <Leader>O <Cmd>call git#commit_wrap(1, 'commit')<CR>
   noremap <Leader>p <Cmd>call git#commit_wrap(0, 'stash push --include-untracked')<CR>
   noremap <Leader>P <Cmd>call git#commit_wrap(1, 'stash push --include-untracked')<CR>
-  noremap <Leader>h <Cmd>call git#run_map(0, 0, '', 'diff --staged -- %')<CR>
-  noremap <Leader>H <Cmd>call git#run_map(0, 0, '', 'diff --staged -- :/')<CR>
   noremap <Leader>l <Cmd>call git#run_map(0, 0, '', 'diff -- %')<CR>
   noremap <Leader>L <Cmd>call git#run_map(0, 0, '', 'diff -- :/')<CR>
-  noremap <Leader>j <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- %')<CR>
-  noremap <Leader>J <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- :/')<CR>
-  noremap <Leader>k <Cmd>call git#run_map(0, 0, '', 'stage -- %')<CR>
-  noremap <Leader>K <Cmd>call git#run_map(0, 0, '', 'stage -- :/')<CR>
+  noremap <Leader>k <Cmd>call git#run_map(0, 0, '', 'diff --staged -- %')<CR>
+  noremap <Leader>K <Cmd>call git#run_map(0, 0, '', 'diff --staged -- :/')<CR>
+  noremap <Leader>j <Cmd>call git#run_map(0, 0, '', 'stage -- %')<CR>
+  noremap <Leader>J <Cmd>call git#run_map(0, 0, '', 'stage -- :/')<CR>
+  noremap <Leader>h <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- %')<CR>
+  noremap <Leader>H <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- :/')<CR>
   noremap <Leader>b <Cmd>call git#run_map(0, 0, '', 'branches')<CR>
   noremap <Leader>B <Cmd>call git#run_map(0, 0, '', 'switch -')<CR>
   let g:fugitive_legacy_commands = 1  " include deprecated :Git status to go with :Git
@@ -2492,7 +2491,7 @@ augroup clear_jumps
   au VimEnter,BufWinEnter * exe 'normal! zvzzze' | if get(w:, 'clear_jumps', 1)
     \ | silent clearjumps | let w:clear_jumps = 0 | endif
 augroup END
-exe 'runtime autoload/repeat.vim'
 noremap <Leader><Leader> <Cmd>echo system('curl https://icanhazdadjoke.com/')<CR>
 if !v:vim_did_enter | nohlsearch | endif
 call syntax#update_highlights() | redraw!
+exe 'runtime autoload/repeat.vim'

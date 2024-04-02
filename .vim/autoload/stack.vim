@@ -1,5 +1,5 @@
 "-----------------------------------------------------------------------------"
-" Utilities for navigating buffer stacks
+" Utilities for navigating stacks of locations
 "-----------------------------------------------------------------------------"
 " Helper functions
 " Warning: Below returns name index optionally filtered to the last nmax entries
@@ -20,7 +20,7 @@ function! s:get_stack(head, ...) abort  " remove in future
   let nmax = min([a:0 < 2 ? 0 : a:2 >= 0 ? a:2 : len(stack), len(stack)])
   let part = nmax ? reverse(copy(stack))[:nmax - 1] : []
   let jdx = empty(name) ? -1 : index(part, name)
-  let kdx = jdx == -1 ? -1 : (len(stack) - nmax) + (len(part) - jdx - 1)
+  let kdx = jdx < 0 ? -1 : (len(stack) - nmax) + (len(part) - jdx - 1)
   return [stack, idx, name, kdx]
 endfunction
 
@@ -39,13 +39,15 @@ function! stack#show_stack(head) abort
 endfunction
 function! stack#show_item(head, name, ...) abort
   if type(a:name) == 3
-    let label = join(map(copy(a:name), {_, val -> filereadable(val) ? RelativePath(val) : val}), ':')
-  elseif !bufexists(a:name)
-    let label = string(a:name)
-  else  " tab page then path
+    let parts = map(copy(a:name), {_, val -> type(val) == 1 && filereadable(val) ? RelativePath(val) : val})
+    let parts = map(parts, {idx, val -> type(val) == 3 ? join(val, ':') : val})
+    let label = join(parts, ':')
+  elseif bufexists(a:name)  " tab page then path
     let winid = get(win_findbuf(bufnr(a:name)), 0, 0)
     let tabnr = win_id2tabwin(winid)[0]
     let label = RelativePath(a:name) . ' (' . (tabnr ? tabnr : '*') . ')'
+  else  " default label
+    let label = string(a:name)
   endif
   let head = toupper(a:head[0]) . a:head[1:] . ': '
   let tail = a:0 ? ' (' . (a:1 + 1) . '/' . a:2 . ')' : ''
@@ -58,10 +60,10 @@ function! stack#clear_stack(head) abort
   try
     call remove(g:, a:head . '_stack')
     call remove(g:, a:head . '_loc')
-    redraw | echom "Cleared '" . a:head . "' buffer stack"
+    redraw | echom "Cleared '" . a:head . "' location stack"
   catch
     redraw | echohl WarningMsg
-    echom "Error: Buffer stack '" . a:head . "' does not exist"
+    echom "Error: Location stack '" . a:head . "' does not exist"
     echohl None
   endtry
 endfunction

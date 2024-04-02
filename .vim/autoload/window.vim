@@ -124,35 +124,41 @@ endfunction
 " Return standard window width and height
 " Note: Numbers passed to :resize exclude tab and cmd lines but numbers passed to
 " :vertical resize include entire window (i.e. ignoring sign and number columns).
-function! window#default_size(width, ...) abort
-  if a:width  " window width
-    let direcs = ['l', 'h']
-    let size = &columns
-  else  " window height
-    setlocal cmdheight=1  " override in case changed
-    let tabheight = &showtabline > 1 || &showtabline == 1 && tabpagenr('$') > 1
-    let direcs = ['j', 'k']
-    let size = &lines - tabheight - 2  " statusline and commandline
-  endif
-  let panel = bufnr() != get(b:, 'tabline_bufnr', bufnr())
-  let panes = call('window#count_panes', direcs)
-  let size = size - panes + 1  " e.g. 2 panes == 1 divider
-  let space = float2nr(ceil(0.23 * size))
-  if panes == 1  " single window
-    return size
-  elseif a:0 && type(a:1)  " scaled window
-    return a:1 * size
-  elseif a:0 && a:1 || !a:0 && !panel  " main window
-    return size - space
-  else  " panel window
-    return space
-  endif
-endfunction
 function! window#default_width(...) abort
   return call('window#default_size', [1] + a:000)
 endfunction
 function! window#default_height(...) abort
   return call('window#default_size', [0] + a:000)
+endfunction
+function! window#default_size(width, ...) abort
+  let tabheight = &showtabline > 1 || &showtabline == 1 && tabpagenr('$') > 1
+  setlocal cmdheight=1  " hard override
+  if a:width  " window width
+    let direcs = ['l', 'h']
+    let size = &columns
+  else  " window height
+    let direcs = ['j', 'k']
+    let size = &lines - tabheight - 2  " statusline and commandline
+  endif
+  let panel = bufnr() != get(b:, 'tabline_bufnr', bufnr())
+  let panes = call('window#count_panes', direcs)
+  let size1 = size - panes + 1  " e.g. 2 panes == 1 divider
+  let size2 = float2nr(ceil(0.23 * size1))
+  if !a:0  " inferred size
+    if !panel || panes == 1
+      return size1
+    else
+      return size2
+    endif
+  else  " scaling or default
+    if type(a:1)  " scaled window
+      return a:1 * size1
+    elseif a:1  " main window
+      return size1 - size2
+    else  " panel window
+      return size2
+    endif
+  endif
 endfunction
 
 " Select from open tabs

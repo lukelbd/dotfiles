@@ -270,7 +270,7 @@ function! mark#fzf_marks(...) abort
   return call(snr . 'fzf', ['marks', options, a:000])
 endfunction
 
-" Iterate over marks
+" Iterate over marks (see also tag#next_tag)
 " Note: This skips over marks with non-existent buffers and does an initial jump
 " to the 'current' mark if cursor is not on the same line.
 function! mark#next_mark(...) abort
@@ -282,7 +282,11 @@ function! mark#next_mark(...) abort
     let [bnum, lnum] = [bufnr(), line('.')]
     if !pos[0] && pos[0] != bnum || pos[1] != lnum
       let offset = cnt > 0 ? -1 : 1
-      call mark#goto_mark(name)
+      if abs(cnt) <= 1
+        call mark#goto_mark(name)
+      else  " suppress message
+        silent call mark#goto_mark(name)
+      endif
       if pos[0] && pos[0] != bnum  " include in scroll if successful
         if pos[0] == bufnr() | let cnt += offset | endif
       else  " include in scroll if successful

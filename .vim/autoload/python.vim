@@ -312,7 +312,7 @@ function! python#next_docstring(count, ...) abort
 endfunction
 function! python#insert_docstring() abort
   let winview = winsaveview()
-  let itag = tags#close_tag(line('.') + 1)  " preceding tags
+  let itag = tags#find_tag(line('.') + 1)  " preceding tags
   if empty(itag) || itag[2] !~# '[mfc]'
     echohl ErrorMsg
     echom 'Error: Cursor is not inside class or function'
