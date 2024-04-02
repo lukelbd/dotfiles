@@ -4,23 +4,35 @@
 " Helper functions
 " Warning: Below returns name index optionally filtered to the last nmax entries
 " of the stack. Note e.g. [1, 2, 3][-5:] is empty list, careful with this.
-function! s:set_stack(head, stack, idx) abort
-  let index = min([max([a:idx, 0]), len(a:stack) - 1])
-  let index = empty(a:stack) ? -1 : index  " initial value -1
-  let g:[a:head . '_stack'] = a:stack
-  let g:[a:head . '_loc'] = index
+function! stack#get_loc(head, ...) abort
+  let [stack, idx] = s:get_stack(a:head)
+  return [idx, len(stack)]  " return length
 endfunction
-function! s:get_stack(head, ...) abort  " remove in future
-  let stack = a:head ==# 'tab' ? get(g:, 'recent_stack', []) : []
-  let idx = a:head ==# 'tab' ? get(g:, 'recent_loc', -1) : -1
-  let stack = get(g:, a:head . '_stack', stack)
-  let idx = get(g:, a:head . '_loc', idx)
+function! stack#get_item(head, ...) abort
+  let [stack, idx] = s:get_stack(a:head)
+  return get(stack, a:0 ? a:1 : idx, '')
+endfunction
+function! stack#get_name(head, ...) abort
   let key = a:head . '_name'  " set by input function
-  let name = !a:0 ? '' : type(a:1) ? a:1 : getbufvar(a:1, key, get(g:, key, ''))
-  let nmax = min([a:0 < 2 ? 0 : a:2 >= 0 ? a:2 : len(stack), len(stack)])
-  let part = nmax ? reverse(copy(stack))[:nmax - 1] : []
-  let jdx = empty(name) ? -1 : index(part, name)
-  let kdx = jdx < 0 ? -1 : (len(stack) - nmax) + (len(part) - jdx - 1)
+  return !a:0 ? '' : type(a:1) ? a:1 : getbufvar(a:1, key, get(g:, key, ''))
+endfunction
+function! s:set_stack(head, stack, idx) abort
+  let idx = min([max([a:idx, 0]), len(a:stack) - 1])
+  let g:[a:head . '_stack'] = a:stack
+  let g:[a:head . '_loc'] = empty(a:stack) ? -1 : idx  " initial value -1
+endfunction
+function! s:get_stack(head) abort
+  let stack = get(g:, a:head . '_stack', [])
+  let idx = get(g:, a:head . '_loc', -1)
+  return [stack, idx]
+endfunction
+function! s:get_index(head, ...) abort  " remove in future
+  let [stack, idx] = s:get_stack(a:head)
+  let name = call('stack#get_name', a:0 ? [a:head, a:1] : [a:head])
+  let nmax = min([a:0 > 1 ? a:2 >= 0 ? a:2 : len(stack) : 0, len(stack)])
+  let slice = nmax ? reverse(copy(stack))[:nmax - 1] : []
+  let jdx = empty(name) ? -1 : index(slice, name)
+  let kdx = jdx < 0 ? -1 : (len(stack) - nmax) + (len(slice) - jdx - 1)
   return [stack, idx, name, kdx]
 endfunction
 
@@ -28,7 +40,7 @@ endfunction
 " Note: Use e.g. ShowTabs ClearTabs commands in vimrc with these. All other
 " functions are for autocommands or normal mode mappings
 function! stack#show_stack(head) abort
-  let [stack, idx; rest] = s:get_stack(a:head)
+  let [stack, idx] = s:get_stack(a:head)
   let digits = len(string(len(stack)))
   redraw | echom "Current '" . a:head . "' stack:"
   for jdx in range(len(stack))
@@ -68,7 +80,7 @@ function! stack#clear_stack(head) abort
   endtry
 endfunction
 function! stack#update_stack(head, scroll, ...) abort
-  let [stack, idx, name, kdx] = s:get_stack(a:head, bufnr(), a:scroll ? -1 : 5)
+  let [stack, idx, name, kdx] = s:get_index(a:head, bufnr(), a:scroll ? -1 : 5)
   let verbose = a:0 > 1 ? a:2 : 0  " verbose mode
   if empty(name) | return | endif
   if a:0 && a:1 >= 0 && a:1 < len(stack)  " scroll to input index
@@ -94,7 +106,7 @@ function! stack#pop_stack(head, name) abort
   let convert = type(a:name) == 1 && a:name =~# '^\d\+$'
   let [num, nmax, name] = [0, 100, convert ? str2nr(a:name) : a:name]
   while num < nmax
-    let [stack, idx, name, kdx] = s:get_stack(a:head, name, -1)
+    let [stack, idx, name, kdx] = s:get_index(a:head, name, -1)
     if kdx == -1 | break | endif  " remove current item, generally
     let num += 1 | call remove(stack, kdx)
     let idx = idx > kdx ? idx - 1 : idx  " if idx == jdx float to next entry
@@ -102,7 +114,7 @@ function! stack#pop_stack(head, name) abort
   endwhile
 endfunction
 function! stack#push_stack(head, func, ...) abort
-  let [stack, idx; rest] = s:get_stack(a:head)
+  let [stack, idx] = s:get_stack(a:head)
   let verbose = a:0 > 1 ? a:2 : 1
   if !a:0 || type(a:1)  " fzf-sink, user-input, or default e.g. push_stack(...[, ''])
     let jdx = -1

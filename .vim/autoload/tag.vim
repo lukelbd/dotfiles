@@ -2,33 +2,40 @@
 " Utilities for ctags management
 "-----------------------------------------------------------------------------"
 " Iterate over tags (see also mark#next_mark)
+" Note: This implicitly adds 'current' location to top of stack before navigation
 " Todo: Consider adding 'tag stack search' fzf command or supporting navigation
 " across 'from' position throughout stack instead of just at the bottom of stack.
 function! tag#next_stack(...) abort
   let cnt = a:0 ? a:1 : v:count1
-  let name = get(g:, 'tag_name', [])  " see also mark#next_mark()
-  let iloc = get(g:, 'tag_loc', 0)
-  let ilen = len(get(g:, 'tag_stack', []))
-  let itag = get(name, 2, '')
-  let ctag = tags#find_tag(line('.'))
+  let item = stack#get_item('tag')
+  let item = empty(item) ? [] : item
+  let itag = get(item, 2, '')
   let pseudo = '<top>'  " pseudo-tag for top of stack
-  let current = !empty(itag) && itag ==# get(ctag, 0, '')
-  if cnt < 0 && ilen > 0 && iloc >= ilen - 1 && !current
-    if itag ==# pseudo | call stack#pop_stack('tag', name) | endif  " remove previous
-    let name = [expand('%:p'), [line('.'), col('.')], pseudo]
-    let g:tag_name = name  " push_stack() adds this to the stack
+  if itag ==# pseudo
+    call stack#pop_stack('tag', item)
+    let item = stack#get_item('tag')
+    let item = empty(item) ? [] : item
+    let itag = get(item, 2, '')
+  endif
+  let [iloc, size] = stack#get_loc('tag')
+  let ipos = get(item, 1, line('.'))
+  let tag1 = tags#find_tag(line('.'))
+  let tag2 = tags#find_tag(type(ipos) > 1 ? ipos[1] : ipos)
+  if cnt < 0 && size > 0 && iloc >= size - 1 && tag1 != tag2
+    let item = [expand('%:p'), [line('.'), col('.')], pseudo]
+    let g:tag_name = item  " push_stack() adds pseudo-tag to stack
     call stack#push_stack('tag', '', '', 0)
   endif
-  if !empty(name)  " see also mark.vim
-    let [pos1, pos2] = [get(name, 1, 0), [line('.'), col('.')]]
+  if !empty(item)  " see also mark.vim
+    let [pos1, pos2] = [get(item, 1, 0), [line('.'), col('.')]]
     let cursor = type(pos1) <= 1 ? pos1 == pos2[0] : pos1 == pos2
-    let ignore = current || itag ==# pseudo && iloc >= ilen - 1 && cnt >= 0
+    let ignore = tag1 == tag2 || itag ==# pseudo && iloc >= size - 1 && cnt >= 0
     if !cursor && !ignore  " drop <from> tag below
       let offset = cnt > 0 ? -1 : 1
       if abs(cnt) <= 1  " note this also resets <from>
-        call call('tags#iter_tag', [1] + name)
+        call call('tags#iter_tag', [1] + item)
       else  " suppress message
-        silent call call('tags#iter_tag', [1] + name)
+        silent call call('tags#iter_tag', [1] + item)
       endif
       let cnt += offset
     endif
@@ -90,12 +97,12 @@ function! tag#fzf_tags(query, ...) abort
     let nbytes += getfsize(path)
     if nbytes > maxbytes | break | endif
   endfor
-  let flags = "-m -d '\t' --nth 1..2 --tiebreak=begin"
+  let flags = "-m -d '\t' --nth 1..2 --layout=reverse-list --tiebreak=begin"
   let flags .= nbytes > maxbytes ? ' --algo=v1' : ''
   let args = map([a:query] + paths, 'fzf#shellescape(v:val)')
   let options = {
     \ 'source': join(['perl', fzf#shellescape(cmd)] + args, ' '),
-    \ 'sink': function('tags#push_tag'),
+    \ 'sink': function('tags#push_tag', [0]),
     \ 'options': flags . ' --prompt "Tags> "',
   \ }
   return call(snr . 'fzf', ['tags', options, a:000])
