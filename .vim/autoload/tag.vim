@@ -26,20 +26,33 @@ endfunction
 
 " Tag source functions
 " Note: This matches fzf.vim/bin/tags.pl perl script formatting, but adds optional
-" filetype filter (see vim-tags) and removes annoying vim-style comments from lines.
+" filetype filter (see vim-tags). Note removing vim quotes causes viewer to fail.
 let s:cache = {}
 function! s:tag_format(line, path) abort
   let regex = '\=printf("%-24s", submatch(0))'
   let text = substitute(a:line, '^[^\t]*', regex, '')
-  let text = substitute(text, ';"\t\@=', '', '')
   return text . "\t" . a:path
 endfunction
 function! s:tag_match(line, type, regex) abort
   let tagline = '^[^\t]*\t\([^\t]*\)\t.*$'
-  if a:line =~# '^!' | return 0 | endif
-  if a:line !~# tagline | return 0 | endif
+  if a:line =~# '^\s*!' | return 0 | endif
+  if empty(a:type) | return 1 | endif
   let path = substitute(a:line, tagline, '\1', 'g')
-  return tags#type_match(path, a:type, a:regex, s:cache)
+  let fast = index(values(s:cache), a:type) >= 0  " already checked current filetype
+  return tags#type_match(path, a:type, a:regex, s:cache, fast)
+endfunction
+function! tag#show_cache() abort
+  echom 'File type cache (' . len(s:cache) . ' entries):'
+  let paths = {}
+  let names = map(copy(s:cache), {key, val -> RelativePath(key)})
+  for path in keys(names) | let paths[names[path]] = path | endfor
+  let size = 1 + max(map(keys(paths), 'len(v:val)'))
+  for name in sort(keys(paths))
+    let tail = s:cache[paths[name]]
+    if empty(tail) | continue | endif
+    let head = printf('%-' . size . 's', name . ':')
+    echom head . ' ' . tail
+  endfor
 endfunction
 function! tag#read_tags(type, query, ...) abort
   let cmd = 'readtags -t %s -e -p - ' . fzf#shellescape(a:query)
@@ -57,9 +70,7 @@ function! tag#read_tags(type, query, ...) abort
     else
       let lines = systemlist(printf(cmd, fzf#shellescape(path)))
     endif
-    if !empty(regex)
-      let lines = filter(lines, {idx, val -> s:tag_match(val, ftype, regex)})
-    endif
+    let lines = filter(lines, {idx, val -> s:tag_match(val, ftype, regex)})
     let lines = map(lines, {idx, val -> s:tag_format(val, path)})
     call extend(result, lines)
   endfor
@@ -95,11 +106,12 @@ function! tag#fzf_tags(type, query, ...) abort
   endfor
   let flags = "-m -d '\t' --with-nth ..4 --nth ..2"
   let flags .= nbytes > maxbytes ? ' --algo=v1' : ''
+  let prompt = empty(a:type) ? 'Tags> ' : 'FTags> '
   let source = call('tag#read_tags', [a:type, a:query] + paths)
   let options = {
     \ 'source': source,
     \ 'sink': function('tags#push_tag', [0]),
-    \ 'options': flags . ' --prompt "Tags> "',
+    \ 'options': flags . ' --prompt ' . string(prompt),
   \ }
   return call(snr . 'fzf', ['tags', options, a:000])
 endfunction

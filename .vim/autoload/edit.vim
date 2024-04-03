@@ -12,12 +12,11 @@ function! edit#how_much(...) abort
   return utils#motion_func('HowMuch#HowMuch', a:000)
 endfunction
 
-" Indent lines by count
+" Indent or join lines by count
 " Note: Native vim indent uses count to move over number of lines, but redundant
 " with e.g. 'd2k', so instead use count to denote indentation level.
-" Indent or join v:count next lines
-" Note: This joins v:count following lines, optionally above or below. Note
-" mapping with <silent> and using :\<C-u> is critical for visual command.
+" Note: Native vim join uses count to join n lines including parent line, so e.g.
+" 1J and 2J have the same effect. This adds to count to make join more intuitive
 function! edit#conjoin_lines(before, spaces, ...) abort
   let njoin = a:0 ? a:1 : v:count1 + (v:count > 1)
   let nmove = a:0 ? a:1 : v:count1
@@ -26,7 +25,8 @@ function! edit#conjoin_lines(before, spaces, ...) abort
   let name = mode() =~? '^n' ? 'Normal' : 'Visual'
   let conjoin = 'call conjoin#join' . name . '(' . string(key) . ')'
   let cursor = "call cursor('.', " . col('.') . ')'
-  call feedkeys(head . ":\<C-u>" . conjoin . "\<CR>", 'n')
+  let range = mode() =~# 'v\|V\|' ? "\<Esc>\<Cmd>'<,'>" : "\<Cmd>"
+  call feedkeys(head . range . conjoin . "\<CR>", 'n')
   call feedkeys("\<Cmd>" . cursor . "\<CR>", 'n')
 endfunction
 " Indent input lines

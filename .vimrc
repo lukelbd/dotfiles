@@ -1825,8 +1825,6 @@ endif
 " Note: Custom plugin is similar to :Btags, but does not create or manage tag files,
 " instead creating tags whenever buffer is loaded and tracking tags continuously. Also
 " note / and ? update jumplist but cannot override without keeping interactivity.
-" nnoremap <Leader>t <Cmd>CurrentTag<CR>
-" nnoremap <Leader>T <Cmd>call switch#tags()<CR>
 if s:plug_active('vim-tags')
   exe 'silent! unmap gyy' | exe 'silent! unmap zyy'
   command! -count -nargs=? TagToggle
@@ -1867,6 +1865,7 @@ if s:plug_active('vim-gutentags')
     au User GutentagsUpdated call tag#update_paths()
     au BufCreate,BufReadPost * call tag#update_paths(expand('<afile>'))
   augroup END
+  command! -bang -nargs=0 ShowCache call tag#show_cache()
   command! -bang -nargs=* BTags call
     \ tag#fzf_btags(<q-args>, fzf#vim#with_preview({'placeholder': '{2}:{3..}'}), <bang>0)
   command! -bang -nargs=* FTags call
