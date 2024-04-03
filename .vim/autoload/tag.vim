@@ -66,12 +66,13 @@ function! tag#fzf_tags(query, ...) abort
   return call(snr . 'fzf', ['tags', options, a:000])
 endfunction
 
-" Navigate to the 'from' position in the tag stack
+" Return the 'from' position for the given path and tag
 " Note: This only jumps if the destination 'from' line contains the tag (i.e. not
-" jumping to an outdated position or from a random fzf call) or if at the bottom.
-function! tag#from_stack(name, ...) abort
+" jumping to an outdated position or from a random fzf call) or when at the bottom.
+function! tag#from_stack(arg, name, ...) abort
   let path = expand('%:p')
-  let stack = gettagstack(win_getid())
+  let wins = type(a:arg) ? win_findbuf(bufnr(a:arg)) : [a:arg]
+  let stack = gettagstack(get(wins, 0, winnr()))
   for item in get(stack, 'items', [])  " search tag stack
     let iname = item.tagname
     let ipath = expand('#' . item.bufnr . ':p')
@@ -79,59 +80,81 @@ function! tag#from_stack(name, ...) abort
     if iname !=# a:name | continue | endif
     if !has_key(item, 'from') | continue | endif
     let [bnr, lnum, cnum, onum] = item.from
+    let bnr = empty(bnr) ? bufnr() : bnr
     let text = get(getbufline(bnr, lnum), 0, '')
     if a:0 && a:1 || text =~# escape(iname, '[]\.*$~')
-      if bnr | silent call file#open_drop(bnr) | endif
-      call cursor(lnum, cnum, onum) | return
+      return [bnr, lnum, cnum, onum]
     endif
-  endfor
+  endfor | return []
+endfunction
+
+" Go to the current tag location and adjust the count
+" Note: This adds a pseudo-tag <top> at the top of the stack so we can return to
+" where we started when scrolling backwards, and pushes <top> if cursor is outside
+" both 'from' and 'tag' buffers or inside the 'tag' buffer but outside its bounds.
+function! s:goto_iloc(path, line, name, ...) abort  " see also mark.vim
+  let [iloc, size] = stack#get_loc('tag')
+  let path = fnamemodify(a:path, ':p')
+  let cnt = a:0 ? a:1 : v:count1
+  let fpos = tag#from_stack(path, a:name, iloc == 0)  " stack from position
+  let ipos = type(a:line) > 1 ? copy(a:line) : [a:line]
+  let tpos = [bufnr(path)] + map(ipos, 'str2nr(v:val)')
+  let cpos = [bufnr()] + slice(getpos('.'), 1)
+  let tag1 = tags#find_tag(line('.'))
+  let tag2 = tags#find_tag(tpos[1])  " trivial but returns same format
+  let outside = !empty(fpos) && fpos[0] != cpos[0] && bufnr() != fpos[0]
+  let outside = outside || bufnr() == cpos[0] && tag1 != tag2
+  let outside = outside && cpos[:1] != fpos[:1]  " non-existent from or not there
+  if cnt < 0 && size > 1 && iloc >= size - 1 && outside  " add <top> pseudo-tag
+    let item = [expand('%:p'), [line('.'), col('.')], '<top>']
+    let g:tag_name = item  " push_stack() adds to top of stack
+    call stack#push_stack('tag', '', '', 0)
+  endif
+  let ipos = cnt < 0 ? fpos : tpos
+  let outside = ipos != slice(cpos, 0, len(ipos))
+  if !empty(ipos)  && a:name !=# '<top>' && outside
+    if len(ipos) > 2  " exact position
+      silent call file#open_drop(ipos[0]) | call call('cursor', ipos[1:])
+    else  " automatic position
+      silent call tags#iter_tag(2, a:path, a:line, a:name)
+    endif
+    let noop = cnt < 0 ? cpos[:1] == ipos[:1] : tag1 == tag2   " ignore from count
+    let cnt += noop ? 0 : cnt < 0 ? 1 : -1  " possibly adjust count
+  endif
+  return cnt
 endfunction
 
 " Iterate over tags (see also mark#next_mark)
 " Note: This implicitly adds 'current' location to top of stack before navigation,
 " and additionally jumps to the tag stack 'from' position when navigating backwards.
 function! tag#next_stack(...) abort
-  let cnt = a:0 ? a:1 : v:count1
   let item = stack#get_item('tag')
   let item = empty(item) ? [] : item
-  let itag = get(item, 2, '')
-  let pseudo = '<top>'  " pseudo-tag for top of stack
-  if itag ==# pseudo
+  let [iloc, size] = stack#get_loc('tag')
+  let cnt = a:0 ? a:1 : v:count1
+  if iloc >= size - 1 && get(item, 2, '') ==# '<top>'
     call stack#pop_stack('tag', item)
+    let [iloc, size] = stack#get_loc('tag')
     let item = stack#get_item('tag')
     let item = empty(item) ? [] : item
-    let itag = get(item, 2, '')
   endif
-  let [iloc, size] = stack#get_loc('tag')
-  let ipos = get(item, 1, line('.'))
-  let tag1 = tags#find_tag(line('.'))
-  let tag2 = tags#find_tag(type(ipos) > 1 ? ipos[1] : ipos)
-  if cnt < 0 && size > 0 && iloc >= size - 1 && tag1 != tag2
-    let item = [expand('%:p'), [line('.'), col('.')], pseudo]
-    let g:tag_name = item  " push_stack() adds pseudo-tag to stack
-    call stack#push_stack('tag', '', '', 0)
+  if !empty(item)  " jump to 'current' tag (see also mark.vim)
+    let cnt = s:goto_iloc(item[0], item[1], item[2], cnt)
   endif
-  if !empty(item)  " see also mark.vim
-    let [pos1, pos2] = [get(item, 1, 0), [line('.'), col('.')]]
-    let cursor = type(pos1) <= 1 ? pos1 == pos2[0] : pos1 == pos2
-    let ignore = tag1 == tag2 || itag ==# pseudo && iloc >= size - 1 && cnt >= 0
-    if !cursor && !ignore  " drop <from> tag below
-      let offset = cnt > 0 ? -1 : 1
-      if abs(cnt) <= 1  " note this also resets <from>
-        call call('tags#iter_tag', [1] + item)
-      else  " suppress message
-        silent call call('tags#iter_tag', [1] + item)
-      endif
-      let cnt += offset
-    endif
+  if cnt == 0  " push currently assigned name to stack
+    call stack#push_stack('tag', '', 0, 2)
+  else  " iterate stack then pass to tag jump function
+    call stack#push_stack('tag', function('tags#iter_tag', [cnt < 0 ? -1 : 1]), cnt)
   endif
-  call stack#push_stack('tag', function('tags#iter_tag', [cnt]), cnt)
-  let [iloc, _] = stack#get_loc('tag')
-  let force = iloc == 0  " enforce 'from' strictly
   let item = stack#get_item('tag')
   if cnt < 0 && !empty(item)  " mimic :pop behavior
-    call tag#from_stack(item[2], force)
+    let [iloc, _] = stack#get_loc('tag')
+    let pos = tag#from_stack(item[0], item[2], iloc == 0)
+    let pos = empty(pos) ? getpos('.') : pos
+    if pos[0] | silent call file#open_drop(pos[0]) | endif
+    call call('cursor', pos[1:])
   endif
+  if &l:foldopen =~# '\<tag\>' | exe 'normal! zv' | endif
 endfunction
 
 " Search for the 'root' directory to store the ctags file

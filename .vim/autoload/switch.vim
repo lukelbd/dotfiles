@@ -89,21 +89,18 @@ endfunction
 " Warning: Enforce settings even if state == toggle for consistency
 function! switch#copy(...) abort
   let keys = ['list', 'number', 'scrolloff', 'relativenumber', 'signcolumn', 'foldcolumn']
-  let props1 = get(b:, 'settings', {})
-  let props2 = {} | for key in keys | let props2[key] = eval('&l:' . key) | endfor
-  let state = empty(filter(copy(props2), {key, val -> val !=# '0' && val !=# 'no'}))
+  let props = {} | for key in keys | let props[key] = eval('&l:' . key) | endfor
+  let state = empty(filter(copy(props), {key, val -> val !=# '0' && val !=# 'no'}))
   let toggle = a:0 > 0 ? a:1 : 1 - state
   let suppress = a:0 > 1 ? a:2 : 0
   if toggle
-    let b:settings = props2
     for key in keys
       exe 'let &l:' . key . '=' . string(key ==# 'signcolumn' ? 'no' : 0)
     endfor
   else
     for key in keys
-      exe 'let &l:' . key . '=' . string(get(props1, key, eval('&g:' . key)))
+      exe 'let &l:' . key . '=' . string(eval('&g:' . key))
     endfor
-    let b:settings = {}
   endif
   call call('s:echo_state', ['Copy mode', toggle, suppress])
 endfunction

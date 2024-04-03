@@ -418,10 +418,10 @@ nnoremap <C-g> <Cmd>GFiles<CR>
 command! -nargs=* -complete=file -bang Rename call file#rename(<q-args>, '<bang>')
 command! -nargs=? Paths call file#print_paths(<f-args>)
 command! -nargs=? Local call switch#localdir(<args>)
-noremap zp <Cmd>Paths<CR>
-noremap zP <Cmd>Local<CR>
-noremap gp <Cmd>call file#print_exists()<CR>
-noremap gP <Cmd>call file#open_drop(expand('<cfile>'))<CR>
+noremap zl <Cmd>Paths<CR>
+noremap zL <Cmd>Local<CR>
+noremap gl <Cmd>call file#print_exists()<CR>
+noremap gL <Cmd>call file#open_drop(expand('<cfile>'))<CR>
 
 " 'Execute' script with different options
 " Note: Current idea is to use 'ZZ' for running entire file and 'Z<motion>' for
@@ -2241,23 +2241,23 @@ if s:plug_active('vim-fugitive')
     au!
     au BufEnter * call git#setup_commands()
   augroup END
-  noremap gl <Cmd>BCommits<CR>
-  noremap gL <Cmd>Commits<CR>
-  noremap zL <Cmd>call git#run_map(0, 0, '', 'blame')<CR>
-  nnoremap zll <Cmd>call git#run_map(2, 0, '', 'blame ')<CR>
-  noremap <expr> zl git#run_map_expr(2, 0, '', 'blame ')
+  noremap gp <Cmd>BCommits<CR>
+  noremap gP <Cmd>Commits<CR>
+  noremap zP <Cmd>call git#run_map(0, 0, '', 'blame')<CR>
+  nnoremap zpp <Cmd>call git#run_map(2, 0, '', 'blame ')<CR>
+  noremap <expr> zp git#run_map_expr(2, 0, '', 'blame ')
   noremap <Leader>' <Cmd>call git#run_map(0, 0, '', '')<CR>
   noremap <Leader>" <Cmd>call git#run_map(0, 0, '', 'status')<CR>
-  noremap <Leader>y <Cmd>call git#run_map(0, 0, '', 'trunk')<CR>
-  noremap <Leader>Y <Cmd>call git#run_map(0, 0, '', 'tree')<CR>
+  noremap <Leader>p <Cmd>call git#run_map(0, 0, '', 'trunk')<CR>
+  noremap <Leader>P <Cmd>call git#run_map(0, 0, '', 'tree')<CR>
   noremap <Leader>u <Cmd>call git#run_map(0, 0, '', 'push origin')<CR>
   noremap <Leader>U <Cmd>call git#run_map(0, 0, '', 'pull origin')<CR>
   noremap <Leader>i <Cmd>call git#commit_wrap(0, 'oops')<CR>
   noremap <Leader>I <Cmd>call git#commit_wrap(1, 'oops')<CR>
   noremap <Leader>o <Cmd>call git#commit_wrap(0, 'commit')<CR>
   noremap <Leader>O <Cmd>call git#commit_wrap(1, 'commit')<CR>
-  noremap <Leader>p <Cmd>call git#commit_wrap(0, 'stash push --include-untracked')<CR>
-  noremap <Leader>P <Cmd>call git#commit_wrap(1, 'stash push --include-untracked')<CR>
+  noremap <Leader>y <Cmd>call git#commit_wrap(0, 'stash push --include-untracked')<CR>
+  noremap <Leader>Y <Cmd>call git#commit_wrap(1, 'stash push --include-untracked')<CR>
   noremap <Leader>l <Cmd>call git#run_map(0, 0, '', 'diff -- %')<CR>
   noremap <Leader>L <Cmd>call git#run_map(0, 0, '', 'diff -- :/')<CR>
   noremap <Leader>k <Cmd>call git#run_map(0, 0, '', 'diff --staged -- %')<CR>
@@ -2295,14 +2295,14 @@ if s:plug_active('vim-gitgutter')
   call utils#repeat_map('', ']G', 'HunkForward', '<Cmd>call git#hunk_next(v:count1, 1)<CR>')
   noremap [g <Cmd>call git#hunk_next(-v:count1, 0)<CR>
   noremap ]g <Cmd>call git#hunk_next(v:count1, 0)<CR>
-  noremap <Leader>g <Cmd>call switch#gitgutter()<CR>
+  noremap <Leader>g <Cmd>call git#hunk_show()<CR>
+  noremap <Leader>G <Cmd>call switch#gitgutter()<CR>
   noremap <expr> gh git#hunk_stage_expr(1)
   noremap <expr> gH git#hunk_stage_expr(0)
   nnoremap <nowait> ghh <Cmd>call git#hunk_stage(1)<CR>
   nnoremap <nowait> gHH <Cmd>call git#hunk_stage(0)<CR>
   noremap <expr> zh git#hunk_stats_expr()
   noremap zhh <Cmd>Hunks<CR>
-  noremap zH <Cmd>call git#hunk_show()<CR>
   noremap zg <Cmd>GitGutter \| echom 'Updated buffer hunks'<CR>
   noremap zG <Cmd>GitGutterAll \| echom 'Updated global hunks'<CR>
 endif

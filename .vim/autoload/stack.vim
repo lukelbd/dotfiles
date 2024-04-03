@@ -81,10 +81,6 @@ function! stack#clear_stack(head) abort
 endfunction
 function! stack#update_stack(head, scroll, ...) abort
   let [stack, idx, name, kdx] = s:get_index(a:head, bufnr(), a:scroll ? -1 : 5)
-  if a:head ==# 'tab'
-    let g:debugs = get(g:, 'debugs', [])
-    call add(g:debugs, 'Update stack: ' . name)
-  endif
   let verbose = a:0 > 1 ? a:2 : 0  " verbose mode
   if empty(name) | return | endif
   if a:0 && a:1 >= 0 && a:1 < len(stack)  " scroll to input index
@@ -176,8 +172,6 @@ function! stack#update_tabs(scroll, ...) abort  " set current buffer
     if len(tabpagebuflist()) > 1 | return | endif
   endif
   let bname = bufname()  " possibly not a file
-  let g:debugs = get(g:, 'debugs', [])
-  call add(g:debugs, 'Update tabs: ' . bname)
   let exist = filereadable(bname) || isdirectory(bname)
   let name = exist && !empty(bname) ? fnamemodify(bname, ':p') : bname
   for bnr in tabpagebuflist()
