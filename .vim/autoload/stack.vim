@@ -104,8 +104,10 @@ endfunction
 " vim error triggered on function with abort-label, which returns -1 by default).
 function! stack#pop_stack(head, ...) abort
   let name = a:0 ? a:1 : stack#get_name(a:head)
-  let convert = type(name) == 1 && name =~# '^\d\+$'
-  let [num, nmax, name] = [0, 100, convert ? str2nr(name) : name]
+  let isnum = type(name) == 1 && name =~# '^\d\+$'
+  let isfile = type(name) == 1 && filereadable(name)
+  let name = isnum ? str2nr(name) : isfile ? fnamemodify(name, ':p') : name
+  let [num, nmax] = [0, 100]
   while num < nmax
     let [stack, idx, name, kdx] = s:get_index(a:head, name, -1)
     if kdx == -1 | break | endif  " remove current item, generally
@@ -144,39 +146,4 @@ function! stack#push_stack(head, func, ...) abort
   endif
   let [stack, idx] = s:get_stack(a:head)  " in case triggered
   call stack#update_stack(a:head, scroll, jdx, verbose)
-endfunction
-
-" Reset recent files
-" Note: Previously used complicated 'scroll state' method but now just float current
-" location to top of stack on CursorHold but always scroll with explicit commands.
-" Note: This only triggers after spending time on window instead of e.g. browsing
-" across tabs with maps, similar to jumplist. Then can access jumps in each window.
-function! stack#scroll_tabs(...) abort
-  let cnt = a:0 ? a:1 : v:count1
-  call stack#update_tabs(1)  " update stack and avoid recursion
-  try
-    set eventignore=BufEnter,BufLeave
-    call stack#push_stack('tab', function('file#open_drop'), cnt)
-  finally
-    set eventignore=
-  endtry
-  call stack#update_tabs(1, 2)
-endfunction  " possibly not a file
-function! stack#update_tabs(scroll, ...) abort  " set current buffer
-  if !v:vim_did_enter
-    return
-  endif
-  let verb = a:0 ? a:1 : 0  " disable message by default
-  let skip = index(g:tags_skip_filetypes, &filetype)
-  if skip != -1 || line('$') <= 1 || empty(&filetype)
-    if len(tabpagebuflist()) > 1 | return | endif
-  endif
-  let bname = bufname()  " possibly not a file
-  let exist = filereadable(bname) || isdirectory(bname)
-  let name = exist && !empty(bname) ? fnamemodify(bname, ':p') : bname
-  for bnr in tabpagebuflist()
-    if !empty(name) | call setbufvar(bnr, 'tab_name', name) | endif
-  endfor
-  call stack#update_stack('tab', a:scroll, -1, verb)
-  let g:tab_time = localtime()  " previous update time
 endfunction

@@ -101,15 +101,9 @@ function! iter#next_loc(count, list, ...) abort
   if &l:foldopen =~# 'quickfix' | exe 'normal! zv' | endif
 endfunction
 
-" Navigate matches without editing jumplist and words with conservative iskeyword
+" Navigate matches without editing jumplist
 " Note: This implements indexed-search directional consistency
 " and avoids adding to the jumplist to prevent overpopulation
-function! iter#next_motion(motion, mode, ...) abort
-  let cmd = 'setlocal iskeyword=' . &l:iskeyword  " vint: next-line -ProhibitUnnecessaryDoubleQuote
-  let &l:iskeyword = a:mode ? "a-z,48-57" : "@,48-57,192-255"
-  let action = a:0 ? a:1 ==# 'c' ? "\<Esc>c" : a:1 : ''
-  call feedkeys(action . v:count1 . a:motion . "\<Cmd>" . cmd . "\<CR>", 'n')
-endfunction
 function! iter#next_match(count) abort
   let forward = get(g:, 'indexed_search_n_always_searches_forward', 0)  " default
   if forward && !v:searchforward
@@ -126,6 +120,41 @@ function! iter#next_match(count) abort
   if !empty(@/)
     call feedkeys("\<Cmd>exe b:prevpos == getcurpos() ? '' : 'ShowSearchIndex'\<CR>", 'n')
   endif
+endfunction
+
+" Navigate words with restricted &iskeyword
+" Note: This implements 'g' and 'h' text object motions using word jump mappings.
+" Use gw/ge/gb/gm for snake_case and zw/ze/zb/zm for CapitalCaseFooBar or camelCase.
+function! iter#next_motion(motion, mode, ...) abort
+  let cmd = 'setlocal iskeyword=' . &l:iskeyword  " vint: next-line -ProhibitUnnecessaryDoubleQuote
+  let &l:iskeyword = a:mode ? "a-z,48-57" : "@,48-57,192-255"
+  let cnt = a:mode ? s:case_count(a:motion) : v:count1
+  let action = a:0 ? a:1 ==# 'c' ? "\<Esc>c" : a:1 : ''
+  call feedkeys(action . cnt . a:motion . "\<Cmd>" . cmd . "\<CR>", 'n')
+endfunction
+function! s:case_count(motion) abort
+  let [line, idx, cnt] = [getline('.'), col('.') - 1, v:count1]
+  for _ in range(v:count1)
+    if a:motion =~# '^[we]$'  " vint: next-line -ProhibitUsingUndeclaredVariable
+      let text = line[idx:]
+    else  " reverse search
+      let text = join(reverse(split(line[:idx], '\zs')), '')
+    endif
+    let [_, _, jdx] = matchstrpos(text, '^\s\+')
+    if jdx > 0  " leading space
+      let idx += a:motion =~# '^[we]$' ? jdx : -jdx | continue
+    elseif a:motion ==# 'w'  " forward start of word
+      let regex = '^\C[A-Z]\+[a-z]\+'
+    elseif a:motion ==# 'b'  " backward start of word
+      let regex = '^\C[A-Za-z][a-z]\+[A-Z]\+'
+    else  " end of word
+      let regex = '^\C[a-z]\+[A-Z]\+'
+    endif
+    let [_, _, jdx] = matchstrpos(text, regex)
+    if jdx < 0 | break | endif
+    let cnt += 1  " note jdx is end byte of match end plus 1
+    let idx += a:motion =~# '^[we]$' ? jdx : -jdx
+  endfor | return cnt
 endfunction
 
 " Insert complete menu items and scroll complete or preview windows (whichever open).

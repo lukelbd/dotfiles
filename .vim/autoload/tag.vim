@@ -24,6 +24,48 @@ function! tag#fzf_stack() abort
   return tags#select_tag(level, opts, 1)
 endfunction
 
+" Tag source functions
+" Note: This matches fzf.vim/bin/tags.pl perl script formatting, but adds optional
+" filetype filter (see vim-tags) and removes annoying vim-style comments from lines.
+let s:cache = {}
+function! s:tag_format(line, path) abort
+  let regex = '\=printf("%-24s", submatch(0))'
+  let text = substitute(a:line, '^[^\t]*', regex, '')
+  let text = substitute(text, ';"\t\@=', '', '')
+  return text . "\t" . a:path
+endfunction
+function! s:tag_match(line, type, regex) abort
+  let tagline = '^[^\t]*\t\([^\t]*\)\t.*$'
+  if a:line =~# '^!' | return 0 | endif
+  if a:line !~# tagline | return 0 | endif
+  let path = substitute(a:line, tagline, '\1', 'g')
+  return tags#type_match(path, a:type, a:regex, s:cache)
+endfunction
+function! tag#read_tags(type, query, ...) abort
+  let cmd = 'readtags -t %s -e -p - ' . fzf#shellescape(a:query)
+  if empty(a:type)
+    let [ftype, regex] = ['', '']
+  elseif type(a:type)
+    let [ftype, regex] = [a:type, tags#type_regex(a:type)]
+  else
+    let [ftype, regex] = [&l:filetype, tags#type_regex()]
+  endif
+  let result = []
+  for path in a:000
+    if empty(a:query)
+      let lines = readfile(path)
+    else
+      let lines = systemlist(printf(cmd, fzf#shellescape(path)))
+    endif
+    if !empty(regex)
+      let lines = filter(lines, {idx, val -> s:tag_match(val, ftype, regex)})
+    endif
+    let lines = map(lines, {idx, val -> s:tag_format(val, path)})
+    call extend(result, lines)
+  endfor
+  return result
+endfunction
+
 " Override fzf :Btags and :Tags
 " Note: This is similar to fzf except uses custom sink that adds results to window
 " tag stack for navigation with ctrl-bracket maps and tag/pop commands.
@@ -42,11 +84,7 @@ function! tag#fzf_btags(query, ...) abort
   \ }
   return call(snr . 'fzf', ['btags', options, a:000])
 endfunction
-function! tag#fzf_tags(query, ...) abort
-  if !executable('perl')
-    echohl ErrorMsg | echom 'Error: Tags command requires perl' | echohl None | return
-  endif
-  let cmd = expand('~/.vim/plugged/fzf.vim/bin/tags.pl')
+function! tag#fzf_tags(type, query, ...) abort
   let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
   let paths = map(tagfiles(), 'fnamemodify(v:val, ":p")')
@@ -57,9 +95,9 @@ function! tag#fzf_tags(query, ...) abort
   endfor
   let flags = "-m -d '\t' --with-nth ..4 --nth ..2"
   let flags .= nbytes > maxbytes ? ' --algo=v1' : ''
-  let args = map([a:query] + paths, 'fzf#shellescape(v:val)')
+  let source = call('tag#read_tags', [a:type, a:query] + paths)
   let options = {
-    \ 'source': join(['perl', fzf#shellescape(cmd)] + args, ' '),
+    \ 'source': source,
     \ 'sink': function('tags#push_tag', [0]),
     \ 'options': flags . ' --prompt "Tags> "',
   \ }

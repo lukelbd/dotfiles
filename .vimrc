@@ -591,16 +591,16 @@ cnoremap <silent> <expr> <BS> iter#complete_cmdline("\<BS>")
 " used tabs in stack at higher priority than others. Critical to keep variables.
 augroup recents_setup
   au!
-  au CursorHold * if localtime() - get(g:, 'tab_time', 0) > 10 | call stack#update_tabs(0) | endif
+  au BufEnter,BufLeave * call window#update_stack(0)  " next update
   au BufWinLeave * call stack#pop_stack('tab', expand('<afile>'))
-  au BufEnter,BufLeave * call stack#update_tabs(0)  " next update
+  au CursorHold * if localtime() - get(g:, 'tab_time', 0) > 10 | call window#update_stack(0) | endif
 augroup END
-command! -nargs=0 ClearTabs call stack#clear_stack('tab') | call stack#update_tabs(0)
+command! -nargs=0 ClearTabs call stack#clear_stack('tab') | call window#update_stack(0)
 command! -nargs=0 ShowTabs call stack#show_stack('tab')
 command! -nargs=? PopTabs call stack#pop_stack('tab', <f-args>)
-noremap <Tab><Tab> <Cmd>call stack#update_tabs(0, 2)<CR>
-noremap <F1> <Cmd>call stack#scroll_tabs(-v:count1)<CR>
-noremap <F2> <Cmd>call stack#scroll_tabs(v:count1)<CR>
+noremap <Tab><Tab> <Cmd>call window#update_stack(0, -1, 2)<CR>
+noremap <F1> <Cmd>call window#scroll_stack(-v:count1)<CR>
+noremap <F2> <Cmd>call window#scroll_stack(v:count1)<CR>
 
 " Navigate window jumplist with left/right arrows
 " Note: This accounts for iterm function-key maps and karabiner arrow-key maps
@@ -1121,21 +1121,22 @@ nnoremap <expr> gC switch#paste() . utils#translate_count('') . edit#insert_mode
 
 " Toggle caps lock, copy mode, and conceal mode
 " Note: This enforces defaults without requiring 'set' in vimrc or ftplugin that
-" override session settings. Tried BufNewFile,BufWritePost but they can fail.
+" override session settings. Tried BufNewFile,BufReadPost but they can fail.
 let s:copy_filetypes = s:data_filetypes + s:info_filetypes + s:panel_filetypes
 augroup copy_setup
   au!
-  au BufWinEnter * call switch#copy(index(s:copy_filetypes, &l:filetype) >= 0, 1)
+  au BufWinEnter * call switch#copy(0, index(s:copy_filetypes, &l:filetype) >= 0, 1)
 augroup END
-command! -nargs=? CopyToggle call switch#copy(<args>)
+command! -nargs=? CopyToggle call switch#copy(1, <args>)
 command! -nargs=? ConcealToggle call switch#conceal(<args>)  " mainly just for tex
 cnoremap <expr> <C-v> switch#caps()
 inoremap <expr> <C-v> switch#caps()
-nnoremap <Leader>c <Cmd>call switch#copy()<CR>
-nnoremap <Leader>C <Cmd>call switch#conceal()<CR>
-noremap \| <Cmd>call switch#reveal()<CR>
-noremap g[ <Cmd>call switch#opensearch(0)<CR>
-noremap g] <Cmd>call switch#opensearch(1)<CR>
+nnoremap <Leader>c <Cmd>call switch#copy(1)<CR>
+nnoremap <Leader>C <Cmd>doautocmd BufWinEnter<CR>
+noremap g[ <Cmd>call switch#reveal(0)<CR>
+noremap g] <Cmd>call switch#reveal(1)<CR>
+noremap z/ <Cmd>call switch#opensearch()<CR>
+noremap z? <Cmd>call switch#opensearch(1)<CR>
 
 " ReST section comment headers
 " Note: <Plug> name cannot be subset of other name or results in delay
@@ -1834,12 +1835,11 @@ if s:plug_active('vim-tags')
     \ | echo call('tags#table_kinds', s:args) . "\n" . call('tags#table_tags', s:args)
   nnoremap <Leader>t <Cmd>ShowTable<CR>
   nnoremap <Leader>T <Cmd>ShowTable!<CR>
-  nnoremap zt <Cmd>UpdatePaths \| UpdateTags \| GutentagsUpdate<CR><Cmd>echom 'Updated buffer tags'<CR>
-  nnoremap zT <Cmd>UpdatePaths \| UpdateTags! \| GutentagsUpdate!<CR><Cmd>echom 'Updated project tags'<CR>
   nnoremap gy <Cmd>call tags#select_tag(0)<CR>
   nnoremap gY <Cmd>call tags#select_tag(2)<CR>
   nnoremap zy <Cmd>call tags#select_tag(1)<CR>
-  nnoremap zY <Cmd>call tag#fzf_stack()<CR>
+  nnoremap zY <Cmd>UpdatePaths \| UpdateTags \| GutentagsUpdate<CR><Cmd>echom 'Updated buffer tags'<CR>
+  nnoremap <C-t> <Cmd>call tag#fzf_stack()<CR>
   let s:major = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
   let s:minor = {'fortran': 'ekltvEL', 'python': 'xviI', 'vim': 'vnC', 'tex': 'gioetBCN'}
   let g:tags_keep_jumps = 1  " default is zero
@@ -1869,10 +1869,14 @@ if s:plug_active('vim-gutentags')
   augroup END
   command! -bang -nargs=* BTags call
     \ tag#fzf_btags(<q-args>, fzf#vim#with_preview({'placeholder': '{2}:{3..}'}), <bang>0)
+  command! -bang -nargs=* FTags call
+    \ tag#fzf_tags(1, <q-args>, fzf#vim#with_preview({'placeholder': '--tag {2}:{-1}:{3..}' }), <bang>0)
   command! -bang -nargs=* Tags call
-    \ tag#fzf_tags(<q-args>, fzf#vim#with_preview({'placeholder': '--tag {2}:{-1}:{3..}' }), <bang>0)
+    \ tag#fzf_tags(0, <q-args>, fzf#vim#with_preview({'placeholder': '--tag {2}:{-1}:{3..}' }), <bang>0)
   nnoremap gt <Cmd>BTags<CR>
   nnoremap gT <Cmd>Tags<CR>
+  nnoremap zt <Cmd>FTags<CR>
+  nnoremap zT <Cmd>UpdatePaths \| UpdateTags! \| GutentagsUpdate!<CR><Cmd>echom 'Updated project tags'<CR>
   let g:gutentags_background_update = 1  " disable for debugging, printing updates
   let g:gutentags_ctags_auto_set_tags = 0  " tag#update_paths() handles this instead
   let g:gutentags_ctags_executable = 'ctags'  " note this respects .ctags config

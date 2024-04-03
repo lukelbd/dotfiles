@@ -86,11 +86,13 @@ function! switch#conceal(...) abort
 endfunction
 
 " Tgogle special characters and columns on-off
-" Warning: Enforce settings even if state == toggle for consistency
-function! switch#copy(...) abort
-  let keys = ['list', 'number', 'scrolloff', 'relativenumber', 'signcolumn', 'foldcolumn']
-  let props = {} | for key in keys | let props[key] = eval('&l:' . key) | endfor
-  let state = empty(filter(copy(props), {key, val -> val !=# '0' && val !=# 'no'}))
+" Note: Enforce settings even if state == toggle for consistency across filetypes
+" Warning: Had issues setting scrolloff automatically so trigger with argument instead
+function! switch#copy(scroll, ...) abort
+  let keys = ['list', 'number', 'relativenumber', 'signcolumn', 'foldcolumn']
+  let opts = {} | for key in keys | let opts[key] = eval('&l:' . key) | endfor
+  let keys += a:scroll ? ['scrolloff'] : []  " include scrolloff in toggle
+  let state = empty(filter(copy(opts), {key, val -> val !=# '0' && val !=# 'no'}))
   let toggle = a:0 > 0 ? a:1 : 1 - state
   let suppress = a:0 > 1 ? a:2 : 0
   if toggle

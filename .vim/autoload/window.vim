@@ -214,6 +214,44 @@ function! window#move_tab(...) abort
   \ }))
 endfunction
 
+" Scroll recent files
+" Note: Previously used complicated 'scroll state' method but now just float current
+" location to top of stack on CursorHold but always scroll with explicit commands.
+" Note: This only triggers after spending time on window instead of e.g. browsing
+" across tabs with maps, similar to jumplist. Then can access jumps in each window.
+function! window#scroll_stack(...) abort
+  let cnt = a:0 ? a:1 : v:count1
+  let [iloc, _] = stack#get_loc('tab')  " do not auto-detect index
+  call window#update_stack(1, iloc)  " update stack and avoid recursion
+  try
+    set eventignore=BufEnter,BufLeave
+    call stack#push_stack('tab', function('file#open_drop'), cnt)
+  finally
+    set eventignore=
+  endtry
+  let [iloc, _] = stack#get_loc('tab')  " do not auto-detect index
+  call window#update_stack(1, iloc)
+endfunction  " possibly not a file
+function! window#update_stack(scroll, ...) abort  " set current buffer
+  if !v:vim_did_enter
+    return
+  endif
+  let iloc = a:0 > 0 ? a:1 : -1  " location to use
+  let verb = a:0 > 1 ? a:2 : 0  " disable message by default
+  let skip = index(g:tags_skip_filetypes, &filetype)
+  let bname = bufname()  " possibly not a file
+  if skip != -1 || line('$') <= 1 || empty(&filetype) || bname =~# '^[![]'
+    if len(tabpagebuflist()) > 1 | return | endif
+  endif
+  let exist = filereadable(bname) || isdirectory(bname)
+  let name = exist && !empty(bname) ? fnamemodify(bname, ':p') : bname
+  for bnr in tabpagebuflist()
+    if !empty(name) | call setbufvar(bnr, 'tab_name', name) | endif
+  endfor
+  call stack#update_stack('tab', a:scroll, iloc, verb)
+  let g:tab_time = localtime()  " previous update time
+endfunction
+
 " Show helper windows
 " Note: These are for lsp management and viewing directory contents
 function! window#setup_dir() abort
