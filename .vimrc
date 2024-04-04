@@ -273,6 +273,41 @@ for s:key in [
   endif
 endfor
 
+" Repair modifier-arrow key presses. Use iTerm to remap <BS> and <Del> to Shift-Arrow
+" presses, then convert to no-op in normal mode and deletions for insert/command mode.
+" Also note iTerm remaps Ctrl+Arrow presses to shell scrolling so cannot be used, and
+" remaps Cmd+Left/Right to Home/End which are natively understood by vim.
+for s:mode in ['', 'i', 'c'] | for s:arrow in ['Left', 'Right']
+  exe s:mode . 'noremap <M-' . s:arrow . '> <S-' . s:arrow . '>'
+endfor | endfor
+for s:arrow in ['Left', 'Right', 'Up', 'Down']
+  exe 'noremap <S-' . s:arrow . '> <Nop>'
+endfor
+for s:mode in ['i', 'c']  " native backwards delete mappings
+  exe s:mode . 'noremap <S-Down> <C-w>'
+  exe s:mode . 'noremap <S-Left> <C-u>'
+endfor
+inoremap <expr> <S-Up> repeat('<Del>', matchend(getline('.')[col('.') - 1:], '\>'))
+inoremap <expr> <S-Right> repeat('<Del>', len(getline('.')) - col('.') + 1)
+cnoremap <expr> <S-Up> repeat('<Del>', matchend(getcmdline()[getcmdpos() - 1:], '\>'))
+cnoremap <expr> <S-Right> repeat('<Del>', len(getcmdline()) - getcmdpos() + 1)
+
+" Suppress all prefix mappings initially so that we avoid accidental actions
+" due to entering wrong suffix, e.g. \x in visual mode deleting the selection.
+function! s:gobble_map(prefix, mode)
+  let char = getcharstr()  " input character
+  return empty(maparg(a:prefix . char, a:mode)) ? '' : a:prefix . char
+endfunction
+for s:pair in [['\', 'nv'], ['<Tab>', 'n'], ['<Leader>', 'nv']]
+  let s:key = s:pair[0]
+  for s:mode in split(s:pair[1], '\zs')  " construct list
+    if empty(maparg(s:key, s:mode))
+      let s:func = "<sid>gobble_map('" . s:key . "', '" . s:mode . "')"
+      exe s:mode . 'map <expr> ' . s:key . ' ' . s:func
+    endif
+  endfor
+endfor
+
 " Remove weird Cheyenne maps, not sure how to isolate/disable /etc/vimrc without
 " disabling other stuff we want e.g. synax highlighting
 let s:insert_maps = [
@@ -286,24 +321,6 @@ if !empty(mapcheck('<Esc>', 'n'))  " maps staring with escape
   exe 'silent! unmap <Esc>[3~'
   for s:key in s:insert_maps | exe 'silent! iunmap <Esc>' . s:key | endfor
 endif
-
-" Suppress all prefix mappings initially so that we avoid accidental actions
-" due to entering wrong suffix, e.g. \x in visual mode deleting the selection.
-function! s:gobble_map(prefix, mode)
-  let char = getcharstr()  " input character
-  return empty(maparg(a:prefix . char, a:mode)) ? '' : a:prefix . char
-endfunction
-for s:pair in [
-  \ ['\', 'nv'], ['<Tab>', 'n'], ['<Leader>', 'nv'],
-\ ]
-  let s:key = s:pair[0]
-  for s:mode in split(s:pair[1], '\zs')  " construct list
-    if empty(maparg(s:key, s:mode))
-      let s:func = "<sid>gobble_map('" . s:key . "', '" . s:mode . "')"
-      exe s:mode . 'map <expr> ' . s:key . ' ' . s:func
-    endif
-  endfor
-endfor
 
 
 "-----------------------------------------------------------------------------"
@@ -511,17 +528,9 @@ nnoremap <Leader>N <Cmd>call shell#fzf_help()<CR>
 nnoremap <Leader>M <Cmd>call shell#fzf_man()<CR>
 
 " General and popup/preview window scrolling
-" Note: Karabiner remaps <S-Left|Right> to <PageUp|PageDown> and <C-Left|Right> to
-" <Home|End>. Also note <S-Up|PageDown> and <PageUp|PageDown> scroll pages by default,
-" and <Home|End> jump to first/last character of line by default. Here apply option
-" arrow navigation by word/WORD to match .inputrc shell navigation settings. Note that
-" iterm captures <PageUp|PageDown> but not needed since we have separate vim scrolling.
-for s:mode in ['', 'i', 'c']  " note i/c mode shift/control arrows are identical in vim
-  exe s:mode . 'noremap <C-Left> <C-Left>'
-  exe s:mode . 'noremap <C-Right> <C-Right>'
-  exe s:mode . 'noremap <M-Left> <S-Left>'
-  exe s:mode . 'noremap <M-Right> <S-Right>'
-endfor
+" Note: Karabiner remaps Ctrl-h/j/k/l keys to arrow key presses so here apply
+" maps to both in case working from terminal without these maps. Also note iTerm
+" maps mod-delete and mod-backspace keys to shift arrows which do normal mode scrolls.
 noremap <expr> <C-u> iter#scroll_infer(-0.33, 0)
 noremap <expr> <C-d> iter#scroll_infer(0.33, 0)
 noremap <expr> <C-b> iter#scroll_infer(-0.66, 0)

@@ -117,8 +117,7 @@ _setup_shell() {         # apply shell options (list available with shopt -p)
   stty werase undef      # disable ctrl-w word delete function
   stty stop undef        # disable ctrl-s start/stop binding
   stty eof undef         # disable ctrl-d end-of-file binding
-  stty -ixon             # disable start stop outpu control to alloew ctrl-s
-  bind -i -f ~/.inputrc  # apply inputrc overrides
+  stty -ixon             # disable start stop output control to allow ctrl-s
   shopt -s autocd        # typing naked directry name will cd into it
   shopt -s cdspell       # attempt spelling crrection of cd arguments
   shopt -s cdable_vars   # cd into shell ariable directories, no $ necessary
@@ -140,7 +139,12 @@ _setup_shell() {         # apply shell options (list available with shopt -p)
   export HISTIGNORE='&:bg:fg:exit:clear' # don't record some commands
   export HISTCONTROL=''  # note ignoreboh = ignoredups + ignorespace
   export PROMPT_DIRTRIM=2  # trim long pths in prompt
-  bind '"\e[1;3A": shell-backward-word'
+  bind -i -f ~/.inputrc  # apply inputrc overrides
+  bind '"\e[1;2D": unix-line-discard'  # shift arrow overrides
+  bind '"\e[1;2C": kill-line'
+  bind '"\e[1;2B": backward-kill-word'
+  bind '"\e[1;2A": kill-word'
+  bind '"\e[1;3A": shell-backward-word'  # alt arrow overrides
   bind '"\e[1;3B": shell-forward-word'
   bind '"\e[1;3C": forward-word'
   bind '"\e[1;3D": backward-word'

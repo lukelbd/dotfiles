@@ -31,7 +31,7 @@ function! edit#conjoin_lines(before, spaces, ...) abort
 endfunction
 " Indent input lines
 function! edit#indent_lines(dedent, count) range abort
-  return a:firstline . ',' . a:lastline . repeat(a:dedent ? '<' : '>', a:count)
+  exe a:firstline . ',' . a:lastline . repeat(a:dedent ? '<' : '>', a:count)
 endfunction
 " For <expr> map accepting motion
 function! edit#indent_lines_expr(...) abort

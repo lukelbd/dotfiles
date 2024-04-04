@@ -1,7 +1,8 @@
 #-----------------------------------------------------------------------------#
 # Terminal and ipython input configuration
-# Use nr2char(printf('%d', '0xN')) to convert iterm hex to sequences
 # Note these must be in .inputrc to work with ipython (not .bashrc)
+# Use nr2char(printf('%d', '0xN')) to convert iterm hex to characters, or
+# use printf('0x%02x', char2nr("\<C-x>")) to convert characters to iterm hex.
 # See: https://stackoverflow.com/a/12191699/4970632
 #-----------------------------------------------------------------------------#
 # Vi-mode command line editing
@@ -11,7 +12,6 @@
 # Normal mode as block cursor
 # bind 'set vi-cmd-mode-string "\1\e[2 q\2"'
 
-# General key bindings
 # Complete forward without changing scroll history
 "\C-i": menu-complete
 # Complete backward without changing scroll history
@@ -32,6 +32,14 @@
 "\e[1;3A": shell-backward-word
 # <Alt-Down> key from sed -n -l <Alt-Right>
 "\e[1;3B": shell-forward-word
+# <Shift-Left> key from sed -n l <Shift-Left>
+"\e[1;2D": unix-line-discard
+# <Shift-Right> key from sed -n -l <Shift-Right>
+"\e[1;2C": kill-line
+# <Shift-Down> key from sed -n l <Shift-Left>
+"\e[1;2B": backward-kill-word
+# <Shift-Up> key from sed -n -l <Shift-Right>
+"\e[1;2A": kill-word
 
 # Terminal settings
 # Turn off history expand so cn have '!' in strings: https://unix.stackexchange.com/a/33341/112647
