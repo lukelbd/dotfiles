@@ -164,7 +164,7 @@ endfunction
 " Select from open tabs
 " Note: This displays a list with the tab number and the file. As with other
 " commands sorts by recent access time for ease of use.
-function! s:jump_tab(item) abort
+function! s:goto_tab(item) abort
   let [tnr, path] = s:parse_tab(a:item)
   exe tnr . 'tabnext'
 endfunction
@@ -177,16 +177,20 @@ function! s:parse_tab(item) abort
   let path = substitute(path, flags . stats . '$', '', 'g')
   let path = substitute(path, '\(^\s\+\|\s\+$\)', '', 'g')
   call file#echo_path('tab', path)
+  let icloud = 'iCloud'  " actual path is resolved
+  if strpart(path, 0, len(icloud)) ==# icloud
+    let path = resolve(expand('~/icloud')) . strpart(path, len(icloud))
+  endif
   return [str2nr(tnr), path]  " returns zero on error
 endfunction
-function! window#jump_tab(...) abort
+function! window#goto_tab(...) abort
   if a:0 && a:1
-    return s:jump_tab(a:1)
+    return s:goto_tab(a:1)
   endif
   call fzf#run(fzf#wrap({
     \ 'source': window#buffer_source(),
     \ 'options': '--no-sort --prompt="Tab> "',
-    \ 'sink': function('s:jump_tab'),
+    \ 'sink': function('s:goto_tab'),
   \ }))
 endfunction
 
@@ -259,7 +263,7 @@ function! window#setup_dir() abort
   for char in 'fbFL' | silent! exe 'unmap <buffer> q' . char | endfor
 endfunction
 function! window#show_dir(cmd, local) abort
-  let base = a:local ? fnamemodify(resolve(@%), ':p:h') : tag#find_root(@%)
+  let base = a:local ? fnamemodify(@%, ':p:h') : tag#find_root(@%)
   exe a:cmd . ' ' . base | exe 'vert resize ' . window#default_width(0)
   exe 'resize ' . window#default_height(0) | goto
 endfunction

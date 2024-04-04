@@ -277,11 +277,12 @@ endfor
 " presses, then convert to no-op in normal mode and deletions for insert/command mode.
 " Also note iTerm remaps Ctrl+Arrow presses to shell scrolling so cannot be used, and
 " remaps Cmd+Left/Right to Home/End which are natively understood by vim.
-for s:mode in ['', 'i', 'c'] | for s:arrow in ['Left', 'Right']
-  exe s:mode . 'noremap <M-' . s:arrow . '> <S-' . s:arrow . '>'
-endfor | endfor
 for s:arrow in ['Left', 'Right', 'Up', 'Down']
   exe 'noremap <S-' . s:arrow . '> <Nop>'
+endfor
+for s:mode in ['', 'i', 'c']  " native motions by word
+  exe s:mode . 'noremap <M-Left> <S-Left>'
+  exe s:mode . 'noremap <M-Right> <S-Right>'
 endfor
 for s:mode in ['i', 'c']  " native backwards delete mappings
   exe s:mode . 'noremap <S-Down> <C-w>'
@@ -308,8 +309,8 @@ for s:pair in [['\', 'nv'], ['<Tab>', 'n'], ['<Leader>', 'nv']]
   endfor
 endfor
 
-" Remove weird Cheyenne maps, not sure how to isolate/disable /etc/vimrc without
-" disabling other stuff we want e.g. synax highlighting
+" Remove clunky Cheyenne escape-sequence mappings, not sure how to isolate/disable
+" /etc/vimrc without disabling other stuff we want e.g. synax highlighting
 let s:insert_maps = [
   \ '[2;2~', '[2;3~', '[2;5~', '[3;2~', '[3;3~', '[3;5~',
   \ '[5;2~', '[5;3~', '[5;5~', '[6;2~', '[6;3~', '[6;5~',
@@ -368,7 +369,7 @@ nnoremap g< <Cmd>call file#open_used()<CR>
 " Note: Here :History includes v:oldfiles and open buffers
 for s:key in range(1, 10) | exe 'silent! unmap <Tab>' . s:key | endfor
 for s:key in ['.', ',', '>', '<'] | exe 'silent! xunmap z' . s:key | endfor
-nnoremap g. <Cmd>call window#jump_tab(v:count)<CR>
+nnoremap g. <Cmd>call window#goto_tab(v:count)<CR>
 nnoremap g> <Cmd>call window#move_tab(v:count)<CR>
 nnoremap g/ <Cmd>Windows<CR>
 nnoremap g? <Cmd>Buffers<CR>
@@ -424,8 +425,8 @@ command! -nargs=* -complete=file Split call file#open_continuous('botright split
 command! -nargs=* -complete=file Vsplit call file#open_continuous('botright vsplit', <f-args>)
 nnoremap <C-r> <Cmd>exe 'Split ' . fnameescape(tag#find_root(@%))<CR>
 nnoremap <C-t> <Cmd>exe 'Vsplit ' . fnameescape(tag#find_root(@%))<CR>
-nnoremap <F7> <Cmd>exe 'Open ' . fnameescape(fnamemodify(resolve(@%), ':p:h'))<CR>
-nnoremap <C-y> <Cmd>exe 'Files ' . fnameescape(fnamemodify(resolve(@%), ':p:h'))<CR>
+nnoremap <F7> <Cmd>exe 'Open ' . fnameescape(fnamemodify(@%, ':p:h'))<CR>
+nnoremap <C-y> <Cmd>exe 'Files ' . fnameescape(fnamemodify(@%, ':p:h'))<CR>
 nnoremap <C-o> <Cmd>exe 'Open ' . fnameescape(tag#find_root(@%))<CR>
 nnoremap <C-p> <Cmd>exe 'Files ' . fnameescape(tag#find_root(@%))<CR>
 nnoremap <C-g> <Cmd>GFiles<CR>

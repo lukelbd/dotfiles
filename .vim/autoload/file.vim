@@ -117,8 +117,7 @@ endfunction
 " display annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
 function! file#open_init(cmd, local) abort
   let cmd = a:cmd ==# 'Drop' ? 'Open' : a:cmd  " alias 'Open' for 'Drop' command
-  let path = resolve(expand('%:p'))
-  let base = a:local ? fnamemodify(path, ':p:h') : tag#find_root(path)
+  let base = a:local ? expand('%:p:h') : tag#find_root(@%)
   let init = file#input_path(cmd, '', base)
   if empty(init)
     return
@@ -225,6 +224,7 @@ function! file#open_drop(...) abort
     if !empty(nrs)
       silent exe nrs[0] . 'tabnext' | silent exe nrs[1] . 'wincmd w'
     elseif !blank && !panel && !fugitive
+      echom 'Path!!! ' . fnameescape(path)
       silent exe 'tabnew ' . fnameescape(path)
     else  " create new tab
       call feedkeys("\<Cmd>silent edit " . path . "\<CR>", 'n')
