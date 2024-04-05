@@ -232,8 +232,8 @@ function! s:get_root(folder, globs, ...) abort
   endfor
   return ''
 endfunction
-function! tag#find_root(path) abort
-  let folder = fnamemodify(resolve(expand(a:path)), ':p:h')
+function! tag#find_root(path, ...) abort
+  let folder = fnamemodify(resolve(expand(a:path)), ':p:h')  " no trailing slash
   let globs = ['.git', '.hg', '.svn', '.bzr', '_darcs', '_darcs', '_FOSSIL_', '.fslckout']
   let root = s:get_root(folder, globs)  " highest-level control system indicator
   if !empty(root)
@@ -244,9 +244,16 @@ function! tag#find_root(path) abort
   if !empty(root)
     return root
   endif
-  let home = expand('~')
-  let root = folder ==# home[:len(folder) - 1] ? folder . '/dotfiles' : folder
-  return root
+  let default = expand('~') . '/dummy'
+  let roots = [resolve(expand('~/icloud')), expand('~')]
+  for root in roots
+    if folder ==# root
+      return default
+    elseif len(folder) > len(root) && strpart(folder, 0, len(root)) ==# root
+      return fnamemodify(folder, repeat(':h', count(folder, '/') - count(root, '/') - 1))
+    endif
+  endfor
+  return default
 endfunction
 
 " Parse .ignore files for ctags utilities (compare to bash ignores())

@@ -1891,7 +1891,7 @@ if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
   # shellcheck disable=2034
   {  # first option requires export
     export FZF_DEFAULT_COMMAND=" \
-      set -o pipefail; command find -L . -mindepth 1 $_fzf_prune_bases $_fzf_prune_names \
+      set -o pipefail; command find . -mindepth 1 $_fzf_prune_bases $_fzf_prune_names \
       -type f -print -o -type l -print 2>/dev/null | cut -b3- \
     "
     FZF_ALT_C_COMMAND=" \

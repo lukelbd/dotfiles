@@ -224,7 +224,6 @@ function! file#open_drop(...) abort
     if !empty(nrs)
       silent exe nrs[0] . 'tabnext' | silent exe nrs[1] . 'wincmd w'
     elseif !blank && !panel && !fugitive
-      echom 'Path!!! ' . fnameescape(path)
       silent exe 'tabnew ' . fnameescape(path)
     else  " create new tab
       call feedkeys("\<Cmd>silent edit " . path . "\<CR>", 'n')

@@ -28,6 +28,7 @@ function! shell#help_page(...) abort
   let cmd = join(args, ' ')
   if type !=# 'stdout'
     tabedit | setlocal nobuflisted bufhidden=hide buftype=nofile filetype=stdout
+    doautocmd BufWinEnter
   endif
   if bufexists(cmd)
     silent exe bufnr(cmd) . 'buffer'
