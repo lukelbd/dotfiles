@@ -133,10 +133,10 @@ function! syntax#sync_lines(count, ...) abort
     echom 'Syntax sync: minlines=' . a:count
   else  " sync from tag
     let item = tags#find_tag(line('w0'))
-    let lnum = empty(item) ? line('w0') : 1
+    let lnum = empty(item) ? line('w0') : str2nr(get(item, 1, 1))
     let nlines = max([0, line('.') - lnum])
     exe 'syntax sync minlines=' . nlines . ' maxlines=0'
-    echom 'Syntax sync: minlines=' . nlines . ' (' . item[0] . ')'
+    echom 'Syntax sync: minlines=' . nlines . ' (' . get(item, 0, 'unknown') . ')'
   endif
 endfunction
 

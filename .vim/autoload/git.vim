@@ -136,14 +136,14 @@ function! s:run_cmd(bnum, lnum, cmd, ...) abort
     if newbuf
       setlocal bufhidden=delete | if line('$') <= 1 | call window#close_pane(1) | endif
     endif
+    if bufnr() == a:bnum && input =~# '^blame'  " syncbind is no-op if not vertical
+      exe a:lnum | exe 'normal! z.' | call feedkeys("\<Cmd>syncbind\<CR>", 'n')
+    elseif newbuf && name ==# 'status'  " open change statistics
+      goto | exe 'normal ='
+    elseif newbuf && input =~# '\s\+%'  " open single difference fold
+      exe 'normal! zv'
+    endif
     if bufnr() == a:bnum
-      if input =~# '^blame'  " syncbind is no-op if not vertical
-        exe a:lnum | exe 'normal! z.' | call feedkeys("\<Cmd>syncbind\<CR>", 'n')
-      elseif newbuf && input =~# '\s\+%'  " open single difference fold
-        call feedkeys('zv', 'n')
-      elseif newbuf && name ==# 'status'  " open change statistics
-        call feedkeys('gg=', 'm')
-      endif
       exe 'vertical resize ' . width | exe 'resize ' . height
     elseif input =~# '^blame\( %\)\@!' || a:cmd =~# '\<\(vsplit\|vert\(ical\)\?\)\>'
       exe 'vertical resize ' . window#default_width(resize)

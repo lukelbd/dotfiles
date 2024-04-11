@@ -154,9 +154,9 @@ let &g:wildignore = join(tag#parse_ignores(0, '~/.wildignore'), ',')
 " :ALEDetail output, 'diff' is used with :GitGutterPreviewHunk output, 'git' is used
 " with :Fugitive [show|diff] displays, 'fugitive' is used with other :Fugitive comamnds,
 " and 'markdown.lsp_hover' is used with vim-lsp. The remaining filetypes are obvious.
-let s:fork_plugins = []  " add to this during development!
+let s:fork_plugins = []  " e.g. ddc-source-tags
 let s:vim_plugins = [
-  \ 'vim-succinct', 'vim-tags', 'vim-statusline', 'vim-tabline', 'vim-scrollwrapped', 'vim-toggle',
+  \ 'ddc-source-tags', 'vim-succinct', 'vim-tags', 'vim-statusline', 'vim-tabline', 'vim-scrollwrapped', 'vim-toggle',
 \ ]  " custom vim plugins
 let s:tab_filetypes = [
   \ 'xml', 'make', 'gitconfig', 'text',
@@ -342,9 +342,8 @@ nnoremap <Leader>! <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTE
 command! -nargs=? Autosave call switch#autosave(<args>)
 noremap <Leader>W <Cmd>call switch#autosave()<CR>
 nnoremap <C-s> <Cmd>call file#update()<CR>
-nnoremap <C-q> <Cmd>call window#close_tab()<CR>
-nnoremap <C-w> <Cmd>call window#close_pane()<CR>
-nnoremap <C-e> <Cmd>call window#close_panes()<CR>
+nnoremap <C-q> <Cmd>call window#close_panes()<CR><Cmd>call window#close_pane()<CR>
+nnoremap <C-w> <Cmd>call window#close_panes()<CR>
 
 " Refresh session or re-open previous files
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
@@ -369,10 +368,10 @@ nnoremap g< <Cmd>call file#open_used()<CR>
 " Note: Here :History includes v:oldfiles and open buffers
 for s:key in range(1, 10) | exe 'silent! unmap <Tab>' . s:key | endfor
 for s:key in ['.', ',', '>', '<'] | exe 'silent! xunmap z' . s:key | endfor
-nnoremap g. <Cmd>call window#goto_tab(v:count)<CR>
-nnoremap g> <Cmd>call window#move_tab(v:count)<CR>
-nnoremap g/ <Cmd>Windows<CR>
-nnoremap g? <Cmd>Buffers<CR>
+nnoremap g. <Cmd>call window#fzf_tabs(v:count)<CR>
+nnoremap g> <Cmd>call window#fzf_move(v:count)<CR>
+nnoremap <C-e> <Cmd>Windows<CR>
+nnoremap <C-a> <Cmd>Buffers<CR>
 
 " Tab and window jumping
 nnoremap <Tab>, <Cmd>exe max([tabpagenr() - v:count1, 1]) . 'tabnext'<CR>
@@ -411,10 +410,8 @@ nnoremap <Tab>o <Cmd>call file#open_init('Drop', 0)<CR>
 nnoremap <Tab>p <Cmd>call file#open_init('Files', 0)<CR>
 nnoremap <Tab>i <Cmd>call file#open_init('Drop', 1)<CR>
 nnoremap <Tab>y <Cmd>call file#open_init('Files', 1)<CR>
-nnoremap <Tab>- <Cmd>call file#open_init('Split', 1)<CR>
-nnoremap <Tab>= <Cmd>call file#open_init('Split', 0)<CR>
-nnoremap <Tab>\ <Cmd>call window#show_dir('topleft vsplit', 0)<CR>
-nnoremap <Tab>\| <Cmd>call window#show_dir('topleft vsplit', 1)<CR>
+nnoremap <Tab>r <Cmd>call file#open_init('Split', 1)<CR>
+nnoremap <Tab>t <Cmd>call file#open_init('Vsplit', 1)<CR>
 
 " Open file in current directory or some input directory
 " Note: Anything that is not :Files gets passed to :Drop command
@@ -423,8 +420,8 @@ command! -nargs=* -complete=file Drop call file#open_drop(<f-args>)
 command! -nargs=* -complete=file Open call file#open_continuous('Drop', <f-args>)
 command! -nargs=* -complete=file Split call file#open_continuous('botright split', <f-args>)
 command! -nargs=* -complete=file Vsplit call file#open_continuous('botright vsplit', <f-args>)
-nnoremap <C-r> <Cmd>exe 'Split ' . fnameescape(tag#find_root(@%))<CR>
-nnoremap <C-t> <Cmd>exe 'Vsplit ' . fnameescape(tag#find_root(@%))<CR>
+nnoremap <C-r> <Cmd>exe 'Split ' . fnameescape(fnamemodify(@%, ':p:h'))<CR>
+nnoremap <C-t> <Cmd>exe 'Vsplit ' . fnameescape(fnamemodify(@%, ':p:h'))<CR>
 nnoremap <F7> <Cmd>exe 'Open ' . fnameescape(fnamemodify(@%, ':p:h'))<CR>
 nnoremap <C-y> <Cmd>exe 'Files ' . fnameescape(fnamemodify(@%, ':p:h'))<CR>
 nnoremap <C-o> <Cmd>exe 'Open ' . fnameescape(tag#find_root(@%))<CR>
@@ -476,11 +473,8 @@ augroup panel_setup
   au CmdwinEnter * call vim#setup_cmdwin() | call window#setup_panel(1)
   au TerminalWinOpen * call window#setup_panel(1)
   au BufRead,BufEnter fugitive://* if &filetype !=# 'fugitive' | call window#setup_panel() | endif
-  au BufEnter *__Tag_List__* call iter#setup_taglist() | call window#setup_panel()
   au FileType help call vim#setup_help()
-  au FileType qf call iter#setup_quickfix()
-  au FileType taglist call iter#setup_taglist()
-  au FileType netrw call window#setup_dir()
+  au FileType qf call window#setup_quickfix()
   au FileType man call shell#setup_man()
   au FileType gitcommit call git#setup_commit()
   au FileType fugitiveblame call git#setup_blame() | call git#setup_panel()
@@ -653,7 +647,6 @@ noremap g? <Cmd>Lines<CR>
 " internal tag jumping utils. Ignores tags resulting from direct :tag or <C-]>
 command! -complete=file -nargs=* ShowIgnores
   \ echom 'Tag ignores: ' . join(tag#parse_ignores(0, <f-args>), ' ')
-command! -complete=dir -nargs=* UpdatePaths call tag#update_paths(<f-args>)
 command! -nargs=0 ClearStack call stack#clear_stack('tag')
 command! -nargs=0 ShowStack call stack#show_stack('tag')
 command! -nargs=* PopStack call stack#pop_stack('tag', <f-args>)
@@ -707,7 +700,7 @@ noremap M gE
 
 " Move between alphanumeric groups of characters (i.e. excluding dots, dashes,
 " underscores). This is consistent with tmux vim selection navigation
-exe 'silent! runtime autoload/utils.vim'
+silent! exe 'runtime autoload/utils.vim'
 noremap gw <Cmd>call iter#next_motion('w', 0)<CR>
 noremap gb <Cmd>call iter#next_motion('b', 0)<CR>
 noremap ge <Cmd>call iter#next_motion('e', 0)<CR>
@@ -1073,12 +1066,13 @@ noremap X "_X
 
 " Spaces and tabs for particular filetypes.
 " Note: This enforces defaults without requiring 'set' during session refresh.
-augroup expandtab_setup
+silent! au! expandtab_setup
+augroup tab_setup
   au!
-  au BufWinEnter * call switch#expandtab(index(s:tab_filetypes, &l:filetype) >= 0, 1)
+  au BufWinEnter * call switch#tabs(index(s:tab_filetypes, &l:filetype) >= 0, 1)
 augroup END
-command! -nargs=? TabToggle call switch#expandtab(<args>)
-nnoremap <Leader><Tab> <Cmd>call switch#expandtab()<CR>
+command! -nargs=? TabToggle call switch#tabs(<args>)
+nnoremap <Leader><Tab> <Cmd>call switch#tabs()<CR>
 
 " Increase and decrease indent to level v:count
 " Note: To avoid overwriting fugitive inline-diff maps also add these to common.vim
@@ -1364,9 +1358,9 @@ call plug#('junegunn/fzf.vim')  " pin to version supporting :Drop
 call plug#('roosta/fzf-folds.vim')  " jump to folds
 let g:fzf_action = {'ctrl-m': 'Drop', 'ctrl-t': 'Drop', 'ctrl-x': 'split', 'ctrl-v': 'vsplit' }  " have file search and grep open to existing window if possible
 let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
+let g:fzf_skip_pushd = 0  " see lukelbd/fzf.vim completion-edits branch
 let g:fzf_buffers_jump = 1  " have fzf jump to existing window if possible
 let g:fzf_tags_command = 'ctags -R -f .vimtags ' . tag#parse_ignores(1)  " added just for safety
-let g:fzf_skip_pushd = 1  " see lukelbd/fzf.vim completion-edits branch
 
 " Language server integration
 " Note: Here vim-lsp-ale sends diagnostics generated by vim-lsp to ale, does nothing
@@ -1426,7 +1420,6 @@ endif
 " call plug#('hrsh7th/cmp-buffer')  " nvim-cmp source
 " call plug#('hrsh7th/cmp-path')  " nvim-cmp source
 " call plug#('hrsh7th/cmp-cmdline')  " nvim-cmp source
-" call plug#('delphinus/ddc-ctags')  " auto-generate ctags
 " call plug#('deoplete-plugins/deoplete-jedi')  " old language-specific completion
 " call plug#('Shougo/neco-syntax')  " old language-specific completion
 " call plug#('Shougo/echodoc.vim')  " old language-specific completion
@@ -1434,7 +1427,8 @@ endif
 " call plug#('Shougo/ddc-matcher_head')  " filter for heading match
 " call plug#('Shougo/ddc-sorter_rank')  " filter for sorting rank
 " call plug#('Shougo/ddc-source-omni')  " include &omnifunc results
-" call plug#('akemrir/ddc-tags-exec')  " read tagfiles() (outdated -- try fork)
+" call plug#('delphinus/ddc-ctags')  " completion using 'ctags' command
+" call plug#('akemrir/ddc-tags-exec')  " completion using tagfiles() lines
 if s:enable_ddc
   call plug#('tani/ddc-fuzzy')  " filter for fuzzy matching similar to fzf
   call plug#('matsui54/ddc-buffer')  " matching words from buffer (as in neocomplete)
@@ -1501,10 +1495,10 @@ let g:loaded_textobj_entire = 1  " avoid default mappings (see below)
 call plug#('junegunn/vim-easy-align')  " align with motions, text objects, and ignores comments
 call plug#('AndrewRadev/splitjoin.vim')  " single-line multi-line transition hardly every needed
 call plug#('flwyd/vim-conjoin')  " join and remove line continuation characters
-call plug#('tpope/vim-speeddating')  " dates and stuff
-call plug#('sk1418/HowMuch')  " calcuations
 call plug#('tomtom/tcomment_vim')  " comment motions
 call plug#('tpope/vim-characterize')  " print character (nicer version of 'ga')
+call plug#('tpope/vim-speeddating')  " dates and stuff
+call plug#('sk1418/HowMuch')  " calcuations
 call plug#('metakirby5/codi.vim')  " calculators
 silent! unlet g:loaded_tcomment
 let g:HowMuch_no_mappings = 1
@@ -1614,13 +1608,14 @@ let g:vimtex_fold_types = {'envs' : {'whitelist': ['enumerate', 'itemize', 'math
 " Note: Previously used ansi plugin to preserve colors in 'command --help' pages
 " but now redirect colorized git help info to their corresponding man pages.
 " call plug#('powerman/vim-plugin-AnsiEsc')  " colorize help pages
+" call plug#('vim-scripts/LargeFile')  " disable syntax highlighting for large files
 " call plug#('Shougo/vimshell.vim')  " first generation :terminal add-ons
 " call plug#('Shougo/deol.nvim')  " second generation :terminal add-ons
 " call plug#('jez/vim-superman')  " replaced with vim.vim and bashrc utilities
-" call plug#('jistr/vim-nerdtree-tabs')  " unnecessary
 " call plug#('scrooloose/nerdtree')  " unnecessary
-" call plug#('vim-scripts/LargeFile')  " disable syntax highlighting for large files
+" call plug#('jistr/vim-nerdtree-tabs')  " unnecessary
 call plug#('tpope/vim-eunuch')  " shell utils like chmod rename and move
+call plug#('tpope/vim-vinegar')  " netrw enhancements (acts on filetype netrw)
 let g:LargeFile = 1  " megabyte limit
 
 " Custom plugins or forks and try to load locally if possible!
@@ -1793,42 +1788,6 @@ if s:plug_active('tcomment_vim')
   let g:tcomment_mapleader_comment_anyway = 'z>'
 endif
 
-" Vertical taglist and undotree panels
-" Note: Undotree normally triggers on BufEnter but may contribute to slowdowns. Use
-" below to override built-in augroup before enabling buffer.
-" Todo: Currently can only clear history with 'C' in active pane not externally. Need
-" to submit PR for better command. See: https://github.com/mbbill/undotree/issues/158
-if s:plug_active('taglist')
-  let g:Tlist_Compact_Format = 1
-  let g:Tlist_Enable_Fold_Column = 1
-  let g:Tlist_File_Fold_Auto_Close = 1
-  let g:Tlist_Use_Right_Window = 0
-  let g:Tlist_WinWidth = 40
-  noremap z\ <Cmd>TlistToggle<CR>
-endif
-if s:plug_active('undotree')
-  function! Undotree_Augroup() abort  " autoload/undotree.vim s:undotree.Toggle()
-    if undotree#UndotreeIsVisible()
-      augroup Undotree
-        au! | au InsertLeave,TextChanged * call undotree#UndotreeUpdate()
-      augroup END
-    endif
-  endfunction
-  function! Undotree_CustomMap() abort  " autoload/undotree.vim s:undotree.BindKey()
-    exe 'vertical resize ' . window#default_width(0)
-    nmap <buffer> U <Plug>UndotreeRedo
-    noremap <buffer> <nowait> u <C-u>
-    noremap <buffer> <nowait> d <C-d>
-  endfunc
-  let g:undotree_DiffAutoOpen = 0
-  let g:undotree_RelativeTimestamp = 0
-  let g:undotree_SetFocusWhenToggle = 1
-  let g:undotree_ShortIndicators = 1
-  let g:undotree_SplitWidth = 30  " overridden above
-  let g:undotree_WindowLayout = 1  " see :help undotree_WindowLayout
-  noremap g\ <Cmd>UndotreeToggle<CR><Cmd>call Undotree_Augroup()<CR>
-endif
-
 " Tag integration settings
 " Warning: Critical to mamba install 'universal-ctags' instead of outdated 'ctags'
 " or else will get warnings for non-existing kinds.
@@ -1848,8 +1807,7 @@ if s:plug_active('vim-tags')
   nnoremap gy <Cmd>call tags#select_tag(0)<CR>
   nnoremap gY <Cmd>call tags#select_tag(2)<CR>
   nnoremap zy <Cmd>call tags#select_tag(1)<CR>
-  nnoremap zY <Cmd>UpdatePaths \| UpdateTags \| GutentagsUpdate<CR><Cmd>echom 'Updated buffer tags'<CR>
-  nnoremap <C-t> <Cmd>call tag#fzf_stack()<CR>
+  nnoremap zY <Cmd>call tag#fzf_stack()<CR>
   let s:major = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
   let s:minor = {'fortran': 'ekltvEL', 'python': 'xviI', 'vim': 'vnC', 'tex': 'gioetBCN'}
   let g:tags_keep_jumps = 1  " default is zero
@@ -1862,7 +1820,6 @@ if s:plug_active('vim-tags')
   let g:tags_next_local_map = ']w'  " keyword jumping
   let g:tags_prev_global_map = '[W'
   let g:tags_next_global_map = ']W'
-  silent! exe 'runtime plugin/tags.vim'
 endif
 
 " Gutentag tag generation
@@ -1877,6 +1834,7 @@ if s:plug_active('vim-gutentags')
     au User GutentagsUpdated call tag#update_paths()
     au BufCreate,BufReadPost * call tag#update_paths(expand('<afile>'))
   augroup END
+  command! -complete=dir -nargs=* UpdatePaths call tag#update_paths(<f-args>)
   command! -bang -nargs=0 ShowCache call tag#show_cache()
   command! -bang -nargs=* BTags call
     \ tag#fzf_btags(<q-args>, fzf#vim#with_preview({'placeholder': '{2}:{3..}'}), <bang>0)
@@ -1887,7 +1845,7 @@ if s:plug_active('vim-gutentags')
   nnoremap gt <Cmd>BTags<CR>
   nnoremap gT <Cmd>Tags<CR>
   nnoremap zt <Cmd>FTags<CR>
-  nnoremap zT <Cmd>UpdatePaths \| UpdateTags! \| GutentagsUpdate!<CR><Cmd>echom 'Updated project tags'<CR>
+  nnoremap zT <Cmd>UpdatePaths \| UpdateTags! \| GutentagsUpdate!<CR><Cmd>echom 'Updated tags'<CR>
   let g:gutentags_background_update = 1  " disable for debugging, printing updates
   let g:gutentags_ctags_auto_set_tags = 0  " tag#update_paths() handles this instead
   let g:gutentags_ctags_executable = 'ctags'  " note this respects .ctags config
@@ -2061,7 +2019,7 @@ if s:plug_active('ddc.vim')
     \ '--allow-env', '--allow-net', '--allow-read', '--allow-write', '--allow-run',
     \ '--v8-flags=--max-heap-size=100,--max-old-space-size=100',
   \ ]
-  let g:ddc_sources = ['around', 'buffer', 'file', 'vim-lsp']
+  let g:ddc_sources = ['around', 'buffer', 'file', 'tags', 'vim-lsp']
   let g:ddc_options = {
     \ 'sourceParams': {'around': {'maxSize': 500}},
     \ 'filterParams': {'matcher_fuzzy': {'splitMode': 'word'}},
@@ -2085,6 +2043,11 @@ if s:plug_active('ddc.vim')
     \     'maxItems': 5,
     \     'forceCompletionPattern': '\S/\S*',
     \   },
+    \ 'tags': {
+    \     'mark': 'T',
+    \     'maxItems': 15,
+    \     'isVolatile': v:true,
+    \  },
     \   'vim-lsp': {
     \     'mark': 'L',
     \     'maxItems': 15,
@@ -2356,7 +2319,7 @@ if s:plug_active('codi.vim')
   \ }
 endif
 
-" Calculations with HowMuch and speeddating
+" Testing and calculations
 " Note: This overwrites default increment/decrement plugins declared above. Works
 " by incrementing selected item(s), and if selection includes empty lines then extends
 " them using the step size from preceding lines or using a default step size.
@@ -2375,10 +2338,6 @@ if s:plug_active('vim-speeddating')
   noremap <Plug>SpeedDatingFallbackUp <C-a>
   noremap <Plug>SpeedDatingFallbackDown <C-x>
 endif
-
-" Vim test settings
-" Note: This uses pytest-mpl to generate tests
-" Todo: Configure this for other filetypes and testers
 if s:plug_active('vim-test')
   let test#strategy = 'iterm'
   let g:test#python#pytest#options = '--mpl --verbose'
@@ -2391,6 +2350,53 @@ if s:plug_active('vim-test')
   noremap <Leader>] <Cmd>call utils#catch_errors('TestSuite')<CR>
   noremap <Leader>{ <Cmd>call utils#catch_errors('TestFile --mpl-generate')<CR>
   noremap <Leader>} <Cmd>call utils#catch_errors('TestSuite --mpl-generate')<CR>
+endif
+
+" Vertical panel plugins
+" Note: Undotree normally triggers on BufEnter but may contribute to slowdowns. Use
+" below to override built-in augroup before enabling buffer.
+" Todo: Currently can only clear history with 'C' in active pane not externally. Need
+" to submit PR for better command. See: https://github.com/mbbill/undotree/issues/158
+if s:plug_active('taglist')
+  augroup taglist_setup
+    au! | au BufEnter *__Tag_List__* call window#setup_taglist() | call window#setup_panel()
+  augroup END
+  let g:Tlist_Compact_Format = 1
+  let g:Tlist_Enable_Fold_Column = 1
+  let g:Tlist_File_Fold_Auto_Close = 1
+  let g:Tlist_Use_Right_Window = 0
+  let g:Tlist_WinWidth = 40
+  noremap z\ <Cmd>TlistToggle<CR>
+endif
+if s:plug_active('vim-vinegar')
+  silent! exe 'runtime plugin/vinegar.vim'
+  augroup netrw_setup
+    au! | au FileType netrw call window#setup_vinegar()
+  augroup END
+  nnoremap <Tab>\ <Cmd>call window#show_netrw('topleft vsplit', 1)<CR>
+  nnoremap <Tab>= <Cmd>call window#show_netrw('topleft vsplit', 0)<CR>
+  nnoremap <Tab>- <Cmd>call window#show_netrw('botright split', 1)<CR>
+endif
+if s:plug_active('undotree')
+  function! Undotree_Augroup() abort  " autoload/undotree.vim s:undotree.Toggle()
+    if !undotree#UndotreeIsVisible() | return | endif
+    augroup Undotree
+      au! | au InsertLeave,TextChanged * call undotree#UndotreeUpdate()
+    augroup END
+  endfunction
+  function! Undotree_CustomMap() abort  " autoload/undotree.vim s:undotree.BindKey()
+    exe 'vertical resize ' . window#default_width(0)
+    nmap <buffer> U <Plug>UndotreeRedo
+    noremap <buffer> <nowait> u <C-u>
+    noremap <buffer> <nowait> d <C-d>
+  endfunc
+  let g:undotree_DiffAutoOpen = 0
+  let g:undotree_RelativeTimestamp = 0
+  let g:undotree_SetFocusWhenToggle = 1
+  let g:undotree_ShortIndicators = 1
+  let g:undotree_SplitWidth = 30  " overridden above
+  let g:undotree_WindowLayout = 1  " see :help undotree_WindowLayout
+  noremap g\ <Cmd>UndotreeToggle<CR><Cmd>call Undotree_Augroup()<CR>
 endif
 
 " Session saving and updating (the $ matches marker used in statusline)

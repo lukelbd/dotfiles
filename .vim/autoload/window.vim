@@ -1,40 +1,6 @@
 "-----------------------------------------------------------------------------"
 " Utilities for vim windows and sessions
 "-----------------------------------------------------------------------------"
-" Return main buffers in each tab
-" Note: This sorts by recent access to help replace :Buffers
-" Warning: Critical to keep up-to-date with g:tabline_skip_filetypes name
-scriptencoding utf-8
-function! window#buffer_source() abort
-  let nprocess = 20  " maximum tablines to process
-  let ndigits = len(string(tabpagenr('$')))
-  let tabskip = get(g:, 'tabline_skip_filetypes', [])  " keep up to date
-  let values = []
-  let pairs = tags#buffer_paths()
-  for idx in range(len(pairs))
-    let [tnr, path] = pairs[idx]
-    let bnr = bufnr(path)
-    let staged = getbufvar(bnr, 'tabline_staged_changes', 0)
-    let unstaged = getbufvar(bnr, 'tabline_staged_changes', 0)
-    let process = idx < nprocess || staged || unstaged
-    if exists('*RelativePath')
-      let name = RelativePath(path)
-    else
-      let name = fnamemodify(path, ':~:.')
-    endif
-    let pad = repeat(' ', ndigits - len(string(tnr)))
-    let flags = TablineFlags(path, process) . ' '  " limit processing
-    let hunks =  getbufvar(bnr, 'gitgutter', {})
-    let [acnt, mcnt, rcnt] = get(hunks, 'summary', [0, 0, 0])
-    for [key, cnt] in [['+', acnt], ['~', mcnt], ['-', rcnt]]
-      if !empty(cnt) | let flags .= key . cnt | endif
-    endfor
-    let value = pad . tnr . ': ' . name . flags  " displayed string
-    call add(values, value)
-  endfor
-  return values
-endfunction
-
 " Safely closing tabs and windows
 " Note: Currently codi emits annoying error messages when turning on/off but
 " still works so suppress messages here.
@@ -46,12 +12,10 @@ function! window#close_panes(...) abort
   let ftypes = map(tabpagebuflist(), "getbufvar(v:val, '&filetype', '')")
   call map(popup_list(), 'popup_close(v:val)')
   if index(ftypes, 'codi') != -1
-    silent! Codi!!
+    silent! exe 'Codi!!'
   endif
   for bnr in tabpagebuflist()
-    if bnr != main
-      exe bufwinnr(bnr) . 'windo quit' . bang
-    endif
+    exe bnr == main ? '' : bufwinnr(bnr) . 'windo quit' . bang
   endfor
   if index(ftypes, 'gitcommit') == -1 | call feedkeys('zezv', 'n') | endif
 endfunction
@@ -161,21 +125,20 @@ function! window#default_size(width, ...) abort
   endif
 endfunction
 
-" Select from open tabs
-" Note: This displays a list with the tab number and the file. As with other
-" commands sorts by recent access time for ease of use.
-function! s:goto_tab(item) abort
-  let [tnr, path] = s:parse_tab(a:item)
-  exe tnr . 'tabnext'
-endfunction
-function! s:parse_tab(item) abort
+" Generate tab source and sink
+" Note: This sorts by recent access to help replace :Buffers
+" Warning: Critical to keep up-to-date with g:tabline_skip_filetypes name
+scriptencoding utf-8
+let s:path_roots = {}
+function! s:tab_sink(item) abort
   if !type(a:item) | return [a:item, ''] | endif
-  let [tnr; path] = split(a:item, ':')
+  let [tnr; parts] = split(a:item, ':')
   let flags = '\s\+\(\[.\]\s*\)*'  " tabline flags
   let stats = '\([+-~]\d\+\)*'  " statusline stats
-  let path = join(path, ':')
+  let path = join(parts, ':')  " e.g. 'fugitive:path'
   let path = substitute(path, flags . stats . '$', '', 'g')
   let path = substitute(path, '\(^\s\+\|\s\+$\)', '', 'g')
+  let path = get(s:path_roots, path, '') . path
   call file#echo_path('tab', path)
   let icloud = 'iCloud'  " actual path is resolved
   if strpart(path, 0, len(icloud)) ==# icloud
@@ -183,22 +146,51 @@ function! s:parse_tab(item) abort
   endif
   return [str2nr(tnr), path]  " returns zero on error
 endfunction
-function! window#goto_tab(...) abort
-  if a:0 && a:1
-    return s:goto_tab(a:1)
-  endif
-  call fzf#run(fzf#wrap({
-    \ 'source': window#buffer_source(),
-    \ 'options': '--no-sort --prompt="Tab> "',
-    \ 'sink': function('s:goto_tab'),
-  \ }))
+function! s:tab_source() abort
+  let s:path_roots = {}
+  let nprocess = 20  " maximum tablines to process
+  let ndigits = len(string(tabpagenr('$')))
+  let values = []
+  let pairs = tags#buffer_paths()
+  for idx in range(len(pairs))
+    let [tnr, path] = pairs[idx]
+    let bnr = bufnr(path)
+    let staged = getbufvar(bnr, 'tabline_staged_changes', 0)
+    let unstaged = getbufvar(bnr, 'tabline_staged_changes', 0)
+    let process = idx < nprocess || staged || unstaged
+    let base = tag#find_root(path)  " see also vim-tags/autoload/s:path_name()
+    let root = fnamemodify(fnamemodify(base, ':h'), ':p')  " trailing slash
+    let ibase = !empty(base) && strpart(path, 0, len(base)) ==# base
+    let icwd = !empty(base) && strpart(getcwd(), 0, len(base)) ==# base
+    if ibase && !icwd
+      let name = strpart(path, len(root)) | let s:path_roots[name] = root
+    elseif exists('*RelativePath')
+      let name = RelativePath(path)
+    else
+      let name = fnamemodify(path, ':~:.')
+    endif
+    let pad = repeat(' ', ndigits - len(string(tnr)))
+    let flags = TablineFlags(path, process) . ' '  " limit processing
+    let hunks =  getbufvar(bnr, 'gitgutter', {})
+    let [acnt, mcnt, rcnt] = get(hunks, 'summary', [0, 0, 0])
+    for [key, cnt] in [['+', acnt], ['~', mcnt], ['-', rcnt]]
+      if !empty(cnt) | let flags .= key . cnt | endif
+    endfor
+    let value = pad . tnr . ': ' . name . flags  " displayed string
+    call add(values, value)
+  endfor
+  return values
 endfunction
 
-" Move to selected tab
-" Note: This also displays the tab names in case user wants to
-" group this file appropriately amongst similar open files.
+" Go to or move to selected tab
+" Note: This displays a list with the tab number and the file. As with other
+" commands sorts by recent access time for ease of use.
+function! s:goto_tab(item) abort
+  let [tnr, path] = s:tab_sink(a:item)
+  exe tnr . 'tabnext'
+endfunction
 function! s:move_tab(item) abort
-  let [tnr, path] = s:parse_tab(a:item)
+  let [tnr, path] = s:tab_sink(a:item)
   if tnr == 0 || tnr == tabpagenr()
     return
   elseif tnr > tabpagenr() && v:version[0] > 7
@@ -207,12 +199,22 @@ function! s:move_tab(item) abort
     exe 'tabmove ' . min([tnr - 1, tabpagenr('$')])
   endif
 endfunction
-function! window#move_tab(...) abort
+function! window#fzf_tabs(...) abort
+  if a:0 && a:1
+    return s:goto_tab(a:1)
+  endif
+  call fzf#run(fzf#wrap({
+    \ 'source': s:tab_source(),
+    \ 'options': '--no-sort --prompt="Tab> "',
+    \ 'sink': function('s:goto_tab'),
+  \ }))
+endfunction
+function! window#fzf_move(...) abort
   if a:0 && a:1
     return s:move_tab(a:1)
   endif
   call fzf#run(fzf#wrap({
-    \ 'source': window#buffer_source(),
+    \ 'source': s:tab_source(),
     \ 'options': '--no-sort --prompt="Move> "',
     \ 'sink': function('s:move_tab'),
   \ }))
@@ -257,24 +259,29 @@ function! window#update_stack(scroll, ...) abort  " set current buffer
 endfunction
 
 " Show helper windows
-" Note: These are for lsp management and viewing directory contents
-function! window#setup_dir() abort
-  call utils#map_from(['n', 't', '<CR>'], ['n', '<CR>', 't'])
-  for char in 'fbFL' | silent! exe 'unmap <buffer> q' . char | endfor
+" Note: These are for managing plugins and viewing directory contents
+" Warning: Critical to load vim-vinegar plugin/vinegar.vim before setup_netrw()
+let s:map_from = [['n', '<CR>', 't'], ['n', '.', 'gn'], ['n', ',', '-'], ['nx', ';', '.']]
+function! window#setup_quickfix() abort
+  exe 'nnoremap <buffer> <CR> <CR>zv'
 endfunction
-function! window#show_dir(cmd, local) abort
-  let base = a:local ? fnamemodify(@%, ':p:h') : tag#find_root(@%)
-  exe a:cmd . ' ' . base | exe 'vert resize ' . window#default_width(0)
-  exe 'resize ' . window#default_height(0) | goto
+function! window#setup_taglist() abort
+  for char in 'ud' | silent! exe 'nunmap <buffer> ' . char | endfor
+endfunction
+function! window#setup_vinegar() abort
+  call call('utils#map_from', s:map_from) | for char in 'fbFL' | silent! exe 'unmap <buffer> q' . char | endfor
 endfunction
 function! window#show_health() abort
-  exe 'CheckHealth'
-  setlocal foldlevel=1 syntax=checkhealth.markdown
-  doautocmd BufRead
+  exe 'CheckHealth' | setlocal foldlevel=1 syntax=checkhealth.markdown | doautocmd BufRead
+endfunction
+function! window#show_netrw(cmd, local) abort
+  let base = a:local ? fnamemodify(@%, ':p:h') : tag#find_root(@%)
+  let [width, height] = [window#default_width(0), window#default_height(0)]
+  exe a:cmd . ' ' . base | goto
+  exe a:cmd =~# 'vsplit' ? 'vert resize ' . width : 'resize ' . height 
 endfunction
 function! window#show_manager() abort
-  silent tabnew
-  if bufexists('lsp-manager')
+  silent tabnew | if bufexists('lsp-manager')
     buffer lsp-manager
   else  " new manager
     silent exe 'LspManage' | call window#setup_panel(0) | silent file lsp-manage

@@ -300,18 +300,20 @@ function! file#reload() abort
 endfunction
 function! file#rename(name, bang)
   let b:gitgutter_was_enabled = get(b:, 'gitgutter_was_enabled', 0)
-  let v:errmsg = ''  " reset message
-  let folder = expand('%:p:h')
   let path1 = expand('%:p')
-  let path2 = folder . '/' . a:name
-  silent! exe 'saveas' . a:bang . ' ' . path2
+  let path2 = fnamemodify(path1, ':h') . '/' . a:name
+  let v:errmsg = ''  " reset message
+  if exists('*FugitiveGitDir') && !empty(FugitiveGitDir())
+    silent! exe 'GMove' . a:bang . ' ' . path2
+  else  " standard move
+    silent! exe 'saveas' . a:bang . ' ' . path2
+  endif
   if v:errmsg !~# '^$\|^E329\|^E108'
     throw v:errmsg
   endif
-  if expand('%:p') !=# path1 && filewritable(expand('%:p'))
+  let path = expand('%:p')  " resulting location
+  if path !=# path1 && filewritable(path) && filewritable(path1)
     silent exe 'bwipe! ' . path1
-    if delete(path1) != 0
-      throw 'Could not delete ' . path1
-    endif
+    if !empty(delete(path1)) | throw 'Could not delete ' . path1 | endif
   endif
 endfunction

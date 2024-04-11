@@ -10,13 +10,12 @@ function! s:tag_format(line, path) abort
   let text = substitute(a:line, '^[^\t]*', regex, '')
   return text . "\t" . a:path
 endfunction
-function! s:tag_match(line, type, regex) abort
+function! s:tag_match(line, ftype, regex, fast) abort
   let tagline = '^[^\t]*\t\([^\t]*\)\t.*$'
   if a:line =~# '^\s*!' | return 0 | endif
-  if empty(a:type) | return 1 | endif
+  if empty(a:ftype) | return 1 | endif
   let path = substitute(a:line, tagline, '\1', 'g')
-  let fast = index(values(s:cache), a:type) >= 0  " already checked current filetype
-  return tags#type_match(path, a:type, a:regex, s:cache, fast)
+  return tags#type_match(path, a:ftype, a:regex, s:cache, a:fast)
 endfunction
 function! tag#show_cache() abort
   echom 'File type cache (' . len(s:cache) . ' entries):'
@@ -47,7 +46,8 @@ function! tag#read_tags(type, query, ...) abort
     else
       let lines = systemlist(printf(cmd, fzf#shellescape(path)))
     endif
-    let lines = filter(lines, {idx, val -> s:tag_match(val, ftype, regex)})
+    let fast = !empty(ftype) && index(values(s:cache), ftype) >= 0
+    let lines = filter(lines, {idx, val -> s:tag_match(val, ftype, regex, fast)})
     let lines = map(lines, {idx, val -> s:tag_format(val, path)})
     call extend(result, lines)
   endfor
@@ -244,16 +244,18 @@ function! tag#find_root(path, ...) abort
   if !empty(root)
     return root
   endif
-  let default = expand('~') . '/dummy'
-  let roots = [resolve(expand('~/icloud')), expand('~')]
-  for root in roots
-    if folder ==# root
-      return default
-    elseif len(folder) > len(root) && strpart(folder, 0, len(root)) ==# root
-      return fnamemodify(folder, repeat(':h', count(folder, '/') - count(root, '/') - 1))
+  let home = expand('~')
+  let cloud = resolve(home . '/icloud')
+  for base in [cloud, home]  " WARNING: order is critical
+    if base ==# folder
+      let tail = base ==# home ? 'dotfiles' : 'Mackup'
+      return base . '/' . tail
+    elseif len(base) < len(folder) && base ==# strpart(folder, 0, len(base))
+      let mods = repeat(':h', count(folder, '/') - count(base, '/') - 1)
+      return fnamemodify(folder, mods)
     endif
   endfor
-  return default
+  return folder
 endfunction
 
 " Parse .ignore files for ctags utilities (compare to bash ignores())
@@ -312,14 +314,8 @@ function! tag#update_paths(...) abort
   for bnr in bufs  " possible iteration
     let opts = getbufvar(bnr, 'gutentags_files', {})
     let path = get(opts, 'ctags', '')
-    if empty(path)
+    if empty(path) || !filewritable(resolve(path))
       continue  " invalid path
-    endif
-    if getcwd() !~# expand('~/dotfiles') && expand(resolve(path)) =~# expand('~/dotfiles')
-      continue  " ignore individual files in dotfiles when outside of dotfiles
-    endif
-    if getcwd() =~# expand('~/') && expand(resolve(path)) !~# expand('~/')
-      continue  " ignore individual files outside of home when inside home
     endif
     if toggle  " append path
       exe 'setglobal tags+=' . fnameescape(path)

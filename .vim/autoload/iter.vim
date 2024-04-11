@@ -1,16 +1,6 @@
 "-----------------------------------------------------------------------------"
 " Utilities for scrolling and iterating
 "-----------------------------------------------------------------------------"
-" Helper functions
-" Note: This auto opens folds when jumping from quickfix and removes taglist
-" normal-mode mappings. Should add to this in future.
-function! iter#setup_quickfix() abort
-  exe 'nnoremap <buffer> <CR> <CR>zv'
-endfunction
-function! iter#setup_taglist() abort
-  for char in 'ud' | silent! exe 'nunmap <buffer> ' . char | endfor
-endfunction
-
 " Perform action conditional on insert-mode popup or cmdline complete state
 " Note: This supports hiding complete-mode options or insert-mode popup menu
 " before proceeding with other actions. See vimrc for details

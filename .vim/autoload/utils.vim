@@ -1,6 +1,10 @@
 "-----------------------------------------------------------------------------"
 " Internal utilities
 "-----------------------------------------------------------------------------"
+" Null completion function
+function! utils#null_complete(...) abort
+  return []
+endfunction
 " Null operator motion function (default Z mapping)
 function! utils#null_operator(...) range abort
   return ''

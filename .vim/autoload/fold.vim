@@ -11,6 +11,8 @@ let s:maxlines = 100  " maxumimum lines to search
 let s:initials = [
   \ ['python', '^class\>', '', 1],
   \ ['fortran', '^\s*\(module\|program\)\>', '', 1],
+  \ ['javascript', '^\s*\(export\s\+\|default\s\+\)*class\>', '', 1],
+  \ ['typescript', '^\s*\(export\s\+\|default\s\+\)*class\>', '', 1],
   \ ['tex', '^\s*\\begin{document}', '', 1],
   \ ['tex', '^\s*\\begin{frame}', '^\s*\\begin{block}', 2],
   \ ['tex', '^\s*\\\(sub\)*section\>', '^\s*\\begin{frame}', 2],
