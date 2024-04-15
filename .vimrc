@@ -515,8 +515,8 @@ nnoremap <Leader>V <Cmd>Helptags<CR>
 command! -complete=shellcmd -nargs=? Help call stack#push_stack('help', 'shell#help_page', <f-args>)
 command! -complete=shellcmd -nargs=? Man call stack#push_stack('man', 'shell#man_page', <f-args>)
 command! -nargs=0 ClearMan call stack#clear_stack('man')
-command! -nargs=0 ShowHelp call stack#show_stack('help')
-command! -nargs=0 ShowMan call stack#show_stack('man')
+command! -nargs=0 PrintHelp call stack#print_stack('help')
+command! -nargs=0 PrintMan call stack#print_stack('man')
 command! -nargs=? PopMan call stack#pop_stack('man', <f-args>)
 nnoremap <Leader>n <Cmd>call stack#push_stack('help', 'shell#help_page')<CR>
 nnoremap <Leader>m <Cmd>call stack#push_stack('man', 'shell#man_page')<CR>
@@ -601,7 +601,7 @@ augroup recents_setup
   au CursorHold * if localtime() - get(g:, 'tab_time', 0) > 10 | call window#update_stack(0) | endif
 augroup END
 command! -nargs=0 ClearTabs call stack#clear_stack('tab') | call window#update_stack(0)
-command! -nargs=0 ShowTabs call stack#show_stack('tab')
+command! -nargs=0 PrintTabs call stack#print_stack('tab')
 command! -nargs=? PopTabs call stack#pop_stack('tab', <f-args>)
 noremap <Tab><Tab> <Cmd>call window#update_stack(0, -1, 2)<CR>
 noremap <F1> <Cmd>call window#scroll_stack(-v:count1)<CR>
@@ -648,9 +648,9 @@ noremap g? <Cmd>Lines<CR>
 " internal tag jumping utils. Ignores tags resulting from direct :tag or <C-]>
 command! -complete=file -nargs=* ShowIgnores
   \ echom 'Tag ignores: ' . join(tag#parse_ignores(0, <f-args>), ' ')
-command! -nargs=0 ClearStack call stack#clear_stack('tag')
-command! -nargs=0 ShowStack call stack#show_stack('tag')
-command! -nargs=* PopStack call stack#pop_stack('tag', <f-args>)
+command! -nargs=0 ClearTags call stack#clear_stack('tag')
+command! -nargs=0 PrintTags call stack#print_stack('tag')
+command! -nargs=* PopTags call stack#pop_stack('tag', <f-args>)
 noremap <F3> <Cmd>call tag#next_stack(-v:count1)<CR>
 noremap <F4> <Cmd>call tag#next_stack(v:count1)<CR>
 noremap [{ <Cmd>exe v:count1 . 'tag'<CR>
@@ -739,6 +739,7 @@ noremap z) zt
 augroup fold_setup
   au!
   au BufWinEnter * call fold#update_folds(0, 1)
+  au CursorHold * setlocal foldtext=fold#fold_text()
 augroup END
 command! -bang -nargs=? Refold call fold#update_folds(<bang>0, <f-args>)
 for s:key in ['z', 'f', 'F', 'n', 'N'] | silent! exe 'unmap! z' . s:key | endfor
@@ -1933,7 +1934,7 @@ if s:plug_active('vim-lsp')
   augroup END
   command! -nargs=? LspToggle call switch#lsp(<args>)
   command! -nargs=? ClearDoc call stack#clear_stack('doc')
-  command! -nargs=? ShowDoc call stack#show_stack('doc')
+  command! -nargs=? PrintDoc call stack#print_stack('doc')
   command! -nargs=? PopDoc call stack#pop_stack('doc', <f-args>)
   command! -nargs=? Doc call stack#push_stack('doc', 'python#doc_page', <f-args>)
   noremap [r <Cmd>LspPreviousReference<CR>

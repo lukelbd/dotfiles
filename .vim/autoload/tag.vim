@@ -115,36 +115,38 @@ function! s:goto_iloc(path, line, name, ...) abort  " see also mark.vim
 endfunction
 
 " Iterate over tags (see also mark#next_mark)
+" Note: Here pass '-1' verbosity to disable both function messages and stack message.
 " Note: This implicitly adds 'current' location to top of stack before navigation,
 " and additionally jumps to the tag stack 'from' position when navigating backwards.
 function! tag#next_stack(...) abort
+  let cnt = a:0 ? a:1 : v:count1
   let item = stack#get_item('tag')
   let item = empty(item) ? [] : item
   let [iloc, size] = stack#get_loc('tag')
-  let cnt = a:0 ? a:1 : v:count1
   if iloc >= size - 1 && get(item, 2, '') ==# '<top>'
     call stack#pop_stack('tag', item)
     let [iloc, size] = stack#get_loc('tag')
     let item = stack#get_item('tag')
     let item = empty(item) ? [] : item
   endif
-  if !empty(item)  " jump to 'current' tag (see also mark.vim)
-    let cnt = s:goto_iloc(item[0], item[1], item[2], cnt)
-  endif
+  let cnt = empty(item) ? cnt : call('s:goto_iloc', item + [cnt])  " jump to 'current'
+  let mode = cnt < 0 ? -1 : 1
   if cnt == 0  " push currently assigned name to stack
-    call stack#push_stack('tag', '', 0, 2)
+    let status = stack#push_stack('tag', '', 0, -1)
   else  " iterate stack then pass to tag jump function
-    call stack#push_stack('tag', function('tags#jump_tag', [cnt < 0 ? -1 : 1]), cnt)
+    let status = stack#push_stack('tag', function('tags#jump_tag', [mode]), cnt, -1)
   endif
   let item = stack#get_item('tag')
   if cnt < 0 && !empty(item)  " mimic :pop behavior
     let [iloc, _] = stack#get_loc('tag')
     let pos = tag#from_stack(item[0], item[2], iloc == 0)
     let pos = empty(pos) ? getpos('.') : pos
-    if pos[0] | silent call file#open_drop(pos[0]) | endif
-    call call('cursor', pos[1:])
+    let [bnr, lnum, cnum, vnum] = empty(pos) ? getpos('.') : pos
+    if bnr | silent call file#open_drop(bnr) | endif
+    call cursor(lnum, cnum, vnum)
   endif
   if &l:foldopen =~# '\<tag\>' | exe 'normal! zv' | endif
+  if !status | call stack#print_item('tag') | endif
 endfunction
 
 " Select from tags in the current window stack

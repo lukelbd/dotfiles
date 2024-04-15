@@ -8,62 +8,69 @@ function! stack#get_loc(head, ...) abort
   let [stack, idx] = s:get_stack(a:head)
   return [idx, len(stack)]  " return length
 endfunction
+function! stack#get_name(head, ...) abort
+  let [key, name] = [a:head . '_name', a:0 ? a:1 : '']  " set by input function
+  return type(a:1) ? name : getbufvar(name, key, get(g:, key, ''))
+endfunction
 function! stack#get_item(head, ...) abort
   let [stack, idx] = s:get_stack(a:head)
   return get(stack, a:0 ? a:1 : idx, '')
 endfunction
-function! stack#get_name(head, ...) abort
-  let key = a:head . '_name'  " set by input function
-  return !a:0 ? '' : type(a:1) ? a:1 : getbufvar(a:1, key, get(g:, key, ''))
-endfunction
-function! s:set_stack(head, stack, idx) abort
-  let idx = min([max([a:idx, 0]), len(a:stack) - 1])
-  let g:[a:head . '_stack'] = a:stack
-  let g:[a:head . '_loc'] = empty(a:stack) ? -1 : idx  " initial value -1
-endfunction
 function! s:get_stack(head) abort
   let stack = get(g:, a:head . '_stack', [])
-  let idx = get(g:, a:head . '_loc', -1)
-  return [stack, idx]
+  return [stack, get(g:, a:head . '_loc', -1)]
+endfunction
+function! s:set_stack(head, stack, idx) abort
+  let g:[a:head . '_stack'] = a:stack  " note if empty initial index is -1
+  let g:[a:head . '_loc'] = min([max([a:idx, 0]), len(a:stack) - 1])
 endfunction
 function! s:get_index(head, ...) abort  " remove in future
   let [stack, idx] = s:get_stack(a:head)
-  let name = call('stack#get_name', a:0 ? [a:head, a:1] : [a:head])
-  let nmax = min([a:0 > 1 ? a:2 >= 0 ? a:2 : len(stack) : 0, len(stack)])
-  let slice = nmax ? reverse(copy(stack))[:nmax - 1] : []
-  let jdx = empty(name) ? -1 : index(slice, name)
-  let kdx = jdx < 0 ? -1 : (len(stack) - nmax) + (len(slice) - jdx - 1)
-  return [stack, idx, name, kdx]
+  let item = stack#get_name(a:head, a:0 ? a:1 : '')
+  let nmax = a:0 > 1 ? a:2 < 0 ? len(stack) : a:2 : 0
+  let part = nmax ? reverse(copy(stack))[:nmax - 1] : []
+  let jdx = empty(item) ? -1 : index(part, item)
+  let zdx = max([0, len(stack) - nmax])
+  let kdx = jdx < 0 ? -1 : zdx + len(part) - jdx - 1
+  return [stack, idx, item, kdx]
 endfunction
 
 " Stack printing operations
 " Note: Use e.g. ShowTabs ClearTabs commands in vimrc with these. All other
 " functions are for autocommands or normal mode mappings
-function! stack#show_stack(head) abort
+function! stack#print_item(head, ...) abort
+  let [stack, idx] = s:get_stack(a:head)
+  let item = a:0 ? a:1 : stack#get_item(a:head)
+  let label = s:get_label(item)
+  let head = toupper(a:head[0]) . tolower(a:head[1:])
+  let iloc = (idx + 1) . '/' . len(stack)
+  redraw | echom head . ': ' . label . ' (' . iloc . ')'
+endfunction
+function! stack#print_stack(head) abort
   let [stack, idx] = s:get_stack(a:head)
   let digits = len(string(len(stack)))
   redraw | echom "Current '" . a:head . "' stack:"
-  for jdx in range(len(stack))
-    let pad = idx == jdx ? '> ' : '  '
-    let pad .= repeat(' ', digits - len(string(jdx)))
-    call stack#show_item(pad . jdx, stack[jdx])
+  for jdx in range(len(stack))  " iterate entries
+    let pad = repeat(' ', digits - len(string(jdx)) + 1)
+    let flag = idx == jdx ? '>' : ' '
+    let label = s:get_label(stack[jdx])
+    echom flag . pad . jdx . ': ' . label
   endfor
 endfunction
-function! stack#show_item(head, name, ...) abort
-  if type(a:name) == 3
-    let parts = map(copy(a:name), {_, val -> type(val) == 1 && filereadable(val) ? RelativePath(val) : val})
-    let parts = map(parts, {idx, val -> type(val) == 3 ? join(val, ':') : val})
+function! s:get_label(arg) abort
+  if type(a:arg) == 3
+    let parts = copy(a:arg)
+    call map(parts, {_, val -> type(val) == 1 && filereadable(val) ? RelativePath(val, 1) : val})
+    call map(parts, {_, val -> type(val) == 3 ? join(val, ':') : val})
     let label = join(parts, ':')
-  elseif bufexists(a:name)  " tab page then path
-    let winid = get(win_findbuf(bufnr(a:name)), 0, 0)
-    let tabnr = win_id2tabwin(winid)[0]
-    let label = RelativePath(a:name) . ' (' . (tabnr ? tabnr : '*') . ')'
+  elseif bufexists(a:arg)  " tab page then path
+    let winid = get(win_findbuf(bufnr(a:arg)), 0, 0)
+    let tabnr = get(win_id2tabwin(winid), 0, 0)
+    let tabnr = tabnr > 0 ? tabnr : '*'
+    let label = RelativePath(a:arg, 1) . ' (' . tabnr . ')'
   else  " default label
-    let label = string(a:name)
-  endif
-  let head = toupper(a:head[0]) . a:head[1:] . ': '
-  let tail = a:0 ? ' (' . (a:1 + 1) . '/' . a:2 . ')' : ''
-  exe a:0 ? 'redraw' : '' | echom head . label . tail
+    let label = string(a:arg)
+  endif | return label
 endfunction
 
 " Update the requested buffer stack
@@ -80,8 +87,9 @@ function! stack#clear_stack(head) abort
   endtry
 endfunction
 function! stack#update_stack(head, scroll, ...) abort
-  let [stack, idx, name, kdx] = s:get_index(a:head, bufnr(), a:scroll ? -1 : 5)
-  let verbose = a:0 > 1 ? a:2 : 0  " verbose mode
+  let ncompare = a:scroll ? -1 : 5
+  let verbosity = a:0 > 1 ? a:2 : 0  " verbose mode
+  let [stack, idx, name, kdx] = s:get_index(a:head, bufnr(), ncompare)
   if empty(name) | return | endif
   if a:0 && a:1 >= 0 && a:1 < len(stack)  " scroll to input index
     let jdx = a:1
@@ -92,9 +100,10 @@ function! stack#update_stack(head, scroll, ...) abort
   else  " float existing entry
     call add(stack, remove(stack, kdx)) | let jdx = len(stack) - 1
   endif
+  let updated = jdx != idx || name != get(stack, idx, '')
   call s:set_stack(a:head, stack, jdx)
-  if verbose && v:vim_did_enter && (verbose > 1 || jdx != idx || name != get(stack, idx, ''))
-    call stack#show_item(a:head, name, jdx, len(stack))
+  if updated && v:vim_did_enter && verbosity > 0 || verbosity > 1
+    call stack#print_item(a:head, name)
   endif
 endfunction
 
@@ -118,7 +127,7 @@ function! stack#pop_stack(head, ...) abort
 endfunction
 function! stack#push_stack(head, func, ...) abort
   let [stack, idx] = s:get_stack(a:head)
-  let verbose = a:0 > 1 ? a:2 : 1
+  let verbosity = a:0 > 1 ? a:2 : 1
   if !a:0 || type(a:1)  " fzf-sink, user-input, or default e.g. push_stack(...[, ''])
     let jdx = -1
     let args = !a:0 ? [] : type(a:1) == 3 ? a:1 : [a:1]
@@ -130,20 +139,20 @@ function! stack#push_stack(head, func, ...) abort
       let direc = a:1 < 0 ? 'bottom' : 'top'
       redraw | echohl WarningMsg
       echom 'Error: At ' . direc . ' of ' . a:head . ' stack'
-      echohl None | return
+      echohl None | return 1
     endif
     let jdx = min([max([jdx, 0]), len(stack) - 1])
     let args = type(stack[jdx]) == 3 ? stack[jdx] : [stack[jdx]]
     let scroll = 1
   endif
   if !empty(a:func)
-    if verbose  " ignore message
-      silent let status = call(a:func, args)
-    else  " preserve message
+    if !verbosity  " preserve function message
       let status = call(a:func, args)
+    else  " show stack message instead
+      silent let status = call(a:func, args)
     endif
-    if status != 0 | return | endif
+    if status != 0 | return status | endif
   endif
   let [stack, idx] = s:get_stack(a:head)  " in case triggered
-  call stack#update_stack(a:head, scroll, jdx, verbose)
+  call stack#update_stack(a:head, scroll, jdx, verbosity)
 endfunction
