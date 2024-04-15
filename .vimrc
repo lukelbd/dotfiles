@@ -1595,6 +1595,7 @@ call plug#('heavenshell/vim-pydocstring')  " automatic docstring templates
 call plug#('Vimjas/vim-python-pep8-indent')  " pep8 style indentexpr, actually seems to respect black style?
 call plug#('goerz/jupytext.vim')  " edit ipython notebooks
 call plug#('jupyter-vim/jupyter-vim')  " pair with jupyter consoles, support %% highlighting
+call plug#('quick-lint/quick-lint-js', {'rtp': 'plugin/vim/quick-lint-js.vim'})  " quick linting
 let g:pydocstring_formatter = 'numpy'  " default is google so switch to numpy
 let g:pydocstring_doq_path = '~/mambaforge/bin/doq'  " critical to mamba install
 let g:jupyter_highlight_cells = 1  " required to prevent error in non-python vim
@@ -2071,6 +2072,9 @@ endif
 " with :ALEFix black. Or can use the black plugin and use :Black of course.
 " Note: chktex is awful (e.g. raises errors for any command not followed
 " by curly braces) so lacheck is best you are going to get.
+" Note: eslint is awful (requires crazy dependencies) and could not get deno
+" to highlight lines so use 'npm install --global quick-lint-js' instead.
+" https://quick-lint-js.com/install/vim/npm-posix/
 " https://github.com/Kuniwak/vint  # vim linter and format checker (pip install vim-vint)
 " https://github.com/PyCQA/flake8  # python linter and format checker
 " https://pypi.org/project/doc8/  # python format checker
@@ -2103,12 +2107,14 @@ if s:plug_active('ale')
     \ 'sh': ['shellcheck', 'bashate'],
     \ 'tex': ['lacheck'],
     \ 'text': [],
+    \ 'javascript': ['quick-lint-js'],
+    \ 'typescript': ['quick-lint-js'],
     \ 'vim': ['vint'],
   \ }
   let g:ale_completion_enabled = 0
   let g:ale_completion_autoimport = 0
   let g:ale_cursor_detail = 0
-  let g:ale_disable_lsp = 1  " vim-lsp and ddc instead
+  let g:ale_disable_lsp = 'auto'  " permit lsp-powered linters e.g. quick-lint-js
   let g:ale_fixers = {'*': ['remove_trailing_lines', 'trim_whitespace']}
   let g:ale_hover_cursor = 0
   let g:ale_linters_explicit = 1
