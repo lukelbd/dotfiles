@@ -270,6 +270,7 @@ function! git#hunk_next(count, stage) abort
   endfor
 endfunction
 function! git#hunk_show() abort
+  call map(popup_list(), 'popup_close(v:val)')
   call s:hunk_process()
   GitGutterPreviewHunk
   silent wincmd j

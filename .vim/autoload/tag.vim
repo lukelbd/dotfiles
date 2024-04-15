@@ -2,6 +2,8 @@
 " Utilities for ctags management
 "-----------------------------------------------------------------------------"
 " Tag source functions
+" Warning: Encountered strange error where naming .vim/autoload
+" file same as vim-tags/autoload. So give this a separate name.
 " Note: This matches fzf.vim/bin/tags.pl perl script formatting, but adds optional
 " filetype filter (see vim-tags). Note removing vim quotes causes viewer to fail.
 let s:cache = {}
@@ -199,7 +201,7 @@ endfunction
 function! tag#fzf_tags(type, query, ...) abort
   let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
-  let paths = map(tagfiles(), 'fnamemodify(v:val, ":p")')
+  let paths = map(tags#get_files(), 'fnamemodify(v:val, ":p")')
   let [nbytes, maxbytes] = [0, 1024 * 1024 * 200]
   for path in paths
     let nbytes += getfsize(path)
@@ -269,8 +271,7 @@ function! tag#find_root(path, ...) abort
 endfunction
 
 " Parse .ignore files for ctags utilities (compare to bash ignores())
-" Warning: Encountered strange error where naming .vim/autoload
-" file same as vim-tags/autoload. So give this a separate name.
+" Note: Critical to remove trailing slash for ctags recursive searching.
 " Note: For some reason parsing '--exclude-exception' rules for g:fzf_tags_command
 " does not work, ignores all other exclude flags, and vim-gutentags can only
 " handle excludes anyway, so just bypass all patterns starting with '!'.
@@ -286,6 +287,7 @@ function! tag#parse_ignores(join, ...) abort
     let path = resolve(expand(path))
     if filereadable(path)
       for line in readfile(path)
+        let line = substitute(line, '\/\s*$', '', '')
         if line =~# '^\s*\(#.*\)\?$'
           continue
         elseif line[:0] ==# '!'

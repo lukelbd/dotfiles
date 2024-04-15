@@ -2051,6 +2051,7 @@ if s:plug_active('ddc.vim')
     \     'mark': 'T',
     \     'maxItems': 15,
     \     'isVolatile': v:true,
+    \     'forceCompletionPattern': '\\.|:|->',
     \  },
     \   'vim-lsp': {
     \     'mark': 'L',

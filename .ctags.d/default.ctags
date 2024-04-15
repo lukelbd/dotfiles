@@ -1,5 +1,5 @@
 -o -
---fields=+K
+--fields=+k
 --fields=+t
 --excmd=number
 --pseudo-tags=+TAG_KIND_DESCRIPTION
