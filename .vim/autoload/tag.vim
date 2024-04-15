@@ -188,7 +188,8 @@ endfunction
 function! tag#fzf_btags(query, ...) abort
   let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
-  let args = copy(a:000)
+  let bang = a:0 ? a:1 : 0  " fill entire window
+  let extra = fzf#vim#with_preview({'placeholder': '{2}:{3..}'})
   let cmd = 'ctags -f - --sort=yes --excmd=number %s 2>/dev/null | sort -s -k 5'
   let cmd = printf(cmd, fzf#shellescape(expand('%')))
   let flags = "-m -d '\t' --with-nth 1,4.. --nth 1"
@@ -198,10 +199,12 @@ function! tag#fzf_btags(query, ...) abort
     \ 'sink': function('tags#push_tag', [0]),
     \ 'options': flags . ' --prompt "BTags> "',
   \ }
-  return call(snr . 'fzf', ['btags', options, a:000])
+  return call(snr . 'fzf', ['btags', options, [extra, bang]])
 endfunction
 function! tag#fzf_tags(type, query, ...) abort
   let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
+  let bang = a:0 ? a:1 : 0  " fill entire window
+  let extra = fzf#vim#with_preview({'placeholder': '--tag {2}:{-1}:{3..}' })
   if empty(snr) | return | endif
   let paths = map(tags#get_files(), 'fnamemodify(v:val, ":p")')
   let [nbytes, maxbytes] = [0, 1024 * 1024 * 200]
@@ -218,7 +221,7 @@ function! tag#fzf_tags(type, query, ...) abort
     \ 'sink': function('tags#push_tag', [0]),
     \ 'options': flags . ' --prompt ' . string(prompt),
   \ }
-  return call(snr . 'fzf', ['tags', options, a:000])
+  return call(snr . 'fzf', ['tags', options, [extra, bang]])
 endfunction
 
 " Search for the 'root' directory to store the ctags file

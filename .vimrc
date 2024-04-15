@@ -359,10 +359,11 @@ let g:MRU_Open_File_Relative = 1
 " Note: Here :WipeBufs replaces :Wipeout plugin since has more sources
 command! -nargs=0 ShowBufs call file#show_bufs()
 command! -nargs=0 WipeBufs call file#wipe_bufs()
+command! -nargs=* History call file#fzf_history(<q-args>, <bang>0)
 noremap <Leader>q <Cmd>ShowBufs<CR>
 noremap <Leader>Q <Cmd>WipeBufs<CR>
-nnoremap g, <Cmd>History<CR>
-nnoremap g< <Cmd>call file#open_used()<CR>
+nnoremap g, <Cmd>call file#fzf_history('')<CR>
+nnoremap g< <Cmd>call file#fzf_recent()<CR>
 
 " Tab selection and management
 " Note: Previously used e.g. '<tab>1' maps but not parse count on one keypress
@@ -407,20 +408,20 @@ nnoremap <Tab>< <Cmd>call window#fzf_move(tabpagenr() - v:count1)<CR>
 " Open file with optional user input
 " Note: The <Leader> maps open up views of the current file directory
 for s:key in ['q', 'w', 'e', 'r'] | silent! exe 'unmap <Tab>' . s:key | endfor
-nnoremap <Tab>o <Cmd>call file#open_init('Drop', 0)<CR>
-nnoremap <Tab>p <Cmd>call file#open_init('Files', 0)<CR>
-nnoremap <Tab>i <Cmd>call file#open_init('Drop', 1)<CR>
-nnoremap <Tab>y <Cmd>call file#open_init('Files', 1)<CR>
-nnoremap <Tab>e <Cmd>call file#open_init('Split', 1)<CR>
-nnoremap <Tab>r <Cmd>call file#open_init('Vsplit', 1)<CR>
+nnoremap <Tab>o <Cmd>call file#fzf_open('Drop', 0)<CR>
+nnoremap <Tab>p <Cmd>call file#fzf_open('Files', 0)<CR>
+nnoremap <Tab>i <Cmd>call file#fzf_open('Drop', 1)<CR>
+nnoremap <Tab>y <Cmd>call file#fzf_open('Files', 1)<CR>
+nnoremap <Tab>e <Cmd>call file#fzf_open('Split', 1)<CR>
+nnoremap <Tab>r <Cmd>call file#fzf_open('Vsplit', 1)<CR>
 
 " Open file in current directory or some input directory
 " Note: Anything that is not :Files gets passed to :Drop command
 " nnoremap <C-g> <Cmd>Locate<CR>  " uses giant database from Unix 'locate'
 command! -nargs=* -complete=file Drop call file#open_drop(<f-args>)
-command! -nargs=* -complete=file Open call file#open_continuous('Drop', <f-args>)
-command! -nargs=* -complete=file Split call file#open_continuous('botright split', <f-args>)
-command! -nargs=* -complete=file Vsplit call file#open_continuous('botright vsplit', <f-args>)
+command! -nargs=* -complete=file Open call file#fzf_find('Drop', <f-args>)
+command! -nargs=* -complete=file Split call file#fzf_find('botright split', <f-args>)
+command! -nargs=* -complete=file Vsplit call file#fzf_find('botright vsplit', <f-args>)
 nnoremap <C-e> <Cmd>exe 'Split ' . fnameescape(fnamemodify(@%, ':p:h'))<CR>
 nnoremap <C-r> <Cmd>exe 'Vsplit ' . fnameescape(fnamemodify(@%, ':p:h'))<CR>
 nnoremap <F7> <Cmd>exe 'Open ' . fnameescape(fnamemodify(@%, ':p:h'))<CR>
@@ -499,14 +500,14 @@ noremap <Leader><F5> <Cmd>Commands<CR>
 " Note: For some reason even though :help :mes claims count N shows the N most recent
 " message, for some reason using 1 shows empty line and 2 shows previous plus newline.
 for s:key in ['[[', ']]'] | silent! exe 'unmap! g' . s:key | endfor
-noremap z: @:
-noremap z; <Cmd>20message<CR>
 nnoremap <Leader>; <Cmd>let &cmdwinheight = window#default_height(0)<CR>q:
 nnoremap <Leader>/ <Cmd>let &cmdwinheight = window#default_height(0)<CR>q/
 nnoremap <Leader>: <Cmd>History:<CR>
 nnoremap <Leader>? <Cmd>History/<CR>
 nnoremap <Leader>v <Cmd>call vim#show_help()<CR>
 nnoremap <Leader>V <Cmd>Helptags<CR>
+noremap z; <Cmd>20message<CR>
+noremap z: @:
 
 " Shell commands, search windows, help windows, man pages, and 'cmd --help'. Also
 " add shortcut to search for all non-ASCII chars (previously used all escape chars).
@@ -1832,12 +1833,9 @@ if s:plug_active('vim-gutentags')
   augroup END
   command! -complete=dir -nargs=* UpdatePaths call tag#update_paths(<f-args>)
   command! -bang -nargs=0 ShowCache call tag#show_cache()
-  command! -bang -nargs=* BTags call
-    \ tag#fzf_btags(<q-args>, fzf#vim#with_preview({'placeholder': '{2}:{3..}'}), <bang>0)
-  command! -bang -nargs=* FTags call
-    \ tag#fzf_tags(1, <q-args>, fzf#vim#with_preview({'placeholder': '--tag {2}:{-1}:{3..}' }), <bang>0)
-  command! -bang -nargs=* Tags call
-    \ tag#fzf_tags(0, <q-args>, fzf#vim#with_preview({'placeholder': '--tag {2}:{-1}:{3..}' }), <bang>0)
+  command! -bang -nargs=* BTags call tag#fzf_btags(<q-args>, <bang>0)
+  command! -bang -nargs=* FTags call tag#fzf_tags(1, <q-args>, <bang>0)
+  command! -bang -nargs=* Tags call tag#fzf_tags(0, <q-args>, <bang>0)
   nnoremap gt <Cmd>BTags<CR>
   nnoremap gT <Cmd>Tags<CR>
   nnoremap zt <Cmd>FTags<CR>
@@ -1945,7 +1943,7 @@ if s:plug_active('vim-lsp')
   noremap <Leader>f <Cmd>Autoformat<CR><Cmd>call fold#update_folds(1)<CR>
   noremap <Leader>F <Cmd>LspDocumentFormat<CR><Cmd>call fold#update_folds(1)<CR>
   noremap <Leader>d <Cmd>call stack#push_stack('doc', 'python#doc_page')<CR>
-  noremap <Leader>D <Cmd>call python#doc_search()<cr>
+  noremap <Leader>D <Cmd>call python#fzf_doc()<cr>
   noremap <Leader>& <Cmd>call switch#lsp()<CR>
   noremap <Leader>% <Cmd>call window#show_health()<CR>
   noremap <Leader>^ <Cmd>call window#show_manager()<CR>

@@ -104,7 +104,7 @@ function! shell#fzf_man() abort
     \ 'source': getcompletion('', 'shellcmd'),
     \ 'options': '--no-sort --prompt="man> "',
     \ 'sink': function('stack#push_stack', ['man', 'shell#man_page'])
-    \ }))
+  \ }))
 endfunction
 
 " Show results in panel

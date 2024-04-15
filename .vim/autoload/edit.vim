@@ -172,7 +172,6 @@ function! edit#search_replace(msg, ...) range abort
   let search = @/  " hlsearch pattern
   let winview = winsaveview()
   let group = a:0 % 2 ? a:1 : ''
-  echom 'Group: ' . group . ' ' . a:1
   let pairs = copy(a:000[a:0 % 2:])
   for line in range(a:lastline, a:firstline, -1)
     exe line | for idx in range(0, a:0 - 2, 2)

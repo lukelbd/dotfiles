@@ -2,6 +2,7 @@
 " Utilities for tex files
 "-----------------------------------------------------------------------------"
 " Source for tex labels
+" Note: To get multiple items hit <Shift><Tab>
 function! s:label_source() abort
   let tags = get(b:, 'tags_by_name', [])
   let tags = filter(copy(tags), 'v:val[2] ==# "l"')
@@ -14,7 +15,8 @@ function! s:label_source() abort
   return tags
 endfunction
 
-" Sink for tex labels
+" Fuzzy select tex labels
+" Warning: See notes in succinct/autoload/utils.vim for why fzf#wrap not allowed
 function! s:label_sink(items) abort
   let items = map(copy(a:items), 'substitute(v:val, " (.*)$", "", "")')
   if mode() =~# 'i'
@@ -25,47 +27,40 @@ function! s:label_sink(items) abort
     echohl None
   endif
 endfunction
-
-" Fuzzy select tex labels
-" Note: To get multiple items hit <Shift><Tab>
-" Warning: See notes in succinct/autoload/utils.vim for why fzf#wrap not allowed.
-function! s:label_select() abort
+function! tex#fzf_labels() abort
   call fzf#run({
     \ 'source': s:label_source(),
     \ 'options': '--height=100% --prompt="Label> "',
     \ 'sink*': function('s:label_sink'),
-  \ })
-  return ''  " text inserted by sink function
+  \ }) | return ''  " text inserted by sink function
 endfunction
-function! tex#label_select(...) abort
-  return function('s:label_select', a:000)
+function! tex#fzf_labels_ref(...) abort
+  return function('tex#fzf_labels', a:000)
 endfunction
 
 "-----------------------------------------------------------------------------"
 " Selecting citations from bibtex files
 "-----------------------------------------------------------------------------"
-" Get biligraphies using grep (copied from latexmk)
-" Easier than using search() because we want to get *all* results
+" Return biligraphies using grep (copied from latexmk)
+" Note: To get multiple items hit <Shift><Tab>
 " See: https://github.com/msprev/fzf-bibtex
 function! s:cite_source() abort
-  " Check that files all exist
   let gsed = has('macunix') ? '/usr/local/bin/gsed' : '/usr/bin/sed'
   if !executable(gsed) | echoerr 'GNU sed not available.' | let gsed = '' | endif
-  let result = system(
-    \ 'grep -o ''^[^%]*'' ' . shellescape(@%) . ' | ' . gsed . ' -n '
+  let cmd = 'grep -o ''^[^%]*'' ' . shellescape(@%) . ' | ' . gsed . ' -n '
     \ . '''s@^\s*\\\(bibliography\|nobibliography\|addbibresource\){\(.*\)}@\2@p'''
-  \ )
-  let paths = []
+  let bibs = []
+  let paths = systemlist(cmd)
   if v:shell_error == 0
     let local = expand('%:h')
-    for path in split(result, "\n")
+    for path in paths
       if path !~? '.bib$'
         let path = path . '.bib'
       endif
       let path = substitute(path, '\\string', '', 'g')
       let path = path =~# '^\~\|^/' ? expand(path) : local . '/' . path
       if filereadable(path)
-        call add(paths, path)
+        call add(bibs, path)
       else
         echohl WarningMsg
         echom "Warning: Bib file '" . path . "' does not exist.'"
@@ -73,21 +68,20 @@ function! s:cite_source() abort
       endif
     endfor
   endif
-  " Set the environment variable and return command-line command
-  " used to generate fuzzy list from the selected files.
-  if len(paths) == 0
+  if len(bibs) == 0
     echoerr 'Bibliography files not found.'
     return []
   elseif ! executable('bibtex-ls')  " see https://github.com/msprev/fzf-bibtex
     echoerr 'Command bibtex-ls not found.'
     return []
   else
-    let $FZF_BIBTEX_SOURCES = join(paths, ':')
-    return 'bibtex-ls ' . join(paths, ' ')
+    let $FZF_BIBTEX_SOURCES = join(bibs, ':')
+    return 'bibtex-ls ' . join(bibs, ' ')
   endif
 endfunction
 
-" Sink for citations
+" Fuzzy select citation
+" Warning: See notes in succinct/autoload/utils.vim for why fzf#wrap not allowed.
 function! s:cite_sink(items) abort
   if !executable('bibtex-cite')  " see https://github.com/msprev/fzf-bibtex
     throw 'Command bibtex-cite not found.'
@@ -102,20 +96,15 @@ function! s:cite_sink(items) abort
     echohl None
   endif
 endfunction
-
-" Fuzzy select citation
-" Note: To get multiple items hit <Shift><Tab>
-" Warning: See notes in succinct/autoload/utils.vim for why fzf#wrap not allowed.
-function! s:cite_select() abort
+function! tex#fzf_cite() abort
   call fzf#run({
     \ 'sink*': function('s:cite_sink'),
     \ 'source': s:cite_source(),
     \ 'options': '--multi --height=100% --prompt="Source> "',
-    \ })
-  return ''  " text inserted by sink function
+  \ }) | return ''  " text inserted by sink function
 endfunction
-function! tex#cite_select(...) abort
-  return function('s:cite_select', a:000)
+function! tex#fzf_cite_ref(...) abort
+  return function('tex#fzf_cite', a:000)
 endfunction
 
 "-----------------------------------------------------------------------------"
@@ -123,15 +112,13 @@ endfunction
 "-----------------------------------------------------------------------------"
 " Related function that prints graphics files
 function! s:graphic_source() abort
-  let paths = system(
-    \ 'grep -o ''^[^%]*'' ' . shellescape(@%) . " | awk -v RS='[^\\n]*{' '"
+  let cmd = 'grep -o ''^[^%]*'' ' . shellescape(@%) . " | awk -v RS='[^\\n]*{' '"
     \ . 'inside && /}/ {path=$0; if(init) inside=0} {init=0} '
     \ . 'inside && /(\n|^)}/ {inside=0} '
     \ . 'path {sub(/}.*/, "}", path); print "{" path} '
     \ . 'RT ~ /graphicspath/ {init=1; inside=1}'
-    \ . '/document}/ {exit} {path=""}'
-    \ . "'")
-  let paths = substitute(paths, "\n", '', 'g')  " in case of multiple lines
+    \ . '/document}/ {exit} {path=""}' . "'"
+  let paths = join(systemlist(cmd), '')
   let folder = expand('%:h')
   let pathlist = []
   for path in split(paths[1:len(paths) - 2], '}{')
@@ -159,7 +146,8 @@ function! s:graphic_source() abort
   return files
 endfunction
 
-" Sink for graphics
+" Fuzzy select graphics
+" Warning: See notes in succinct/autoload/utils.vim for why fzf#wrap not allowed.
 function! s:graphic_sink(items) abort
   let items = map(copy(a:items), 'fnamemodify(v:val, ":t")')
   if mode() =~# 'i'
@@ -170,10 +158,7 @@ function! s:graphic_sink(items) abort
     echohl None
   endif
 endfunction
-
-" Fuzzy select graphics
-" Warning: See notes in succinct/autoload/utils.vim for why fzf#wrap not allowed.
-function! s:graphic_select() abort
+function! tex#fzf_graphics() abort
   call fzf#run({
     \ 'sink*': function('s:graphic_sink'),
     \ 'source': s:graphic_source(),
@@ -181,34 +166,34 @@ function! s:graphic_select() abort
     \ })
   return ''  " text inserted by sink function
 endfunction
-function! tex#graphic_select(...) abort
-  return function('s:graphic_select', a:000)
+function! tex#fzf_graphics_ref(...) abort
+  return function('tex#fzf_graphics', a:000)
 endfunction
 
 "-----------------------------------------------------------------------------"
-" Checking math mode and making units
+" Check math mode and contruct units
 "-----------------------------------------------------------------------------"
 " Wrap in math environment only if cursor is not already inside one
-" Use TeX syntax to detect any and every math environment
-" Note: Check syntax of point to *left* of cursor because that's the environment
-" where we are inserting text. Does not wrap if in first column.
-function! s:ensure_math(value) abort
+" Note: Check syntax to *left* of cursor because we add text to that environment
+function! tex#ensure_math(value) abort
   let output = succinct#process_value(a:value)
   if empty(output)
     return output
   endif
-  let stack = synstack(line('.'), col('.') - 1)
+  let [lnum, cnum] = [line('.'), col('.') - 1]
+  let stack = synstack(lnum, cnum)
   if empty(filter(stack, 'synIDattr(v:val, "name") =~? "math"'))
     let output = '$' . output . '$'
   endif
   return output
 endfunction
-function! tex#ensure_math(...) abort
-  return function('s:ensure_math', a:000)
+function! tex#ensure_math_ref(...) abort
+  return function('tex#ensure_math', a:000)
 endfunction
 
-" Format unit string for LaTeX for LaTeX for LaTeX for LaTeX
-function! s:format_units(value) abort
+" Format unit string for LaTeX
+" Note: This includes standard \, spacing and \mathrm{} encasing. See also climopy
+function! tex#format_units(value) abort
   let input = succinct#process_value(a:value)
   if empty(input)
     return ''
@@ -241,8 +226,8 @@ function! s:format_units(value) abort
     endif
     let output .= part
   endfor
-  return s:ensure_math(output)
+  return tex#ensure_math(output)
 endfunction
-function! tex#format_units(...) abort
-  return function('s:format_units', a:000)
+function! tex#format_units_ref(...) abort
+  return function('tex#format_units', a:000)
 endfunction

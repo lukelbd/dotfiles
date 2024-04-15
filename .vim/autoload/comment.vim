@@ -97,7 +97,7 @@ function! comment#next_comment(count, ...) abort
   let regex = back . head . '\zs' . tail . '\(' . head . tail . '\)*'
   let flags = a:count >= 0 ? 'w' : 'bw'
   for _ in range(abs(a:count))
-    call search(regex, flags, 0, 0, "!tags#get_inside('Comment')")
+    call search(regex, flags, 0, 0, "!tags#get_inside(0, 'Comment')")
   endfor
   if &foldopen =~# 'block' | exe 'normal! zv' | endif
 endfunction
@@ -108,7 +108,7 @@ function! comment#next_header(count, ...) abort
   let regex = back . head . '\zs' . tail
   let flags = a:count >= 0 ? 'w' : 'bw'
   for _ in range(abs(a:count))
-    call search(regex, flags, 0, 0, "!tags#get_inside('Comment')")
+    call search(regex, flags, 0, 0, "!tags#get_inside(0, 'Comment')")
   endfor
   if &foldopen =~# 'block' | exe 'normal! zv' | endif
 endfunction
@@ -119,7 +119,7 @@ function! comment#next_label(count, ...) abort
   let regex = head . '\zs' . tail
   let flags = a:count >= 0 ? 'w' : 'bw'
   for _ in range(abs(a:count))
-    call search(regex, flags, 0, 0, "!tags#get_inside('Comment')")
+    call search(regex, flags, 0, 0, "!tags#get_inside(0, 'Comment')")
   endfor
   if &foldopen =~# 'quickfix' | exe 'normal! zv' | endif
 endfunction

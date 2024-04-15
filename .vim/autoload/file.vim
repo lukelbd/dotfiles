@@ -95,7 +95,17 @@ endfunction
 " Open recently edited file
 " Note: This is companion to :History with nicer behavior. Files tracked
 " in ~/.vim_mru_files across different open vim sessions.
-function! file#open_used() abort
+function! file#fzf_history(arg, ...)
+  let bang = a:0 && a:1 || a:arg[len(a:arg) - 1] ==# '!'
+  if a:arg[0] ==# ':'
+    call fzf#vim#command_history(bang)
+  elseif a:arg[0] ==# '/'
+    call fzf#vim#search_history(bang)
+  else
+    call fzf#vim#history(s:fzf_extra(), bang)
+  endif
+endfunction
+function! file#fzf_recent() abort
   let files = readfile(expand(g:MRU_file))
   if files[0] =~# '^#'
     call remove(files, 0)
@@ -113,34 +123,39 @@ function! file#open_used() abort
 endfunction
 
 " Open from local or current directory (see also grep.vim)
+" Note: Must use expand() not glob() or new file names are not completed.
 " Note: Using <expr> instead of this tiny helper function causes <C-c> to
 " display annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
-function! file#open_init(cmd, local) abort
+function! s:fzf_extra() abort
+  let opts = fzf#vim#with_preview()
+  let opts.dir = getcwd()
+  return opts
+endfunction
+function! file#fzf_find(cmd, ...) abort
+  let paths = []
+  for glob in a:000  " iterate input
+    let glob = substitute(glob, '^\s*\(.\{-}\)\s*$', '\1', '')  " strip spaces
+    call extend(paths, expand(glob, 0, 1))
+  endfor
+  call s:open_sink(a:cmd, paths)  " call fzf sink function
+endfunction
+function! file#fzf_open(cmd, local) abort
   let cmd = a:cmd ==# 'Drop' ? 'Open' : a:cmd  " alias 'Open' for 'Drop' command
   let base = a:local ? expand('%:p:h') : tag#find_root(@%)
   let init = file#input_path(cmd, '', base)
   if empty(init)
     return
   elseif cmd ==# 'Files'
-    call fzf#vim#files(init, fzf#vim#with_preview(), 0)
+    call fzf#vim#files(init, s:fzf_extra(), 0)
   else
-    call file#open_continuous(cmd, init)
+    call file#fzf_find(cmd, init)
   endif
 endfunction
 
 " Check if user selection is directory, descend until user selects a file.
-" Note: Must use expand() not glob() or new file names are not completed. Also
-" since fzf executes asynchronously cannot do loop recursion inside the driver
+" Note: Since fzf executes asynchronously cannot do loop recursion inside the driver
 " function. See https://github.com/junegunn/fzf/issues/1577#issuecomment-492107554
-function! file#open_continuous(cmd, ...) abort
-  let paths = []
-  for glob in a:000  " iterate input
-    let glob = substitute(glob, '^\s*\(.\{-}\)\s*$', '\1', '')  " strip spaces
-    call extend(paths, expand(glob, 0, 1))
-  endfor
-  call s:open_continuous(a:cmd, paths)  " call fzf sink function
-endfunction
-function! s:open_continuous(cmd, ...) abort
+function! s:open_sink(cmd, ...) abort
   " Parse arguments
   if a:0 == 1  " user invocation
     let base = ''
@@ -178,10 +193,10 @@ function! s:open_continuous(cmd, ...) abort
     let prompt = file#format_dir(base, 1)
     let prompt = string(a:cmd . '> ' . prompt)
     call fzf#run(fzf#wrap({
-      \ 'sink*': function('s:open_continuous', [a:cmd, base]),
+      \ 'sink*': function('s:open_sink', [a:cmd, base]),
       \ 'source': file#glob_files(base, 1),
       \ 'options': '--multi --no-sort --prompt=' . string(prompt),
-      \ }))
+    \ }))
   endif
   " Open file(s), or if it is already open just to that tab
   " Note: Use feedkeys() if only one file selected or else template loading

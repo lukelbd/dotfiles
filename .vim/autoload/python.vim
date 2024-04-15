@@ -238,7 +238,7 @@ endfunction
 function! python#doc_page(...) abort
   let opts = python#doc_options()  " item under cursor
   if !a:0  " user input page
-    let page = utils#input_default('Pydoc page', opts[-1], 'python#doc_source')
+    let page = utils#input_default('Doc page', opts[-1], 'python#doc_list')
   else  " navigation page
     let page = empty(a:1) ? opts[-1] : a:1
   endif
@@ -253,7 +253,7 @@ function! python#doc_page(...) abort
       if len(result) >= 5 | let page = iopt | break | endif
     endfor
     if len(result) < 5
-      let msg = 'Error: Pydoc page not found: '  " show options
+      let msg = 'Error: Doc page not found: '  " show options
       let msg .= join(map(opts, {idx, val -> string(val)}), ', ')
       echohl ErrorMsg | echom msg | echohl None | return 1
     endif
@@ -269,19 +269,17 @@ function! python#doc_page(...) abort
   if !exists | call append(0, result) | goto | endif | let b:doc_name = page
   setlocal nobuflisted bufhidden=hide buftype=nofile filetype=man | return 0
 endfunction
-function! python#doc_source(...) abort
-  let cmd = 'pip list --no-color --no-input --no-python-version-warning'
-  let pages = systemlist(cmd)[2:]
-  let pages = map(pages, 'substitute(v:val, ''\s\+.*$'', '''', ''g'')')
-  let pages = filter(pages, '!empty(v:val)')
-  return pages
+function! python#doc_list(...) abort
+  let pages = systemlist('pip list --no-color --no-input --no-python-version-warning')
+  let pages = map(pages[2:], 'substitute(v:val, ''\s\+.*$'', '''', ''g'')')
+  return filter(pages, '!empty(v:val)')
 endfunction
-function! python#doc_search() abort
+function! python#fzf_doc() abort
   call fzf#run(fzf#wrap({
-    \ 'source': python#doc_source(),
-    \ 'options': '--no-sort --prompt="pydoc> "',
+    \ 'source': python#doc_list(),
+    \ 'options': '--no-sort --prompt="doc> "',
     \ 'sink': function('stack#push_stack', ['doc', 'python#doc_page'])
-    \ }))
+  \ }))
 endfunction
 
 " Insert pydocstring 'doq' docstrings and convert from single-line to multi-line
