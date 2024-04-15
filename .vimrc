@@ -758,10 +758,10 @@ noremap _ <Cmd>call fold#update_folds(0)<CR>zvzzze
 noremap <expr> zz '<Cmd>call fold#update_folds(0)<CR>' . (foldclosed('.') > 0 ? 'zo' : 'zc')
 nnoremap zcc <Cmd>call fold#toggle_range(0, 1)<CR>
 nnoremap zoo <Cmd>call fold#toggle_range(0, 0)<CR>
-vnoremap <nowait> zc <Cmd>call fold#toggle_range(0, 1)<CR>
-vnoremap <nowait> zo <Cmd>call fold#toggle_range(0, 0)<CR>
 nnoremap <expr> zc fold#toggle_range_expr(0, 1)
 nnoremap <expr> zo fold#toggle_range_expr(0, 0)
+vnoremap <expr> <nowait> zc fold#toggle_range_expr(0, 1)
+vnoremap <expr> <nowait> zo fold#toggle_range_expr(0, 0)
 
 " Toggle folds under cursor recursively (fold#update_folds() called internally)
 " Note: Here 'zi' will close or open all nested folds under cursor up to level
