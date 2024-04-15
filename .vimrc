@@ -2011,6 +2011,11 @@ endif
 " 'vsnip': {'mark': 'S', 'maxItems': 5}}
 " 'ctags': {'mark': 'T', 'isVolatile': v:true, 'maxItems': 5}}
 if s:plug_active('ddc.vim')
+  augroup ddc_setup
+    au!
+    au InsertEnter * if &l:filetype ==# 'vim' | setlocal iskeyword+=: | endif
+    au InsertLeave * if &l:filetype ==# 'vim' | setlocal iskeyword-=: | endif
+  augroup END
   command! -nargs=? DdcToggle call switch#ddc(<args>)
   noremap <Leader>* <Cmd>call switch#ddc()<CR>
   let g:popup_preview_config = {
