@@ -309,7 +309,12 @@ endfunction
 function! mark#del_marks(...) abort
   let highlights = get(g:, 'mark_highlights', {})
   let g:mark_highlights = highlights
-  let mrks = a:0 ? a:000 : keys(highlights)
+  let mrks = a:0 ? filter(copy(a:000), '!empty(v:val)') : keys(highlights)
+  if empty(mrks)
+    redraw | echohl WarningMsg
+    echom 'Error: No marks found'
+    echohl None | return
+  endif
   for mrk in mrks
     if has_key(highlights, mrk) && len(highlights[mrk]) > 1
       call s:match_delete(highlights[mrk][1])

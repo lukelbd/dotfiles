@@ -63,19 +63,15 @@ endfunction
 function! utils#get_scripts(...) abort
   let suppress = a:0 > 0 ? a:1 : 0
   let regex = a:0 > 1 ? a:2 : ''
-  let [paths, sids] = [[], []]  " no dictionary because confusing
-  for path in split(execute('scriptnames'), "\n")
-    let sid = substitute(path, '^\s*\(\d*\):.*$', '\1', 'g')
-    let path = substitute(path, '^\s*\d*:\s*\(.*\)$', '\1', 'g')
-    let path = fnamemodify(resolve(expand(path)), ':p')  " then compare to home
-    if !empty(regex) && path !~# regex
-      continue
-    endif
-    call add(paths, path)
-    call add(sids, sid)
+  let [names, sids] = [[], []]  " no dictionary because confusing
+  for info in getscriptinfo()
+    let name = fnamemodify(resolve(info.name), ':p')
+    if !empty(regex) && name !~# regex | continue | endif
+    call add(names, name)
+    call add(sids, info.sid)
   endfor
-  if !suppress | echom 'Script names: ' . join(paths, ', ') | endif
-  return [paths, sids]
+  if !suppress | echom 'Script names: ' . join(names, ', ') | endif
+  return [names, sids]
 endfunction
 
 " Get user input with requested default

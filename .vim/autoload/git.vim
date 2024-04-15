@@ -158,7 +158,7 @@ endfunction
 " Note: Fugitive does not currently use &previewwindow and does not respect <mods>
 " so set window explicitly below. See: https://stackoverflow.com/a/8356605/4970632
 " Run from command line
-function! git#run_command(msg, line1, count, range, bang, mods, cmd, ...) abort range
+function! git#run_command(msg, line1, count, range, bang, mods, cmd, ...) range abort
   let [bnum, lnum] = [bufnr(), line('.')]
   let icmd = empty(FugitiveGitDir()) ? '' : a:cmd
   let [name; flags] = split(icmd, '\\\@<!\s\+', 1)
@@ -182,7 +182,7 @@ function! git#run_command(msg, line1, count, range, bang, mods, cmd, ...) abort 
   endif
 endfunction
 " Run from normal mode
-function! git#run_map(range, ...) abort range
+function! git#run_map(range, ...) range abort
   if a:range && a:firstline == a:lastline
     let offset = 5 | let [line1, line2] = [a:firstline - offset, a:lastline + offset]
   else
@@ -254,8 +254,8 @@ endfunction
 function! s:hunk_process(...) abort
   call switch#gitgutter(1, 1)
   let force = a:0 ? a:1 : 0
-  let g:gitgutter_async = 0
   try
+    let g:gitgutter_async = 0
     call gitgutter#process_buffer(bufnr(''), force)
   finally
     let g:gitgutter_async = 1
@@ -328,7 +328,7 @@ endfunction
 " non-zero since no text was present before the change. Also note gitgutter#hunk#stage()
 " requires cursor inside lines and fails when specifying lines outside of addition hunk
 " (see s:hunk_op) so explicitly navigate lines below before calling stage commands.
-function! git#hunk_stage(stage) abort range
+function! git#hunk_stage(stage) range abort
   let action = a:stage ? 'Stage' : 'Undo'
   let cmd = 'GitGutter' . action . 'Hunk'
   call s:hunk_process()

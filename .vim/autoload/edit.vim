@@ -110,9 +110,8 @@ endfunction
 " Search sort or reverse the input lines
 " Note: Adaptation of hard-to-remember :g command shortcut. Adapted
 " from super old post: https://vim.fandom.com/wiki/Reverse_order_of_lines
-function! edit#sel_lines(...) abort range
+function! edit#sel_lines(...) range abort
   let range = printf('\%%>%dl\%%<%dl', a:firstline - 1, a:lastline + 1)
-  echom 'Keys: ' . (a:0 && a:1 ? '?' : '/') . range
   call feedkeys((a:0 && a:1 ? '?' : '/') . range, 'n')
   call edit#echo_range('Searching', a:lastline - a:firstline - 1)
 endfunction
@@ -169,18 +168,23 @@ endfunction
 " Note: Substitute 'n' would give exact count but then have to repeat twice, too slow
 " Note: Critical to replace reverse line-by-line in case substitution has newlines
 function! edit#search_replace(msg, ...) range abort
-  let nlines = 0 " pattern count
-  let search = @/ " hlsearch pattern
+  let nlines = 0  " pattern count
+  let search = @/  " hlsearch pattern
   let winview = winsaveview()
-  let pairs = copy(a:000)
+  let group = a:0 % 2 ? a:1 : ''
+  echom 'Group: ' . group . ' ' . a:1
+  let pairs = copy(a:000[a:0 % 2:])
   for line in range(a:lastline, a:firstline, -1)
-    for idx in range(0, a:0 - 2, 2)
-      let jdx = idx + 1 " replacement index
-      let sub = type(pairs[idx]) == 2 ? pairs[idx]() : pairs[idx]
-      let rep = jdx >= a:0 ? '' : type(pairs[jdx]) == 2 ? pairs[jdx]() : pairs[jdx]
-      let cmd = line . 's@' . sub . '@' . rep . '@gel'
-      let nlines += !empty(execute('keepjumps ' . cmd)) " or exact with 'n'?
-      call histdel('/', -1) " preserve history
+    exe line | for idx in range(0, a:0 - 2, 2)
+      let jdx = idx + 1  " replacement index
+      let regex = type(pairs[idx]) == 2 ? pairs[idx]() : pairs[idx]
+      let replace = jdx >= a:0 ? '' : type(pairs[jdx]) == 2 ? pairs[jdx]() : pairs[jdx]
+      if !empty(group) && !search(regex, 'cnW', line, 0, '!tags#get_inside("$", group)')
+        continue  " e.g. not inside comment
+      endif
+      let cmd = 's@' . regex . '@' . replace . '@gel'
+      let nlines += !empty(execute('keepjumps ' . cmd))  " or exact with 'n'?
+      call histdel('/', -1)  " preserve history
     endfor
   endfor
   call edit#echo_range(a:msg, nlines)

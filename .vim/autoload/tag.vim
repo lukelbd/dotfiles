@@ -104,7 +104,7 @@ function! s:goto_iloc(path, line, name, ...) abort  " see also mark.vim
     if len(ipos) > 2  " exact position
       silent call file#open_drop(ipos[0]) | call call('cursor', ipos[1:])
     else  " automatic position
-      silent call tags#iter_tag(2, a:path, a:line, a:name)
+      silent call tags#jump_tag(2, a:path, a:line, a:name)
     endif
     let noop = cnt < 0 ? cpos[:1] == ipos[:1] : ctag == atag   " ignore from count
     let cnt += noop ? 0 : cnt < 0 ? 1 : -1  " possibly adjust count
@@ -132,7 +132,7 @@ function! tag#next_stack(...) abort
   if cnt == 0  " push currently assigned name to stack
     call stack#push_stack('tag', '', 0, 2)
   else  " iterate stack then pass to tag jump function
-    call stack#push_stack('tag', function('tags#iter_tag', [cnt < 0 ? -1 : 1]), cnt)
+    call stack#push_stack('tag', function('tags#jump_tag', [cnt < 0 ? -1 : 1]), cnt)
   endif
   let item = stack#get_item('tag')
   if cnt < 0 && !empty(item)  " mimic :pop behavior
@@ -150,12 +150,16 @@ endfunction
 " See: https://github.com/junegunn/fzf.vim/issues/240
 function! tag#fzf_stack() abort
   let items = []
+  for item in get(g:, 'tag_stack', [])  " jumping tag stack
+    let ipath = item[0]
+    if !filereadable(ipath) | continue | endif
+    call extend(items, tags#get_tags(item[2], item[0], 1))
+  endfor
   let stack = gettagstack(win_getid())
-  for item in get(stack, 'items', [])  " search tag stack
-    let iname = item.tagname
+  for item in get(stack, 'items', [])  " window tag stack
     let ipath = expand('#' . item.bufnr . ':p')
     if !filereadable(ipath) | continue | endif
-    call extend(items, taglist(iname, ipath))
+    call extend(items, tags#get_tags(item.tagname, ipath, 1))  " infer kind from stack
   endfor
   let paths = map(copy(items), 'v:val.filename')
   let level = len(uniq(sort(paths))) > 1 ? 2 : 0
@@ -165,7 +169,13 @@ function! tag#fzf_stack() abort
     let expr = '[v:val.cmd, v:val.name, v:val.kind]'
   endif
   let opts = map(copy(items), expr)
-  return tags#select_tag(level, opts, 1)
+  if !empty(opts)
+    call tags#select_tag(level, reverse(opts), 1)
+  else
+    redraw | echohl WarningMsg
+    echom 'Error: Tag stack is empty'
+    echohl None
+  endif
 endfunction
 
 " Override fzf :Btags and :Tags

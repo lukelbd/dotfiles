@@ -101,11 +101,13 @@ function! vim#show_help(...) abort
 endfunction
 function! vim#show_runtime(name, ...) abort
   let path = $VIMRUNTIME . '/' . a:name . '/' . (a:0 ? a:1 : &l:filetype) . '.vim'
-  call file#open_drop(path) | call feedkeys("\<Cmd>call window#setup_panel()\<CR>", 'n')
-  if a:0 && a:1 =~# 'test' | call feedkeys("\<Cmd>source %\<CR>", 'n') | endif
+  let cmd = 'call window#setup_panel() | call switch#copy(1, 1)'
+  if a:0 && a:1 =~# 'test' | let cmd .= ' | source %' | endif
+  call file#open_drop(path) | call feedkeys("\<Cmd>" . cmd . "\<CR>", 'n')
 endfunction
 function! vim#setup_help() abort
-  wincmd L | vert resize 88 | nnoremap <buffer> <CR> <C-]>
+  wincmd L | vertical resize 88
+  nnoremap <buffer> <CR> <C-]>
   nnoremap <nowait> <buffer> <silent> [ <Cmd>pop<CR>
   nnoremap <nowait> <buffer> <silent> ] <Cmd>tag<CR>
 endfunction
@@ -119,8 +121,8 @@ function! vim#setup_cmdwin() abort
   nnoremap <buffer> <Plug>ExecuteFile1 <C-c><CR>
 endfunction
 
-" Source file, lines, or motion
-" Todo: Add generalization for running chunks of arbitrary filetypes?
+" Source current file or lines
+" Note: This fails when calling from current script so use expr mapping
 function! vim#source_general() abort
   let name = 'g:loaded_' . expand('%:t:r')
   if exists(name) | exe 'unlet! ' . name | endif
@@ -128,16 +130,22 @@ function! vim#source_general() abort
     exe line('.') . ',' . (line('.') + v:count) . 'source'
     echom 'Sourced ' . v:count . ' lines'
   else
-    update | source %  " required e.g. for autoload files
-    echom 'Sourced current file'
+    update | source % | UpdateTags   " required e.g. for autoload files
+    redraw | echom 'Sourced current file'
   endif
 endfunction
-" For input line range
+" For <expr> execution map
+function! vim#source_general_expr() abort
+  let cmd = expand('%:p') =~# 'autoload/vim\.vim$' ? 'source %' : 'call vim#source_general()'
+  return "\<Cmd>" . cmd . "\<CR>"
+endfunction
+
+" Source input motion or selection
+" Todo: Add generalization for running chunks of arbitrary filetypes?
 function! vim#source_motion() range abort
-  update
-  let range = a:firstline . ',' . a:lastline
+  update | let range = a:firstline . ',' . a:lastline
   exe range . 'source'
-  echom 'Sourced lines ' . a:firstline . ' to ' . a:lastline
+  redraw | echom 'Sourced lines ' . a:firstline . ' to ' . a:lastline
 endfunction
 " For <expr> map accepting motion
 function! vim#source_motion_expr(...) abort

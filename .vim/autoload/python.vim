@@ -5,7 +5,7 @@
 " Warning: Use kludge where lastcol is always at the end of line. Accounts for weird
 " bug where if opening bracket is immediately followed by newline, then 'inner'
 " bracket range incorrectly sets the closing bracket column position to '1'.
-function! python#dict_to_kw(invert, ...) abort range
+function! python#dict_to_kw(invert, ...) range abort
   let winview = winsaveview()
   let lines = []
   let marks = a:0 && a:1 ==# 'n' ? '[]' : '<>'
@@ -119,15 +119,9 @@ endfunction
 " find_connection_file(), which selects the most recently accessed file from the glob
 " pattern. Therefore pass the entire pattern to jupyter#Connect() rather than the file.
 function! python#has_jupyter() abort
-  let check = (
-    \ '"_jupyter_session" in globals() and '
-    \ . '_jupyter_session.kernel_client.check_connection()'
-  \ )
-  if has('python3')
-    return str2nr(py3eval('int(' . check . ')'))
-  else
-    return 0
-  endif
+  let code = '''_jupyter_session'' in globals()'
+    \ . ' and bool(_jupyter_session.kernel_client.check_connection())'
+  return has('python3') ? str2nr(py3eval(code)) : 0
 endfunction
 function! python#init_jupyter() abort
   let parent = 0
@@ -140,30 +134,29 @@ function! python#init_jupyter() abort
     let pattern = 'kernel-' . folder . '-[0-9][0-9].json'
     if !empty(glob(runtime . '/' . pattern)) | return jupyter#Connect(pattern) | endif
   endwhile
-  echohl WarningMsg
-  echom "Warning: No connection files found for path '" . expand('%:p:h') . "'."
+  redraw | echohl WarningMsg
+  echom "Error: No connection files found for path '" . expand('%:p:h') . "'."
   echohl None
 endfunction
 
-" Run with popup window using conda python, not vim python (important for macvim)
-" Todo: More robust checking for anaconda python in other places.
-function! python#run_file()
+" Run current file with conda python (important for macvim)
+" Todo: More robust checking for conda python in other places
+function! python#run_file() abort
   if !exists('$CONDA_PREFIX')
-    echohl WarningMsg
-    echom 'Cannot find conda prefix.'
-    echohl None
-  else
-    let exe = $CONDA_PREFIX . '/bin/python'
-    let proj = $CONDA_PREFIX . '/share/proj'
-    let cmd = 'PROJ_LIB=' . shellescape(proj) . ' ' . shellescape(exe) . ' ' . shellescape(@%)
-    silent call shell#job_win(cmd)
+    redraw | echohl WarningMsg
+    echom 'Error: Cannot find conda prefix.'
+    echohl None | return
   endif
+  let exe = $CONDA_PREFIX . '/bin/python'
+  let proj = $CONDA_PREFIX . '/share/proj'
+  let cmd = 'PROJ_LIB=' . shellescape(proj) . ' ' . shellescape(exe) . ' ' . shellescape(@%)
+  silent call shell#job_win(cmd)
 endfunction
 
-" Run file or lines using either popup window or jupyter session
+" Run current file or lines using either popup window or jupyter session
 " Note: Running 'cell' in file without cells still works
 function! python#run_general() abort
-  update
+  update | redraw
   if v:count  " see also vim.vim
     echom 'Running ' . v:count . ' lines'
     exe 'JupyterSendCount ' . v:count
@@ -179,10 +172,10 @@ function! python#run_general() abort
   endif
 endfunction
 
-" Run input motion using jupyter session. Warning is issued if no connection
+" Run input motion using jupyter session (issue warning if no connection)
 " Todo: Add generalization for running chunks of arbitrary filetypes?
 function! python#run_motion() range abort
-  update
+  update | redraw
   if python#has_jupyter()
     echom 'Running lines ' . a:firstline . ' to ' . a:lastline . '.'
     exe a:firstline . ',' . a:lastline . 'JupyterSendRange'
@@ -305,7 +298,7 @@ function! python#next_docstring(count, ...) abort
     let head = '\(' . comment#get_regex() . '.*\)\@<!'
   endif
   let regex = head . '[frub]*' . s:regex_doc . '\_s*\zs'
-  for _ in range(abs(a:count))
+  for _ in range(abs(a:count))  " cursor is on first non-whitespace after triple-quote
     call search(regex, flags, 0, 0, "!tags#get_inside(-1, 'Constant')")
   endfor
   if &foldopen =~# 'quickfix' | exe 'normal! zv' | endif

@@ -222,8 +222,8 @@ let s:shellcheck_ignore =
 " See: https://vi.stackexchange.com/a/14203/8084 (outdated Ptmux sequences)
 " See: https://github.com/tmux/tmux/wiki/FAQ#what-is-the-passthrough-escape-sequence-and-how-do-i-use-it
 " See: https://www.reddit.com/r/vim/comments/24g8r8/italics_in_terminal_vim_and_tmux/
-" call plug#('sjl/vitality.vim')  " outdated
 " autocmd FocusLost * exe 'stopinsert'  " outdated
+" call plug#('sjl/vitality.vim')  " outdated
 " let g:vitality_always_assume_iterm = 1  " outdated
 let &t_vb = ''  " disable visual bell
 let &t_ti = "\e7\e[r\e[?47h"  " termcap start (restore screen)
@@ -340,10 +340,11 @@ nnoremap <Leader>! <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTE
 " Note: To avoid accidentally closing vim do not use mapped shortcuts. Instead
 " require manual closure with :qall or :quitall.
 command! -nargs=? Autosave call switch#autosave(<args>)
-noremap <Leader>W <Cmd>call switch#autosave()<CR>
+nnoremap q <Cmd>call window#close_panes()<CR>
 nnoremap <C-s> <Cmd>call file#update()<CR>
-nnoremap <C-q> <Cmd>call window#close_panes()<CR><Cmd>call window#close_pane()<CR>
-nnoremap <C-w> <Cmd>call window#close_panes()<CR>
+nnoremap <C-q> <Cmd>call window#close_tab()<CR>
+nnoremap <C-w> <Cmd>call window#close_panes()<CR><Cmd>call window#close_pane()<CR>
+noremap <Leader>W <Cmd>call switch#autosave()<CR>
 
 " Refresh session or re-open previous files
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
@@ -370,8 +371,8 @@ for s:key in range(1, 10) | exe 'silent! unmap <Tab>' . s:key | endfor
 for s:key in ['.', ',', '>', '<'] | exe 'silent! xunmap z' . s:key | endfor
 nnoremap g. <Cmd>call window#fzf_tabs(v:count)<CR>
 nnoremap g> <Cmd>call window#fzf_move(v:count)<CR>
-nnoremap <C-e> <Cmd>Windows<CR>
-nnoremap <C-a> <Cmd>Buffers<CR>
+nnoremap g<Space> <Cmd>Windows<CR>
+nnoremap z<Space> <Cmd>Buffers<CR>
 
 " Tab and window jumping
 nnoremap <Tab>, <Cmd>exe max([tabpagenr() - v:count1, 1]) . 'tabnext'<CR>
@@ -400,8 +401,8 @@ nnoremap <Tab>[ <Cmd>call window#change_width(-5 * v:count1)<CR>
 nnoremap <Tab>] <Cmd>call window#change_width(5 * v:count1)<CR>
 nnoremap <Tab>{ <Cmd>call window#change_width(-10 * v:count1)<CR>
 nnoremap <Tab>} <Cmd>call window#change_width(10 * v:count1)<CR>
-nnoremap <Tab>> <Cmd>call window#move_tab(tabpagenr() + v:count1)<CR>
-nnoremap <Tab>< <Cmd>call window#move_tab(tabpagenr() - v:count1)<CR>
+nnoremap <Tab>> <Cmd>call window#fzf_move(tabpagenr() + v:count1)<CR>
+nnoremap <Tab>< <Cmd>call window#fzf_move(tabpagenr() - v:count1)<CR>
 
 " Open file with optional user input
 " Note: The <Leader> maps open up views of the current file directory
@@ -410,8 +411,8 @@ nnoremap <Tab>o <Cmd>call file#open_init('Drop', 0)<CR>
 nnoremap <Tab>p <Cmd>call file#open_init('Files', 0)<CR>
 nnoremap <Tab>i <Cmd>call file#open_init('Drop', 1)<CR>
 nnoremap <Tab>y <Cmd>call file#open_init('Files', 1)<CR>
-nnoremap <Tab>r <Cmd>call file#open_init('Split', 1)<CR>
-nnoremap <Tab>t <Cmd>call file#open_init('Vsplit', 1)<CR>
+nnoremap <Tab>e <Cmd>call file#open_init('Split', 1)<CR>
+nnoremap <Tab>r <Cmd>call file#open_init('Vsplit', 1)<CR>
 
 " Open file in current directory or some input directory
 " Note: Anything that is not :Files gets passed to :Drop command
@@ -420,8 +421,8 @@ command! -nargs=* -complete=file Drop call file#open_drop(<f-args>)
 command! -nargs=* -complete=file Open call file#open_continuous('Drop', <f-args>)
 command! -nargs=* -complete=file Split call file#open_continuous('botright split', <f-args>)
 command! -nargs=* -complete=file Vsplit call file#open_continuous('botright vsplit', <f-args>)
-nnoremap <C-r> <Cmd>exe 'Split ' . fnameescape(fnamemodify(@%, ':p:h'))<CR>
-nnoremap <C-t> <Cmd>exe 'Vsplit ' . fnameescape(fnamemodify(@%, ':p:h'))<CR>
+nnoremap <C-e> <Cmd>exe 'Split ' . fnameescape(fnamemodify(@%, ':p:h'))<CR>
+nnoremap <C-r> <Cmd>exe 'Vsplit ' . fnameescape(fnamemodify(@%, ':p:h'))<CR>
 nnoremap <F7> <Cmd>exe 'Open ' . fnameescape(fnamemodify(@%, ':p:h'))<CR>
 nnoremap <C-y> <Cmd>exe 'Files ' . fnameescape(fnamemodify(@%, ':p:h'))<CR>
 nnoremap <C-o> <Cmd>exe 'Open ' . fnameescape(tag#find_root(@%))<CR>
@@ -724,7 +725,6 @@ call utils#repeat_map('o', 'zm', 'CasePrevEnd',   "<Cmd>call iter#next_motion('g
 " Screen motion mappings
 " Note: Here use parentheses since 9/0 are used by color scheme switcher
 for s:key in ['0', '^', 'g0', 'g$'] | exe 'noremap ' . s:key . ' ' . s:key . 'ze' | endfor
-noremap g<Space> zzze
 noremap g( ze
 noremap g) zs
 noremap z( zb
@@ -742,22 +742,23 @@ augroup fold_setup
 augroup END
 command! -bang -nargs=? Refold call fold#update_folds(<bang>0, <f-args>)
 for s:key in ['z', 'f', 'F', 'n', 'N'] | silent! exe 'unmap! z' . s:key | endfor
-noremap zA zn
-noremap za zN<Cmd>call fold#update_folds(0)<CR>
+noremap za zn
+noremap zA zN<Cmd>call fold#update_folds(0)<CR>
 noremap zx <Cmd>call fold#update_folds(0, 1)<CR>
 noremap zX <Cmd>call fold#update_folds(0, 2)<CR>
-noremap zZ <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>
-noremap gz <Cmd>Folds<CR>
+noremap zv <Cmd>call fold#update_folds(0)<CR>zv
+noremap zV <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>
+noremap _ <Cmd>call fold#update_folds(0)<CR>zvzzze
 
 " Toggle folds under cursor non-recursively after updating
 " Note: Here fold#toggle_range_expr() calls fold#update_folds() before toggling.
 " Note: These will overwrite 'fastfold_fold_command_suffixes' generated fold-updating
 " maps. However now use even faster / more conservative fold#update_folds() method.
 noremap <expr> zz '<Cmd>call fold#update_folds(0)<CR>' . (foldclosed('.') > 0 ? 'zo' : 'zc')
-nnoremap zcc <Cmd>call fold#update_folds(0)<CR>zc
-nnoremap zoo <Cmd>call fold#update_folds(0)<CR>zo
-vnoremap <nowait> zc <Cmd>call fold#update_folds(0)<CR>zc
-vnoremap <nowait> zo <Cmd>call fold#update_folds(0)<CR>zo
+nnoremap zcc <Cmd>call fold#toggle_range(0, 1)<CR>
+nnoremap zoo <Cmd>call fold#toggle_range(0, 0)<CR>
+vnoremap <nowait> zc <Cmd>call fold#toggle_range(0, 1)<CR>
+vnoremap <nowait> zo <Cmd>call fold#toggle_range(0, 0)<CR>
 nnoremap <expr> zc fold#toggle_range_expr(0, 1)
 nnoremap <expr> zo fold#toggle_range_expr(0, 0)
 
@@ -791,6 +792,7 @@ noremap [z <Cmd>keepjumps normal! zk<CR><Cmd>keepjumps normal! [z<CR>
 noremap ]z <Cmd>keepjumps normal! zj<CR><Cmd>keepjumps normal! [z<CR>
 noremap zk <Cmd>keepjumps normal! [z<CR>
 noremap zj <Cmd>keepjumps normal! ]z<CR>
+noremap gz <Cmd>Folds<CR>
 
 " Jump to marks and declare alphabetic marks using counts (navigate with ]` and [`)
 " Note: :Marks does not handle file switching and :Jumps has an fzf error so override.
@@ -800,11 +802,10 @@ noremap zj <Cmd>keepjumps normal! ]z<CR>
 command! -bang -nargs=0 Marks call mark#fzf_marks(<bang>0)
 command! -nargs=* SetMarks call mark#set_marks(<f-args>)
 command! -nargs=* DelMarks call mark#del_marks(<f-args>)
-noremap z_ <Cmd>call mark#fzf_marks()<CR>
 noremap <expr> g_ v:count ? '`' . utils#translate_count('`') : '<Cmd>call mark#fzf_marks()<CR>'
 noremap <Leader>- <Cmd>call mark#del_marks()<CR>
 noremap <Leader>_ <Cmd>call mark#del_marks(get(g:, 'mark_name', 'A'))<CR>
-noremap _ <Cmd>call mark#set_marks(utils#translate_count('m'))<CR>
+noremap z_ <Cmd>call mark#set_marks(utils#translate_count('m'))<CR>
 noremap <C-n> <Cmd>call mark#next_mark(-v:count1)<CR>
 noremap <F8> <Cmd>call mark#next_mark(v:count1)<CR>
 
@@ -926,11 +927,11 @@ vnoremap <expr> \E call('edit#search_replace_expr', g:sub_estrip)
 " Delete first-level and second-level commented text
 " Critical to put in same group since these change the line count
 let g:sub_comments = [
-  \ 'Removed comments', {->
+  \ 'Removed comments', 'Comment', {->
     \ '\(^\s*' . comment#get_regex() . '.\+$\n\|\s\+' . comment#get_regex() . '.\+$\)'
   \ }, '']
 let g:sub_dcomments = [
-  \ 'Removed second-level comments', {->
+  \ 'Removed second-level comments', 'Comment', {->
     \ '\(^\s*' . comment#get_regex() . '\s*' . comment#get_regex()
     \ . '.\+$\n\|\s\+' . comment#get_regex() . '\s*' . comment#get_regex() . '.\+$\)'
   \ }, '']
@@ -1358,9 +1359,9 @@ call plug#('junegunn/fzf.vim')  " pin to version supporting :Drop
 call plug#('roosta/fzf-folds.vim')  " jump to folds
 let g:fzf_action = {'ctrl-m': 'Drop', 'ctrl-t': 'Drop', 'ctrl-x': 'split', 'ctrl-v': 'vsplit' }  " have file search and grep open to existing window if possible
 let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
-let g:fzf_skip_pushd = 0  " see lukelbd/fzf.vim completion-edits branch
-let g:fzf_buffers_jump = 1  " have fzf jump to existing window if possible
 let g:fzf_tags_command = 'ctags -R -f .vimtags ' . tag#parse_ignores(1)  " added just for safety
+let g:fzf_require_dir = 0  " see lukelbd/fzf.vim completion-edits branch
+let g:fzf_buffers_jump = 1  " jump to existing window if already open
 
 " Language server integration
 " Note: Here vim-lsp-ale sends diagnostics generated by vim-lsp to ale, does nothing
@@ -1489,7 +1490,6 @@ let g:loaded_textobj_entire = 1  " avoid default mappings (see below)
 " call plug#('terryma/vim-multiple-cursors')  " article against this idea: https://medium.com/@schtoeffel/you-don-t-need-more-than-one-cursor-in-vim-2c44117d51db
 " call plug#('dkarter/bullets.vim')  " list numbering but completely fails
 " call plug#('stormherz/tablify')  " fancy ++ style tables, for now use == instead
-" call plug#('Rykka/riv.vim')  " fancy tables, let g:riv_python_rst_hl = 1
 " call plug#('triglav/vim-visual-increment')  " superceded by vim-speeddating
 " call plug#('vim-scripts/Toggle')  " toggling stuff on/off (forked instead)
 call plug#('junegunn/vim-easy-align')  " align with motions, text objects, and ignores comments
@@ -1549,6 +1549,7 @@ let g:SimpylFold_docstring_preview = 0  " disable foldtext() override
 call plug#('vim-scripts/applescript.vim')  " applescript syntax support
 call plug#('andymass/vim-matlab')  " recently updated vim-matlab fork from matchup author
 call plug#('preservim/vim-markdown')  " see .vim/after/syntax.vim for kludge fix
+call plug#('Rykka/riv.vim')  " restructured text, syntax folds
 call plug#('tmux-plugins/vim-tmux')
 call plug#('anntzer/vim-cython')
 call plug#('tpope/vim-liquid')
@@ -1562,6 +1563,7 @@ let g:colorizer_nomap = 1  " use custom mapping
 let g:colorizer_startup = 0  " too expensive to enable at startup
 let g:filetype_m = 'matlab'  " see $VIMRUNTIME/autoload/dist/ft.vim
 let g:latex_to_unicode_file_types = ['julia']  " julia-vim feature
+let g:riv_python_rst_hl = 1  " python highlight within
 let g:vim_markdown_conceal = 1  " conceal stuff
 let g:vim_markdown_conceal_code_blocks = 0  " show code fences
 let g:vim_markdown_fenced_languages = ['html', 'python']
@@ -1634,7 +1636,7 @@ for s:plugin in s:fork_plugins
   let s:name = 'lukelbd/' . s:plugin
   if isdirectory(s:path) | call s:plug_local(s:path) | else | call plug#(s:name) | endif
 endfor
-let g:toggle_map = 'z<Space>'  " adjust toggle mapping (note this is repeatable)
+let g:toggle_map = '\|'  " adjust toggle mapping (note this is repeatable)
 let g:scrollwrapped_nomap = 1  " instead have advanced iter#scroll_infer maps
 let g:scrollwrapped_wrap_filetypes = s:info_filetypes + ['tex', 'text']
 exe 'noremap + <C-a>' | exe 'noremap - <C-x>'
@@ -1804,10 +1806,11 @@ if s:plug_active('vim-tags')
     \ | echo call('tags#table_kinds', s:args) . "\n" . call('tags#table_tags', s:args)
   nnoremap <Leader>t <Cmd>ShowTable<CR>
   nnoremap <Leader>T <Cmd>ShowTable!<CR>
+  nnoremap <C-t> <Cmd>call tag#fzf_stack()<CR>
   nnoremap gy <Cmd>call tags#select_tag(0)<CR>
   nnoremap gY <Cmd>call tags#select_tag(2)<CR>
   nnoremap zy <Cmd>call tags#select_tag(1)<CR>
-  nnoremap zY <Cmd>call tag#fzf_stack()<CR>
+  nnoremap zY <Cmd>UpdatePaths \| UpdateTags \| GutentagsUpdate<CR><Cmd>echom 'Updated buffer tags'<CR>
   let s:major = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
   let s:minor = {'fortran': 'ekltvEL', 'python': 'xviI', 'vim': 'vnC', 'tex': 'gioetBCN'}
   let g:tags_keep_jumps = 1  " default is zero
@@ -1845,7 +1848,7 @@ if s:plug_active('vim-gutentags')
   nnoremap gt <Cmd>BTags<CR>
   nnoremap gT <Cmd>Tags<CR>
   nnoremap zt <Cmd>FTags<CR>
-  nnoremap zT <Cmd>UpdatePaths \| UpdateTags! \| GutentagsUpdate!<CR><Cmd>echom 'Updated tags'<CR>
+  nnoremap zT <Cmd>UpdatePaths \| UpdateTags! \| GutentagsUpdate!<CR><Cmd>echom 'Updated project tags'<CR>
   let g:gutentags_background_update = 1  " disable for debugging, printing updates
   let g:gutentags_ctags_auto_set_tags = 0  " tag#update_paths() handles this instead
   let g:gutentags_ctags_executable = 'ctags'  " note this respects .ctags config

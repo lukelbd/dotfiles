@@ -118,7 +118,7 @@ function! switch#ddc(...) abort
     return
   elseif toggle  " note completionMode was removed
     call ddc#custom#patch_global('sources', g:ddc_sources)  " restore sources
-    call denops#server#start()  " must come after ddc calls
+    call denops#server#restart()  " must come after ddc calls
   else
     call denops#server#stop()  " must come before ddc calls
     call ddc#custom#patch_global('sources', [])  " wipe out ddc sources
