@@ -124,7 +124,7 @@ function! s:get_delims(label, ...) abort
   return [join(delim1, ''), join(delim2, '')]
 endfunction
 function! fold#get_label(line, ...) abort
-  let char = comment#get_char()()
+  let char = comment#get_char()
   let ftype = get(b:, 'fugitive_type', '')
   let regex = a:0 && a:1 ? '\(^\s*\|' : '\('  " strip leading space
   let regex .= '\S\@<=\s*' . comment#get_regex()
