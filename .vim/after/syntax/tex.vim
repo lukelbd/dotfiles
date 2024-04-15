@@ -2,8 +2,7 @@
 " Author: Karl Yngve Lervåg
 " Forked: Luke Davis
 " Edited: 2018-07-26
-" Tweak tex syntax. Adapted from vimtex. Builds upon native $VIMRUNTIME/syntax/tex.vim
-" syntax highlighting sysstem. Should re-download vimtex in future.
+" Tweak tex syntax. Adapted from vimtex. Builds on $VIMRUNTIME/syntax/tex.vim
 "------------------------------------------------------------------------------"
 if !exists('b:current_syntax')
   let b:current_syntax = 'tex'
@@ -346,24 +345,14 @@ call TexNewMathZone('U', 'multline', 1)
 call TexNewMathZone('T', 'xalignat', 1)
 call TexNewMathZone('S', 'xxalignat', 0)
 execute 'syntax match texBadMath ''\\end\s*{\s*\(' . join([
-  \ 'align',
-  \ 'alignat',
-  \ 'equation',
-  \ 'flalign',
-  \ 'gather',
-  \ 'multline',
-  \ 'xalignat',
-  \ 'xxalignat'], '\|') . '\)\*\=\s*}'''
+  \ 'align', 'alignat', 'equation', 'flalign', 'gather', 'multline', 'xalignat', 'xxalignat'
+  \ ], '\|') . '\)\*\=\s*}'''
 
 " Amsmath [lr][vV]ert (Holger Mitschke)
 for s:texmath in [
-  \ ['\\lvert', '|'],
-  \ ['\\rvert', '|'],
-  \ ['\\lVert', '‖'],
-  \ ['\\rVert', '‖'],
+  \ ['\\lvert', '|'], ['\\rvert', '|'], ['\\lVert', '‖'], ['\\rVert', '‖'],
   \ ]
-  execute
-    \ "syntax match texMathDelim '\\\\[bB]igg\\=[lr]\\="
+  execute "syntax match texMathDelim '\\\\[bB]igg\\=[lr]\\="
     \ . s:texmath[0] . "' contained conceal cchar=" . s:texmath[1]
 endfor
 

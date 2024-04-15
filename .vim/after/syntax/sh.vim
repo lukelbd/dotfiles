@@ -25,7 +25,7 @@ if !exists('b:is_kornshell') && !exists('b:is_bash')
 endif
 
 " PBS system copied from SBATCH example below.
-" See here: https://unix.stackexchange.com/q/452461/112647
+" See: https://unix.stackexchange.com/q/452461/112647
 syn region shPBSComment start='^#\(PBS\)' end="\n" oneline contains=shPBSKeyword,shPBSOption,shPBSValue
 syn region shPBSValue start="=" end="$" contains=shPBSString,shPBSMailType,shPBSIdentifier,shPBSEnv,shPBSHint,shPBSMode,shPBSPropag,shPBSInterval,shPBSDist,shPBSEmail
 syn match shPBSKeyword contained '#\(PBS\)\s*'

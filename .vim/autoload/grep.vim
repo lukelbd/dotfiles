@@ -12,7 +12,7 @@ function! s:parse_paths(prompt, global, level, ...)
   elseif a:global  " global buffers
     let paths = map(reverse(tags#buffer_paths()), 'resolve(v:val[1])')
   else  " current buffer
-    let paths = [resolve(@%)]
+    let paths = [resolve(expand('%:p'))]
   endif
   if empty(input) && a:level >= 2  " path projects
     let paths = map(paths, 'tag#find_root(v:val)')
@@ -22,7 +22,12 @@ function! s:parse_paths(prompt, global, level, ...)
     let paths = filter(paths, 'isdirectory(v:val) || filereadable(v:val)')
   endif
   let result = []
-  for path in filter(copy(paths), 'index(paths, v:val, v:key + 1) == -1')  " unique
+  let unique = 'index(paths, v:val, v:key + 1) == -1'
+  let outer = 'len(v:val) < len(path) && strpart(path, 0, len(v:val)) ==# v:val'
+  for path in filter(copy(paths), unique)  " unique
+    if a:level > 2 && !empty(filter(copy(paths), outer))
+      continue  " e.g. ignore plugged repos when searching dotfiles
+    endif
     if exists('*RelativePath')  " returns empty string for getcwd()
       let path = RelativePath(path)
     else  " returns e.g. ~/dotfiles for getcwd()
@@ -118,13 +123,21 @@ function! grep#complete_search(lead, line, cursor)
 endfunction
 function! grep#call_grep(cmd, global, level) abort
   let paths = s:parse_paths(1, a:global, a:level)
-  let name = a:level >= 2 ? 'project' : a:level >= 1 ? 'folder' : 'buffer'
+  if a:level >= 3
+    let name = 'file tree'
+  elseif a:level >= 2
+    let name = 'open project'
+  elseif a:level >= 1
+    let name = 'file folder'
+  else
+    let name = 'open buffer'
+  endif
   if a:global && len(paths) > 1  " open files or folders across session
-    let prompt = len(paths) . ' open ' . name . 's'
-  elseif len(paths) == 1  " current or input files or folders
-    let prompt = name . ' ' . paths[0]
-  else  " multiple objects
+    let prompt = len(paths) . ' ' . name . 's'
+  elseif len(paths) != 1  " multiple objects
     let prompt = name . 's ' . join(paths, ' ')
+  else  " current or input files or folders
+    let prompt = name . ' ' . paths[0]
   endi
   let prompt = toupper(a:cmd[0]) . a:cmd[1:] . ' search ' . prompt
   let regex = utils#input_default(prompt, @/, 'grep#complete_search')
