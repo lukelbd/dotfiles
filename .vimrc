@@ -2236,14 +2236,14 @@ if s:plug_active('vim-fugitive')
   noremap <Leader>O <Cmd>call git#commit_wrap(1, 'commit')<CR>
   noremap <Leader>y <Cmd>call git#commit_wrap(0, 'stash push --include-untracked')<CR>
   noremap <Leader>Y <Cmd>call git#commit_wrap(1, 'stash push --include-untracked')<CR>
-  noremap <Leader>l <Cmd>call git#run_map(0, 0, '', 'diff -- %')<CR>
-  noremap <Leader>L <Cmd>call git#run_map(0, 0, '', 'diff -- :/')<CR>
-  noremap <Leader>k <Cmd>call git#run_map(0, 0, '', 'diff --staged -- %')<CR>
-  noremap <Leader>K <Cmd>call git#run_map(0, 0, '', 'diff --staged -- :/')<CR>
-  noremap <Leader>j <Cmd>call git#run_map(0, 0, '', 'stage -- %')<CR>
-  noremap <Leader>J <Cmd>call git#run_map(0, 0, '', 'stage -- :/')<CR>
-  noremap <Leader>h <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- %')<CR>
+  noremap <Leader>h <Cmd>call git#run_map(0, 0, '', 'diff --staged -- :/')<CR>
   noremap <Leader>H <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- :/')<CR>
+  noremap <Leader>j <Cmd>call git#run_map(0, 0, '', 'diff -- :/')<CR>
+  noremap <Leader>J <Cmd>call git#run_map(0, 0, '', 'stage -- :/')<CR>
+  noremap <Leader>k <Cmd>call git#run_map(0, 0, '', 'diff --staged -- %')<CR>
+  noremap <Leader>K <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- %')<CR>
+  noremap <Leader>l <Cmd>call git#run_map(0, 0, '', 'diff -- %')<CR>
+  noremap <Leader>L <Cmd>call git#run_map(0, 0, '', 'stage -- %')<CR>
   noremap <Leader>b <Cmd>call git#run_map(0, 0, '', 'branches')<CR>
   noremap <Leader>B <Cmd>call git#run_map(0, 0, '', 'switch -')<CR>
   let g:fugitive_legacy_commands = 1  " include deprecated :Git status to go with :Git
