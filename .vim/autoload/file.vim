@@ -7,15 +7,34 @@
 " out rest of screen. Workaround is to factor out an unnecessary source function.
 let s:new_dir = ''  " path completion base folder
 let s:new_file = '[new file]'  " fzf entry for requesting new file
-function! file#echo_path(head, ...) abort
-  let path = expand(a:0 ? a:1 : '%')
-  let path = exists('*RelativePath') ? RelativePath(path) : fnamemodify(path, ':p:~:.')
-  redraw | echom '' . substitute(a:head, '^\(\a\)\(\a*\)$', '\u\1\l\2', '') . ': ' . path
-endfunction
 function! file#format_dir(path, ...) abort
   let base = fnamemodify(a:path, ':p:~:.')  " note do not use RelativePath
   let base = a:0 && a:1 && base !~# '^[~.]*/\|^\w\+:' ? './' . base : base
   return substitute(base, '[^/]\@<=/*$', '/', '')
+endfunction
+function! file#echo_path(head, ...) abort
+  let path = expand(a:0 ? a:1 : '%')
+  if exists('*RelativePath')
+    let path = RelativePath(path, 1)
+  else
+    let path = fnamemodify(path, ':p:~:.')
+  endif
+  let head = substitute(a:head, '^\(\a\)\(\a*\)$', '\u\1\l\2', '')
+  redraw | echom head . ': ' . path
+endfunction
+function! file#expand_cfile(...) abort
+  let show = a:0 ? a:1 : 0
+  let path = expand('<cfile>')
+  for root in ['', getcwd(), expand('%:p:h'), tag#find_root(expand('%:p'))]
+    let check = empty(root) ? path : root . '/' . path
+    let files = glob(check, 0, 1)
+    if !empty(files) | break | endif
+  endfor
+  if exists('*RelativePath')  " statusline function
+    return map(files, 'RelativePath(v:val, show)')
+  else
+    return map(files, "fnamemodify(v:val, ':~:.')")
+  endif
 endfunction
 
 " Generate list of files in directory
@@ -52,44 +71,6 @@ function! file#input_path(prompt, default, ...) abort
   let s:new_dir = base2  " glob using this folder
   let path = utils#input_default(prompt, default1, 'file#glob_paths')
   return path =~# '^[~.]*/\|^\~\?$' ? path : base1 . path
-endfunction
-
-" Print whether current file exists
-" Useful when trying to debug 'go to this file' mapping
-function! file#print_exists() abort
-  let files = glob(expand('<cfile>'), 0, 1)
-  if exists('*RelativePath')  " statusline function
-    let files = map(files, 'RelativePath(v:val)')
-  else
-    let files = map(files, "fnamemodify(v:val, ':~:.')")
-  endif
-  if empty(files)
-    echom "File or pattern '" . expand('<cfile>') . "' does not exist."
-  else
-    echom 'File(s) ' . join(map(files, '"''".v:val."''"'), ', ') . ' exist.'
-  endif
-endfunction
-
-" Print current file information
-" Useful before using 'go to this local directory' mapping
-function! file#print_paths(...) abort
-  let chars = ' *[]()?!#%&<>'
-  let paths = a:0 ? a:000 : [@%]
-  for path in paths
-    let root = tag#find_root(path)
-    if exists('*RelativePath')  " statusline function
-      let root = RelativePath(root)
-      let show = RelativePath(path)
-    else
-      let root = fnamemodify(root, ':~:.')
-      let show = fnamemodify(path, ':~:.')
-    endif
-    let root = empty(root) ? fnamemodify(getcwd(), ':~:.') : root
-    let work = fnamemodify(getcwd(), ':~')
-    echom 'Path: ' . escape(show, chars)
-    echom 'Project: ' . escape(root, chars)
-    echom 'Session: ' . escape(work, chars)
-  endfor
 endfunction
 
 " Open recently edited file
@@ -249,6 +230,36 @@ function! file#open_drop(...) abort
   endfor
 endfunction
 
+" Print current file or cursor file information
+" Useful before using 'go to this local directory' mapping
+function! file#show_cfile() abort
+  let files = file#expand_cfile(1)
+  if empty(files)
+    echom "File or pattern '" . expand('<cfile>') . "' does not exist."
+  else
+    echom 'File(s) ' . join(map(files, 'string(v:val)'), ', ') . ' exist.'
+  endif
+endfunction
+function! file#show_paths(...) abort
+  let chars = ' *[]()?!#%&<>'
+  let paths = a:0 ? a:000 : [@%]
+  for path in paths
+    let root = tag#find_root(path)
+    if exists('*RelativePath')  " statusline function
+      let root = RelativePath(root)
+      let show = RelativePath(path)
+    else
+      let root = fnamemodify(root, ':~:.')
+      let show = fnamemodify(path, ':~:.')
+    endif
+    let root = empty(root) ? fnamemodify(getcwd(), ':~:.') : root
+    let work = fnamemodify(getcwd(), ':~')
+    echom 'Path: ' . escape(show, chars)
+    echom 'Project: ' . escape(root, chars)
+    echom 'Session: ' . escape(work, chars)
+  endfor
+endfunction
+
 " Manage file buffers
 " Note: This is alternative to bufwipeout plugin.
 " See: https://stackoverflow.com/a/7321131/4970632
@@ -260,7 +271,7 @@ function! file#show_bufs() abort
   for bnr in tags#bufs_recent(0)  " all buffers loaded after unix time zero
     let pad = repeat(' ', ndigits - len(string(bnr)))
     if exists('*RelativePath')
-      let path = RelativePath(bufname(bnr))
+      let path = RelativePath(bufname(bnr), 1)
     else
       let path = expand('#' . bnr . ':~:.')
     endif

@@ -433,12 +433,12 @@ nnoremap <C-g> <Cmd>GFiles<CR>
 " Related file utilities
 " Note: Here :Rename is adapted from the :Rename2 plugin. Usage is :Rename! <dest>
 command! -nargs=* -complete=file -bang Rename call file#rename(<q-args>, '<bang>')
-command! -nargs=? Paths call file#print_paths(<f-args>)
+command! -nargs=? Paths call file#show_paths(<f-args>)
 command! -nargs=? Local call switch#localdir(<args>)
 noremap zl <Cmd>Paths<CR>
 noremap zL <Cmd>Local<CR>
-noremap gl <Cmd>call file#print_exists()<CR>
-noremap gL <Cmd>call file#open_drop(expand('<cfile>'))<CR>
+noremap gl <Cmd>call file#show_cfile()<CR>
+noremap gL <Cmd>call call('file#open_drop', file#expand_cfile())<CR>
 
 " 'Execute' script with different options
 " Note: Current idea is to use 'ZZ' for running entire file and 'Z<motion>' for
