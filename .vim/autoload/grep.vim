@@ -6,16 +6,17 @@
 " only home directory shortened path (not dot or empty string). To match RelatvePath()
 " and simplify grep results convert to empty string.
 function! s:parse_paths(prompt, global, level, ...)
-  if a:0  " input paths
-    let paths = map(copy(a:000), 'resolve(v:val)')
+  let input = filter(copy(a:000), '!empty(v:val)')
+  if !empty(input)  " manual input
+    let paths = map(input, 'resolve(v:val)')
   elseif a:global  " global buffers
     let paths = map(reverse(tags#buffer_paths()), 'resolve(v:val[1])')
   else  " current buffer
     let paths = [resolve(@%)]
   endif
-  if !a:0 && a:level >= 2  " path projects
+  if empty(input) && a:level >= 2  " path projects
     let paths = map(paths, 'tag#find_root(v:val)')
-  elseif !a:0 && a:level >= 1  " path folders
+  elseif empty(input) && a:level >= 1  " path folders
     let paths = map(paths, "empty(v:val) || isdirectory(v:val) ? v:val : fnamemodify(v:val, ':h')")
   else  " general paths and folders
     let paths = filter(paths, 'isdirectory(v:val) || filereadable(v:val)')
@@ -47,8 +48,9 @@ function! s:parse_grep(global, level, pattern, ...) abort
   let flags .= a:pattern =~# '\\c' ? ' --ignore-case' : ''  " same in ag and rg
   let flags .= a:pattern =~# '\\C' ? ' --case-sensitive' : ''  " same in ag and rg
   let flags = empty(flags) ? '--smart-case' : trim(flags)
+  let args = [0, a:global, a:level] + a:000
   let regex = s:parse_pattern(a:pattern)
-  let paths = call('s:parse_paths', [0, a:global, a:level] + a:000)
+  let paths = call('s:parse_paths', args)
   let paths = empty(paths) ? paths : add(paths, 'dummy.fzf')  " fix bug described above
   return [regex, join(paths, ' '), flags]
 endfunction
@@ -71,29 +73,34 @@ endfunction
 " Call Ag or Rg from command
 " Note: If commands called manually then always enable recursive search and disable
 " custom '~/.ignore' file (e.g. in case want to search a .vim/plugged folder).
+" Note: Both commands respect .gitignore by default and auto-read 'ignore' if in same
+" directory e.g. dotfiles. Can disable .gitignore with --skip-vcs-ignores (ag) and
+" --no-ignore-vcs (rg) but for now only use universal ignore-disabling options.
 " Note: Native commands include final !a:bang argument toggling fullscreen but we
 " use a:bang to indicate whether to search current buffer or global open buffers.
 " Fzf matches paths: https://github.com/junegunn/fzf.vim/issues/346
 " Ag ripgrep flags: https://github.com/junegunn/fzf.vim/issues/921#issuecomment-1577879849
 " Ag ignore file: https://github.com/ggreer/the_silver_searcher/issues/1097
-function! grep#call_ag(global, level, ...) abort
+function! grep#call_ag(global, level, pattern, ...) abort
   let flags = '--hidden --path-to-ignore ~/.wildignore'
-  let flags .= a:0 > 1 ? '' : ' --path-to-ignore ~/.ignore --skip-vcs-ignores'
-  let flags .= a:0 > 1 || a:level > 1 ? '' : ' --depth 0'  " files or file folders
-  let [regex, paths, extra] = call('s:parse_grep', [a:global, a:level] + a:000)
+  let flags .= a:0 || a:level > 2 ? ' --unrestricted' : ' --path-to-ignore ~/.ignore'
+  let flags .= a:0 || a:level > 1 ? '' : ' --depth 0'  " files or file folders
+  let args = [a:global, a:level, a:pattern] + a:000
+  let [regex, paths, extra] = call('s:parse_grep', args)
   let opts = fzf#vim#with_preview()
   call fzf#vim#ag_raw(join([flags, extra, '--', regex, paths], ' '), opts, 0)  " 0 is no fullscreen
-  redraw | echom a:level . 'Ag ' . regex
+  redraw | echom 'Ag ' . regex . ' (level ' . a:level . ')'
 endfunction
-function! grep#call_rg(global, level, ...) abort
+function! grep#call_rg(global, level, pattern, ...) abort
   let flags = '--hidden --ignore-file ~/.wildignore'
-  let flags .= a:0 > 1 ? '' : ' --ignore-file ~/.ignore --no-ignore-vcs'
-  let flags .= a:0 > 1 || a:level > 1 ? '' : ' --max-depth 1'  " files or file folders
-  let [regex, paths, extra] = call('s:parse_grep', [a:global, a:level] + a:000)
+  let flags .= a:0 || a:level > 2 ? ' --no-ignore' : ' --ignore-file ~/.ignore'
+  let flags .= a:0 || a:level > 1 ? '' : ' --max-depth 1'  " files or file folders
+  let args = [a:global, a:level, a:pattern] + a:000
+  let [regex, paths, extra] = call('s:parse_grep', args)
   let opts = fzf#vim#with_preview()
   let head = 'rg --column --line-number --no-heading --color=always'
   call fzf#vim#grep(join([head, flags, '--', regex, paths], ' '), opts, 0)  " 0 is no fullscreen
-  redraw | echom a:level . 'Rg ' . regex
+  redraw | echom 'Rg ' . regex . ' (level ' . a:level . ')'
 endfunction
 
 " Call Rg or Ag from mapping (see also file.vim)
@@ -120,8 +127,8 @@ function! grep#call_grep(cmd, global, level) abort
     let prompt = name . 's ' . join(paths, ' ')
   endi
   let prompt = toupper(a:cmd[0]) . a:cmd[1:] . ' search ' . prompt
-  let pattern = utils#input_default(prompt, @/, 'grep#complete_search')
-  if empty(pattern) | return | endif
-  let func = 'grep#call_' . tolower(a:cmd)
-  call call(func, [a:global, a:level, pattern])
+  let regex = utils#input_default(prompt, @/, 'grep#complete_search')
+  if empty(regex) | return | endif
+  let args = [a:global, a:level, regex]
+  call call('grep#call_' . tolower(a:cmd), args)
 endfunction

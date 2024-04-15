@@ -819,10 +819,10 @@ command! -range=0 -bang -nargs=* -complete=file Grep call call('grep#call_rg', [
 command! -range=0 -bang -nargs=* -complete=file Find call call('grep#call_rg', [<bang>0, <count>, '\<' . expand('<cword>') . '\>', <f-args>])
 command! -range=0 -bang -nargs=+ -complete=file Ag call grep#call_ag(<bang>0, <count>, <f-args>)
 command! -range=0 -bang -nargs=+ -complete=file Rg call grep#call_rg(<bang>0, <count>, <f-args>)
-nnoremap g' <Cmd>call grep#call_grep('rg', 1, 0)<CR>
-nnoremap g" <Cmd>call grep#call_grep('rg', 1, 1)<CR>
-nnoremap z' <Cmd>call grep#call_grep('rg', 0, 2)<CR>
-nnoremap z" <Cmd>call grep#call_grep('rg', 1, 2)<CR>
+nnoremap g' <Cmd>call grep#call_grep('rg', 0, 2)<CR>
+nnoremap g" <Cmd>call grep#call_grep('rg', 1, 0)<CR>
+nnoremap z' <Cmd>call grep#call_grep('rg', 1, 2)<CR>
+nnoremap z" <Cmd>call grep#call_grep('rg', 1, 3)<CR>
 
 " Convenience grep maps and commands
 " Note: Search open files for print statements and project files for others
