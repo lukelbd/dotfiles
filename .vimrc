@@ -656,7 +656,7 @@ noremap <F4> <Cmd>call tag#next_stack(v:count1)<CR>
 noremap [{ <Cmd>exe v:count1 . 'tag'<CR>
 noremap ]} <Cmd>exe v:count1 . 'pop'<CR>
 
-" Toggle and navigate visual mode
+" Toggle and configure visual mode
 " Note: Select mode (e.g. by typing 'gh') is same as visual but enters insert mode
 " when you start typing, to emulate typing after click-and-drag. Never use it.
 " Note: Throughout vimrc marks y and z are reserved for internal map utilities. Here
@@ -671,33 +671,36 @@ vnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
 vnoremap <CR> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
 vnoremap <LeftMouse> <LeftMouse>my<Cmd>exe 'keepjumps normal! `z' . visualmode() . '`y' \| delmark y<CR>
 
-" Navigate matches/sentences/paragraphs without adding to jumplist
-" Note: Core vim idea is that these commands take us far away from cursor but
-" typically use scrolling to go far away. So use CursorHold approach. Note sentence
-" jumping mapped with textobj#sentence#move_[np] for most filetypes.
+" Override basic cursor motions
+" Note: Mapped jumping commands do not open folds by default, hence the expr below
+" Note: Here h/l skip concealed syntax regions and matchadd() matches (respecting
+" &concealcursor values) and m/M is the missing previous end-of-word mapping.
+noremap <expr> h (v:count ? '<Esc>' : '') . syntax#next_char(-v:count1)
+noremap <expr> l (v:count ? '<Esc>' : '') . syntax#next_char(v:count1)
+noremap <expr> gg 'gg' . (v:count ? 'zv' : '')
+noremap m ge
+noremap M gE
+noremap G G
+
+" Adjust screen relative to cursor
+" Note: Use parentheses since g0/g$ are navigation and z0/z9 used for color schemes
+for s:key in ['0', '^', 'g0', 'g$'] | exe 'noremap ' . s:key . ' ' . s:key . 'ze' | endfor
+noremap _ <Cmd>call fold#update_folds(0)<CR>zvzzze
+noremap g( ze
+noremap g) zs
+noremap z( zb
+noremap z) zt
+
+" Navigate without adding to jumplist or opening folds
+" Note: Sentence jumping mapped with textobj#sentence#move_[np] for most filetypes.
+" Note: Original vim idea is that these commands take us far away from cursor but
+" typically use scrolling to go far away. So now use CursorHold approach.
 for s:key in ['(', ')'] | exe 'silent! unmap ' . s:key | endfor
 noremap ; <Cmd>call switch#hlsearch(1 - v:hlsearch, 1)<CR>
 noremap N <Cmd>call iter#next_match(-v:count1)<CR>
 noremap n <Cmd>call iter#next_match(v:count1)<CR>
 noremap { <Cmd>exe 'keepjumps normal! ' . v:count1 . '{'<CR>
 noremap } <Cmd>exe 'keepjumps normal! ' . v:count1 . '}'<CR>
-
-" Go to start or end without opening folds
-" Useful for e.g. python files with docstring at top and function at bottom
-" Note: Mapped jumping commands do not open folds by default, hence the expr below
-" Note: Could use e.g. :1<CR> or :$<CR> but that would exclude them from jumplist
-noremap G G
-noremap <expr> gg 'gg' . (v:count ? 'zv' : '')
-
-" Go to the next or previous unconcealed character
-" This respect &concealcursor values
-noremap <expr> h (v:count ? '<Esc>' : '') . syntax#next_char(-v:count1)
-noremap <expr> l (v:count ? '<Esc>' : '') . syntax#next_char(v:count1)
-
-" Go to the previous end-of-word or end-of-WORD
-" This makes ge/gE a single-keystroke motion alongside with e/E, w/W, and b/B
-noremap m ge
-noremap M gE
 
 " Move between alphanumeric groups of characters (i.e. excluding dots, dashes,
 " underscores). This is consistent with tmux vim selection navigation
@@ -722,14 +725,6 @@ call utils#repeat_map('o', 'zb', 'CasePrevStart', "<Cmd>call iter#next_motion('b
 call utils#repeat_map('o', 'ze', 'CaseNextEnd',   "<Cmd>call iter#next_motion('e', 1, v:operator)<CR>")
 call utils#repeat_map('o', 'zm', 'CasePrevEnd',   "<Cmd>call iter#next_motion('ge, 1, v:operator)<CR>")
 
-" Screen motion mappings
-" Note: Here use parentheses since 9/0 are used by color scheme switcher
-for s:key in ['0', '^', 'g0', 'g$'] | exe 'noremap ' . s:key . ' ' . s:key . 'ze' | endfor
-noremap g( ze
-noremap g) zs
-noremap z( zb
-noremap z) zt
-
 " Reset manually open-closed folds accounting for custom overrides
 " Note: Also call fold#update_folds() in common.vim but with 0 to avoid resetting level
 " when calling config_refresh(). So call again below whenever buffer enters window.
@@ -749,7 +744,6 @@ noremap zx <Cmd>call fold#update_folds(0, 1)<CR>
 noremap zX <Cmd>call fold#update_folds(0, 2)<CR>
 noremap zv <Cmd>call fold#update_folds(0)<CR>zv
 noremap zV <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>
-noremap _ <Cmd>call fold#update_folds(0)<CR>zvzzze
 
 " Toggle folds under cursor non-recursively after updating
 " Note: Here fold#toggle_range_expr() calls fold#update_folds() before toggling.
@@ -844,15 +838,12 @@ noremap zE <Cmd>Todos!<CR>
 noremap zM <Cmd>Notes!<CR>
 noremap zW <Cmd>Warnings!<CR>
 
-" Navigate docstrings and methods
-" Capital uses only non-variable-assignment zero-level or first-level docstrings
+" Navigate docstrings comments and methods
+" Capital uses only non-variable-assignment or zero-indent
 noremap [d <Cmd>call python#next_docstring(-v:count1, 0)<CR>
 noremap ]d <Cmd>call python#next_docstring(v:count1, 0)<CR>
 noremap [D <Cmd>call python#next_docstring(-v:count1, 1)<CR>
 noremap ]D <Cmd>call python#next_docstring(v:count1, 1)<CR>
-
-" Navigate contiguous comment blocks and headers
-" Capital uses only top-level zero-indent comment blocks
 noremap [c <Cmd>call comment#next_comment(-v:count1, 0)<CR>
 noremap ]c <Cmd>call comment#next_comment(v:count1, 0)<CR>
 noremap [C <Cmd>call comment#next_comment(-v:count1, 1)<CR>
