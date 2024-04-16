@@ -275,7 +275,7 @@ function! window#show_health() abort
   exe 'CheckHealth' | setlocal foldlevel=1 syntax=checkhealth.markdown | doautocmd BufRead
 endfunction
 function! window#show_netrw(cmd, local) abort
-  let base = a:local ? fnamemodify(@%, ':p:h') : tag#find_root(@%)
+  let base = a:local ? expand('%:p:h') : tag#find_root()
   let [width, height] = [window#default_width(0), window#default_height(0)]
   exe a:cmd . ' ' . base | goto
   exe a:cmd =~# 'vsplit' ? 'vert resize ' . width : 'resize ' . height 

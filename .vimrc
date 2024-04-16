@@ -426,8 +426,8 @@ nnoremap <C-e> <Cmd>exe 'Split ' . fnameescape(fnamemodify(@%, ':p:h'))<CR>
 nnoremap <C-r> <Cmd>exe 'Vsplit ' . fnameescape(fnamemodify(@%, ':p:h'))<CR>
 nnoremap <F7> <Cmd>exe 'Open ' . fnameescape(fnamemodify(@%, ':p:h'))<CR>
 nnoremap <C-y> <Cmd>exe 'Files ' . fnameescape(fnamemodify(@%, ':p:h'))<CR>
-nnoremap <C-o> <Cmd>exe 'Open ' . fnameescape(tag#find_root(@%))<CR>
-nnoremap <C-p> <Cmd>exe 'Files ' . fnameescape(tag#find_root(@%))<CR>
+nnoremap <C-o> <Cmd>exe 'Open ' . fnameescape(tag#find_root())<CR>
+nnoremap <C-p> <Cmd>exe 'Files ' . fnameescape(tag#find_root())<CR>
 nnoremap <C-g> <Cmd>GFiles<CR>
 
 " Related file utilities
@@ -1556,7 +1556,7 @@ let g:colorizer_nomap = 1  " use custom mapping
 let g:colorizer_startup = 0  " too expensive to enable at startup
 let g:filetype_m = 'matlab'  " see $VIMRUNTIME/autoload/dist/ft.vim
 let g:latex_to_unicode_file_types = ['julia']  " julia-vim feature
-let g:riv_python_rst_hl = 1  " highlight rest in python docstrings
+let g:riv_python_rst_hl = 0  " highlight rest in python docstrings
 let g:vim_markdown_conceal = 1  " conceal stuff
 let g:vim_markdown_conceal_code_blocks = 0  " show code fences
 let g:vim_markdown_fenced_languages = ['html', 'python']
@@ -2423,8 +2423,15 @@ endif
 " Final tasks
 "-----------------------------------------------------------------------------"
 " Show syntax under cursor and syntax types
-" Note: The first map prints information, the second two maps open windows, the
-" other maps open tabs.
+" Note: This fixes 'riv' bug where changing g:riv_python_rst_hl after startup has no
+" effect. Grepped vim runtime and plugged, riv is literally only place where 'syntax'
+" file employs 'loaded' variables with finish block (typically only used for plugins).
+" Also note Syntax triggers after 'set syntax=' and after loading syntax files, since
+" load is triggered by higher-priority 'au Syntax * call s:SynSet()' (see :au Syntax).
+augroup syntax_setup
+  au!
+  au Syntax * exe 'unlet! b:af_py_loaded' | exe 'unlet! b:af_rst_loaded'
+augroup END
 command! -nargs=? ShowGroups call syntax#show_stack(<f-args>)
 command! -nargs=0 ShowNames exe 'help highlight-groups' | exe 'normal! zt'
 command! -nargs=0 ShowBases exe 'help group-name' | exe 'normal! zt'

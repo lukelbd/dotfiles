@@ -76,19 +76,20 @@ endfunction
 
 " Call Ag or Rg from command
 " Note: If commands called manually then always enable recursive search and disable
-" custom '~/.ignore' file (e.g. in case want to search a .vim/plugged folder).
-" Note: Both commands respect .gitignore by default and auto-read 'ignore' if in same
-" directory e.g. dotfiles. Can disable .gitignore with --skip-vcs-ignores (ag) and
-" --no-ignore-vcs (rg) but for now only use universal ignore-disabling options.
+" custom '~/.ignore' file (e.g. in case searching .vim/plugged folder).
+" Note: Rg and Ag read '.gitignore' and '.ignore' from search directories. Disable
+" first with -skip-vcs-ignores (ag) and -no-ignore-vcs (rg) or all with below flags.
+" Note: Unlike Rg --no-ignore --ignore-file, Ag -unrestricted --ignore-file disables
+" unrestricted flag and may load .ignore. Workaround is to use -t text-file-only filter
 " Note: Native commands include final !a:bang argument toggling fullscreen but we
 " use a:bang to indicate whether to search current buffer or global open buffers.
 " Fzf matches paths: https://github.com/junegunn/fzf.vim/issues/346
 " Ag ripgrep flags: https://github.com/junegunn/fzf.vim/issues/921#issuecomment-1577879849
 " Ag ignore file: https://github.com/ggreer/the_silver_searcher/issues/1097
 function! grep#call_ag(global, level, pattern, ...) abort
-  let flags = '--hidden --path-to-ignore ~/.wildignore'
+  let flags = a:level > 1 ? '--hidden' : '--hidden --depth 0'
   let flags .= a:0 || a:level > 2 ? ' --unrestricted' : ' --path-to-ignore ~/.ignore'
-  let flags .= a:level > 1 ? '' : ' --depth 0'  " files or file folders
+  let flags .= a:0 || a:level > 2 ? ' -t' : ' --path-to-ignore ~/.wildignore'  " compare to rg
   let args = [a:global, a:level, a:pattern] + a:000
   let [regex, paths, extra] = call('s:parse_grep', args)
   let opts = fzf#vim#with_preview()
@@ -96,9 +97,9 @@ function! grep#call_ag(global, level, pattern, ...) abort
   redraw | echom 'Ag ' . regex . ' (level ' . a:level . ')'
 endfunction
 function! grep#call_rg(global, level, pattern, ...) abort
-  let flags = '--hidden --ignore-file ~/.wildignore'
+  let flags = a:level > 1 ? '--hidden' : '--hidden --max-depth 1'
   let flags .= a:0 || a:level > 2 ? ' --no-ignore' : ' --ignore-file ~/.ignore'
-  let flags .= a:level > 1 ? '' : ' --max-depth 1'  " files or file folders
+  let flags .= ' --ignore-file ~/.wildignore'  " compare to ag
   let args = [a:global, a:level, a:pattern] + a:000
   let [regex, paths, extra] = call('s:parse_grep', args)
   let opts = fzf#vim#with_preview()

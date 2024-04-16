@@ -229,50 +229,50 @@ endfunction
 " Note: Previously tried just '__init__.py' for e.g. conda-managed packages and
 " placing '.tagproject' in vim-plug folder but this caused tons of nested .vimtags
 " file creations including *duplicate* tags when invoking :Tags function.
-function! s:get_root(folder, globs, ...) abort
-  let reverse = a:0 ? a:1 : 0
-  let root = fnamemodify(a:folder, ':p')
-  let home = expand('~')
-  let roots = []
+function! s:proj_root(head, globs, ...) abort
+  let roots = []  " general projects
+  let root = fnamemodify(a:head, ':p')
   while !empty(root) && root !=# '/'
     let root = fnamemodify(root, ':h')
-    if root !=# home[:len(root) - 1]  " skip home or above
-      call add(roots, root)
-    endif
+    call add(roots, root)
   endwhile
-  for root in reverse ? reverse(roots) : roots
-    for glob in a:globs
-      if !empty(globpath(root, glob, 0, 1))
-        return root
-      endif
+  for root in a:0 && a:1 ? reverse(roots) : roots
+    for glob in a:globs  " input names or patterns
+      if !empty(globpath(root, glob, 0, 1)) | return root | endif
     endfor
-  endfor
-  return ''
+  endfor | return ''
 endfunction
-function! tag#find_root(path, ...) abort
-  let folder = fnamemodify(resolve(expand(a:path)), ':p:h')  " no trailing slash
+function! s:dist_root(head, tails) abort
+  let head = a:head  " general distributions
+  while v:true  " see also tags#get_files()
+    let ihead = fnamemodify(head, ':h')
+    if empty(ihead) || ihead ==# head | let head = '' | break | endif
+    let idx = index(a:tails, fnamemodify(ihead, ':t'))
+    if idx >= 0 | break | endif  " preceding head e.g. share/vim
+    let head = ihead  " tag file candidate
+  endwhile
+  let tail = fnamemodify(head, ':t')  " e.g. vim from /.../share/vim
+  let next = strpart(a:head, len(head))
+  let part = matchstr(next, '^[\/]\+' . tail . '[0-9]*[\/]\@=')
+  return head . part  " e.g. /.../share/vim/vim91
+endfunction
+function! tag#find_root(...) abort
+  let path = resolve(expand(a:0 ? a:1 : '%'))
+  let head = fnamemodify(path, ':p:h')  " no trailing slash
   let globs = ['.git', '.hg', '.svn', '.bzr', '_darcs', '_darcs', '_FOSSIL_', '.fslckout']
-  let root = s:get_root(folder, globs)  " highest-level control system indicator
-  if !empty(root)
-    return root
-  endif
+  let root = s:proj_root(head, globs, 0)  " highest-level control system indicator
+  if !empty(root) | return root | endif
   let globs = ['__init__.py', 'setup.py', 'setup.cfg']
-  let root = s:get_root(folder, globs, 1)  " lowest-level python distribution indicator
-  if !empty(root)
-    return root
-  endif
-  let home = expand('~')
-  let cloud = resolve(home . '/icloud')
-  for base in [cloud, home]  " WARNING: order is critical
-    if base ==# folder
-      let tail = base ==# home ? 'dotfiles' : 'Mackup'
-      return base . '/' . tail
-    elseif len(base) < len(folder) && base ==# strpart(folder, 0, len(base))
-      let mods = repeat(':h', count(folder, '/') - count(base, '/') - 1)
-      return fnamemodify(folder, mods)
-    endif
-  endfor
-  return folder
+  let homes = [resolve(expand('~/icloud')), expand('~')]  " WARNING: order critical
+  let tails = ['/Mackup', '/dotfiles']  " fallback subfolders
+  let root = s:proj_root(head, globs, 1)  " lowest-level python distribution indicator
+  if !empty(root) | return root | endif
+  let idx = index(homes, head) | if idx >= 0 | return head . tails[idx] | endif
+  call map(homes, {_, val -> fnamemodify(val, ':t')})
+  let tails = homes + ['builds', 'local', 'share', 'bin']
+  let root = s:dist_root(head, tails)
+  if !empty(root) | return root | endif
+  return head
 endfunction
 
 " Parse .ignore files for ctags utilities (compare to bash ignores())
