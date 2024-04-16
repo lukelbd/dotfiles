@@ -229,6 +229,20 @@ endfunction
 " Note: Previously tried just '__init__.py' for e.g. conda-managed packages and
 " placing '.tagproject' in vim-plug folder but this caused tons of nested .vimtags
 " file creations including *duplicate* tags when invoking :Tags function.
+function! s:dist_root(head, tails) abort
+  let head = a:head  " general distributions
+  while v:true  " see also tags#get_files()
+    let ihead = fnamemodify(head, ':h')
+    if empty(ihead) || ihead ==# head | let head = '' | break | endif
+    let idx = index(a:tails, fnamemodify(ihead, ':t'))
+    if idx >= 0 | break | endif  " preceding head e.g. share/vim
+    let head = ihead  " tag file candidate
+  endwhile
+  let tail = fnamemodify(head, ':t')  " e.g. /.../share/vim -> vim
+  let suff = strpart(a:head, len(head))  " e.g. /.../share/vim/vim91 -> vim91
+  let suff = matchstr(suff, '^[\/]\+' . tail . '[0-9]*[\/]\@=')
+  return head . suff  " optional version subfolder
+endfunction
 function! s:proj_root(head, globs, ...) abort
   let roots = []  " general projects
   let root = fnamemodify(a:head, ':p')
@@ -242,23 +256,12 @@ function! s:proj_root(head, globs, ...) abort
     endfor
   endfor | return ''
 endfunction
-function! s:dist_root(head, tails) abort
-  let head = a:head  " general distributions
-  while v:true  " see also tags#get_files()
-    let ihead = fnamemodify(head, ':h')
-    if empty(ihead) || ihead ==# head | let head = '' | break | endif
-    let idx = index(a:tails, fnamemodify(ihead, ':t'))
-    if idx >= 0 | break | endif  " preceding head e.g. share/vim
-    let head = ihead  " tag file candidate
-  endwhile
-  let tail = fnamemodify(head, ':t')  " e.g. vim from /.../share/vim
-  let next = strpart(a:head, len(head))
-  let part = matchstr(next, '^[\/]\+' . tail . '[0-9]*[\/]\@=')
-  return head . part  " e.g. /.../share/vim/vim91
-endfunction
 function! tag#find_root(...) abort
   let path = resolve(expand(a:0 ? a:1 : '%'))
   let head = fnamemodify(path, ':p:h')  " no trailing slash
+  let tails = ['servers', 'user-settings']  " e.g. @jupyterlab, .vim_lsp_settings
+  let root = s:dist_root(head, tails)
+  if !empty(root) | return root | endif
   let globs = ['.git', '.hg', '.svn', '.bzr', '_darcs', '_darcs', '_FOSSIL_', '.fslckout']
   let root = s:proj_root(head, globs, 0)  " highest-level control system indicator
   if !empty(root) | return root | endif
