@@ -155,9 +155,9 @@ endfunction
 function! tag#fzf_stack() abort
   let items = []
   for item in get(g:, 'tag_stack', [])  " jumping tag stack
-    let ipath = item[0]
+    let [iname, ipath] = [item[2], item[0]]
     if !filereadable(ipath) | continue | endif
-    call extend(items, tags#get_tags(item[2], item[0], 1))
+    call extend(items, tags#get_tags(iname, ipath, 1))
   endfor
   let stack = gettagstack(win_getid())
   for item in get(stack, 'items', [])  " window tag stack
@@ -310,15 +310,15 @@ function! tag#parse_ignores(join, ...) abort
 endfunction
 
 " Update tags variable (requires g:gutentags_ctags_auto_set_tags = 0)
-" This is hooked up to the gutentags tag-updating autocommand, makes fzf :Tags
-" function and native :tags features use all projects instead of just the current
-" project. Also ignores 'dotfiles' project unless the working directory is in dotfiles
-" since very common to open simple config files from other projects e.g. 'proplotrc'.
+" Note: Using :setlocal tags requires e.g. '.vim\\,tags' and '.vim\\\ tags' for literal
+" commas and spaces (see :help option-backslash). Setting with &l:tags requires only
+" single backslashes, and paths appear with single backslash when retrieving after set.
+" Note: This is hooked up to GutenTagsUpdated autocommand, makes fzf :Tags function
+" and native :tags features use all projects but prioritize the file project.
 " Note: Vim resolves all symlinks so unfortunately cannot just commit to using
 " the symlinked $HOME version in other projects. Resolve below for safety.
 function! tag#update_paths(...) abort
   let bufs = []  " source buffers
-  let paths = []  " tag paths
   if a:0  " append to existing
     let args = copy(a:000[empty(type(a:1)):])
     let toggle = empty(type(a:1)) ? a:1 : 1  " type zero i.e. number (see :help empty)
@@ -334,10 +334,11 @@ function! tag#update_paths(...) abort
     if empty(path) || !filewritable(resolve(path))
       continue  " invalid path
     endif
-    if toggle  " append path
-      exe 'setglobal tags+=' . fnameescape(path)
-    else  " remove path
-      exe 'setglobal tags-=' . fnameescape(path)
-    endif
+    let tags = tags#get_files(bufname(bnr))  " prefer buffer file
+    call map(tags, {_, val -> substitute(val, '\(,\| \)', '\\\1', 'g')})  " see above
+    let path = substitute(path, ',', '\\\\,', 'g')  " see above
+    let path = substitute(path, ' ', '\\\\\\ ', 'g')  " see above
+    exe 'setglobal tags' . (toggle ? '+=' : '-=') . path
+    call setbufvar(bnr, '&tags', join(tags, ','))  " see above
   endfor
 endfunction

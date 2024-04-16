@@ -175,7 +175,7 @@ function! fold#get_label_tex(line, ...) abort
   let [line, label] = [a:line, fold#get_label(a:line, 0)]
   let indent = substitute(label, '\S.*$', '', 'g')
   if label =~# 'begingroup\|begin\s*{\s*\(frame\|figure\|table\|center\)\*\?\s*}'
-    let regex = label =~# '{\s*frame\*\?\s*}' ? '^\s*\\frametitle' : '^\s*\\label'
+    let regex = label =~# 'begingroup\|{\s*frame\*\?\s*}' ? '^\s*\\frametitle' : '^\s*\\label'
     for lnum in range(a:line + 1, a:0 ? a:1 : a:line + s:maxlines)
       let bool = getline(lnum) =~# regex
       if bool | let [line, label] = [lnum, fold#get_label(lnum, 0)] | break | endif
