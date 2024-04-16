@@ -185,10 +185,20 @@ endfunction
 " Override fzf :Btags and :Tags
 " Note: This is similar to fzf except uses custom sink that adds results to window
 " tag stack for navigation with ctrl-bracket maps and tag/pop commands.
-function! tag#fzf_btags(query, ...) abort
+function! s:tag_files(...) abort
+  let tags = []
+  for path in a:000
+    let path = resolve(expand(path))
+    if filereadable(path)
+      call add(tags, path)
+    elseif isdirectory(path)
+      call extend(tags, globpath(path, '**/.vimtags', 0, 1))
+    endif
+  endfor | return tags
+endfunction
+function! tag#fzf_btags(bang, query) abort
   let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
-  let bang = a:0 ? a:1 : 0  " fill entire window
   let extra = fzf#vim#with_preview({'placeholder': '{2}:{3..}'})
   let cmd = 'ctags -f - --sort=yes --excmd=number %s 2>/dev/null | sort -s -k 5'
   let cmd = printf(cmd, fzf#shellescape(expand('%')))
@@ -199,14 +209,14 @@ function! tag#fzf_btags(query, ...) abort
     \ 'sink': function('tags#push_tag', [0]),
     \ 'options': flags . ' --prompt "BTags> "',
   \ }
-  return call(snr . 'fzf', ['btags', options, [extra, bang]])
+  return call(snr . 'fzf', ['btags', options, [extra, a:bang]])
 endfunction
-function! tag#fzf_tags(type, query, ...) abort
+function! tag#fzf_tags(type, bang, query, ...) abort
   let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
-  let bang = a:0 ? a:1 : 0  " fill entire window
-  let extra = fzf#vim#with_preview({'placeholder': '--tag {2}:{-1}:{3..}' })
   if empty(snr) | return | endif
-  let paths = map(tags#get_files(), 'fnamemodify(v:val, ":p")')
+  let extra = fzf#vim#with_preview({'placeholder': '--tag {2}:{-1}:{3..}' })
+  let paths = a:0 ? call('s:tag_files', a:000) : tags#get_files()
+  let paths = map(paths, 'fnamemodify(v:val, ":p")')
   let [nbytes, maxbytes] = [0, 1024 * 1024 * 200]
   for path in paths
     let nbytes += getfsize(path)
@@ -221,7 +231,7 @@ function! tag#fzf_tags(type, query, ...) abort
     \ 'sink': function('tags#push_tag', [0]),
     \ 'options': flags . ' --prompt ' . string(prompt),
   \ }
-  return call(snr . 'fzf', ['tags', options, [extra, bang]])
+  return call(snr . 'fzf', ['tags', options, [extra, a:bang]])
 endfunction
 
 " Search for the 'root' directory to store the ctags file

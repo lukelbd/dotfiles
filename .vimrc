@@ -513,8 +513,8 @@ noremap z: @:
 " add shortcut to search for all non-ASCII chars (previously used all escape chars).
 " Note: Here 'Man' overrides buffer-local 'Man' command defined on man filetypes, so
 " must use autoload function. Also see: https://stackoverflow.com/a/41168966/4970632
-command! -complete=shellcmd -nargs=? Help call stack#push_stack('help', 'shell#help_page', <f-args>)
-command! -complete=shellcmd -nargs=? Man call stack#push_stack('man', 'shell#man_page', <f-args>)
+command! -nargs=? -complete=shellcmd Help call stack#push_stack('help', 'shell#help_page', <f-args>)
+command! -nargs=? -complete=shellcmd Man call stack#push_stack('man', 'shell#man_page', <f-args>)
 command! -nargs=0 ClearMan call stack#clear_stack('man')
 command! -nargs=0 PrintHelp call stack#print_stack('help')
 command! -nargs=0 PrintMan call stack#print_stack('man')
@@ -647,8 +647,7 @@ noremap g? <Cmd>Lines<CR>
 " Navigate across recent tag jumps
 " Note: Apply in vimrc to avoid overwriting. This works by overriding both fzf and
 " internal tag jumping utils. Ignores tags resulting from direct :tag or <C-]>
-command! -complete=file -nargs=* ShowIgnores
-  \ echom 'Tag ignores: ' . join(tag#parse_ignores(0, <f-args>), ' ')
+command! -nargs=* -complete=file ShowIgnores echom 'Tag ignores: ' . join(tag#parse_ignores(0, <f-args>), ' ')
 command! -nargs=0 ClearTags call stack#clear_stack('tag')
 command! -nargs=0 PrintTags call stack#print_stack('tag')
 command! -nargs=* PopTags call stack#pop_stack('tag', <f-args>)
@@ -1831,11 +1830,11 @@ if s:plug_active('vim-gutentags')
     au User GutentagsUpdated call tag#update_paths()
     au BufCreate,BufReadPost * call tag#update_paths(expand('<afile>'))
   augroup END
-  command! -complete=dir -nargs=* UpdatePaths call tag#update_paths(<f-args>)
-  command! -bang -nargs=0 ShowCache call tag#show_cache()
-  command! -bang -nargs=* BTags call tag#fzf_btags(<q-args>, <bang>0)
-  command! -bang -nargs=* FTags call tag#fzf_tags(1, <q-args>, <bang>0)
-  command! -bang -nargs=* Tags call tag#fzf_tags(0, <q-args>, <bang>0)
+  command! -bang -nargs=* -complete=file Tags call tag#fzf_tags(0, <bang>0, <f-args>)
+  command! -bang -nargs=* -complete=file FTags call tag#fzf_tags(1, <bang>0, <f-args>)
+  command! -bang -nargs=* -complete=file BTags call tag#fzf_btags(<bang>0, <q-args>)
+  command! -nargs=* -complete=dir UpdatePaths call tag#update_paths(<f-args>)
+  command! -nargs=0 ShowCache call tag#show_cache()
   nnoremap gt <Cmd>BTags<CR>
   nnoremap gT <Cmd>Tags<CR>
   nnoremap zt <Cmd>FTags<CR>
@@ -2236,14 +2235,14 @@ if s:plug_active('vim-fugitive')
   noremap <Leader>O <Cmd>call git#commit_wrap(1, 'commit')<CR>
   noremap <Leader>y <Cmd>call git#commit_wrap(0, 'stash push --include-untracked')<CR>
   noremap <Leader>Y <Cmd>call git#commit_wrap(1, 'stash push --include-untracked')<CR>
-  noremap <Leader>h <Cmd>call git#run_map(0, 0, '', 'diff --staged -- :/')<CR>
-  noremap <Leader>H <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- :/')<CR>
+  noremap <Leader>h <Cmd>call git#run_map(0, 0, '', 'diff -- :/')<CR>
+  noremap <Leader>H <Cmd>call git#run_map(0, 0, '', 'stage -- :/')<CR>
   noremap <Leader>j <Cmd>call git#run_map(0, 0, '', 'diff -- %')<CR>
   noremap <Leader>J <Cmd>call git#run_map(0, 0, '', 'stage -- %')<CR>
   noremap <Leader>k <Cmd>call git#run_map(0, 0, '', 'diff --staged -- %')<CR>
   noremap <Leader>K <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- %')<CR>
-  noremap <Leader>l <Cmd>call git#run_map(0, 0, '', 'diff -- :/')<CR>
-  noremap <Leader>L <Cmd>call git#run_map(0, 0, '', 'stage -- :/')<CR>
+  noremap <Leader>l <Cmd>call git#run_map(0, 0, '', 'diff --staged -- :/')<CR>
+  noremap <Leader>L <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- :/')<CR>
   noremap <Leader>b <Cmd>call git#run_map(0, 0, '', 'branches')<CR>
   noremap <Leader>B <Cmd>call git#run_map(0, 0, '', 'switch -')<CR>
   let g:fugitive_legacy_commands = 1  " include deprecated :Git status to go with :Git
