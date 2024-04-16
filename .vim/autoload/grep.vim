@@ -2,21 +2,20 @@
 " Utilities for grepping
 "-----------------------------------------------------------------------------"
 " Helper function for parsing paths
-" Note: If input directory is getcwd() then fnamemodify(getcwd(), ':~:.') returns
-" only home directory shortened path (not dot or empty string). To match RelatvePath()
-" and simplify grep results convert to empty string.
+" Note: If input directory is getcwd() then fnamemodify(getcwd(), ':~:.') returns only
+" home directory shortened path (not dot or empty string). Convert to empty string
 function! s:parse_paths(prompt, global, level, ...)
-  let input = filter(copy(a:000), '!empty(v:val)')
-  if !empty(input)  " manual input
-    let paths = map(input, 'resolve(v:val)')
+  let args = filter(copy(a:000), '!empty(v:val)')  " ignore e.g. command entry
+  if !empty(args)  " manual input
+    let paths = map(args, 'resolve(v:val)')
   elseif a:global  " global buffers
     let paths = map(reverse(tags#buffer_paths()), 'resolve(v:val[1])')
   else  " current buffer
     let paths = [resolve(expand('%:p'))]
   endif
-  if empty(input) && a:level >= 2  " path projects
+  if empty(args) && a:level >= 2  " path projects
     let paths = map(paths, 'tag#find_root(v:val)')
-  elseif empty(input) && a:level >= 1  " path folders
+  elseif empty(args) && a:level >= 1  " path folders
     let paths = map(paths, "empty(v:val) || isdirectory(v:val) ? v:val : fnamemodify(v:val, ':h')")
   else  " general paths and folders
     let paths = filter(paths, 'isdirectory(v:val) || filereadable(v:val)')
@@ -89,7 +88,7 @@ endfunction
 function! grep#call_ag(global, level, pattern, ...) abort
   let flags = '--hidden --path-to-ignore ~/.wildignore'
   let flags .= a:0 || a:level > 2 ? ' --unrestricted' : ' --path-to-ignore ~/.ignore'
-  let flags .= a:0 || a:level > 1 ? '' : ' --depth 0'  " files or file folders
+  let flags .= a:level > 1 ? '' : ' --depth 0'  " files or file folders
   let args = [a:global, a:level, a:pattern] + a:000
   let [regex, paths, extra] = call('s:parse_grep', args)
   let opts = fzf#vim#with_preview()
@@ -99,7 +98,7 @@ endfunction
 function! grep#call_rg(global, level, pattern, ...) abort
   let flags = '--hidden --ignore-file ~/.wildignore'
   let flags .= a:0 || a:level > 2 ? ' --no-ignore' : ' --ignore-file ~/.ignore'
-  let flags .= a:0 || a:level > 1 ? '' : ' --max-depth 1'  " files or file folders
+  let flags .= a:level > 1 ? '' : ' --max-depth 1'  " files or file folders
   let args = [a:global, a:level, a:pattern] + a:000
   let [regex, paths, extra] = call('s:parse_grep', args)
   let opts = fzf#vim#with_preview()
@@ -123,11 +122,11 @@ function! grep#complete_search(lead, line, cursor)
 endfunction
 function! grep#call_grep(cmd, global, level) abort
   let paths = s:parse_paths(1, a:global, a:level)
-  if a:level >= 3
+  if a:level > 2
     let name = 'file tree'
-  elseif a:level >= 2
+  elseif a:level > 1
     let name = 'open project'
-  elseif a:level >= 1
+  elseif a:level > 0
     let name = 'file folder'
   else
     let name = 'open buffer'
