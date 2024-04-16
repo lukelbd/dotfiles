@@ -131,7 +131,6 @@ function! s:list_source(changes) abort
     call extend(table, bnr == bufnr() && iloc == len(opts) ? [' >'] : [])
     call extend(table, reverse(items))  " recent changes first
     if len(table) >= &l:history | break | endif  " reached maximum number of items
-    break
   endfor
   return table
 endfunction
