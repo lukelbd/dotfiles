@@ -211,7 +211,7 @@ function! tag#fzf_btags(bang, query) abort
   \ }
   return call(snr . 'fzf', ['btags', options, [extra, a:bang]])
 endfunction
-function! tag#fzf_tags(type, bang, query, ...) abort
+function! tag#fzf_tags(type, bang, ...) abort
   let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
   let extra = fzf#vim#with_preview({'placeholder': '--tag {2}:{-1}:{3..}' })
@@ -225,7 +225,7 @@ function! tag#fzf_tags(type, bang, query, ...) abort
   let flags = "-m -d '\t' --with-nth ..4 --nth ..2"
   let flags .= nbytes > maxbytes ? ' --algo=v1' : ''
   let prompt = empty(a:type) ? 'Tags> ' : 'FTags> '
-  let source = call('tag#read_tags', [a:type, a:query] + paths)
+  let source = call('tag#read_tags', [a:type, ''] + paths)
   let options = {
     \ 'source': source,
     \ 'sink': function('tags#push_tag', [0]),
