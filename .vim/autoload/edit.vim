@@ -78,8 +78,8 @@ endfunction
 " Note: This keeps existing registers and folds. If calling on line with closed fold
 " will transfer entire fold contents and define new FastFold-managed manual folds.
 function! edit#move_chars(...) abort
-  let idx = a:0 && a:1 ? cnum - 1 : cnum
   let [cnum, line] = [col('.'), getline('.')]
+  let idx = a:0 && a:1 ? cnum - 1 : cnum
   if idx > 0 && idx < len(line)
     let line = line[:idx - 2] . line[idx] . line[idx - 1] . line[idx + 1:]
     call setline('.', line)
