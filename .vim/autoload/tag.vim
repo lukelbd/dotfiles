@@ -6,27 +6,28 @@
 " file same as vim-tags/autoload. So give this a separate name.
 " Note: This matches fzf.vim/bin/tags.pl perl script formatting, but adds optional
 " filetype filter (see vim-tags). Note removing vim quotes causes viewer to fail.
-let s:cache = {}
-function! s:tag_format(line, path) abort
-  let regex = '\=printf("%-24s", submatch(0))'
-  let text = substitute(a:line, '^[^\t]*', regex, '')
-  return text . "\t" . a:path
+let s:path_types = {}
+function! s:tag_print(heads, head, base) abort
+  let name = printf('%-24s', submatch(1))
+  let path = a:base . submatch(3)  " submatch with base
+  let a:heads[path] = a:head  " mapping to restore path
+  return name . submatch(2) . path . submatch(4)  " formatted with padding
 endfunction
 function! s:tag_match(line, ftype, regex, fast) abort
-  let tagline = '^[^\t]*\t\([^\t]*\)\t.*$'
+  let regex = '^[^\t]*\t\([^\t]*\)\t.*$'
   if a:line =~# '^\s*!' | return 0 | endif
   if empty(a:ftype) | return 1 | endif
-  let path = substitute(a:line, tagline, '\1', 'g')
-  return tags#type_match(path, a:ftype, a:regex, s:cache, a:fast)
+  let path = substitute(a:line, regex, '\1', 'g')
+  return tags#type_match(path, a:ftype, a:regex, s:path_types, a:fast)
 endfunction
 function! tag#show_cache() abort
-  echom 'File type cache (' . len(s:cache) . ' entries):'
+  echom 'File type cache (' . len(s:path_types) . ' entries):'
   let paths = {}
-  let names = map(copy(s:cache), {key, val -> RelativePath(key)})
+  let names = map(copy(s:path_types), {key, val -> RelativePath(key)})
   for path in keys(names) | let paths[names[path]] = path | endfor
   let size = 1 + max(map(keys(paths), 'len(v:val)'))
   for name in sort(keys(paths))
-    let tail = s:cache[paths[name]]
+    let tail = s:path_types[paths[name]]
     if empty(tail) | continue | endif
     let head = printf('%-' . size . 's', name . ':')
     echom head . ' ' . tail
@@ -41,19 +42,25 @@ function! tag#read_tags(type, query, ...) abort
   else
     let [ftype, regex] = [&l:filetype, tags#type_regex()]
   endif
-  let result = []
+  let [result, heads] = [[], {}]  " see also tags.vim s:tag_source()
   for path in a:000
     if empty(a:query)
       let lines = readfile(path)
     else
       let lines = systemlist(printf(cmd, fzf#shellescape(path)))
     endif
-    let fast = !empty(ftype) && index(values(s:cache), ftype) >= 0
-    let lines = filter(lines, {idx, val -> s:tag_match(val, ftype, regex, fast)})
-    let lines = map(lines, {idx, val -> s:tag_format(val, path)})
+    let folder = fnamemodify(path, ':p:h')  " tag file folder
+    let prepend = a:0 > 1 && strpart(expand('%:p'), 0, len(folder)) !=# folder
+    let fast = index(values(s:path_types), ftype) >= 0  " whether cached
+    let base = prepend ? fnamemodify(folder, ':t') . '/' : ''  " slash required
+    let head = fnamemodify(folder, prepend ? ':h' : '') . '/'
+    let parse = '^\(.\{-}\)\( *\t\)\(.\{-}\)\( *\t\)'  " parse name and path
+    let print = '\=s:tag_print(heads, head, base)'  " replace name and path
+    let lines = filter(lines, {_, val -> s:tag_match(val, ftype, regex, fast)})
+    let lines = map(lines, {_, val -> substitute(val, parse, print, '')})
     call extend(result, lines)
   endfor
-  return result
+  return [result, heads]
 endfunction
 
 " Return the 'from' position for the given path and tag
@@ -206,7 +213,7 @@ function! tag#fzf_btags(bang, query) abort
   let flags .= ' --preview-window +{3}-/2 --query ' . shellescape(a:query)
   let options = {
     \ 'source': call(snr . 'btags_source', [[cmd]]),
-    \ 'sink': function('tags#push_tag', [0]),
+    \ 'sink': function('tags#_select_tag', [{}, 0]),
     \ 'options': flags . ' --prompt "BTags> "',
   \ }
   return call(snr . 'fzf', ['btags', options, [extra, a:bang]])
@@ -225,10 +232,11 @@ function! tag#fzf_tags(type, bang, ...) abort
   let flags = "-m -d '\t' --with-nth ..4 --nth ..2"
   let flags .= nbytes > maxbytes ? ' --algo=v1' : ''
   let prompt = empty(a:type) ? 'Tags> ' : 'FTags> '
-  let source = call('tag#read_tags', [a:type, ''] + paths)
+  let [source, heads] = call('tag#read_tags', [a:type, ''] + paths)
+  echom 'Cache: ' . len(heads)
   let options = {
     \ 'source': source,
-    \ 'sink': function('tags#push_tag', [0]),
+    \ 'sink': function('tags#_select_tag', [heads, 0]),
     \ 'options': flags . ' --prompt ' . string(prompt),
   \ }
   return call(snr . 'fzf', ['tags', options, [extra, a:bang]])

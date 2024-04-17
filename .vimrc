@@ -639,8 +639,8 @@ for s:map in ['//', '/?', '?/', '??'] | silent! exe 'unmap g' . s:map | endfor
 command! -bang -nargs=* Lines call mark#fzf_lines(<q-args>, <bang>0)
 noremap <expr> g; edit#sel_lines_expr(0)
 noremap <expr> g: edit#sel_lines_expr(1)
-noremap g;; /<C-r>=tags#get_scope()<CR>
-noremap g:: ?<C-r>=tags#get_scope()<CR>
+noremap g;; <Cmd>call tags#set_search('', 1)<CR><Cmd>call feedkeys(empty(@/) ? '' : '/' . @/, 'n')<CR>
+noremap g:: <Cmd>call tags#set_search('', 1)<CR><Cmd>call feedkeys(empty(@/) ? '' : '?' . @/, 'n')<CR>
 noremap g/ <Cmd>BLines<CR>
 noremap g? <Cmd>Lines<CR>
 
@@ -685,7 +685,7 @@ noremap G G
 " Adjust screen relative to cursor
 " Note: Use parentheses since g0/g$ are navigation and z0/z9 used for color schemes
 for s:key in ['0', '^', 'g0', 'g$'] | exe 'noremap ' . s:key . ' ' . s:key . 'ze' | endfor
-noremap _ <Cmd>call fold#update_folds(0)<CR>zvzzze
+noremap _ zvzzze
 noremap g( ze
 noremap g) zs
 noremap z( zb
@@ -810,8 +810,8 @@ noremap <F8> <Cmd>call mark#next_mark(v:count1)<CR>
 " Note: These redefinitions add flexibility to native fzf.vim commands, mnemonic
 " for alternatives is 'local directory' or 'current file'. Also note Rg is faster and
 " has nicer output so use by default: https://unix.stackexchange.com/a/524094/112647
-command! -range=0 -bang -nargs=* -complete=file Grep call call('grep#call_rg', [<bang>0, <count>, tags#get_match(2), <f-args>])
-command! -range=0 -bang -nargs=* -complete=file Find call call('grep#call_rg', [<bang>0, <count>, tags#get_match(1), <f-args>])
+command! -range=0 -bang -nargs=* -complete=file Grep call call('grep#call_rg', [<bang>0, <count>, tags#get_search(2), <f-args>])
+command! -range=0 -bang -nargs=* -complete=file Find call call('grep#call_rg', [<bang>0, <count>, tags#get_search(1), <f-args>])
 command! -range=0 -bang -nargs=+ -complete=file Ag call grep#call_ag(<bang>0, <count>, <f-args>)
 command! -range=0 -bang -nargs=+ -complete=file Rg call grep#call_rg(<bang>0, <count>, <f-args>)
 nnoremap g' <Cmd>call grep#call_grep('rg', 0, 2)<CR>
@@ -997,8 +997,8 @@ vnoremap <expr> " utils#translate_count('@', '*')
 
 " Change text, specify registers with counts.
 " Note: Uppercase registers are same as lowercase but saved in viminfo.
-nnoremap <expr> c (v:count ? '<Esc>' : '') . utils#translate_count('') . edit#insert_mode('c')
-nnoremap <expr> C (v:count ? '<Esc>' : '') . utils#translate_count('') . edit#insert_mode('C')
+nnoremap <expr> c (v:count ? '<Esc>zv' : 'zv') . utils#translate_count('') . edit#insert_mode('c')
+nnoremap <expr> C (v:count ? '<Esc>zv' : 'zv') . utils#translate_count('') . edit#insert_mode('C')
 vnoremap <expr> c utils#translate_count('') . edit#insert_mode('c')
 vnoremap <expr> C utils#translate_count('') . edit#insert_mode('C')
 

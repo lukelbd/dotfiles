@@ -178,7 +178,7 @@ function! edit#search_replace(msg, ...) range abort
       let jdx = idx + 1  " replacement index
       let regex = type(pairs[idx]) == 2 ? pairs[idx]() : pairs[idx]
       let replace = jdx >= a:0 ? '' : type(pairs[jdx]) == 2 ? pairs[jdx]() : pairs[jdx]
-      if !empty(group) && !search(regex, 'cnW', line, 0, '!tags#get_inside("$", group)')
+      if !empty(group) && !search(regex, 'cnW', line, 0, 'tags#get_skip("$", group)')
         continue  " e.g. not inside comment
       endif
       let cmd = 's@' . regex . '@' . replace . '@gel'

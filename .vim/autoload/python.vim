@@ -297,7 +297,7 @@ function! python#next_docstring(count, ...) abort
   endif
   let regex = head . '[frub]*' . s:regex_doc . '\_s*\zs'
   for _ in range(abs(a:count))  " cursor is on first non-whitespace after triple-quote
-    call search(regex, flags, 0, 0, "!tags#get_inside(-1, 'Constant')")
+    call search(regex, flags, 0, 0, "tags#get_skip(-1, 'Constant')")
   endfor
   if &foldopen =~# 'quickfix' | exe 'normal! zv' | endif
 endfunction

@@ -2,8 +2,6 @@
 --fields=+k
 --fields=+t
 --excmd=number
---pseudo-tags=+TAG_KIND_DESCRIPTION
---pseudo-tags=+TAG_KIND_SEPARATOR
 --langmap=sh:+.bashrc
 --langmap=vim:+.vimrc
 --tex-kinds=-g
