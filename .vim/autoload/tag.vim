@@ -1,22 +1,27 @@
 "-----------------------------------------------------------------------------"
 " Utilities for ctags management
 "-----------------------------------------------------------------------------"
-" Tag source functions
-" Warning: Encountered strange error where naming .vim/autoload
-" file same as vim-tags/autoload. So give this a separate name.
-" Note: This matches fzf.vim/bin/tags.pl perl script formatting, but adds optional
-" filetype filter (see vim-tags). Note removing vim quotes causes viewer to fail.
+" Helper functions
+" Note: Encountered bug when naming this same as vim-tags (plural).
+" Note: Formatting with more complex regex can cause slowdown. Avoid complex
+" regex patterns e.g. extra globs and non-greedy globs.
 let s:path_types = {}
-function! s:tag_print(heads, head, base) abort
+function! s:tag_basic(head) abort  " see fzf.vim/bin/tagpreview.sh
   let name = printf('%-24s', submatch(1))
-  let path = a:base . submatch(3)  " submatch with base
-  let a:heads[path] = a:head  " mapping to restore path
-  return name . submatch(2) . path . submatch(4)  " formatted with padding
+  let line = name . submatch(2)
+  return line . "\t" . a:head . '.vimtags'
 endfunction
-function! s:tag_match(line, ftype, regex, fast) abort
-  let regex = '^[^\t]*\t\([^\t]*\)\t.*$'
+function! s:tag_format(base, head, heads) abort
+  let name = printf('%-24s', submatch(1))
+  let path = a:base . submatch(2)  " submatch with base
+  let a:heads[trim(path)] = a:head  " efficient cache (avoid huge string table)
+  let line = name . "\t" . path . submatch(3)
+  return line . "\t" . a:head . '.vimtags'
+endfunction
+function! s:tag_filter(line, ftype, regex, fast) abort
   if a:line =~# '^\s*!' | return 0 | endif
   if empty(a:ftype) | return 1 | endif
+  let regex = '^[^\t]*\t\([^\t]*\)\t.*$'
   let path = substitute(a:line, regex, '\1', 'g')
   return tags#type_match(path, a:ftype, a:regex, s:path_types, a:fast)
 endfunction
@@ -33,7 +38,13 @@ function! tag#show_cache() abort
     echom head . ' ' . tail
   endfor
 endfunction
-function! tag#read_tags(type, query, ...) abort
+
+" Tag source functions
+" Note: This matches fzf.vim/bin/tags.pl perl script formatting, but adds optional
+" filetype filter (see vim-tags). Note removing vim quotes causes viewer to fail.
+function! tag#read_tags(mode, type, query, ...) abort
+  let sel = a:mode ? '^\([^\t]*\)\t\([^\t]*\)\(.*\)$' : '^\([^\t]*\)\(.*\)$'
+  let sub = a:mode ? '\=s:tag_format(base, head, heads)' : '\=s:tag_basic(path)'
   let cmd = 'readtags -t %s -e -p - ' . fzf#shellescape(a:query)
   if empty(a:type)
     let [ftype, regex] = ['', '']
@@ -53,11 +64,9 @@ function! tag#read_tags(type, query, ...) abort
     let prepend = a:0 > 1 && strpart(expand('%:p'), 0, len(folder)) !=# folder
     let fast = index(values(s:path_types), ftype) >= 0  " whether cached
     let base = prepend ? fnamemodify(folder, ':t') . '/' : ''  " slash required
-    let head = fnamemodify(folder, prepend ? ':h' : '') . '/'
-    let parse = '^\(.\{-}\)\( *\t\)\(.\{-}\)\( *\t\)'  " parse name and path
-    let print = '\=s:tag_print(heads, head, base)'  " replace name and path
-    let lines = filter(lines, {_, val -> s:tag_match(val, ftype, regex, fast)})
-    let lines = map(lines, {_, val -> substitute(val, parse, print, '')})
+    let head = prepend ? fnamemodify(folder, ':h') . '/' : folder . '/'
+    call filter(lines, {_, val -> s:tag_filter(val, ftype, regex, fast)})
+    call map(lines, {_, val -> substitute(val, sel, sub, '')})
     call extend(result, lines)
   endfor
   return [result, heads]
@@ -203,10 +212,10 @@ function! s:tag_files(...) abort
     endif
   endfor | return tags
 endfunction
-function! tag#fzf_btags(bang, query) abort
+function! tag#fzf_btags(bang, query, ...) abort
   let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
-  let extra = fzf#vim#with_preview({'placeholder': '{2}:{3..}'})
+  let opts = fzf#vim#with_preview({'placeholder': '{2}:{3..}'})
   let cmd = 'ctags -f - --sort=yes --excmd=number %s 2>/dev/null | sort -s -k 5'
   let cmd = printf(cmd, fzf#shellescape(expand('%')))
   let flags = "-m -d '\t' --with-nth 1,4.. --nth 1"
@@ -216,12 +225,12 @@ function! tag#fzf_btags(bang, query) abort
     \ 'sink': function('tags#_select_tag', [{}, 0]),
     \ 'options': flags . ' --prompt "BTags> "',
   \ }
-  return call(snr . 'fzf', ['btags', options, [extra, a:bang]])
+  return call(snr . 'fzf', ['btags', options, [opts, a:bang]])
 endfunction
 function! tag#fzf_tags(type, bang, ...) abort
   let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
-  let extra = fzf#vim#with_preview({'placeholder': '--tag {2}:{-1}:{3..}' })
+  let opts = fzf#vim#with_preview({'placeholder': '--tag {2}:{-1}:{3..}' })
   let paths = a:0 ? call('s:tag_files', a:000) : tags#get_files()
   let paths = map(paths, 'fnamemodify(v:val, ":p")')
   let [nbytes, maxbytes] = [0, 1024 * 1024 * 200]
@@ -232,14 +241,13 @@ function! tag#fzf_tags(type, bang, ...) abort
   let flags = "-m -d '\t' --with-nth ..4 --nth ..2"
   let flags .= nbytes > maxbytes ? ' --algo=v1' : ''
   let prompt = empty(a:type) ? 'Tags> ' : 'FTags> '
-  let [source, heads] = call('tag#read_tags', [a:type, ''] + paths)
-  echom 'Cache: ' . len(heads)
+  let [source, heads] = call('tag#read_tags', [1, a:type, ''] + paths)
   let options = {
     \ 'source': source,
     \ 'sink': function('tags#_select_tag', [heads, 0]),
     \ 'options': flags . ' --prompt ' . string(prompt),
   \ }
-  return call(snr . 'fzf', ['tags', options, [extra, a:bang]])
+  return call(snr . 'fzf', ['tags', options, [opts, a:bang]])
 endfunction
 
 " Search for the 'root' directory to store the ctags file
@@ -247,20 +255,6 @@ endfunction
 " Note: Previously tried just '__init__.py' for e.g. conda-managed packages and
 " placing '.tagproject' in vim-plug folder but this caused tons of nested .vimtags
 " file creations including *duplicate* tags when invoking :Tags function.
-function! s:dist_root(head, tails) abort
-  let head = a:head  " general distributions
-  while v:true  " see also tags#get_files()
-    let ihead = fnamemodify(head, ':h')
-    if empty(ihead) || ihead ==# head | let head = '' | break | endif
-    let idx = index(a:tails, fnamemodify(ihead, ':t'))
-    if idx >= 0 | break | endif  " preceding head e.g. share/vim
-    let head = ihead  " tag file candidate
-  endwhile
-  let tail = fnamemodify(head, ':t')  " e.g. /.../share/vim -> vim
-  let suff = strpart(a:head, len(head))  " e.g. /.../share/vim/vim91 -> vim91
-  let suff = matchstr(suff, '^[\/]\+' . tail . '[0-9]*[\/]\@=')
-  return head . suff  " optional version subfolder
-endfunction
 function! s:proj_root(head, globs, ...) abort
   let roots = []  " general projects
   let root = fnamemodify(a:head, ':p')
@@ -274,6 +268,27 @@ function! s:proj_root(head, globs, ...) abort
     endfor
   endfor | return ''
 endfunction
+function! s:dist_root(head, tails, ...) abort
+  let head = a:head  " general distributions
+  let tail = fnamemodify(head, ':t')
+  let idx = index(a:tails, tail)
+  if idx >= 0  " avoid e.g. ~/software/.vimtags
+    let default = expand('~/dotfiles')
+    let tail = get(a:000, idx, '')
+    return empty(tail) ? default : head . '/' . tail
+  endif
+  while v:true  " see also tags#get_files()
+    let ihead = fnamemodify(head, ':h')
+    if empty(ihead) || ihead ==# head | let head = '' | break | endif
+    let idx = index(a:tails, fnamemodify(ihead, ':t'))
+    if idx >= 0 | break | endif  " preceding head e.g. share/vim
+    let head = ihead  " tag file candidate
+  endwhile
+  let tail = fnamemodify(head, ':t')  " e.g. /.../share/vim -> vim
+  let suff = strpart(a:head, len(head))  " e.g. /.../share/vim/vim91 -> vim91
+  let suff = matchstr(suff, '^[\/]\+' . tail . '[0-9]*[\/]\@=')
+  return head . suff  " optional version subfolder
+endfunction
 function! tag#find_root(...) abort
   let path = resolve(expand(a:0 ? a:1 : '%'))
   let head = fnamemodify(path, ':p:h')  " no trailing slash
@@ -284,14 +299,12 @@ function! tag#find_root(...) abort
   let root = s:proj_root(head, globs, 0)  " highest-level control system indicator
   if !empty(root) | return root | endif
   let globs = ['__init__.py', 'setup.py', 'setup.cfg']
-  let homes = [resolve(expand('~/icloud')), expand('~')]  " WARNING: order critical
-  let tails = ['/Mackup', '/dotfiles']  " fallback subfolders
   let root = s:proj_root(head, globs, 1)  " lowest-level python distribution indicator
   if !empty(root) | return root | endif
-  let idx = index(homes, head) | if idx >= 0 | return head . tails[idx] | endif
-  call map(homes, {_, val -> fnamemodify(val, ':t')})
-  let tails = homes + ['builds', 'local', 'share', 'bin']
-  let root = s:dist_root(head, tails)
+  let projs = ['builds', 'local', 'share', 'bin']
+  let homes = ['com~apple~CloudDocs', 'icloud', 'software', 'research', '']
+  let defaults = ['Mackup', 'Mackup', '', 'dotfiles']
+  let root = s:dist_root(head, homes + projs, defaults)
   if !empty(root) | return root | endif
   return head
 endfunction
