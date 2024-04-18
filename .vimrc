@@ -1872,6 +1872,7 @@ if &g:foldenable || s:plug_active('FastFold')
   " Fast fold settings
   augroup fastfold_setup
     au!
+    au BufWinEnter * call fold#update_folds(1)
     au TextChanged,TextChangedI * let b:fastfold_queued = 1
   augroup END
   let g:fastfold_savehook = 0  " use custom instead
