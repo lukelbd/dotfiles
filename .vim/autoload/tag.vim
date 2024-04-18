@@ -322,33 +322,30 @@ endfunction
 " Note: For some reason parsing '--exclude-exception' rules for g:fzf_tags_command
 " does not work, ignores all other exclude flags, and vim-gutentags can only
 " handle excludes anyway, so just bypass all patterns starting with '!'.
-function! tag#parse_ignores(join, ...) abort
-  let paths = copy(a:000)
-  if empty(paths)
-    let project = split(system('git rev-parse --show-toplevel'), "\n")
-    let suffix = empty(project) ? [] : [project[0] . '/.gitignore']
-    let paths = ['~/.ignore', '~/.wildignore', '~/.gitignore'] + suffix
+function! tag#parse_ignores(flag, ...) abort
+  if a:0  " global default
+    let paths = copy(a:000)
+  else  " used for gutentags settings
+    let paths = ['~/.ignore', '~/.wildignore', '~/.gitignore']
   endif
-  let ignores = []
+  let result = []
   for path in paths
     let path = resolve(expand(path))
     if filereadable(path)
       for line in readfile(path)
         let line = substitute(line, '\/\s*$', '', '')
-        if line =~# '^\s*\(#.*\)\?$'
-          continue
-        elseif line[:0] ==# '!'
-          continue
-        elseif a:join
-          let ignore = "--exclude='" . line . "'"
-        else
-          let ignore = line
+        if line =~# '^\s*\(#.*\)\?$' | continue | endif
+        if !a:flag
+          call add(result, line)
+        elseif strpart(line, 0, 1) !=# '!'
+          call add(result, '--exclude=' . shellescape(line))
+        else  " exception prepended with !
+          call add(result, '--exclude-exception=' . shellescape(line[1:]))
         endif
-        call add(ignores, ignore)
       endfor
     endif
   endfor
-  return a:join ? join(ignores, ' ') : ignores
+  return result
 endfunction
 
 " Update tags variable (requires g:gutentags_ctags_auto_set_tags = 0)
@@ -360,15 +357,14 @@ endfunction
 " Note: Vim resolves all symlinks so unfortunately cannot just commit to using
 " the symlinked $HOME version in other projects. Resolve below for safety.
 function! tag#update_paths(...) abort
-  let bufs = []  " source buffers
   if a:0  " append to existing
-    let args = copy(a:000[empty(type(a:1)):])
-    let toggle = empty(type(a:1)) ? a:1 : 1  " type zero i.e. number (see :help empty)
-    call extend(bufs, map(args, 'bufnr(v:val)'))
+    let toggle = !type(a:1) ? a:1 : 1  " type zero i.e. number (see :help empty)
+    let args = copy(a:000[!type(a:1):])
+    let bufs = map(args, 'bufnr(v:val)')
   else  " reset defaults
-    setglobal tags=
-    let toggle = 1
-    call map(range(1, tabpagenr('$')), 'extend(bufs, tabpagebuflist(v:val))')
+    let toggle = 1 | setglobal tags=
+    let [bufs, tabs] = [[], range(1, tabpagenr('$'))]
+    call map(tabs, 'extend(bufs, tabpagebuflist(v:val))')
   endif
   for bnr in bufs  " possible iteration
     let opts = getbufvar(bnr, 'gutentags_files', {})
@@ -376,11 +372,13 @@ function! tag#update_paths(...) abort
     if empty(path) || !filewritable(resolve(path))
       continue  " invalid path
     endif
-    let tags = tags#get_files(bufname(bnr))  " prefer buffer file
-    call map(tags, {_, val -> substitute(val, '\(,\| \)', '\\\1', 'g')})  " see above
     let path = substitute(path, ',', '\\\\,', 'g')  " see above
     let path = substitute(path, ' ', '\\\\\\ ', 'g')  " see above
     exe 'setglobal tags' . (toggle ? '+=' : '-=') . path
+  endfor
+  for bnr in bufs
+    let tags = tags#get_files(bufname(bnr))  " prefer buffer file
+    call map(tags, {_, val -> substitute(val, '\(,\| \)', '\\\1', 'g')})  " see above
     call setbufvar(bnr, '&tags', join(tags, ','))  " see above
   endfor
 endfunction
