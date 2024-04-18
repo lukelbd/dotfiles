@@ -314,33 +314,30 @@ endfunction
 " Note: For some reason parsing '--exclude-exception' rules for g:fzf_tags_command
 " does not work, ignores all other exclude flags, and vim-gutentags can only
 " handle excludes anyway, so just bypass all patterns starting with '!'.
-function! tag#parse_ignores(join, ...) abort
-  let paths = copy(a:000)
-  if empty(paths)
-    let project = split(system('git rev-parse --show-toplevel'), "\n")
-    let suffix = empty(project) ? [] : [project[0] . '/.gitignore']
-    let paths = ['~/.ignore', '~/.wildignore', '~/.gitignore'] + suffix
+function! tag#parse_ignores(flag, ...) abort
+  if a:0  " global default
+    let paths = copy(a:000)
+  else  " used for gutentags settings
+    let paths = ['~/.ignore', '~/.wildignore', '~/.gitignore']
   endif
-  let ignores = []
+  let result = []
   for path in paths
     let path = resolve(expand(path))
     if filereadable(path)
       for line in readfile(path)
         let line = substitute(line, '\/\s*$', '', '')
-        if line =~# '^\s*\(#.*\)\?$'
-          continue
-        elseif line[:0] ==# '!'
-          continue
-        elseif a:join
-          let ignore = "--exclude='" . line . "'"
-        else
-          let ignore = line
+        if line =~# '^\s*\(#.*\)\?$' | continue | endif
+        if !a:flag
+          call add(result, line)
+        elseif strpart(line, 0, 1) !=# '!'
+          call add(result, '--exclude=' . shellescape(line))
+        else  " exception prepended with !
+          call add(result, '--exclude-exception=' . shellescape(line[1:]))
         endif
-        call add(ignores, ignore)
       endfor
     endif
   endfor
-  return a:join ? join(ignores, ' ') : ignores
+  return result
 endfunction
 
 " Update tags variable (requires g:gutentags_ctags_auto_set_tags = 0)
