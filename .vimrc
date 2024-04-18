@@ -1351,7 +1351,7 @@ call plug#('junegunn/fzf.vim')  " pin to version supporting :Drop
 call plug#('roosta/fzf-folds.vim')  " jump to folds
 let g:fzf_action = {'ctrl-m': 'Drop', 'ctrl-t': 'Drop', 'ctrl-x': 'split', 'ctrl-v': 'vsplit' }  " have file search and grep open to existing window if possible
 let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
-let g:fzf_tags_command = 'ctags -R -f .vimtags ' . tag#parse_ignores(1)  " added just for safety
+let g:fzf_tags_command = 'ctags -R -f .vimtags --exclude=notebooks ' . tag#parse_ignores(1)
 let g:fzf_require_dir = 0  " see lukelbd/fzf.vim completion-edits branch
 let g:fzf_buffers_jump = 1  " jump to existing window if already open
 
@@ -1843,8 +1843,8 @@ if s:plug_active('vim-gutentags')
   let g:gutentags_ctags_auto_set_tags = 0  " tag#update_paths() handles this instead
   let g:gutentags_ctags_executable = 'ctags'  " note this respects .ctags config
   let g:gutentags_ctags_exclude_wildignore = 1  " exclude &wildignore too
-  let g:gutentags_ctags_exclude = tag#parse_ignores(0)  " exclude all by default
-  let g:gutentags_ctags_tagfile = '.vimtags'
+  let g:gutentags_ctags_exclude = ['notebooks'] + tag#parse_ignores(0)
+  let g:gutentags_ctags_tagfile = '.vimtags'  " similar to .vimsession
   let g:gutentags_define_advanced_commands = 1  " debugging command
   let g:gutentags_generate_on_new = 1  " do not update tags when opening project file
   let g:gutentags_generate_on_write = 1  " update tags when file updated
