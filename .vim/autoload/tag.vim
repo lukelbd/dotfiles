@@ -352,15 +352,14 @@ endfunction
 " Note: Vim resolves all symlinks so unfortunately cannot just commit to using
 " the symlinked $HOME version in other projects. Resolve below for safety.
 function! tag#update_paths(...) abort
-  let bufs = []  " source buffers
   if a:0  " append to existing
-    let args = copy(a:000[empty(type(a:1)):])
-    let toggle = empty(type(a:1)) ? a:1 : 1  " type zero i.e. number (see :help empty)
-    call extend(bufs, map(args, 'bufnr(v:val)'))
+    let toggle = !type(a:1) ? a:1 : 1  " type zero i.e. number (see :help empty)
+    let args = copy(a:000[!type(a:1):])
+    let bufs = map(args, 'bufnr(v:val)')
   else  " reset defaults
-    setglobal tags=
-    let toggle = 1
-    call map(range(1, tabpagenr('$')), 'extend(bufs, tabpagebuflist(v:val))')
+    let toggle = 1 | setglobal tags=
+    let [bufs, tabs] = [[], range(1, tabpagenr('$'))]
+    call map(tabs, 'extend(bufs, tabpagebuflist(v:val))')
   endif
   for bnr in bufs  " possible iteration
     let opts = getbufvar(bnr, 'gutentags_files', {})
@@ -368,11 +367,13 @@ function! tag#update_paths(...) abort
     if empty(path) || !filewritable(resolve(path))
       continue  " invalid path
     endif
-    let tags = tags#get_files(bufname(bnr))  " prefer buffer file
-    call map(tags, {_, val -> substitute(val, '\(,\| \)', '\\\1', 'g')})  " see above
     let path = substitute(path, ',', '\\\\,', 'g')  " see above
     let path = substitute(path, ' ', '\\\\\\ ', 'g')  " see above
     exe 'setglobal tags' . (toggle ? '+=' : '-=') . path
+  endfor
+  for bnr in bufs
+    let tags = tags#get_files(bufname(bnr))  " prefer buffer file
+    call map(tags, {_, val -> substitute(val, '\(,\| \)', '\\\1', 'g')})  " see above
     call setbufvar(bnr, '&tags', join(tags, ','))  " see above
   endfor
 endfunction
