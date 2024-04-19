@@ -23,6 +23,8 @@ noremap <buffer> <Plug>ExecuteFile2 <Cmd>JupyterDisconnect<CR>
 noremap <buffer> g\| <Cmd>call python#insert_docstring()<CR>
 noremap <expr> <buffer> g{ python#dict_to_kw_expr(0)
 noremap <expr> <buffer> g} python#dict_to_kw_expr(1)
+map <buffer> g{{ g{iccscfdict<CR>
+map <buffer> g}} g}ibcsfc
 
 " Add indention-based 'm' text objects
 " BracelessEnable +indent  " bug causes screen view to jump

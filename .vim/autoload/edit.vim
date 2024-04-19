@@ -12,6 +12,31 @@ function! edit#how_much(...) abort
   return utils#motion_func('HowMuch#HowMuch', a:000)
 endfunction
 
+" Auto formatting utilities
+" Note: Not all servers support auto formtting. Seems 'pylsp' uses autopep8 consistent
+" with flake8 warnings. Use below function to print active servers.
+function! edit#get_servers() abort
+  let servers = lsp#get_allowed_servers()
+  let table = split(lsp#get_server_status(), "\n")
+  let lines = map(table, 'split(v:val, '':\s*'')')
+  let names = map(filter(table, 'v:val[1] ==# ''running'''), 'v:val[0]')
+  return filter(servers, 'index(names, v:val) >= 0')
+endfunction
+function! edit#auto_format(...) abort
+  let formatters = get(g:, 'formatters_' . &l:filetype, [])
+  let servers = edit#get_servers()
+  if a:0 && a:1 && !empty(servers)  " possibly aborts
+    exe 'LspDocumentFormat' | call fold#update_folds(1)
+  elseif !empty(formatters)
+    exe 'Autoformat' | call fold#update_folds(1)
+    redraw | echom 'Autoformatted with ' . string(formatters[0])
+  else
+    redraw | echohl WarningMsg
+    echom 'Error: No formatters available'
+    echohl None
+  endif
+endfunction
+
 " Indent or join lines by count
 " Note: Native vim indent uses count to move over number of lines, but redundant
 " with e.g. 'd2k', so instead use count to denote indentation level.

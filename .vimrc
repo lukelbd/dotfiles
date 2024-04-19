@@ -685,7 +685,7 @@ noremap G G
 " Adjust screen relative to cursor
 " Note: Use parentheses since g0/g$ are navigation and z0/z9 used for color schemes
 for s:key in ['0', '^', 'g0', 'g$'] | exe 'noremap ' . s:key . ' ' . s:key . 'ze' | endfor
-noremap _ zvzzze
+noremap <expr> _ (foldclosed('.') > 0 ? 'zv' : foldlevel('.') > 0 ? 'zc' : '') . 'zzze'
 noremap g( ze
 noremap g) zs
 noremap z( zb
@@ -1305,6 +1305,9 @@ call plug#('dense-analysis/ale')
 call plug#('Chiel92/vim-autoformat')
 call plug#('tell-k/vim-autopep8')
 call plug#('psf/black')
+let g:autoformat_autoindent = 0
+let g:autoformat_retab = 0
+let g:autoformat_remove_trailing_spaces = 0
 
 " Git integration utilities
 " Note: vim-flog and gv.vim are heavyweight and lightweight commit branch viewing
@@ -1873,7 +1876,7 @@ if &g:foldenable || s:plug_active('FastFold')
   " Fast fold settings
   augroup fastfold_setup
     au!
-    au BufWinEnter * call fold#update_folds(1)
+    au BufWinEnter * call fold#update_folds(0)
     au TextChanged,TextChangedI * let b:fastfold_queued = 1
   augroup END
   let g:fastfold_savehook = 0  " use custom instead
@@ -1941,8 +1944,8 @@ if s:plug_active('vim-lsp')
   noremap z<CR> <Cmd>silent! normal! gdzv<CR><Cmd>noh<CR>
   noremap <Leader>a <Cmd>LspInstallServer<CR>
   noremap <Leader>A <Cmd>LspUninstallServer<CR>
-  noremap <Leader>f <Cmd>Autoformat<CR><Cmd>call fold#update_folds(1)<CR>
-  noremap <Leader>F <Cmd>LspDocumentFormat<CR><Cmd>call fold#update_folds(1)<CR>
+  noremap <Leader>f <Cmd>call edit#auto_format(0)<CR>
+  noremap <Leader>F <Cmd>call edit#auto_format(1)<CR>
   noremap <Leader>d <Cmd>call stack#push_stack('doc', 'python#doc_page')<CR>
   noremap <Leader>D <Cmd>call python#fzf_doc()<cr>
   noremap <Leader>& <Cmd>call switch#lsp()<CR>
@@ -2001,11 +2004,6 @@ endif
 " 'vsnip': {'mark': 'S', 'maxItems': 5}}
 " 'ctags': {'mark': 'T', 'isVolatile': v:true, 'maxItems': 5}}
 if s:plug_active('ddc.vim')
-  augroup ddc_setup
-    au!
-    au InsertEnter * if &l:filetype ==# 'vim' | setlocal iskeyword+=: | endif
-    au InsertLeave * if &l:filetype ==# 'vim' | setlocal iskeyword-=: | endif
-  augroup END
   command! -nargs=? DdcToggle call switch#ddc(<args>)
   noremap <Leader>* <Cmd>call switch#ddc()<CR>
   let g:popup_preview_config = {
@@ -2150,6 +2148,16 @@ endif
 " Autoformat plugin docs:
 " https://github.com/vim-autoformat/vim-autoformat (expands native 'autoformat' utilities)
 if s:plug_active('ale')
+  let g:formatdef_isort_black = '"isort '
+    \ . '--trailing-comma '
+    \ . '--force-grid-wrap 0 '
+    \ . '--multi-line 3 '
+    \ . '--line-length ' . g:linelength
+    \ . ' - | black '
+    \ . '--skip-string-normalization '
+    \ . '--line-length ' . g:linelength . ' - "'
+  let g:formatters_python = ['isort_black']  " defined above
+  let g:formatters_fortran = ['fprettify']  " install with mamba
   let g:autopep8_disable_show_diff = 1
   let g:autopep8_ignore = s:flake8_ignore
   let g:autopep8_max_line_length = g:linelength
@@ -2162,16 +2170,6 @@ if s:plug_active('ale')
     \ 'multi_line_output': 3,
     \ 'line_length': g:linelength,
     \ }
-  let g:formatdef_mpython = '"isort '
-    \ . '--trailing-comma '
-    \ . '--force-grid-wrap 0 '
-    \ . '--multi-line 3 '
-    \ . '--line-length ' . g:linelength
-    \ . ' - | black --quiet '
-    \ . '--skip-string-normalization '
-    \ . '--line-length ' . g:linelength . ' - "'
-  let g:formatters_python = ['mpython']  " multiple formatters
-  let g:formatters_fortran = ['fprettify']
 endif
 
 " Conflict highlight settings (warning: change below to 'BufEnter?')
