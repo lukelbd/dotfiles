@@ -685,7 +685,7 @@ noremap G G
 " Adjust screen relative to cursor
 " Note: Use parentheses since g0/g$ are navigation and z0/z9 used for color schemes
 for s:key in ['0', '^', 'g0', 'g$'] | exe 'noremap ' . s:key . ' ' . s:key . 'ze' | endfor
-noremap <expr> _ (foldclosed('.') > 0 ? 'zv' : foldlevel('.') > 0 ? 'zc' : '') . 'zzze'
+noremap <expr> _ (foldclosed('.') > 0 ? 'zvzz' : foldlevel('.') > 0 ? 'zc' : 'zz') . 'ze'
 noremap g( ze
 noremap g) zs
 noremap z( zb
@@ -980,9 +980,15 @@ nmap u <Plug>(RepeatUndo)
 nmap U <Plug>(RepeatRedo)
 
 " Operator register and display utilities
+" Note: Peekaboo uses <C-\><C-o> for insert-mode peekaboo which still moves cursor
+" when inserting on end-of-line. So use custom <Cmd> mappings instead.
 " Note: For some reason cannot set g:peekaboo_ins_prefix = '' and simply have <C-r>
 " trigger the mapping. See https://vi.stackexchange.com/q/5803/8084
-imap <expr> <F6> peekaboo#peek(1, "\<C-r>", 0)
+inoremap <expr> <C-g>" utils#translate_count('i')
+inoremap <expr> <C-g>' utils#translate_count('i')
+inoremap <expr> <C-r> utils#translate_count('i')
+cnoremap <expr> <C-r> utils#translate_count('c')
+imap <F6> <Cmd>call peekaboo#peek(1, "\<C-r>", 0)<CR><Cmd>call peekaboo#aboo()<CR>
 nmap <expr> <F6> peekaboo#peek(1, '"', 0)
 vmap <expr> <F6> peekaboo#peek(1, '"', 0)
 
@@ -1320,6 +1326,7 @@ call plug#('rhysd/conflict-marker.vim')  " highlight conflicts
 call plug#('airblade/vim-gitgutter')
 call plug#('tpope/vim-fugitive')
 let g:conflict_marker_enable_mappings = 0
+let g:fugitive_no_maps = 1  " disable cmap <C-r><C-g> and nmap y<C-g>
 
 " Tag integration utilities
 " Note: This should work for both fzf ':Tags' (uses 'tags' since relies on tagfiles()
@@ -2221,8 +2228,8 @@ if s:plug_active('vim-fugitive')
   noremap gp <Cmd>BCommits<CR>
   noremap gP <Cmd>Commits<CR>
   noremap zP <Cmd>call git#run_map(0, 0, '', 'blame')<CR>
-  nnoremap zpp <Cmd>call git#run_map(2, 0, '', 'blame ')<CR>
   noremap <expr> zp git#run_map_expr(2, 0, '', 'blame ')
+  nnoremap zpp <Cmd>call git#run_map(2, 0, '', 'blame ')<CR>
   noremap <Leader>' <Cmd>call git#run_map(0, 0, '', '')<CR>
   noremap <Leader>" <Cmd>call git#run_map(0, 0, '', 'status')<CR>
   noremap <Leader>p <Cmd>call git#run_map(0, 0, '', 'trunk')<CR>

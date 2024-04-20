@@ -342,15 +342,16 @@ function! s:get_label(name) abort
   endif
   return label
 endfunction
-function! s:get_input(mode, name) abort
+function! s:get_input(mode, default) abort
   let char = utils#input_default('Register', '', '', 1)
   if char =~? '^[dcyp]$'  " default register
-    call feedkeys(char, 'm') | return a:name
+    call feedkeys(char, 'm') | return a:default
   endif
-  if char =~# '^[''"]$'  " select vim register name
-    let char = utils#input_default('Register (native)', '', '', 1)
-  endif
-  if len(char) != 1 || char !~? '\p\|\t'
+  if char =~# '^[''"]$\|^\s$'
+    return '"'  " unnamed register
+  elseif char ==# "\<C-g>"
+    return fugitive#Object(@%)  " replace native y<C-g> <C-r><C-g> maps
+  elseif len(char) != 1 || char !~? '^\p$\|^\t$'
     call feedkeys(char, 'm') | return ''
   elseif char =~# '^\d$'  " select macro number register
     return s:translate_count(a:mode, str2nr(char))[0]
@@ -361,29 +362,36 @@ endfunction
 function! utils#translate_count(mode, ...) abort
   if v:register !=# '"' | return '' | endif  " avoid recursion
   let [name, _, _, cmax] = s:translate_count(a:mode, v:count)
-  let name = !a:0 || v:count ? name : s:get_input(a:mode, a:1)
-  redraw | if empty(name)  " clear message
-    echo '' | return ''
-  elseif !v:count && a:mode !~# '[m`q@]'
+  if a:mode =~# '[ic]'
+    let name = s:get_input(a:mode, '"')
+  elseif a:0 && !v:count  " default value
+    let name = s:get_input(a:mode, a:1)
+  endif
+  if empty(name)  " clear message
+    redraw | echo '' | return ''
+  elseif !v:count && a:mode !~# '[icq@m`]'
     call utils#setup_registers()  " queue register changes
   endif
-  let label = s:get_label(name)
-  let group = a:mode =~# '[m`]' ? 'Mark' : name =~# '^\d$' ? 'Macro' : 'Register'
   let warn = '' | if v:count > cmax  " emit warning
     let warn .= ' Truncating count ' . v:count . ' to ' . string(name) . ' (count ' . cmax . ')'
   endif
   if a:mode ==# 'm' && index(map(getmarklist(), 'v:val.mark'), "'" . name) != -1
     let warn .= ' Overwriting mark ' . string(name) . ' (count ' . v:count . ')'
   endif
+
+  let label = s:get_label(name)
+  let group = a:mode =~# '[m`]' ? 'Mark' : name =~# '^\d$' ? 'Macro' : 'Register'
   if !empty(warn)
-    echohl WarningMsg | echom 'Warning: ' . trim(warn) | echohl None
+    redraw | echohl WarningMsg | echom 'Warning: ' . trim(warn) | echohl None
   elseif name !=# '"'  " show register
-    echom group . ': ' . name[0] . (empty(label) ? '' : ' (' . label . ')')
+    redraw | echom group . ': ' . name[0] . (empty(label) ? '' : ' (' . label . ')')
   endif
-  if !a:0 && a:mode =~# '[q@]'
-    let name = a:mode . name  " e.g. q1 @1
+  if a:mode =~# '[ic]'  " insert or cmdline mode
+    let name = "\<C-r>" . name
+  elseif !a:0 && a:mode =~# '[q@]'
+    let name = a:mode . name  " e.g. 1Q -> q1, 1@ -> @1
   elseif a:0 || a:mode !~# '[q@m`]'
-    let name = '"' . name
+    let name = '"' . name  " e.g. 1' -> \"a, 1y -> \"ay
   endif
   return v:count && mode() ==# 'n' ? "\<Esc>" . name : name
 endfunction
