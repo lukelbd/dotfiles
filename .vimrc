@@ -984,8 +984,6 @@ nmap U <Plug>(RepeatRedo)
 " when inserting on end-of-line. So use custom <Cmd> mappings instead.
 " Note: For some reason cannot set g:peekaboo_ins_prefix = '' and simply have <C-r>
 " trigger the mapping. See https://vi.stackexchange.com/q/5803/8084
-inoremap <expr> <C-g>" utils#translate_count('i')
-inoremap <expr> <C-g>' utils#translate_count('i')
 inoremap <expr> <C-r> utils#translate_count('i')
 cnoremap <expr> <C-r> utils#translate_count('c')
 imap <F6> <Cmd>call peekaboo#peek(1, "\<C-r>", 0)<CR><Cmd>call peekaboo#aboo()<CR>
