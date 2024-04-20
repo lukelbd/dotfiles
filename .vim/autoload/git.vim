@@ -208,10 +208,11 @@ endfunction
 " committing with no staged changes, issues a warning instead of showing the message.
 function! git#complete_msg(lead, line, cursor, ...) abort
   let cnt = a:0 ? a:1 : 50  " default count
-  let result = FugitiveExecute(['log', '-n', string(cnt), '--pretty=%B'])
-  let lead = string('^' . escape(a:lead, '[]\/.*$~'))
-  let opts = filter(copy(result.stdout), 'len(v:val)')
-  let opts = filter(copy(opts), 'v:val =~# ' . lead)
+  let lead = '^' . escape(a:lead, '[]\/.*$~')
+  let input = get(s:, 'input_message', '')
+  let logs = FugitiveExecute(['log', '-n', string(cnt), '--pretty=%B'])
+  let opts = empty(input) ? logs.stdout : [input] + logs.stdout
+  let opts = filter(opts, '!empty(v:val) && v:val =~# ' . string(lead))
   return map(opts, 'substitute(v:val, "\s\+", "", "g")')
 endfunction
 function! git#commit_wrap(editor, ...) abort
@@ -233,11 +234,13 @@ function! git#commit_wrap(editor, ...) abort
     let default = get(git#complete_msg('', '', '', 1), 0, '')
     let opts = FugitiveExecute(['log', '-n', '50', '--pretty=%B'])
     let msg = utils#input_default('Git ' . cmd, default, 'git#complete_msg')
+    if !empty(msg) | let s:input_message = msg[:49] | endif
     while !empty(msg) && len(msg) > 50  " see .bashrc git()
       redraw | echohl WarningMsg
       echom 'Error: Message has length ' . len(msg) . '. Must be less than or equal to 50.'
       echohl None
       let msg = utils#input_default('Git ' . cmd, msg[:49], 'git#complete_msg')
+      if !empty(msg) | let s:input_message = msg[:49] | endif
     endwhile
     if empty(msg) | return | endif
     let cmd .= ' --message ' . shellescape(msg)
