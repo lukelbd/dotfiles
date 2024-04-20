@@ -35,12 +35,10 @@
 #   local (normally those are ignored with git fetch --all).
 #   See: https://stackoverflow.com/a/10312587/4970632
 # 'head':
-#   Show stylized git branch head
+#   Show current head branch
 # 'ignore':
 #   Stop tracking every single regex pattern in your .gitignore
 #   to ignore all subdirectories in another directory, use subdir/*/
-# 'latest':
-#   Show stylized latest git stash
 # 'ls':
 #   List the tracked file names only.
 # 'll':
@@ -61,6 +59,8 @@
 #   Remove outdated references to remote branches.
 # 'pack':
 #   Show largest 'pack' files in repo
+# 'pop':
+#   Shortcut for 'git stash pop'
 # 'publish':
 #   Push the tags to origin.
 # 'refs':
@@ -71,16 +71,18 @@
 # 'remove':
 #   For more information see the script, can be passed a filename or a
 #   regular expression e.g. '*.mov'
+# 'save':
+#   Shortcut for 'git stash push'
+# 'saved':
+#   Show stash N stats relative to its parent (stash positive).
 # 'search':
 #   Search entire histry for given regex.
 #   See: https://stackoverflow.com/a/2929502/4970632
-# 'stat':
-#   Show arbitrary difference stats.
+# 'summary':
+#   Show stylized most recent git stash
 # 'staged':
 #   Show staged difference stats.
 # 'stashed':
-#   Shows stash N stats relative to its parent (stash positive).
-# 'stored':
 #   Show stash N stats relative to HEAD (stash positive).
 # 'stashes':
 #   List all git stashes.
@@ -97,6 +99,8 @@
 #   with git branch -m name because git tracks the old remote branch name
 # 'upstream':
 #   Set upstream branch. Same as 'git branch -u'.
+# 'unstaged':
+#   Show unstaged difference stats.
 # 'vim':
 #   List the vim processes running inside directory
 # 'wtf':
@@ -122,11 +126,9 @@
 	delta    = diff -M --
 	dictator = "!git-dictator \"$@\""
 	exec     = "!exec \"$@\""
-	get      = "!get-get \"$@\""
-	head     = "!git status --short --branch | head -1"
+	get      = "!git-get \"$@\""
+	head     = "!git rev-parse --abbrev-ref HEAD 2>/dev/null"
 	ignore   = "!git-ignore \"$@\""
-	label    = "!git stashes | head -1 | sed 's/^/## /'"
-	latest   = "!git label 2>/dev/null && git stash show --name-status 2>/dev/null"
 	ls       = ls-tree -r HEAD --name-only :/
 	ll       = ls-tree -r HEAD --abbrev :/
 	master   = "!git fetch --all && git stash push && {git merge master; git stash pop; }"
@@ -135,25 +137,25 @@
 	outdated = remote prune origin
 	oops     = "!f(){ if [ \"$#\" -eq 0 ]; then git commit --amend --no-edit; else git commit --amend \"$@\"; fi; }; f"
 	pack     = "!git-pack \"$@\""
+	pop      = stash pop
 	publish  = push origin --tags
 	refs     = reflog show --all
 	remotes  = remote --verbose
 	remove   = "!git-remove \"$@\""
-	reveal   = "!git stash show --name-status"
-	save     = stash save
+	save     = stash push
+	saved    = "!f() { git diff stash@{${1:-0}}^ stash@{${1:-0}} --stat=80 2>/dev/null; }; f"
 	search   = "!f() { git grep \"$@\" $(git rev-list --all --abbrev-commit); }; f"
-	stat     = diff --stat=80
+	summary  = "!git stashes | head -1 | sed 's/^/## /' && git stash show --name-status 2>/dev/null"
 	staged   = diff --stat=80 --staged
-	stashed  = "!f() { git diff stash@{${1:-0}}^ stash@{${1:-0}} --stat=80 2>/dev/null; }; f"
-	stored   = "!f() { git diff HEAD stash@{${1:-0}} --stat=80 2>/dev/null; }; f"
+	stashed  = "!f() { git diff HEAD stash@{${1:-0}} --stat=80 2>/dev/null; }; f"
 	stashes  = stash list
-	summary  = "!git head 2>/dev/null && git status --short"
 	stream   = "!git checkout master && pull upstream master"
 	tags     = tag --list
 	top      = rev-parse --show-toplevel
 	tree     = log --graph --abbrev-commit --date=relative --branches --stat --decorate --color
 	trunk    = log --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color
 	unset    = branch --unset-upstream
+	unstaged = diff --stat=80
 	upstream = branch --set-upstream-to
 	vim      = "!git-vim \"$@\""
 	wtf      = "!git-wtf \"$@\""
@@ -191,19 +193,22 @@
 [pager]
 	branch = false
 	latest = false
+	saved = false
 	staged = false
 	stash = false
 	stashed = false
-	stored = false
-	stat = false
 	status = false
 	summary = false
+	unstaged = false
 	tag = false
 [push]
 	default = upstream
 	followTags = true
 [remote]
 	verbose = true
+[status]
+	short = true
+	branch = true
 [user]
 	name = Luke Davis
 	email = lukelbd@gmail.com
