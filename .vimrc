@@ -146,7 +146,7 @@ let &g:signcolumn = 'auto'  " show signs automatically number column
 let &g:softtabstop = 2  " default 2 spaces
 let &g:spell = 0  " global spell disable (only use text files)
 let &g:tabstop = 2  " default 2 spaces
-let &g:wildignore = join(tag#parse_ignores(0, '~/.wildignore'), ',')
+let &g:wildignore = join(tag#parse_ignores(0, 1, '~/.wildignore'), ',')
 
 " File types for different unified settings
 " Note: Can use plugins added to '~/forks' by adding to s:fork_plugins below
@@ -647,7 +647,7 @@ noremap g? <Cmd>Lines<CR>
 " Navigate across recent tag jumps
 " Note: Apply in vimrc to avoid overwriting. This works by overriding both fzf and
 " internal tag jumping utils. Ignores tags resulting from direct :tag or <C-]>
-command! -nargs=* -complete=file ShowIgnores echom 'Tag ignores: ' . join(tag#parse_ignores(0, <f-args>), ' ')
+command! -nargs=* -complete=file ShowIgnores echom 'Tag ignores: ' . join(tag#parse_ignores(0, 0, <f-args>), ' ')
 command! -nargs=0 ClearTags call stack#clear_stack('tag')
 command! -nargs=0 PrintTags call stack#print_stack('tag')
 command! -nargs=* PopTags call stack#pop_stack('tag', <f-args>)
@@ -1340,9 +1340,9 @@ let g:gutentags_enabled = 1
 
 " Fuzzy selection and searching
 " Note: For consistency, specify ctags command below and set 'tags' above accordingly,
-" however this should generally not be used since ctags are managed by gutentags.
-" Note: You must use fzf#wrap to apply global settings and cannot rely on fzf#run
-" return values (will result in weird hard-to-debug issues).
+" however this is only used if gutentags files unavailable and after confirm prompt.
+" Note: Use fzf#wrap to apply global settings, and never use fzf#run return value to
+" get results (will result in weird hard-to-debug issues due to async calling).
 " Note: 'Drop' opens selection in existing window, similar to switchbuf=useopen,usetab.
 " However :Buffers still opens duplicate tabs even with fzf_buffers_jump=1.
 " See: https://github.com/junegunn/fzf/issues/1577#issuecomment-492107554
@@ -1359,7 +1359,7 @@ call plug#('junegunn/fzf.vim')  " pin to version supporting :Drop
 call plug#('roosta/fzf-folds.vim')  " jump to folds
 let g:fzf_action = {'ctrl-m': 'Drop', 'ctrl-t': 'Drop', 'ctrl-x': 'split', 'ctrl-v': 'vsplit' }  " have file search and grep open to existing window if possible
 let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
-let g:fzf_tags_command = 'ctags -R -f .vimtags ' . join(tag#parse_ignores(1), ' ')
+let g:fzf_tags_command = 'ctags -R -f .vimtags ' . join(tag#parse_ignores(0, 0), ' ')
 let g:fzf_require_dir = 0  " see lukelbd/fzf.vim completion-edits branch
 let g:fzf_buffers_jump = 1  " jump to existing window if already open
 
@@ -1768,7 +1768,7 @@ if s:plug_active('vim-easy-align')
   \ }
 endif
 
-" Toggle comments and whatnot
+" Comment toggle settings
 " Note: This disable several maps but keeps many others. Remove unmap commands
 " after restarting existing vim sessions.
 if s:plug_active('tcomment_vim')
@@ -1791,7 +1791,7 @@ if s:plug_active('tcomment_vim')
   let g:tcomment_mapleader_comment_anyway = 'z>'
 endif
 
-" Tag integration settings
+" Custom buffer-specific ctags plugin
 " Warning: Critical to mamba install 'universal-ctags' instead of outdated 'ctags'
 " or else will get warnings for non-existing kinds.
 " Note: Use .ctags config to ignore kinds or include below to filter bracket jumps. See
@@ -1826,12 +1826,12 @@ if s:plug_active('vim-tags')
   let g:tags_next_global_map = ']W'
 endif
 
-" Gutentag tag generation
-" Note: Use gutentags for fancy navigation in buffer / across project, alongside
-" custom vim-tags utility for simple navigation in buffer.
-" Todo: Update :Open and :Find so they also respect ignore files, consistent with
-" bashrc grep/find utilities and with below grep/ctags utilities. For debugging
-" parsing of ignore files use below :ShowIgnores command.
+" Gutentags project-wide ctags plugin
+" Note: Set g:gutentags_trace to 1 and try :ShowIgnores for debugging.
+" Todo: Update :Open and :Find so they also optionally respect ignore files.
+" Note: Adding directories with '--exclude' flags fails in gutentags since it manually
+" feeds files to 'ctags' executable which bypasses recursive exclude folder-name
+" checking. Instead exclude folders using manual file generation executable.
 if s:plug_active('vim-gutentags')
   augroup tags_setup
     au!
@@ -1852,7 +1852,11 @@ if s:plug_active('vim-gutentags')
   let g:gutentags_ctags_executable = 'ctags'  " note this respects .ctags config
   let g:gutentags_ctags_exclude_wildignore = 1  " exclude &wildignore too
   let g:gutentags_ctags_exclude = []  " instead manage manually (see below)
-  let g:gutentags_ctags_extra_args = tag#parse_ignores(1)  " list of args
+  let g:gutentags_ctags_extra_args = tag#parse_ignores(1, 1)  " exclude and exclude-exception flags
+  let g:gutentags_file_list_command = {
+    \ 'default': 'find . ' . join(tag#parse_ignores(2, 2), ' '),
+    \ 'markers': {'.git': 'git ls-files', '.hg': 'hg files'},
+  \ }
   let g:gutentags_ctags_tagfile = '.vimtags'  " similar to .vimsession
   let g:gutentags_define_advanced_commands = 1  " debugging command
   let g:gutentags_generate_on_new = 1  " do not update tags when opening project file

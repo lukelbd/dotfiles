@@ -1,8 +1,4 @@
 # Misc stuff
-.proplot/cmaps
-.vim/plugged
-.vim/black
-.vim_lsp_settings/servers
 empty*
 test*
 *.log
@@ -10,30 +6,27 @@ test*
 .DS_Store
 .nfs*
 tmp*
+backup/
+cmaps/
+trash/
+__pycache__/
 
-# Vim extras, binary spell files
+# Vim stuff
 tags
 .vimtags*
 .vimsession*
 .netrwhist
 .*.sw[a-z]
 *.spl
+black/
+plugged/
+servers/
 
-# Storage and trash
-trash
-backup
-__pycache__
-
-# Jupyter and ipython
+# Ipython and jupyter
 # Do not copy ipython profile history and internal directories
-# Do not copy jupyter lab workspace logs or interface/toolbar settings
-# Note from application-extension and below are jupyterlab 4.0+ only
-# See: https://stackoverflow.com/q/65776556/4970632
 .jupyter/*
 .ipython/*
-!lab
 !nbconfig
-!user-settings
 !jupyter_config.json
 !jupyter_notebook_config.json
 !jupyter_nbconvert_config.json
@@ -45,13 +38,20 @@ __pycache__
 !jupyter_server_config.py
 !ipython_config.py
 !ipython_kernel_config.py
-workspaces
-apputils-extension
-statusbar-extension
-extensionmanager-extension
+
+# Jupyter lab
+# Do not copy jupyter lab workspace logs or interface/toolbar settings
+# Note from application-extension and below are jupyterlab 4.0+ only
+# See: https://stackoverflow.com/q/65776556/4970632
+!lab
+!user-settings
 application-extension
+apputils-extension
 cell-toolbar-extension
+csvviewer-extension
+extensionmanager-extension
 filebrowser-extension
 htmlviewer-extension
 notebook-extension
-csvviewer-extension
+statusbar-extension
+workspaces

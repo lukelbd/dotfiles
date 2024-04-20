@@ -1,21 +1,21 @@
 # Ignore patterns for git repositories.
 # NOTE: This file should be kept in sync with '.ignore' file
-# Internal or manually-synced
+# Manually synced
 notes*.md
 notes*.txt
 notes*.rst
-class*
-course*
-meeting*
-manuscript*
-figs*
-vids*
-figures*
-videos*
+class*/
+course*/
+meeting*/
+manuscript*/
+figs*/
+vids*/
+figures*/
+videos*/
+deprecated*/
 !figures*.py
 !videos*.py
 deprecated*
-deprecated*/
 
 # Trash folders
 tmp
@@ -23,7 +23,7 @@ tmp/
 trash*
 trash*/
 
-# Vim session files and swap files
+# Vim files
 tags
 .vimtags*
 .vimsession*
@@ -39,7 +39,7 @@ tags
 __pycache__/
 .mypy_cache/
 
-# Common temporary files
+# Temporary files
 *.log
 *.tmp
 *.bak

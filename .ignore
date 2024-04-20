@@ -9,6 +9,7 @@
 .git/
 .svn/
 api/
+foo/bar
 _build/
 plugged/
 *conda*/

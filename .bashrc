@@ -601,7 +601,9 @@ isempty() {
 # Either pipe the output of the remaining commands into the less pager
 # or open the files. Use the latter only for executables on $PATH
 function less() {
-  if command -v "$1" &>/dev/null && ! [[ "$1" =~ '/' ]]; then
+  local cmd
+  cmd=$(command -v "$1" 2>/dev/null)
+  if [ -x "$cmd" ]; then
     "$@" 2>&1 | command less  # pipe output of command
   else
     command less "$@"  # show files in less
@@ -772,6 +774,8 @@ open() {
 # Parse .ignore file for custom utilities (compare to vim tags#ignores())
 # TODO: Add utility for *just* ignoring directories not others. Or add utility
 # for ignoring absolutely nothing but preserving syntax of other utilities.
+# NOTE: Unlike 'ctags --exclude' and 'grep --exclude-dir' flags 'find -o -name'
+# fails for naked subfolder names since files are matched separately from folders.
 # NOTE: Overarching rule is that we do *not* descend into giant subfolders containing
 # distributions e.g. mambaforge or plugged unless explicitly go inside them.
 # NOTE: This supports internal grepping and finding utilities. Could also be
@@ -788,14 +792,14 @@ ignores() {
       if [[ "$line" =~ / ]]; then
         if [ "$format" -eq 0 ]; then
           folders+=(--exclude-dir "$line")
-        else  # 'find' already supports sub directories
+        else  # match entire path (see above)
           [ ${#folders[@]} -eq 0 ] && args=(-name) || args=(-o -name)
-          folders+=("${args[@]}" "*${line//\//}*")
+          folders+=("${args[@]}" "${line%\/}")
         fi
       else
         if [ "$format" -eq 0 ]; then
           files+=(--exclude "$line")
-        else  # 'find' already supports sub directories
+        else  # match base name
           [ ${#files[@]} -eq 0 ] && args=(-name) || args=(-o -name)
           files+=("${args[@]}" "${line}")
         fi
