@@ -61,6 +61,7 @@ function! tag#read_tags(mode, type, query, ...) abort
   endif
   let [result, cache] = [[], {}]  " see also tags.vim s:tag_source()
   for path in a:000
+    if !filereadable(path) | continue | endif
     if empty(a:query)
       let lines = readfile(path)
     else
@@ -258,7 +259,9 @@ function! tag#fzf_tags(type, bang, ...) abort
   let flags = "-m -d '\t' --with-nth ..4 --nth ..2"
   let flags .= nbytes > maxbytes ? ' --algo=v1' : ''
   let prompt = empty(a:type) ? 'Tags> ' : 'FTags> '
-  let [source, cache] = call('tag#read_tags', [1, a:type, ''] + paths)
+  let result = tag#read_tags(1, a:type, '', paths[0])
+  if empty(result) || !type(result) | return | endif
+  let [source, cache] = result
   if empty(source) | return s:tag_error() | endif
   let options = {
     \ 'source': source,
