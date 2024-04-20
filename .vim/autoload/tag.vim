@@ -6,7 +6,7 @@
 " Note: Formatting with more complex regex can cause slowdown. Avoid complex
 " regex patterns e.g. extra globs and non-greedy globs.
 scriptencoding utf-8
-let s:path_ftype = {}
+let s:type_cache = {}
 let s:regex_tag1 = '^\([^\t]*\)\(.*\)$'
 let s:regex_tag2 = '^\([^\t]*\)\t\([^\t]*\)\(.*\)$'
 function! s:tag_trunc(name, size) abort
@@ -29,16 +29,16 @@ function! s:tag_filter(line, ftype, regex, fast) abort
   if a:line =~# '^\s*!' | return 0 | endif
   if empty(a:ftype) | return 1 | endif
   let path = substitute(a:line, s:regex_tag2, '\2', 'g')
-  return tags#type_match(path, a:ftype, a:regex, s:path_ftype, a:fast)
+  return tags#type_match(path, a:ftype, a:regex, s:type_cache, a:fast)
 endfunction
 function! tag#show_cache() abort
-  echom 'File type cache (' . len(s:path_ftype) . ' entries):'
+  echom 'File type cache (' . len(s:type_cache) . ' entries):'
   let paths = {}
-  let names = map(copy(s:path_ftype), {key, val -> RelativePath(key)})
+  let names = map(copy(s:type_cache), {key, val -> RelativePath(key)})
   for path in keys(names) | let paths[names[path]] = path | endfor
   let size = 1 + max(map(keys(paths), 'len(v:val)'))
   for name in sort(keys(paths))
-    let tail = s:path_ftype[paths[name]]
+    let tail = s:type_cache[paths[name]]
     if empty(tail) | continue | endif
     let head = printf('%-' . size . 's', name . ':')
     echom head . ' ' . tail
@@ -68,7 +68,7 @@ function! tag#read_tags(mode, type, query, ...) abort
     endif
     let folder = fnamemodify(path, ':p:h')  " tag file folder
     let prepend = a:0 > 1 && strpart(expand('%:p'), 0, len(folder)) !=# folder
-    let fast = index(values(s:path_ftype), ftype) >= 0  " whether cached
+    let fast = index(values(s:type_cache), ftype) >= 0  " whether cached
     let base = prepend ? fnamemodify(folder, ':t') . '/' : ''  " slash required
     let head = prepend ? fnamemodify(folder, ':h') . '/' : folder . '/'
     call filter(lines, {_, val -> s:tag_filter(val, ftype, regex, fast)})
@@ -85,7 +85,7 @@ function! tag#from_stack(arg, name, ...) abort
   let path = expand('%:p')
   let wins = type(a:arg) ? win_findbuf(bufnr(a:arg)) : [a:arg]
   let stack = gettagstack(get(wins, 0, winnr()))
-  for item in get(stack, 'items', [])  " search tag stack
+  for item in reverse(get(stack, 'items', []))  " search from top
     let iname = item.tagname
     let ipath = expand('#' . item.bufnr . ':p')
     if ipath !=# path | continue | endif
@@ -207,7 +207,12 @@ endfunction
 " Override fzf :Btags and :Tags
 " Note: This is similar to fzf except uses custom sink that adds results to window
 " tag stack for navigation with ctrl-bracket maps and tag/pop commands.
-function! s:tag_files(...) abort
+function! s:tag_error() abort
+  redraw | echohl ErrorMsg
+  echom 'Error: Tags not found or not available.'
+  echohl None | return
+endfunction
+function! s:tag_search(...) abort
   let tags = []
   for path in a:000
     let path = resolve(expand(path))
@@ -226,7 +231,11 @@ function! tag#fzf_btags(bang, query, ...) abort
   let cmd = printf(cmd, fzf#shellescape(expand('%')))
   let flags = "-m -d '\t' --with-nth 1,4.. --nth 1"
   let flags .= ' --preview-window +{3}-/2 --query ' . shellescape(a:query)
-  let source = call(snr . 'btags_source', [[cmd]])
+  try
+    let source = call(snr . 'btags_source', [[cmd]])
+  catch /.*/
+    return s:tag_error()
+  endtry
   call map(source, {_, val -> substitute(val, s:regex_tag1, '\=s:tag_fmt1(40)', '')})
   let options = {
     \ 'source': source,
@@ -239,7 +248,7 @@ function! tag#fzf_tags(type, bang, ...) abort
   let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
   let opts = fzf#vim#with_preview({'placeholder': '--tag {2}:{-1}:{3..}' })
-  let paths = a:0 ? call('s:tag_files', a:000) : tags#get_files()
+  let paths = a:0 ? call('s:tag_search', a:000) : tags#get_files()
   let paths = map(paths, 'fnamemodify(v:val, ":p")')
   let [nbytes, maxbytes] = [0, 1024 * 1024 * 200]
   for path in paths
@@ -250,6 +259,7 @@ function! tag#fzf_tags(type, bang, ...) abort
   let flags .= nbytes > maxbytes ? ' --algo=v1' : ''
   let prompt = empty(a:type) ? 'Tags> ' : 'FTags> '
   let [source, cache] = call('tag#read_tags', [1, a:type, ''] + paths)
+  if empty(source) | return s:tag_error() | endif
   let options = {
     \ 'source': source,
     \ 'sink': function('tags#_select_tag', [cache, 0]),
