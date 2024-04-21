@@ -13,7 +13,7 @@ function! s:parse_grep(global, level, pattern, ...) abort
   let flags = empty(flags) ? '--smart-case' : trim(flags)
   let args = [0, a:global, a:level] + a:000
   let regex = s:parse_pattern(a:pattern)
-  let paths = call('grep#parse_paths', args)
+  let paths = call('parse#get_paths', args)
   let paths = empty(paths) ? paths : add(paths, 'dummy.fzf')  " fix bug described above
   return [regex, join(paths, ' '), flags]
 endfunction
@@ -31,44 +31,6 @@ function! s:parse_pattern(pattern)
   let regex = substitute(regex, '\(^\|[^@\\]\)\([(|)]\)', '\1\\\2', 'g')  " escape parentheses
   let regex = substitute(regex, '@\([(|)]\)', '\1', 'g')  " unmark grouping parentheses
   return fzf#shellescape(regex)  " similar to native but handles other shells
-endfunction
-
-" Helper function for parsing paths
-" Note: If input directory is getcwd() then fnamemodify(getcwd(), ':~:.') returns only
-" home directory shortened path (not dot or empty string). Convert to empty string
-function! grep#parse_paths(mode, global, level, ...)
-  let args = filter(copy(a:000), '!empty(v:val)')  " ignore e.g. command entry
-  if !empty(args)  " manual input
-    let paths = map(args, 'resolve(v:val)')
-  elseif a:global  " global buffers
-    let paths = map(reverse(tags#buffer_paths()), 'resolve(v:val[1])')
-  else  " current buffer
-    let paths = [resolve(expand('%:p'))]
-  endif
-  if empty(args) && a:level >= 2  " path projects
-    let paths = map(paths, 'tag#find_root(v:val)')
-  elseif empty(args) && a:level >= 1  " path folders
-    let paths = map(paths, "empty(v:val) || isdirectory(v:val) ? v:val : fnamemodify(v:val, ':h')")
-  else  " general paths and folders
-    let paths = filter(paths, 'isdirectory(v:val) || filereadable(v:val)')
-  endif
-  let result = []
-  let unique = 'index(paths, v:val, v:key + 1) == -1'
-  let outer = 'len(v:val) < len(path) && strpart(path, 0, len(v:val)) ==# v:val'
-  for path in filter(copy(paths), unique)  " unique
-    let inner = !empty(filter(copy(paths), outer))
-    if inner && a:level > 2 | continue | endif  " e.g. ignore 'plugged' when in dotfiles
-    let path = RelativePath(path)
-    if path =~# '^icloud\>'
-      let path = RelativePath(expand('~/' . path))
-    elseif empty(path) && (a:mode > 0 || len(paths) > 1)
-      let path = './'  " trailing slash as with other folders
-    endif
-    if !empty(path)  " otherwise return empty list
-      call add(result, path)
-    endif
-  endfor
-  return result
 endfunction
 
 " Call Ag or Rg from command
@@ -119,7 +81,7 @@ function! grep#complete_search(lead, line, cursor)
   return reverse([@/] + opts[1:])
 endfunction
 function! grep#call_grep(cmd, global, level) abort
-  let paths = grep#parse_paths(1, a:global, a:level)
+  let paths = parse#get_paths(1, a:global, a:level)
   if a:level > 2
     let name = 'file tree'
   elseif a:level > 1

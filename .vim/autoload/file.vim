@@ -22,7 +22,7 @@ endfunction
 function! file#expand_cfile(...) abort
   let show = a:0 ? a:1 : 0
   let path = expand('<cfile>')
-  for root in ['', getcwd(), expand('%:p:h'), tag#find_root(expand('%:p'))]
+  for root in ['', getcwd(), expand('%:p:h'), parse#find_root(expand('%:p'))]
     let check = empty(root) ? path : root . '/' . path
     let files = glob(check, 0, 1)
     if !empty(files) | break | endif
@@ -53,67 +53,6 @@ function! file#glob_paths(lead, ...) abort
   let map2 = 'substitute(v:val, ''^\.\/'', '''', '''')'  " remove current folder
   let map3 = 'substitute(v:val, ''^'' . base, '''', '''')'  " remove base folder
   return map(map(map(map(filter(paths, filt), map0), map1), map2), map3)
-endfunction
-
-" Parse .ignore files for ctags utilities (compare to bash ignores())
-" Note: Critical to remove trailing slash for ctags recursive searching.
-" Note: For some reason parsing '--exclude-exception' rules for g:fzf_tags_command
-" does not work, ignores all other exclude flags, and vim-gutentags can only
-" handle excludes anyway, so just bypass all patterns starting with '!'.
-function! tag#parse_ignores(level, skip, mode, ...) abort
-  let nofiles = a:skip == 2
-  let nodirs = a:skip == 1
-  let paths = []  " search level
-  if a:level <= 0
-    call add(paths, '~/.gitignore')
-  endif
-  if a:level <= 1
-    call add(paths, '~/.ignore')
-  endif
-  if a:level <= 2  " slowest so put last
-    call add(paths, '~/.wildignore')
-  endif
-  let result = []
-  call extend(paths, a:000)
-  for path in paths
-    let path = resolve(expand(path))
-    if !filereadable(path) | continue | endif
-    for line in readfile(path)
-      if line =~# '^\s*\(#.*\)\?$' | continue | endif
-      if nodirs && line =~# '/' | continue | endif
-      if nofiles && line !~# '/' | continue | endif
-      let item = substitute(trim(line), '\/$', '', '')
-      if a:mode <= 0
-        call add(result, item)
-      elseif a:mode == 1  " ctags exclude
-        if item =~# '/' | continue | endif  " not implemented
-        if item[0] ==# '!'  " exclusion prepended with !
-          call add(result, '--exclude-exception=' . item[1:])
-        else  " standard exclusion
-          call add(result, '--exclude=' . item)
-        endif
-      else  " find prune
-        let flag = item =~# '/' ? '-path' : '-name'  " e.g. foo/bar
-        let item = item =~# '/' ? '*/' . item . '/*' : item
-        if item[0] ==# '!' | continue | endif  " not implemented
-        if empty(result)
-          call extend(result, [flag, shellescape(item)])
-        else  " additional match
-          call extend(result, ['-o', flag, shellescape(item)])
-        endif
-      endif
-    endfor
-  endfor
-  if a:mode > 1 && !empty(result)
-    let result = ['\('] + result + ['\)']  " prune groups
-    let result = result + ['-prune', '-o']  " follow with e.g. -print
-    if nofiles
-      let result = ['-type', 'd'] + result
-    elseif nodirs
-      let result = ['-type', 'f'] + result
-    endif
-  endif
-  return result
 endfunction
 
 " Open recently edited file
@@ -150,7 +89,7 @@ endfunction
 " display annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
 function! file#fzf_init(bang, global, level, cmd, ...) abort
   let paths = [] | call map(copy(a:000), 'extend(paths, expand(trim(v:val), 0, 1))')
-  let paths = call('grep#parse_paths', [2, a:global, 1 + a:level] + reverse(paths))
+  let paths = call('parse#get_paths', [2, a:global, 1 + a:level] + reverse(paths))
   let paths = reverse(paths)  " important paths at top instead of bottom
   let func = a:cmd ==# 'Files' ? 'file#fzf_files' : 'file#fzf_open'
   let args = a:cmd ==# 'Files' ? [a:bang] + paths : [a:bang, a:cmd, paths]
@@ -164,7 +103,7 @@ function! file#fzf_input(cmd, default, ...) abort
 endfunction
 
 " Open arbitrary files recursively
-" Note: Try to preserve relative paths constructed by grep#parse_paths(). Follows all
+" Note: Try to preserve relative paths constructed by parse#get_paths(). Follows all
 " symlinks, e.g. ~/.vimrc pointing to dotfiles, but keeps RelativePath() 'icloud'.
 " Note: This is modeled after fzf :Files command. Used to search arbitrary files
 " while respecting '.ignore' patterns used for e.g. f0/f1 commands.
@@ -201,7 +140,7 @@ function! file#fzf_files(bang, ...) abort
   let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
   let flags = '-type d \( -name .git -o -name .svn -o -name .hg \) -prune -o '
-  let flags .= join(tag#parse_ignores(1, 1, 2), ' ')  " skip .gitignore, skip folders
+  let flags .= join(parse#get_ignores(1, 1, 2), ' ')  " skip .gitignore, skip folders
   let flags .= ' -type f -print | sed ''s@^./@@'''  " remove leading dot
   let source = 'find . ' . join(bases[1:], ' ') . ' ' . flags
   let opts = fzf#vim#with_preview()
@@ -331,7 +270,7 @@ function! file#show_paths(...) abort
   let chars = ' *[]()?!#%&<>'
   let paths = a:0 ? a:000 : [@%]
   for path in paths
-    let root = tag#find_root(path)
+    let root = parse#find_root(path)
     let root = RelativePath(root)
     let show = RelativePath(path)
     let root = empty(root) ? fnamemodify(getcwd(), ':~:.') : root

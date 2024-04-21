@@ -146,7 +146,7 @@ let &g:signcolumn = 'auto'  " show signs automatically number column
 let &g:softtabstop = 2  " default 2 spaces
 let &g:spell = 0  " global spell disable (only use text files)
 let &g:tabstop = 2  " default 2 spaces
-let &g:wildignore = join(tag#parse_ignores(2, 1, 0), ',')
+let &g:wildignore = join(parse#get_ignores(2, 1, 0), ',')
 
 " File types for different unified settings
 " Note: Can use plugins added to '~/forks' by adding to s:fork_plugins below
@@ -408,8 +408,8 @@ nnoremap <Tab>< <Cmd>call window#fzf_move(tabpagenr() - v:count1)<CR>
 " Open file with optional user input
 " Note: The <Leader> maps open up views of the current file directory
 for s:key in ['q', 'w', 'e', 'r'] | silent! exe 'unmap <Tab>' . s:key | endfor
-nnoremap <Tab>o <Cmd>call file#fzf_input('Drop', tag#find_root())<CR>
-nnoremap <Tab>p <Cmd>call file#fzf_input('Files', tag#find_root())<CR>
+nnoremap <Tab>o <Cmd>call file#fzf_input('Drop', parse#find_root())<CR>
+nnoremap <Tab>p <Cmd>call file#fzf_input('Files', parse#find_root())<CR>
 nnoremap <Tab>i <Cmd>call file#fzf_input('Drop', expand('%:p:h'))<CR>
 nnoremap <Tab>y <Cmd>call file#fzf_input('Files', expand('%:p:h'))<CR>
 nnoremap <Tab>e <Cmd>call file#fzf_input('Split', expand('%:p:h'))<CR>
@@ -652,7 +652,7 @@ command! -nargs=0 ClearTags call stack#clear_stack('tag')
 command! -nargs=0 PrintTags call stack#print_stack('tag')
 command! -nargs=* PopTags call stack#pop_stack('tag', <f-args>)
 command! -nargs=* -complete=file ShowIgnores
-  \ echom 'Tag ignores: ' . join(tag#parse_ignores(0, 0, 0, <f-args>), ' ')
+  \ echom 'Tag ignores: ' . join(parse#get_ignores(0, 0, 0, <f-args>), ' ')
 noremap <F3> <Cmd>call tag#next_stack(-v:count1)<CR>
 noremap <F4> <Cmd>call tag#next_stack(v:count1)<CR>
 noremap [{ <Cmd>exe v:count1 . 'tag'<CR>
@@ -799,10 +799,10 @@ noremap gz <Cmd>Folds<CR>
 command! -bang -nargs=0 Marks call mark#fzf_marks(<bang>0)
 command! -nargs=* SetMarks call mark#set_marks(<f-args>)
 command! -nargs=* DelMarks call mark#del_marks(<f-args>)
-noremap <expr> g_ v:count ? '`' . utils#translate_count('`') : '<Cmd>call mark#fzf_marks()<CR>'
+noremap <expr> g_ v:count ? '`' . parse#get_register('`') : '<Cmd>call mark#fzf_marks()<CR>'
 noremap <Leader>- <Cmd>call mark#del_marks()<CR>
 noremap <Leader>_ <Cmd>call mark#del_marks(get(g:, 'mark_name', 'A'))<CR>
-noremap z_ <Cmd>call mark#set_marks(utils#translate_count('m'))<CR>
+noremap z_ <Cmd>call mark#set_marks(parse#get_register('m'))<CR>
 noremap <C-n> <Cmd>call mark#next_mark(-v:count1)<CR>
 noremap <F8> <Cmd>call mark#next_mark(v:count1)<CR>
 
@@ -986,8 +986,8 @@ nmap U <Plug>(RepeatRedo)
 " when inserting on end-of-line. So use custom <Cmd> mappings instead.
 " Note: For some reason cannot set g:peekaboo_ins_prefix = '' and simply have <C-r>
 " trigger the mapping. See https://vi.stackexchange.com/q/5803/8084
-inoremap <expr> <C-r> utils#translate_count('i')
-cnoremap <expr> <C-r> utils#translate_count('c')
+inoremap <expr> <C-r> parse#get_register('i')
+cnoremap <expr> <C-r> parse#get_register('c')
 imap <F6> <Cmd>call peekaboo#peek(1, "\<C-r>", 0)<CR><Cmd>call peekaboo#aboo()<CR>
 nmap <expr> <F6> peekaboo#peek(1, '"', 0)
 vmap <expr> <F6> peekaboo#peek(1, '"', 0)
@@ -996,38 +996,38 @@ vmap <expr> <F6> peekaboo#peek(1, '"', 0)
 " Warning: Critical to use 'nmap' and 'vmap' since do not want operator-mode
 " Note: Pressing ' or " followed by number uses macro in registers 0 to 9 and
 " pressing ' or " followed by normal-mode command uses black hole or clipboard.
-nnoremap <expr> ' (v:count ? '<Esc>' : '') . utils#translate_count('', '_')
-nnoremap <expr> " (v:count ? '<Esc>' : '') . utils#translate_count('@', '*')
-vnoremap <expr> ' utils#translate_count('', '_')
-vnoremap <expr> " utils#translate_count('@', '*')
+nnoremap <expr> ' (v:count ? '<Esc>' : '') . parse#get_register('', '_')
+nnoremap <expr> " (v:count ? '<Esc>' : '') . parse#get_register('@', '*')
+vnoremap <expr> ' parse#get_register('', '_')
+vnoremap <expr> " parse#get_register('@', '*')
 
 " Change text, specify registers with counts.
 " Note: Uppercase registers are same as lowercase but saved in viminfo.
-nnoremap <expr> c (v:count ? '<Esc>zv' : 'zv') . utils#translate_count('') . edit#insert_mode('c')
-nnoremap <expr> C (v:count ? '<Esc>zv' : 'zv') . utils#translate_count('') . edit#insert_mode('C')
-vnoremap <expr> c utils#translate_count('') . edit#insert_mode('c')
-vnoremap <expr> C utils#translate_count('') . edit#insert_mode('C')
+nnoremap <expr> c (v:count ? '<Esc>zv' : 'zv') . parse#get_register('') . edit#insert_mode('c')
+nnoremap <expr> C (v:count ? '<Esc>zv' : 'zv') . parse#get_register('') . edit#insert_mode('C')
+vnoremap <expr> c parse#get_register('') . edit#insert_mode('c')
+vnoremap <expr> C parse#get_register('') . edit#insert_mode('C')
 
 " Delete text, specify registers with counts (no more dd mapping)
 " Note: Visual counts are ignored, and cannot use <Esc> because that exits visual mode
-nnoremap <expr> d (v:count ? '<Esc>' : '') . utils#translate_count('') . 'd'
-nnoremap <expr> D (v:count ? '<Esc>' : '') . utils#translate_count('') . 'D'
-vnoremap <expr> d utils#translate_count('') . 'd'
-vnoremap <expr> D utils#translate_count('') . 'D'
+nnoremap <expr> d (v:count ? '<Esc>' : '') . parse#get_register('') . 'd'
+nnoremap <expr> D (v:count ? '<Esc>' : '') . parse#get_register('') . 'D'
+vnoremap <expr> d parse#get_register('') . 'd'
+vnoremap <expr> D parse#get_register('') . 'D'
 
 " Yank text, specify registers with counts (no more yy mappings)
 " Note: Here 'Y' yanks to end of line, matching 'C' and 'D' instead of 'yy' synonym
-nnoremap <expr> y (v:count ? '<Esc>' : '') . utils#translate_count('') . 'y'
-nnoremap <expr> Y (v:count ? '<Esc>' : '') . utils#translate_count('') . 'y$'
-vnoremap <expr> y utils#translate_count('') . 'y'
-vnoremap <expr> Y utils#translate_count('') . 'y'
+nnoremap <expr> y (v:count ? '<Esc>' : '') . parse#get_register('') . 'y'
+nnoremap <expr> Y (v:count ? '<Esc>' : '') . parse#get_register('') . 'y$'
+vnoremap <expr> y parse#get_register('') . 'y'
+vnoremap <expr> Y parse#get_register('') . 'y'
 
 " Paste from the nth previously deleted or changed text
 " Note: v_P does not overwrite register: https://stackoverflow.com/a/74935585/4970632
-nnoremap <expr> p utils#translate_count('') . 'p'
-nnoremap <expr> P utils#translate_count('') . 'P'
-vnoremap <expr> p utils#translate_count('') . 'P'
-vnoremap <expr> P utils#translate_count('') . 'P'
+nnoremap <expr> p parse#get_register('') . 'p'
+nnoremap <expr> P parse#get_register('') . 'P'
+vnoremap <expr> p parse#get_register('') . 'P'
+vnoremap <expr> P parse#get_register('') . 'P'
 
 " Join v:count lines with coinjoin.vim and keep cursor column
 " Note: Here e.g. '2J' joins 'next two lines' instead of 'current plus one'
@@ -1046,12 +1046,12 @@ call utils#repeat_map('n', 'cL', 'MoveSplit', 'myi<CR><Esc><Cmd>keepjumps normal
 
 " Record macro by pressing Q with optional count
 " Note: This permits e.g. 1, or '1, for specific macros. Note cannot run 'q' from autoload
-nnoremap <expr> , v:register ==# '"' ? utils#translate_count('@') : '@' . v:register
-vnoremap <expr> , v:register ==# '"' ? utils#translate_count('@') : '@' . v:register
-nnoremap <expr> Q empty(reg_recording()) ? utils#translate_count('q')
-  \ : 'q<Cmd>call utils#set_translate(' . string(reg_recording()) . ', "q")<CR>'
-nnoremap <expr> Q empty(reg_recording()) ? utils#translate_count('q')
-  \ : 'q<Cmd>call utils#set_translate(' . string(reg_recording()) . ', "q")<CR>'
+nnoremap <expr> , v:register ==# '"' ? parse#get_register('@') : '@' . v:register
+vnoremap <expr> , v:register ==# '"' ? parse#get_register('@') : '@' . v:register
+nnoremap <expr> Q empty(reg_recording()) ? parse#get_register('q')
+  \ : 'q<Cmd>call parse#set_translate(' . string(reg_recording()) . ', "q")<CR>'
+nnoremap <expr> Q empty(reg_recording()) ? parse#get_register('q')
+  \ : 'q<Cmd>call parse#set_translate(' . string(reg_recording()) . ', "q")<CR>'
 
 " Remove single character
 " Note: This omits single-character deletions from register by default
@@ -1119,8 +1119,8 @@ nnoremap <expr> gi switch#paste() . edit#insert_mode('i')
 nnoremap <expr> gI switch#paste() . edit#insert_mode('I')
 nnoremap <expr> go switch#paste() . edit#insert_mode('o')
 nnoremap <expr> gO switch#paste() . edit#insert_mode('O')
-nnoremap <expr> gc switch#paste() . utils#translate_count('') . edit#insert_mode('c')
-nnoremap <expr> gC switch#paste() . utils#translate_count('') . edit#insert_mode('C')
+nnoremap <expr> gc switch#paste() . parse#get_register('') . edit#insert_mode('c')
+nnoremap <expr> gC switch#paste() . parse#get_register('') . edit#insert_mode('C')
 
 " Toggle caps lock, copy mode, and conceal mode
 " Note: This enforces defaults without requiring 'set' in vimrc or ftplugin that
@@ -1361,7 +1361,7 @@ call plug#('junegunn/fzf.vim')  " pin to version supporting :Drop
 call plug#('roosta/fzf-folds.vim')  " jump to folds
 let g:fzf_action = {'ctrl-m': 'Drop', 'ctrl-e': 'split', 'ctrl-r': 'vsplit' }  " have file search and grep open to existing window if possible
 let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
-let g:fzf_tags_command = 'ctags -R -f .vimtags ' . join(tag#parse_ignores(0, 0, 1), ' ')
+let g:fzf_tags_command = 'ctags -R -f .vimtags ' . join(parse#get_ignores(0, 0, 1), ' ')
 let g:fzf_require_dir = 0  " see lukelbd/fzf.vim completion-edits branch
 let g:fzf_buffers_jump = 1  " jump to existing window if already open
 
@@ -1851,9 +1851,9 @@ if s:plug_active('vim-gutentags')
   let g:gutentags_ctags_executable = 'ctags'  " note this respects .ctags config
   let g:gutentags_ctags_exclude_wildignore = 1  " exclude &wildignore too
   let g:gutentags_ctags_exclude = []  " instead manage manually (see below)
-  let g:gutentags_ctags_extra_args = tag#parse_ignores(0, 1, 1)  " exclude and exclude-exception flags
+  let g:gutentags_ctags_extra_args = parse#get_ignores(0, 1, 1)  " exclude and exclude-exception flags
   let g:gutentags_file_list_command = {
-    \ 'default': 'find . ' . join(tag#parse_ignores(0, 2, 2), ' ') . ' -print',
+    \ 'default': 'find . ' . join(parse#get_ignores(0, 2, 2), ' ') . ' -print',
     \ 'markers': {'.git': 'git ls-files', '.hg': 'hg files'},
   \ }
   let g:gutentags_ctags_tagfile = '.vimtags'  " similar to .vimsession
@@ -1862,7 +1862,7 @@ if s:plug_active('vim-gutentags')
   let g:gutentags_generate_on_write = 1  " update tags when file updated
   let g:gutentags_generate_on_missing = 1  " update tags when no vimtags file found
   let g:gutentags_generate_on_empty_buffer = 0  " do not update tags when opening vim
-  let g:gutentags_project_root_finder = 'tag#find_root'
+  let g:gutentags_project_root_finder = 'parse#find_root'
   " let g:gutentags_cache_dir = '~/.vim_tags_cache'  " alternative cache specification
   " let g:gutentags_ctags_tagfile = 'tags'  " used with cache dir
   " let g:gutentags_file_list_command = 'git ls-files'  " alternative to exclude ignores

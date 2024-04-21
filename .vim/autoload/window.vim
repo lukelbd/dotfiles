@@ -158,7 +158,7 @@ function! s:tab_source() abort
     let staged = getbufvar(bnr, 'tabline_staged_changes', 0)
     let unstaged = getbufvar(bnr, 'tabline_staged_changes', 0)
     let process = idx < nprocess || staged || unstaged
-    let base = tag#find_root(path)  " see also vim-tags/autoload/s:path_name()
+    let base = parse#find_root(path)  " see also vim-tags/autoload/s:path_name()
     let root = fnamemodify(fnamemodify(base, ':h'), ':p')  " trailing slash
     let ibase = !empty(base) && strpart(path, 0, len(base)) ==# base
     let icwd = !empty(base) && strpart(getcwd(), 0, len(base)) ==# base
@@ -273,7 +273,7 @@ function! window#show_health() abort
   exe 'CheckHealth' | setlocal foldlevel=1 syntax=checkhealth.markdown | doautocmd BufRead
 endfunction
 function! window#show_netrw(cmd, local) abort
-  let base = a:local ? expand('%:p:h') : tag#find_root()
+  let base = a:local ? expand('%:p:h') : parse#find_root()
   let [width, height] = [window#default_width(0), window#default_height(0)]
   exe a:cmd . ' ' . base | goto
   exe a:cmd =~# 'vsplit' ? 'vert resize ' . width : 'resize ' . height 

@@ -271,65 +271,6 @@ function! tag#fzf_tags(type, bang, ...) abort
   return call(snr . 'fzf', ['tags', options, [opts, a:bang]])
 endfunction
 
-" Search for the 'root' directory to store the ctags file
-" Note: Root detectors are copied from g:gutentags_add_default_root_markers.
-" Note: Previously tried just '__init__.py' for e.g. conda-managed packages and
-" placing '.tagproject' in vim-plug folder but this caused tons of nested .vimtags
-" file creations including *duplicate* tags when invoking :Tags function.
-function! s:proj_root(head, globs, ...) abort
-  let roots = []  " general projects
-  let root = fnamemodify(a:head, ':p')
-  while !empty(root) && root !=# '/'
-    let root = fnamemodify(root, ':h')
-    call add(roots, root)
-  endwhile
-  for root in a:0 && a:1 ? reverse(roots) : roots
-    for glob in a:globs  " input names or patterns
-      if !empty(globpath(root, glob, 0, 1)) | return root | endif
-    endfor
-  endfor | return ''
-endfunction
-function! s:dist_root(head, tails, ...) abort
-  let head = a:head  " general distributions
-  let tail = fnamemodify(head, ':t')
-  let idx = index(a:tails, tail)
-  if idx >= 0  " avoid e.g. ~/software/.vimtags
-    let default = expand('~/dotfiles')
-    let tail = get(a:000, idx, '')
-    return empty(tail) ? default : head . '/' . tail
-  endif
-  while v:true  " see also tags#get_files()
-    let ihead = fnamemodify(head, ':h')
-    if empty(ihead) || ihead ==# head | let head = '' | break | endif
-    let idx = index(a:tails, fnamemodify(ihead, ':t'))
-    if idx >= 0 | break | endif  " preceding head e.g. share/vim
-    let head = ihead  " tag file candidate
-  endwhile
-  let tail = fnamemodify(head, ':t')  " e.g. /.../share/vim -> vim
-  let suff = strpart(a:head, len(head))  " e.g. /.../share/vim/vim91 -> vim91
-  let suff = matchstr(suff, '^[\/]\+' . tail . '[0-9]*[\/]\@=')
-  return head . suff  " optional version subfolder
-endfunction
-function! tag#find_root(...) abort
-  let path = resolve(expand(a:0 ? a:1 : '%'))
-  let head = fnamemodify(path, ':p:h')  " no trailing slash
-  let tails = ['servers', 'user-settings']  " e.g. @jupyterlab, .vim_lsp_settings
-  let root = s:dist_root(head, tails)
-  if !empty(root) | return root | endif
-  let globs = ['.git', '.hg', '.svn', '.bzr', '_darcs', '_darcs', '_FOSSIL_', '.fslckout']
-  let root = s:proj_root(head, globs, 0)  " highest-level control system indicator
-  if !empty(root) | return root | endif
-  let globs = ['__init__.py', 'setup.py', 'setup.cfg']
-  let root = s:proj_root(head, globs, 1)  " lowest-level python distribution indicator
-  if !empty(root) | return root | endif
-  let projs = ['builds', 'local', 'share', 'bin']
-  let homes = ['com~apple~CloudDocs', 'icloud', 'software', 'research', '']
-  let defaults = ['Mackup', 'Mackup', '', 'dotfiles']
-  let root = s:dist_root(head, homes + projs, defaults)
-  if !empty(root) | return root | endif
-  return head
-endfunction
-
 " Update tags variable (requires g:gutentags_ctags_auto_set_tags = 0)
 " Note: Using :setlocal tags requires e.g. '.vim\\,tags' and '.vim\\\ tags' for literal
 " commas and spaces (see :help option-backslash). Setting with &l:tags requires only
