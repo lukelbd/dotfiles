@@ -419,16 +419,16 @@ nnoremap <Tab>r <Cmd>call file#fzf_input('Vsplit', expand('%:p:h'))<CR>
 " Note: Anything that is not :Files gets passed to :Drop command
 " nnoremap <C-g> <Cmd>Locate<CR>  " uses giant database from Unix 'locate'
 " command! -bang -nargs=* -complete=file Files call file#fzf_files(<bang>0, <f-args>)
-command! -bang -nargs=* -complete=file Vsplit call file#fzf_init(<bang>0, 'botright vsplit', <f-args>)
-command! -bang -nargs=* -complete=file Split call file#fzf_init(<bang>0, 'botright split', <f-args>)
-command! -bang -nargs=* -complete=file Open call file#fzf_init(<bang>0, 'Drop', <f-args>)
+command! -bang -nargs=* -complete=file Vsplit call file#fzf_init(<bang>0, 0, 0, 'botright vsplit', <f-args>)
+command! -bang -nargs=* -complete=file Split call file#fzf_init(<bang>0, 0, 0, 'botright split', <f-args>)
+command! -bang -nargs=* -complete=file Open call file#fzf_init(<bang>0, 0, 0, 'Drop', <f-args>)
 command! -nargs=* -complete=file Drop call file#open_drop(<f-args>)
-nnoremap <C-e> <Cmd>exe 'Split ' . fnameescape(expand('%:p:h'))<CR>
-nnoremap <C-r> <Cmd>exe 'Vsplit ' . fnameescape(expand('%:p:h'))<CR>
-nnoremap <F7> <Cmd>exe 'Files ' . fnameescape(expand('%:p:h'))<CR>
-nnoremap <C-y> <Cmd>exe 'Files ' . fnameescape(expand('%:p:h'))<CR>
-nnoremap <C-o> <Cmd>exe 'Open ' . fnameescape(tag#find_root())<CR>
-nnoremap <C-p> <Cmd>exe 'Files ' . fnameescape(tag#find_root())<CR>
+nnoremap <C-e> <Cmd>call file#fzf_init(0, 0, 0, 'Split')<CR>
+nnoremap <C-r> <Cmd>call file#fzf_init(0, 0, 0, 'Vsplit')<CR>
+nnoremap <C-y> <Cmd>call file#fzf_init(0, 0, 1, 'Files')<CR>
+nnoremap <F7> <Cmd>call file#fzf_init(0, 0, 0, 'Drop')<CR>
+nnoremap <C-o> <Cmd>call file#fzf_init(0, 0, 1, 'Drop')<CR>
+nnoremap <C-p> <Cmd>call file#fzf_init(0, 1, 1, 'Files')<CR>
 nnoremap <C-g> <Cmd>GFiles<CR>
 
 " Related file utilities
@@ -1728,7 +1728,7 @@ if s:plug_active('vim-textobj-user')
   let s:textobj_alpha = {
     \ 'g': '\(\<\|[^0-9A-Za-z]\@<=[0-9A-Za-z]\@=\)\r\(\>\|[^0-9A-Za-z]\)',
     \ 'h': '\(\<\|[0-9a-z]\@<=[^0-9a-z]\@=\)\r\(\>\|[0-9a-z]\@<=[^0-9a-z]\@=\)',
-    \ 'v': '[^0-9A-Za-z_]\+[0-9A-Za-z_]\@=\r[0-9A-Za-z_]\@<=[^0-9A-Za-z_]\+',
+    \ 'v': '[^0-9A-Za-z_][0-9A-Za-z_]\@=\r[0-9A-Za-z_]\@<=[^0-9A-Za-z_]',
   \ }  " 'ag' includes e.g. trailing underscore similar to 'a word'
   let s:textobj_entire = {
     \ 'select-a': 'aE',  'select-a-function': 'textobj#entire#select_a',

@@ -1,10 +1,42 @@
 "-----------------------------------------------------------------------------"
 " Utilities for grepping
 "-----------------------------------------------------------------------------"
+" Helper functions for parsing grep input
+" Warning: Strange bug seems to cause :Ag and :Rg to only work on individual files
+" if more than one file is passed. Otherwise preview window shows 'file is not found'
+" error and selecting from menu fails. So always pass extra dummy name.
+function! s:parse_grep(global, level, pattern, ...) abort
+  let @/ = a:pattern  " set as the previous search
+  let flags = ''  " additional pattern-dependent flags
+  let flags .= a:pattern =~# '\\c' ? ' --ignore-case' : ''  " same in ag and rg
+  let flags .= a:pattern =~# '\\C' ? ' --case-sensitive' : ''  " same in ag and rg
+  let flags = empty(flags) ? '--smart-case' : trim(flags)
+  let args = [0, a:global, a:level] + a:000
+  let regex = s:parse_pattern(a:pattern)
+  let paths = call('grep#parse_paths', args)
+  let paths = empty(paths) ? paths : add(paths, 'dummy.fzf')  " fix bug described above
+  return [regex, join(paths, ' '), flags]
+endfunction
+function! s:parse_pattern(pattern)
+  let regex = substitute(a:pattern, '\\%\([$^]\)', '\1', 'g')  " file border to line border
+  let regex = substitute(regex, '\\%\([#V]\|[<>]\?''m\)', '', 'g')  " ignore markers
+  let regex = substitute(regex, '\\%[<>]\?\(\.\|[0-9]\+\)[lcv]', '', 'g')  " ignore ranges
+  let regex = substitute(regex, '\\[<>]', '\\b', 'g')  " sided word border to unsided
+  let regex = substitute(regex, '\\[cvCV]', '', 'g')  " ignore case and magic markers
+  let regex = substitute(regex, '\C\\S', "[^ \t]", 'g')  " non-whitespace characters
+  let regex = substitute(regex, '\C\\s', "[ \t]",  'g')  " whitespace characters
+  let regex = substitute(regex, '\C\\[IKF]', '[a-zA-Z_]', 'g')  " letters underscore
+  let regex = substitute(regex, '\C\\[ikf]', '\\w', 'g')  " numbers letters underscore
+  let regex = substitute(regex, '\\%\?\([(|)]\)', '@\1', 'g')  " mark grouping parentheses
+  let regex = substitute(regex, '\(^\|[^@\\]\)\([(|)]\)', '\1\\\2', 'g')  " escape parentheses
+  let regex = substitute(regex, '@\([(|)]\)', '\1', 'g')  " unmark grouping parentheses
+  return fzf#shellescape(regex)  " similar to native but handles other shells
+endfunction
+
 " Helper function for parsing paths
 " Note: If input directory is getcwd() then fnamemodify(getcwd(), ':~:.') returns only
 " home directory shortened path (not dot or empty string). Convert to empty string
-function! s:parse_paths(prompt, global, level, ...)
+function! grep#parse_paths(mode, global, level, ...)
   let args = filter(copy(a:000), '!empty(v:val)')  " ignore e.g. command entry
   if !empty(args)  " manual input
     let paths = map(args, 'resolve(v:val)')
@@ -27,7 +59,9 @@ function! s:parse_paths(prompt, global, level, ...)
     let inner = !empty(filter(copy(paths), outer))
     if inner && a:level > 2 | continue | endif  " e.g. ignore 'plugged' when in dotfiles
     let path = RelativePath(path)
-    if empty(path) && (a:prompt || len(paths) > 1)
+    if path =~# '^icloud\>'
+      let path = RelativePath(expand('~/' . path))
+    elseif empty(path) && (a:mode > 0 || len(paths) > 1)
       let path = './'  " trailing slash as with other folders
     endif
     if !empty(path)  " otherwise return empty list
@@ -35,38 +69,6 @@ function! s:parse_paths(prompt, global, level, ...)
     endif
   endfor
   return result
-endfunction
-
-" Helper functions for parsing grep input
-" Warning: Strange bug seems to cause :Ag and :Rg to only work on individual files
-" if more than one file is passed. Otherwise preview window shows 'file is not found'
-" error and selecting from menu fails. So always pass extra dummy name.
-function! s:parse_grep(global, level, pattern, ...) abort
-  let @/ = a:pattern  " set as the previous search
-  let flags = ''  " additional pattern-dependent flags
-  let flags .= a:pattern =~# '\\c' ? ' --ignore-case' : ''  " same in ag and rg
-  let flags .= a:pattern =~# '\\C' ? ' --case-sensitive' : ''  " same in ag and rg
-  let flags = empty(flags) ? '--smart-case' : trim(flags)
-  let args = [0, a:global, a:level] + a:000
-  let regex = s:parse_pattern(a:pattern)
-  let paths = call('s:parse_paths', args)
-  let paths = empty(paths) ? paths : add(paths, 'dummy.fzf')  " fix bug described above
-  return [regex, join(paths, ' '), flags]
-endfunction
-function! s:parse_pattern(pattern)
-  let regex = substitute(a:pattern, '\\%\([$^]\)', '\1', 'g')  " file border to line border
-  let regex = substitute(regex, '\\%\([#V]\|[<>]\?''m\)', '', 'g')  " ignore markers
-  let regex = substitute(regex, '\\%[<>]\?\(\.\|[0-9]\+\)[lcv]', '', 'g')  " ignore ranges
-  let regex = substitute(regex, '\\[<>]', '\\b', 'g')  " sided word border to unsided
-  let regex = substitute(regex, '\\[cvCV]', '', 'g')  " ignore case and magic markers
-  let regex = substitute(regex, '\C\\S', "[^ \t]", 'g')  " non-whitespace characters
-  let regex = substitute(regex, '\C\\s', "[ \t]",  'g')  " whitespace characters
-  let regex = substitute(regex, '\C\\[IKF]', '[a-zA-Z_]', 'g')  " letters underscore
-  let regex = substitute(regex, '\C\\[ikf]', '\\w', 'g')  " numbers letters underscore
-  let regex = substitute(regex, '\\%\?\([(|)]\)', '@\1', 'g')  " mark grouping parentheses
-  let regex = substitute(regex, '\(^\|[^@\\]\)\([(|)]\)', '\1\\\2', 'g')  " escape parentheses
-  let regex = substitute(regex, '@\([(|)]\)', '\1', 'g')  " unmark grouping parentheses
-  return fzf#shellescape(regex)  " similar to native but handles other shells
 endfunction
 
 " Call Ag or Rg from command
@@ -117,7 +119,7 @@ function! grep#complete_search(lead, line, cursor)
   return reverse([@/] + opts[1:])
 endfunction
 function! grep#call_grep(cmd, global, level) abort
-  let paths = s:parse_paths(1, a:global, a:level)
+  let paths = grep#parse_paths(1, a:global, a:level)
   if a:level > 2
     let name = 'file tree'
   elseif a:level > 1

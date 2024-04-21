@@ -378,7 +378,6 @@ function! utils#translate_count(mode, ...) abort
   if a:mode ==# 'm' && index(map(getmarklist(), 'v:val.mark'), "'" . name) != -1
     let warn .= ' Overwriting mark ' . string(name) . ' (count ' . v:count . ')'
   endif
-
   let label = s:get_label(name)
   let group = a:mode =~# '[m`]' ? 'Mark' : name =~# '^\d$' ? 'Macro' : 'Register'
   if !empty(warn)

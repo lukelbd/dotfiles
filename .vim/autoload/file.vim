@@ -148,8 +148,10 @@ endfunction
 " Note: Must use expand() not glob() or new file names are not completed.
 " Note: Using <expr> instead of this tiny helper function causes <C-c> to
 " display annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
-function! file#fzf_init(bang, cmd, ...) abort
+function! file#fzf_init(bang, global, level, cmd, ...) abort
   let paths = [] | call map(copy(a:000), 'extend(paths, expand(trim(v:val), 0, 1))')
+  let paths = call('grep#parse_paths', [2, a:global, 1 + a:level] + reverse(paths))
+  let paths = reverse(paths)  " important paths at top instead of bottom
   let func = a:cmd ==# 'Files' ? 'file#fzf_files' : 'file#fzf_open'
   let args = a:cmd ==# 'Files' ? [a:bang] + paths : [a:bang, a:cmd, paths]
   return call(func, args)
@@ -162,44 +164,52 @@ function! file#fzf_input(cmd, default, ...) abort
 endfunction
 
 " Open arbitrary files recursively
+" Note: Try to preserve relative paths constructed by grep#parse_paths(). Follows all
+" symlinks, e.g. ~/.vimrc pointing to dotfiles, but keeps RelativePath() 'icloud'.
 " Note: This is modeled after fzf :Files command. Used to search arbitrary files
 " while respecting '.ignore' patterns used for e.g. f0/f1 commands.
 function! file#fzf_files(bang, ...) abort
   " Parse input arguments
   let [bases, warns] = [[], []]
-  for base in a:0 ? a:000 : [getcwd()]
-    let base = fnamemodify(resolve(expand(base)), ':p')
-    let base = substitute(base, '/$', '', '')
-    if filereadable(base)
+  for base in a:0 ? copy(a:000) : [getcwd()]
+    let base = substitute(expand(base), '/$', '', '')
+    if filereadable(resolve(base))
       let base = fnamemodify(base, ':h')
     endif
-    if !empty(base) && !isdirectory(expand(base))
-      call add(warns, base)
-    else
-      call add(bases, base)
+    if !isdirectory(resolve(base))
+      call add(warns, base) | continue
     endif
+    if !empty(bases)
+      let base = RelativePath(base, bases[0])
+    endif
+    if base =~# '^icloud'
+      if empty(bases)  " icloud file
+        let base = '~/' . base
+      else  " repair e.g. 'icloud/Mackup/shell.sh'
+        let base = RelativePath(expand('~/' . base), fnamemodify(bases[0], ':p'))
+      endif
+    endif
+    call add(bases, base)
   endfor
+  " Generate and select files
   if !empty(warns)
     let msg = join(map(warns, 'string(v:val)'), ', ')
     redraw | echohl WarningMsg
     echom 'Warning: Ignoring invalid directory path(s): ' . msg
     echohl None
   endif
-  " Generate and select files
   let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
   let flags = '-type d \( -name .git -o -name .svn -o -name .hg \) -prune -o '
   let flags .= join(tag#parse_ignores(1, 1, 2), ' ')  " skip .gitignore, skip folders
   let flags .= ' -type f -print | sed ''s@^./@@'''  " remove leading dot
-  let [base; others] = bases
-  call map(others, 'RelativePath(v:val, base)')
-  let source = 'find . ' . join(others, ' ') . ' ' . flags
+  let source = 'find . ' . join(bases[1:], ' ') . ' ' . flags
   let opts = fzf#vim#with_preview()
-  let opts.dir = fnamemodify(base, ':p')
-  let prompt = file#format_dir(base, 1)
+  let opts.dir = fnamemodify(bases[0], ':p')
+  let prompt = file#format_dir(bases[0], 1)
   let prompt = string('Files> ' . prompt)
   let options = {
-    \ 'sink*': function('file#fzf_open', [a:bang, 'Drop', base]),
+    \ 'sink*': function('file#fzf_open', [a:bang, 'Drop', bases[0]]),
     \ 'source': source,
     \ 'options': '--no-sort --prompt=' . prompt,
   \ }
