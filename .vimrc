@@ -146,7 +146,7 @@ let &g:signcolumn = 'auto'  " show signs automatically number column
 let &g:softtabstop = 2  " default 2 spaces
 let &g:spell = 0  " global spell disable (only use text files)
 let &g:tabstop = 2  " default 2 spaces
-let &g:wildignore = join(tag#parse_ignores(0, 1, '~/.wildignore'), ',')
+let &g:wildignore = join(tag#parse_ignores(2, 1, 0), ',')
 
 " File types for different unified settings
 " Note: Can use plugins added to '~/forks' by adding to s:fork_plugins below
@@ -408,24 +408,25 @@ nnoremap <Tab>< <Cmd>call window#fzf_move(tabpagenr() - v:count1)<CR>
 " Open file with optional user input
 " Note: The <Leader> maps open up views of the current file directory
 for s:key in ['q', 'w', 'e', 'r'] | silent! exe 'unmap <Tab>' . s:key | endfor
-nnoremap <Tab>o <Cmd>call file#fzf_open('Drop', 0)<CR>
-nnoremap <Tab>p <Cmd>call file#fzf_open('Files', 0)<CR>
-nnoremap <Tab>i <Cmd>call file#fzf_open('Drop', 1)<CR>
-nnoremap <Tab>y <Cmd>call file#fzf_open('Files', 1)<CR>
-nnoremap <Tab>e <Cmd>call file#fzf_open('Split', 1)<CR>
-nnoremap <Tab>r <Cmd>call file#fzf_open('Vsplit', 1)<CR>
+nnoremap <Tab>o <Cmd>call file#fzf_input('Drop', tag#find_root())<CR>
+nnoremap <Tab>p <Cmd>call file#fzf_input('Files', tag#find_root())<CR>
+nnoremap <Tab>i <Cmd>call file#fzf_input('Drop', expand('%:p:h'))<CR>
+nnoremap <Tab>y <Cmd>call file#fzf_input('Files', expand('%:p:h'))<CR>
+nnoremap <Tab>e <Cmd>call file#fzf_input('Split', expand('%:p:h'))<CR>
+nnoremap <Tab>r <Cmd>call file#fzf_input('Vsplit', expand('%:p:h'))<CR>
 
 " Open file in current directory or some input directory
 " Note: Anything that is not :Files gets passed to :Drop command
 " nnoremap <C-g> <Cmd>Locate<CR>  " uses giant database from Unix 'locate'
+" command! -bang -nargs=* -complete=file Files call file#fzf_files(<bang>0, <f-args>)
+command! -bang -nargs=* -complete=file Vsplit call file#fzf_init(<bang>0, 'botright vsplit', <f-args>)
+command! -bang -nargs=* -complete=file Split call file#fzf_init(<bang>0, 'botright split', <f-args>)
+command! -bang -nargs=* -complete=file Open call file#fzf_init(<bang>0, 'Drop', <f-args>)
 command! -nargs=* -complete=file Drop call file#open_drop(<f-args>)
-command! -nargs=* -complete=file Open call file#fzf_find('Drop', <f-args>)
-command! -nargs=* -complete=file Split call file#fzf_find('botright split', <f-args>)
-command! -nargs=* -complete=file Vsplit call file#fzf_find('botright vsplit', <f-args>)
-nnoremap <C-e> <Cmd>exe 'Split ' . fnameescape(fnamemodify(@%, ':p:h'))<CR>
-nnoremap <C-r> <Cmd>exe 'Vsplit ' . fnameescape(fnamemodify(@%, ':p:h'))<CR>
-nnoremap <F7> <Cmd>exe 'Open ' . fnameescape(fnamemodify(@%, ':p:h'))<CR>
-nnoremap <C-y> <Cmd>exe 'Files ' . fnameescape(fnamemodify(@%, ':p:h'))<CR>
+nnoremap <C-e> <Cmd>exe 'Split ' . fnameescape(expand('%:p:h'))<CR>
+nnoremap <C-r> <Cmd>exe 'Vsplit ' . fnameescape(expand('%:p:h'))<CR>
+nnoremap <F7> <Cmd>exe 'Files ' . fnameescape(expand('%:p:h'))<CR>
+nnoremap <C-y> <Cmd>exe 'Files ' . fnameescape(expand('%:p:h'))<CR>
 nnoremap <C-o> <Cmd>exe 'Open ' . fnameescape(tag#find_root())<CR>
 nnoremap <C-p> <Cmd>exe 'Files ' . fnameescape(tag#find_root())<CR>
 nnoremap <C-g> <Cmd>GFiles<CR>
@@ -647,10 +648,11 @@ noremap g? <Cmd>Lines<CR>
 " Navigate across recent tag jumps
 " Note: Apply in vimrc to avoid overwriting. This works by overriding both fzf and
 " internal tag jumping utils. Ignores tags resulting from direct :tag or <C-]>
-command! -nargs=* -complete=file ShowIgnores echom 'Tag ignores: ' . join(tag#parse_ignores(0, 0, <f-args>), ' ')
 command! -nargs=0 ClearTags call stack#clear_stack('tag')
 command! -nargs=0 PrintTags call stack#print_stack('tag')
 command! -nargs=* PopTags call stack#pop_stack('tag', <f-args>)
+command! -nargs=* -complete=file ShowIgnores
+  \ echom 'Tag ignores: ' . join(tag#parse_ignores(0, 0, 0, <f-args>), ' ')
 noremap <F3> <Cmd>call tag#next_stack(-v:count1)<CR>
 noremap <F4> <Cmd>call tag#next_stack(v:count1)<CR>
 noremap [{ <Cmd>exe v:count1 . 'tag'<CR>
@@ -1357,9 +1359,9 @@ let g:gutentags_enabled = 1
 call plug#('~/.fzf')  " fzf installation location, will add helptags and runtimepath
 call plug#('junegunn/fzf.vim')  " pin to version supporting :Drop
 call plug#('roosta/fzf-folds.vim')  " jump to folds
-let g:fzf_action = {'ctrl-m': 'Drop', 'ctrl-t': 'Drop', 'ctrl-x': 'split', 'ctrl-v': 'vsplit' }  " have file search and grep open to existing window if possible
+let g:fzf_action = {'ctrl-m': 'Drop', 'ctrl-e': 'split', 'ctrl-r': 'vsplit' }  " have file search and grep open to existing window if possible
 let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
-let g:fzf_tags_command = 'ctags -R -f .vimtags ' . join(tag#parse_ignores(0, 0), ' ')
+let g:fzf_tags_command = 'ctags -R -f .vimtags ' . join(tag#parse_ignores(0, 0, 1), ' ')
 let g:fzf_require_dir = 0  " see lukelbd/fzf.vim completion-edits branch
 let g:fzf_buffers_jump = 1  " jump to existing window if already open
 
@@ -1711,14 +1713,10 @@ if s:plug_active('vim-textobj-user')
     au!
     au VimEnter * call textobj#sentence#init()
   augroup END
-  map ]v <Plug>(textobj-numeral-n)
-  map [v <Plug>(textobj-numeral-p)
-  map ]V <Plug>(textobj-numeral-N)
-  map ]V <Plug>(textobj-numeral-P)
-  omap av <Plug>(textobj-numeral-a)
-  vmap av <Plug>(textobj-numeral-a)
-  omap iv <Plug>(textobj-numeral-i)
-  vmap iv <Plug>(textobj-numeral-i)
+  omap an <Plug>(textobj-numeral-a)
+  vmap an <Plug>(textobj-numeral-a)
+  omap in <Plug>(textobj-numeral-i)
+  vmap in <Plug>(textobj-numeral-i)
   omap a. <Plug>(textobj-comment-a)
   vmap a. <Plug>(textobj-comment-a)
   omap i. <Plug>(textobj-comment-i)
@@ -1730,6 +1728,7 @@ if s:plug_active('vim-textobj-user')
   let s:textobj_alpha = {
     \ 'g': '\(\<\|[^0-9A-Za-z]\@<=[0-9A-Za-z]\@=\)\r\(\>\|[^0-9A-Za-z]\)',
     \ 'h': '\(\<\|[0-9a-z]\@<=[^0-9a-z]\@=\)\r\(\>\|[0-9a-z]\@<=[^0-9a-z]\@=\)',
+    \ 'v': '[^0-9A-Za-z_]\+[0-9A-Za-z_]\@=\r[0-9A-Za-z_]\@<=[^0-9A-Za-z_]\+',
   \ }  " 'ag' includes e.g. trailing underscore similar to 'a word'
   let s:textobj_entire = {
     \ 'select-a': 'aE',  'select-a-function': 'textobj#entire#select_a',
@@ -1852,9 +1851,9 @@ if s:plug_active('vim-gutentags')
   let g:gutentags_ctags_executable = 'ctags'  " note this respects .ctags config
   let g:gutentags_ctags_exclude_wildignore = 1  " exclude &wildignore too
   let g:gutentags_ctags_exclude = []  " instead manage manually (see below)
-  let g:gutentags_ctags_extra_args = tag#parse_ignores(1, 1)  " exclude and exclude-exception flags
+  let g:gutentags_ctags_extra_args = tag#parse_ignores(0, 1, 1)  " exclude and exclude-exception flags
   let g:gutentags_file_list_command = {
-    \ 'default': 'find . ' . join(tag#parse_ignores(2, 2), ' '),
+    \ 'default': 'find . ' . join(tag#parse_ignores(0, 2, 2), ' ') . ' -print',
     \ 'markers': {'.git': 'git ls-files', '.hg': 'hg files'},
   \ }
   let g:gutentags_ctags_tagfile = '.vimtags'  " similar to .vimsession

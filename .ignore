@@ -8,8 +8,8 @@
 *.xml
 .git/
 .svn/
+.hg/
 api/
-foo/bar
 _build/
 plugged/
 *conda*/

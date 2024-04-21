@@ -164,10 +164,8 @@ function! s:tab_source() abort
     let icwd = !empty(base) && strpart(getcwd(), 0, len(base)) ==# base
     if ibase && !icwd
       let name = strpart(path, len(root)) | let s:path_roots[name] = root
-    elseif exists('*RelativePath')
+    else  " show relative path
       let name = RelativePath(path)
-    else
-      let name = fnamemodify(path, ':~:.')
     endif
     let pad = repeat(' ', ndigits - len(string(tnr)))
     let flags = TablineFlags(path, process) . ' '  " limit processing

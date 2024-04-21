@@ -24,14 +24,9 @@ function! s:parse_paths(prompt, global, level, ...)
   let unique = 'index(paths, v:val, v:key + 1) == -1'
   let outer = 'len(v:val) < len(path) && strpart(path, 0, len(v:val)) ==# v:val'
   for path in filter(copy(paths), unique)  " unique
-    if a:level > 2 && !empty(filter(copy(paths), outer))
-      continue  " e.g. ignore plugged repos when searching dotfiles
-    endif
-    if exists('*RelativePath')  " returns empty string for getcwd()
-      let path = RelativePath(path)
-    else  " returns e.g. ~/dotfiles for getcwd()
-      let path = getcwd() ==# fnamemodify(path, ':p') ? '' : fnamemodify(path, ':~:.')
-    endif
+    let inner = !empty(filter(copy(paths), outer))
+    if inner && a:level > 2 | continue | endif  " e.g. ignore 'plugged' when in dotfiles
+    let path = RelativePath(path)
     if empty(path) && (a:prompt || len(paths) > 1)
       let path = './'  " trailing slash as with other folders
     endif

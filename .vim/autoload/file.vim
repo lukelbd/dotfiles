@@ -8,17 +8,14 @@
 let s:new_dir = ''  " path completion base folder
 let s:new_file = '[new file]'  " fzf entry for requesting new file
 function! file#format_dir(path, ...) abort
+  let regex = '^[~.]*/\|^\w\+:'  " path base or 'drive' is present
   let base = fnamemodify(a:path, ':p:~:.')  " note do not use RelativePath
-  let base = a:0 && a:1 && base !~# '^[~.]*/\|^\w\+:' ? './' . base : base
+  let base = a:0 && a:1 && base !~# regex ? './' . base : base
   return substitute(base, '[^/]\@<=/*$', '/', '')
 endfunction
 function! file#echo_path(head, ...) abort
   let path = expand(a:0 ? a:1 : '%')
-  if exists('*RelativePath')
-    let path = RelativePath(path, 1)
-  else
-    let path = fnamemodify(path, ':p:~:.')
-  endif
+  let path = RelativePath(path, 1)
   let head = substitute(a:head, '^\(\a\)\(\a*\)$', '\u\1\l\2', '')
   redraw | echom head . ': ' . path
 endfunction
@@ -30,11 +27,7 @@ function! file#expand_cfile(...) abort
     let files = glob(check, 0, 1)
     if !empty(files) | break | endif
   endfor
-  if exists('*RelativePath')  " statusline function
-    return map(files, 'RelativePath(v:val, show)')
-  else
-    return map(files, "fnamemodify(v:val, ':~:.')")
-  endif
+  return map(files, 'RelativePath(v:val, show)')
 endfunction
 
 " Generate list of files in directory
@@ -61,16 +54,66 @@ function! file#glob_paths(lead, ...) abort
   let map3 = 'substitute(v:val, ''^'' . base, '''', '''')'  " remove base folder
   return map(map(map(map(filter(paths, filt), map0), map1), map2), map3)
 endfunction
-function! file#input_path(prompt, default, ...) abort
-  let base1 = file#format_dir(a:0 ? a:1 : '', 0)
-  let base2 = file#format_dir(a:0 ? a:1 : '', 1)  " leading ./
-  let default1 = empty(a:default) ? base2 : a:default
-  let default2 = empty(a:default) ? base2 : base1 . a:default
-  let prompt = substitute(a:prompt, '^\(\a\)\(\a*\)$', '\u\1\l\2', '')
-  let prompt = prompt . ' (' . default2 . ')'  " prompt with base folder
-  let s:new_dir = base2  " glob using this folder
-  let path = utils#input_default(prompt, default1, 'file#glob_paths')
-  return path =~# '^[~.]*/\|^\~\?$' ? path : base1 . path
+
+" Parse .ignore files for ctags utilities (compare to bash ignores())
+" Note: Critical to remove trailing slash for ctags recursive searching.
+" Note: For some reason parsing '--exclude-exception' rules for g:fzf_tags_command
+" does not work, ignores all other exclude flags, and vim-gutentags can only
+" handle excludes anyway, so just bypass all patterns starting with '!'.
+function! tag#parse_ignores(level, skip, mode, ...) abort
+  let nofiles = a:skip == 2
+  let nodirs = a:skip == 1
+  let paths = []  " search level
+  if a:level <= 0
+    call add(paths, '~/.gitignore')
+  endif
+  if a:level <= 1
+    call add(paths, '~/.ignore')
+  endif
+  if a:level <= 2  " slowest so put last
+    call add(paths, '~/.wildignore')
+  endif
+  let result = []
+  call extend(paths, a:000)
+  for path in paths
+    let path = resolve(expand(path))
+    if !filereadable(path) | continue | endif
+    for line in readfile(path)
+      if line =~# '^\s*\(#.*\)\?$' | continue | endif
+      if nodirs && line =~# '/' | continue | endif
+      if nofiles && line !~# '/' | continue | endif
+      let item = substitute(trim(line), '\/$', '', '')
+      if a:mode <= 0
+        call add(result, item)
+      elseif a:mode == 1  " ctags exclude
+        if item =~# '/' | continue | endif  " not implemented
+        if item[0] ==# '!'  " exclusion prepended with !
+          call add(result, '--exclude-exception=' . item[1:])
+        else  " standard exclusion
+          call add(result, '--exclude=' . item)
+        endif
+      else  " find prune
+        let flag = item =~# '/' ? '-path' : '-name'  " e.g. foo/bar
+        let item = item =~# '/' ? '*/' . item . '/*' : item
+        if item[0] ==# '!' | continue | endif  " not implemented
+        if empty(result)
+          call extend(result, [flag, shellescape(item)])
+        else  " additional match
+          call extend(result, ['-o', flag, shellescape(item)])
+        endif
+      endif
+    endfor
+  endfor
+  if a:mode > 1 && !empty(result)
+    let result = ['\('] + result + ['\)']  " prune groups
+    let result = result + ['-prune', '-o']  " follow with e.g. -print
+    if nofiles
+      let result = ['-type', 'd'] + result
+    elseif nodirs
+      let result = ['-type', 'f'] + result
+    endif
+  endif
+  return result
 endfunction
 
 " Open recently edited file
@@ -78,12 +121,14 @@ endfunction
 " in ~/.vim_mru_files across different open vim sessions.
 function! file#fzf_history(arg, ...)
   let bang = a:0 && a:1 || a:arg[len(a:arg) - 1] ==# '!'
+  let opts = fzf#vim#with_preview()
+  let opts.dir = getcwd()
   if a:arg[0] ==# ':'
     call fzf#vim#command_history(bang)
   elseif a:arg[0] ==# '/'
     call fzf#vim#search_history(bang)
   else
-    call fzf#vim#history(s:fzf_extra(), bang)
+    call fzf#vim#history(opts, bang)
   endif
 endfunction
 function! file#fzf_recent() abort
@@ -91,11 +136,7 @@ function! file#fzf_recent() abort
   if files[0] =~# '^#'
     call remove(files, 0)
   endif
-  if exists('*RelativePath')
-    call map(files, 'RelativePath(v:val)')
-  else
-    call map(files, 'fnamemodify(v:val, ":~:.")')
-  endif
+  call map(files, 'RelativePath(v:val)')
   call fzf#run(fzf#wrap({
     \ 'sink': function('file#open_drop'),
     \ 'source' : files,
@@ -103,51 +144,83 @@ function! file#fzf_recent() abort
     \ }))
 endfunction
 
-" Open from local or current directory (see also grep.vim)
+" Open input files
 " Note: Must use expand() not glob() or new file names are not completed.
 " Note: Using <expr> instead of this tiny helper function causes <C-c> to
 " display annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
-function! s:fzf_extra() abort
-  let opts = fzf#vim#with_preview()
-  let opts.dir = getcwd()
-  return opts
+function! file#fzf_init(bang, cmd, ...) abort
+  let paths = [] | call map(copy(a:000), 'extend(paths, expand(trim(v:val), 0, 1))')
+  let func = a:cmd ==# 'Files' ? 'file#fzf_files' : 'file#fzf_open'
+  let args = a:cmd ==# 'Files' ? [a:bang] + paths : [a:bang, a:cmd, paths]
+  return call(func, args)
 endfunction
-function! file#fzf_find(cmd, ...) abort
-  let paths = []
-  for glob in a:000  " iterate input
-    let glob = substitute(glob, '^\s*\(.\{-}\)\s*$', '\1', '')  " strip spaces
-    call extend(paths, expand(glob, 0, 1))
-  endfor
-  call s:open_sink(a:cmd, paths)  " call fzf sink function
-endfunction
-function! file#fzf_open(cmd, local) abort
+function! file#fzf_input(cmd, default, ...) abort
   let cmd = a:cmd ==# 'Drop' ? 'Open' : a:cmd  " alias 'Open' for 'Drop' command
-  let base = a:local ? expand('%:p:h') : tag#find_root(@%)
-  let init = file#input_path(cmd, '', base)
-  if empty(init)
-    return
-  elseif cmd ==# 'Files'
-    call fzf#vim#files(init, s:fzf_extra(), 0)
-  else
-    call file#fzf_find(cmd, init)
+  let input = file#input_path(cmd, '', a:default)
+  if empty(input) | return | endif
+  return file#fzf_init(cmd, input)
+endfunction
+
+" Open arbitrary files recursively
+" Note: This is modeled after fzf :Files command. Used to search arbitrary files
+" while respecting '.ignore' patterns used for e.g. f0/f1 commands.
+function! file#fzf_files(bang, ...) abort
+  " Parse input arguments
+  let [bases, warns] = [[], []]
+  for base in a:0 ? a:000 : [getcwd()]
+    let base = fnamemodify(resolve(expand(base)), ':p')
+    let base = substitute(base, '/$', '', '')
+    if filereadable(base)
+      let base = fnamemodify(base, ':h')
+    endif
+    if !empty(base) && !isdirectory(expand(base))
+      call add(warns, base)
+    else
+      call add(bases, base)
+    endif
+  endfor
+  if !empty(warns)
+    let msg = join(map(warns, 'string(v:val)'), ', ')
+    redraw | echohl WarningMsg
+    echom 'Warning: Ignoring invalid directory path(s): ' . msg
+    echohl None
   endif
+  " Generate and select files
+  let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
+  if empty(snr) | return | endif
+  let flags = '-type d \( -name .git -o -name .svn -o -name .hg \) -prune -o '
+  let flags .= join(tag#parse_ignores(1, 1, 2), ' ')  " skip .gitignore, skip folders
+  let flags .= ' -type f -print | sed ''s@^./@@'''  " remove leading dot
+  let [base; others] = bases
+  call map(others, 'RelativePath(v:val, base)')
+  let source = 'find . ' . join(others, ' ') . ' ' . flags
+  let opts = fzf#vim#with_preview()
+  let opts.dir = fnamemodify(base, ':p')
+  let prompt = file#format_dir(base, 1)
+  let prompt = string('Files> ' . prompt)
+  let options = {
+    \ 'sink*': function('file#fzf_open', [a:bang, 'Drop', base]),
+    \ 'source': source,
+    \ 'options': '--no-sort --prompt=' . prompt,
+  \ }
+  return call(snr . 'fzf', ['files', options, [opts, 0]])
 endfunction
 
 " Check if user selection is directory, descend until user selects a file.
 " Note: Since fzf executes asynchronously cannot do loop recursion inside the driver
 " function. See https://github.com/junegunn/fzf/issues/1577#issuecomment-492107554
-function! s:open_sink(cmd, ...) abort
+function! file#fzf_open(bang, cmd, ...) abort
   " Parse arguments
   if a:0 == 1  " user invocation
     let base = ''
     let items = a:1
-  else  " fzf invocation
+  else  " fzf invocation (ignore binding)
     let base = a:1
-    let items = a:2
+    let items = a:2[1:]
   endif
   if !exists(':' . get(split(a:cmd), 0, ''))
-    echohl WarningMsg
-    echom "Error: Open command '" . a:cmd . "' not found."
+    redraw | echohl WarningMsg
+    echom 'Error: Command ' . string(a:cmd) . ' not found.'
     echohl None | return
   endif
   " Process paths input manually or from fzf
@@ -169,15 +242,19 @@ function! s:open_sink(cmd, ...) abort
   endfor
   " Possibly activate or re-activate fzf
   if empty(paths) && a:0 == 1 || len(paths) == 1 && isdirectory(paths[0])
+    let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
+    if empty(snr) | return | endif
     let base = get(paths, 0, '.')
     let paths = []  " only continue in recursion
-    let prompt = file#format_dir(base, 1)
-    let prompt = string(a:cmd . '> ' . prompt)
-    call fzf#run(fzf#wrap({
-      \ 'sink*': function('s:open_sink', [a:cmd, base]),
+    let opts = fzf#vim#with_preview()
+    let prompt = string(a:cmd . '> ' . file#format_dir(base, 1))
+    let options = {
+      \ 'sink*': function('file#fzf_open', [a:bang, a:cmd, base]),
       \ 'source': file#glob_files(base, 1),
-      \ 'options': '--multi --no-sort --prompt=' . string(prompt),
-    \ }))
+      \ 'options': '--no-sort --prompt=' . prompt,
+    \ }
+    let options.dir = base
+    call call(snr . 'fzf', ['open', options, [opts, 0]])
   endif
   " Open file(s), or if it is already open just to that tab
   " Note: Use feedkeys() if only one file selected or else template loading
@@ -185,8 +262,8 @@ function! s:open_sink(cmd, ...) abort
   let files = []
   for path in paths
     if isdirectory(path)  " false for empty string
-      echohl WarningMsg
-      echom "Warning: Skipping directory '" . path . "'."
+      redraw | echohl WarningMsg
+      echom 'Warning: Skipping directory ' . string(path) . '.'
       echohl None
     elseif !empty(path) && path !~# '[*?[\]]'  " not unexpanded glob
       let icmd = a:cmd . ' ' . fnameescape(path)
@@ -245,13 +322,8 @@ function! file#show_paths(...) abort
   let paths = a:0 ? a:000 : [@%]
   for path in paths
     let root = tag#find_root(path)
-    if exists('*RelativePath')  " statusline function
-      let root = RelativePath(root)
-      let show = RelativePath(path)
-    else
-      let root = fnamemodify(root, ':~:.')
-      let show = fnamemodify(path, ':~:.')
-    endif
+    let root = RelativePath(root)
+    let show = RelativePath(path)
     let root = empty(root) ? fnamemodify(getcwd(), ':~:.') : root
     let work = fnamemodify(getcwd(), ':~')
     echom 'Path: ' . escape(show, chars)
@@ -270,11 +342,7 @@ function! file#show_bufs() abort
   let lines = []
   for bnr in tags#bufs_recent(0)  " all buffers loaded after unix time zero
     let pad = repeat(' ', ndigits - len(string(bnr)))
-    if exists('*RelativePath')
-      let path = RelativePath(bufname(bnr), 1)
-    else
-      let path = expand('#' . bnr . ':~:.')
-    endif
+    let path = RelativePath(bufname(bnr), 1)
     call add(lines, pad . bnr . ': ' . path)
   endfor
   let message = "Open buffers (sorted by recent use):\n" . join(lines, "\n")

@@ -330,60 +330,6 @@ function! tag#find_root(...) abort
   return head
 endfunction
 
-" Parse .ignore files for ctags utilities (compare to bash ignores())
-" Note: Critical to remove trailing slash for ctags recursive searching.
-" Note: For some reason parsing '--exclude-exception' rules for g:fzf_tags_command
-" does not work, ignores all other exclude flags, and vim-gutentags can only
-" handle excludes anyway, so just bypass all patterns starting with '!'.
-function! tag#parse_ignores(mode, skip, ...) abort
-  if a:0  " global default
-    let paths = copy(a:000)
-  else  " used for gutentags settings
-    let paths = ['~/.ignore', '~/.wildignore', '~/.gitignore']
-  endif
-  let nofiles = a:skip == 2
-  let nodirs = a:skip == 1
-  let result = []
-  for path in paths
-    let path = resolve(expand(path))
-    if !filereadable(path) | continue | endif
-    for line in readfile(path)
-      if line =~# '^\s*\(#.*\)\?$' | continue | endif
-      if nodirs && line =~# '/' | continue | endif
-      if nofiles && line !~# '/' | continue | endif
-      let item = substitute(trim(line), '\/$', '', '')
-      if a:mode <= 0
-        call add(result, item)
-      elseif a:mode == 1  " ctags exclude
-        if item =~# '/' | continue | endif  " not implemented
-        if item[0] ==# '!'  " exclusion prepended with !
-          call add(result, '--exclude-exception=' . item[1:])
-        else  " standard exclusion
-          call add(result, '--exclude=' . item)
-        endif
-      else  " find prune
-        let flag = item =~# '/' ? '-path' : '-name'  " e.g. foo/bar
-        let item = item =~# '/' ? '*/' . item . '/*' : item
-        if item[0] ==# '!' | continue | endif  " not implemented
-        if empty(result)
-          call extend(result, [flag, shellescape(item)])
-        else  " additional match
-          call extend(result, ['-o', flag, shellescape(item)])
-        endif
-      endif
-    endfor
-  endfor
-  if a:mode > 1 && !empty(result)
-    let result = ['\('] + result + ['\)', '-prune', '-o', '-print']
-    if nofiles
-      let result = ['-type', 'd'] + result
-    elseif nodirs
-      let result = ['-type', 'f'] + result
-    endif
-  endif
-  return result
-endfunction
-
 " Update tags variable (requires g:gutentags_ctags_auto_set_tags = 0)
 " Note: Using :setlocal tags requires e.g. '.vim\\,tags' and '.vim\\\ tags' for literal
 " commas and spaces (see :help option-backslash). Setting with &l:tags requires only

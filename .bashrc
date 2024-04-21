@@ -882,40 +882,33 @@ f2() { _find 2 "$@"; }  # custom find with no excludes
 # NOTE: Tried using :(exclude) and :! but does not work with no-index. See following:
 # https://stackoverflow.com/a/58845608/4970632 and https://stackoverflow.com/a/53475515/4970632
 hash colordiff 2>/dev/null && alias diff='command colordiff'  # use --name-status to compare directories
-fs() {  # git status-style file differences
+fs() {  # git status-style file differences  # shellcheck disable=2034
+  local flags=($(ignores 0))
   command git --no-pager diff \
-    --textconv --no-index --color=always --name-status "$@" 2>&1 | \
-    grep -v -e 'warning:' -e '.vimsession' -e '*.git' -e '*.svn' -e '*.sw[a-z]' \
-    -e '*.DS_Store' -e '*.ipynb_checkpoints' -e '.*__pycache__'
+    --textconv --no-index --color=always --name-status "$@" 2>&1 \
+    | grep -v "${flags[@]}"
 }
 fd() {  # git diff-style file differences
   command git --no-pager diff \
     --textconv --no-index --color=always "$@" 2>&1 \
-    | grep -v -e 'warning:' | \
-    tac | sed -e '/Binary files/,+3d' | tac
+    | grep -v -e 'warning:' \
+    | tac | sed -e '/Binary files/,+3d' | tac
 }
 ds() {  # git status-style directory differences
   [ $# -ne 2 ] && echo "Usage: ds DIR1 DIR2" && return 1
   echo "Directory: $1"
   echo "Directory: $2"
-  command diff -rq \
-    -x '.vimsession' \
-    "$1" "$2"
+  command diff -rq -x '.vimsession' "$1" "$2"
 }
 dd() {  # directory modification time differences
   [ $# -ne 2 ] && echo "Usage: dt DIR1 DIR2" && return 1
-  local dir dir1 dir2 cat1 cat2 cat3 cat4 cat5 file files
-  dir1=${1%/}
-  dir2=${2%/}
+  local dir dir1 dir2 cat1 cat2 cat3 cat4 cat5 file files flags
+  flags=($(ignores 1))
+  dir1=${1%/} dir2=${2%/}
   for dir in "$dir1" "$dir2"; do
     echo "Directory: $dir"
     ! [ -d "$dir" ] && echo "Error: $dir is not an existing directory." && return 1
-    files+=$'\n'$( \
-      find "$dir" -mindepth 1 \( \
-      -path '*.vimsession' -o -path '*.git' -o -path '*.svn' -o -path '*.sw[a-z]' \
-      -o -path '*.DS_Store' -o -path '*.ipynb_checkpoints' -o -path '*__pycache__' \
-      -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \
-      \) -prune -o -print)
+    files+=$'\n'$(find "$dir" -mindepth 1 "${flags[@]}" -print)
   done
   while read -r file; do
     file=${file/$dir1\//}
@@ -1842,7 +1835,7 @@ _fzf_options=" \
 --bind=ctrl-k:up,ctrl-j:down,btab:clear-query,tab:accept,f1:clear-query,f2:accept,\
 f3:preview-page-up,f4:preview-page-down,ctrl-g:jump,ctrl-s:toggle,ctrl-a:toggle-all,\
 ctrl-u:half-page-up,ctrl-d:half-page-down,ctrl-b:page-up,ctrl-f:page-down,\
-ctrl-r:clear-query,ctrl-q:cancel,ctrl-w:cancel,ctrl-e:cancel\
+ctrl-q:cancel,ctrl-w:cancel\
 "  # critical to export so used by vim
 
 # Defualt fzf find commands. The compgen ones were addd by fork, others are native.
