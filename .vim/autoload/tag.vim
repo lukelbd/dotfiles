@@ -180,13 +180,13 @@ function! tag#fzf_stack() abort
   for item in get(g:, 'tag_stack', [])  " jumping tag stack
     let [iname, ipath] = [item[2], item[0]]
     if !filereadable(ipath) | continue | endif
-    call extend(items, tags#get_tags(iname, ipath, 1))
+    call extend(items, tags#tag_list(iname, ipath, 1))
   endfor
   let stack = gettagstack(win_getid())
   for item in get(stack, 'items', [])  " window tag stack
     let ipath = expand('#' . item.bufnr . ':p')
     if !filereadable(ipath) | continue | endif
-    call extend(items, tags#get_tags(item.tagname, ipath, 1))  " infer kind from stack
+    call extend(items, tags#tag_list(item.tagname, ipath, 1))  " infer kind from stack
   endfor
   let paths = map(copy(items), 'v:val.filename')
   let level = len(uniq(sort(paths))) > 1 ? 2 : 0
@@ -249,7 +249,7 @@ function! tag#fzf_tags(type, bang, ...) abort
   let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
   let opts = fzf#vim#with_preview({'placeholder': '--tag {2}:{-1}:{3..}' })
-  let paths = a:0 ? call('s:tag_search', a:000) : tags#get_files()
+  let paths = a:0 ? call('s:tag_search', a:000) : tags#tag_files()
   let paths = map(paths, 'fnamemodify(v:val, ":p")')
   let [nbytes, maxbytes] = [0, 1024 * 1024 * 200]
   for path in paths
@@ -300,7 +300,7 @@ function! tag#update_paths(...) abort
     exe 'setglobal tags' . (toggle ? '+=' : '-=') . path
   endfor
   for bnr in bufs
-    let tags = tags#get_files(bufname(bnr))  " prefer buffer file
+    let tags = tags#tag_files(bufname(bnr))  " prefer buffer file
     call map(tags, {_, val -> substitute(val, '\(,\| \)', '\\\1', 'g')})  " see above
     call setbufvar(bnr, '&tags', join(tags, ','))  " see above
   endfor

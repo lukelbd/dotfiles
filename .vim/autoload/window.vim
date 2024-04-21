@@ -151,10 +151,12 @@ function! s:tab_source() abort
   let nprocess = 20  " maximum tablines to process
   let ndigits = len(string(tabpagenr('$')))
   let values = []
-  let pairs = tags#buffer_paths()
-  for idx in range(len(pairs))
-    let [tnr, path] = pairs[idx]
+  let paths = tags#get_paths()
+  for idx in range(len(paths))
+    let path = paths[idx]
     let bnr = bufnr(path)
+    let winids = win_findbuf(bnr)  " iterate tabs
+    if empty(winids) | continue | endif
     let staged = getbufvar(bnr, 'tabline_staged_changes', 0)
     let unstaged = getbufvar(bnr, 'tabline_staged_changes', 0)
     let process = idx < nprocess || staged || unstaged
@@ -167,15 +169,18 @@ function! s:tab_source() abort
     else  " show relative path
       let name = RelativePath(path)
     endif
-    let pad = repeat(' ', ndigits - len(string(tnr)))
     let flags = TablineFlags(path, process) . ' '  " limit processing
     let hunks =  getbufvar(bnr, 'gitgutter', {})
     let [acnt, mcnt, rcnt] = get(hunks, 'summary', [0, 0, 0])
     for [key, cnt] in [['+', acnt], ['~', mcnt], ['-', rcnt]]
       if !empty(cnt) | let flags .= key . cnt | endif
     endfor
-    let value = pad . tnr . ': ' . name . flags  " displayed string
-    call add(values, value)
+    for winid in winids  " iterate windows
+      let [tnr, _] = win_id2tabwin(winid)
+      let pad = repeat(' ', ndigits - len(string(tnr)))
+      let value = pad . tnr . ': ' . name . flags
+      call add(values, value)
+    endfor
   endfor
   return values
 endfunction

@@ -117,7 +117,7 @@ function! s:list_source(changes) abort
   let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
   let name = printf('%6s', a:changes ? 'change' : 'jump')
-  let paths = map(tags#buffer_paths(), 'resolve(v:val[1])')  " sorted by recent use
+  let paths = map(tags#get_paths(), 'resolve(v:val)')  " sorted by recent use
   if paths[0] != expand('%:p') | call insert(paths, expand('%:p')) | endif
   let table = [name . '  tab:w  line col  text/file']
   for path in paths

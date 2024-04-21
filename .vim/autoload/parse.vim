@@ -28,7 +28,7 @@ function! s:dist_root(head, tails, ...) abort
     let tail = get(a:000, idx, '')
     return empty(tail) ? default : head . '/' . tail
   endif
-  while v:true  " see also tags#get_files()
+  while v:true  " see also tags#tag_files()
     let ihead = fnamemodify(head, ':h')
     if empty(ihead) || ihead ==# head | let head = '' | break | endif
     let idx = index(a:tails, fnamemodify(ihead, ':t'))
@@ -68,7 +68,7 @@ function! parse#get_paths(mode, global, level, ...)
   if !empty(args)  " manual input
     let paths = map(args, 'resolve(v:val)')
   elseif a:global  " global buffers
-    let paths = map(reverse(tags#buffer_paths()), 'resolve(v:val[1])')
+    let paths = map(reverse(tags#get_paths()), 'resolve(v:val)')
   else  " current buffer
     let paths = [resolve(expand('%:p'))]
   endif

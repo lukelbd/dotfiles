@@ -289,7 +289,7 @@ function! file#show_bufs() abort
   let ndigits = len(string(bufnr('$')))
   let result = {}
   let lines = []
-  for bnr in tags#bufs_recent(0)  " all buffers loaded after unix time zero
+  for bnr in tags#get_recents()  " buffers sorted by access time
     let pad = repeat(' ', ndigits - len(string(bnr)))
     let path = RelativePath(bufname(bnr), 1)
     call add(lines, pad . bnr . ': ' . path)
