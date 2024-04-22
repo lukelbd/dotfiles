@@ -70,36 +70,40 @@ function! file#fzf_history(arg, ...)
     call fzf#vim#history(opts, bang)
   endif
 endfunction
-function! file#fzf_recent() abort
+function! file#fzf_recent(...) abort
+  let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
+  if empty(snr) | return | endif
+  let bang = a:0 ? a:1 : 0
+  let opts = fzf#vim#with_preview()
   let files = readfile(expand(g:MRU_file))
-  if files[0] =~# '^#'
-    call remove(files, 0)
-  endif
-  call map(files, 'RelativePath(v:val)')
-  call fzf#run(fzf#wrap({
-    \ 'sink': function('file#open_drop'),
+  if files[0] =~# '^#' | call remove(files, 0) | endif
+  call map(files, {_, val -> RelativePath(val)})
+  call map(files, {_, val -> val =~# '^icloud\>' ? '~/' . val : val})
+  let options = {
+    \ 'sink': function('file#drop_file'),
     \ 'source' : files,
     \ 'options': '--no-sort --prompt="Global Hist> "',
-    \ }))
+  \ }
+  return call(snr . 'fzf', ['files', options, [opts, bang]])
 endfunction
 
 " Open input files
 " Note: Must use expand() not glob() or new file names are not completed.
 " Note: Using <expr> instead of this tiny helper function causes <C-c> to
 " display annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
+function! file#fzf_input(cmd, default, ...) abort
+  let input = file#input_path(a:cmd, '', a:default)
+  if empty(input) | return | endif
+  return file#fzf_init(a:cmd, input)
+endfunction
 function! file#fzf_init(bang, global, level, cmd, ...) abort
-  let paths = [] | call map(copy(a:000), 'extend(paths, expand(trim(v:val), 0, 1))')
+  let paths = []  " paths to open
+  call map(copy(a:000), 'extend(paths, expand(trim(v:val), 0, 1))')
   let paths = call('parse#get_paths', [2, a:global, 1 + a:level] + reverse(paths))
   let paths = reverse(paths)  " important paths at top instead of bottom
   let func = a:cmd ==# 'Files' ? 'file#fzf_files' : 'file#fzf_open'
   let args = a:cmd ==# 'Files' ? [a:bang] + paths : [a:bang, a:cmd, paths]
   return call(func, args)
-endfunction
-function! file#fzf_input(cmd, default, ...) abort
-  let cmd = a:cmd ==# 'Drop' ? 'Open' : a:cmd  " alias 'Open' for 'Drop' command
-  let input = file#input_path(cmd, '', a:default)
-  if empty(input) | return | endif
-  return file#fzf_init(cmd, input)
 endfunction
 
 " Open arbitrary files recursively
@@ -226,7 +230,15 @@ endfunction
 " Warning: Using :edit without feedkeys causes issues navigating fugitive panels.
 " Warning: The default ':tab drop' seems to jump to the last tab on failure and
 " also takes forever. Also have run into problems with it on some vim versions.
-function! file#open_drop(...) abort
+function! file#goto_file(...) abort
+  try
+    set eventignore=BufEnter,BufLeave
+    silent return call('file#drop_file', a:000)
+  finally
+    set eventignore=
+  endtry
+endfunction
+function! file#drop_file(...) abort
   let current = expand('%:p')
   for iarg in a:000
     let path = type(iarg) ? iarg : bufname(iarg)

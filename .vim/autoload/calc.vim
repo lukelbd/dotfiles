@@ -70,7 +70,7 @@ function! calc#start_codi(...) abort
   endif
   if !empty(path)
     let path = fnamemodify(path, ':r') . '.py'
-    call file#open_drop(path)
+    call file#drop_file(path)
     silent! exe 'Codi!!'
   endif
 endfunction

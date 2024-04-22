@@ -39,7 +39,7 @@ function! shell#help_page(...) abort
     silent exe 'file ' . fnameescape(cmd) | return 0
   else
     if type !=# 'stdout'  " see above
-      silent quit! | silent call file#open_drop(bufname(bnr))
+      silent quit! | silent call file#drop_file(bufname(bnr))
     endif
     echohl ErrorMsg
     echom "Error: Help info '" . cmd . "' not found"
@@ -92,7 +92,7 @@ function! shell#man_page(...) abort
     silent exe 'file ' . name | return 0
   else
     if type !=# 'man'
-      silent quit! | silent call file#open_drop(bufname(bnr))
+      silent quit! | silent call file#drop_file(bufname(bnr))
     endif
     echohl ErrorMsg
     echom "Error: Man page '" . page . "' not found"

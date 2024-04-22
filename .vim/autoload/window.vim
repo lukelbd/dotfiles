@@ -228,16 +228,10 @@ endfunction
 " location to top of stack on CursorHold but always scroll with explicit commands.
 " Note: This only triggers after spending time on window instead of e.g. browsing
 " across tabs with maps, similar to jumplist. Then can access jumps in each window.
-function! window#scroll_stack(...) abort
-  let cnt = a:0 ? a:1 : v:count1
+function! window#scroll_stack(count) abort
   let [iloc, _] = stack#get_loc('tab')  " do not auto-detect index
   call window#update_stack(1, iloc)  " update stack and avoid recursion
-  try
-    set eventignore=BufEnter,BufLeave
-    call stack#push_stack('tab', function('file#open_drop'), cnt)
-  finally
-    set eventignore=
-  endtry
+  call stack#push_stack('tab', function('file#goto_file'), a:count)
   let [iloc, _] = stack#get_loc('tab')  " do not auto-detect index
   call window#update_stack(1, iloc)
 endfunction  " possibly not a file
@@ -313,9 +307,8 @@ function! window#setup_preview(...) abort
 endfunction
 
 " Setup panel windows
-" Note: Handle 'copy toggle' settings from vimrc (although nolist still required e.g.
-" for man pages for some reason). Tried setting 'nomodifiable' but causes errors for
-" e.g. shell#job_win() logs, so instead manually disable common normal-mode maps.
+" Note: Tried setting 'nomodifiable' but causes errors for e.g. shell#job_win() logs.
+" Note: Handle switch#copy(1) from vimrc (but set nolist still required for e.g. man)
 " Warning: Critical error happens if try to auto-quit when only panel window is
 " left... fzf will take up the whole window in small terminals, and even when fzf
 " immediately runs and closes as e.g. with non-tex BufNewFile template detection,

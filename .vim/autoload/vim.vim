@@ -103,7 +103,7 @@ function! vim#show_runtime(name, ...) abort
   let path = $VIMRUNTIME . '/' . a:name . '/' . (a:0 ? a:1 : &l:filetype) . '.vim'
   let cmd = 'call window#setup_panel() | call switch#copy(1, 1)'
   if a:0 && a:1 =~# 'test' | let cmd .= ' | source %' | endif
-  call file#open_drop(path) | call feedkeys("\<Cmd>" . cmd . "\<CR>", 'n')
+  call file#drop_file(path) | call feedkeys("\<Cmd>" . cmd . "\<CR>", 'n')
 endfunction
 function! vim#setup_help() abort
   wincmd L | vertical resize 88

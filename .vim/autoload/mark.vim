@@ -141,7 +141,7 @@ endfunction
 function! s:lines_sink(arg) abort
   if len(a:arg) <= 1 | return | endif
   let parts = split(a:arg[-1], "\t", 1)
-  silent call file#open_drop(str2nr(parts[0])) | exe parts[2]
+  silent call file#drop_file(str2nr(parts[0])) | exe parts[2]
 endfunction
 function! mark#fzf_lines(query, ...) abort
   let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
@@ -161,7 +161,7 @@ endfunction
 " Note: This fixes issue where getbufline() output can be empty (filter assumes this
 " is non-empty) and because default flag --bind start:post:etc caused error.
 " Note: Changelist is managed from the top-down by filtering out double and empty-line
-" entries or entries with invalid lines, then navigating using using open_drop and
+" entries or entries with invalid lines, then navigating using using drop_file and
 " setpos('.', ...) instead of the native g,/g; keys. Compare with jumplist above.
 function! mark#next_jump(...) abort
   return call('s:next_list', [0] + a:000)
@@ -251,7 +251,7 @@ function! mark#goto_mark(...) abort
     let cmd = 'redraw | echohl WarningMsg | echom ' . msg . ' | echohl None'
     call feedkeys("\<Cmd>" . cmd . "\<CR>", 'n')
   else  " note this does not affect jumplist
-    silent call file#open_drop(mrks[0].file)
+    silent call file#drop_file(mrks[0].file)
     call setpos('.', mrks[0].pos)
     if &l:foldopen =~# 'mark' | exe 'normal! zv' | endif
   endif

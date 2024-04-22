@@ -26,7 +26,7 @@ function! s:tag_fmt2(size, head, base, cache) abort
   return name . "\t" . path . submatch(3) . "\t" . a:head . '.vimtags'
 endfunction
 function! s:tag_filter(line, ftype, regex, fast) abort
-  if a:line =~# '^\s*!' | return 0 | endif
+  if a:line =~# '^\s*!\|^\s*\d\+\>' | return 0 | endif
   if empty(a:ftype) | return 1 | endif
   let path = substitute(a:line, s:regex_tag2, '\2', 'g')
   return tags#type_match(path, a:ftype, a:regex, s:type_cache, a:fast)
@@ -60,7 +60,7 @@ function! tag#read_tags(mode, type, query, ...) abort
     let [ftype, regex] = [&l:filetype, tags#type_regex()]
   endif
   let [result, cache] = [[], {}]  " see also tags.vim s:tag_source()
-  for path in a:000
+  for path in a:0 ? a:1 : [expand('%')]
     if !filereadable(path) | continue | endif
     if empty(a:query)
       let lines = readfile(path)
@@ -105,33 +105,30 @@ endfunction
 " Note: This adds a pseudo-tag <top> at the top of the stack so we can return to
 " where we started when scrolling backwards, and pushes <top> if cursor is outside
 " both 'from' and 'tag' buffers or inside the 'tag' buffer but outside its bounds.
-function! s:goto_iloc(path, line, name, ...) abort  " see also mark.vim
+function! s:goto_iloc(tag, ...) abort  " see also mark.vim
+  let [path, tpos, name] = a:tag
   let [iloc, size] = stack#get_loc('tag')
-  let tname = a:name  " current tag name
-  let path = fnamemodify(a:path, ':p')
+  let [ibnr, tbnr] = [bufnr(), bufnr(path)]
+  let ipos = [ibnr] + slice(getpos('.'), 1)
+  let itag = [ibnr] + tags#find_tag(line('.'))  " cursor [buf name line kind]
+  let tpos = [tbnr] + map(type(tpos) > 1 ? tpos : [tpos], 'str2nr(v:val)')
+  let ttag = [tbnr] + tags#find_tag(tpos[:1])  " tag [buf name line kind]
+  let fpos = tag#from_stack(path, name, iloc == 0)
   let cnt = a:0 ? a:1 : v:count1
-  let fpos = tag#from_stack(path, a:name, iloc == 0)  " stack from position
-  let cpos = [bufnr()] + slice(getpos('.'), 1)
-  let apos = type(a:line) > 1 ? copy(a:line) : [a:line]
-  let tpos = [bufnr(path)] + map(apos, 'str2nr(v:val)')
-  let atag = [tpos[0]] + tags#find_tag(tpos[:1])  " argument [buf name line kind]
-  let ctag = [bufnr()] + tags#find_tag(line('.'))  " cursor [buf name line kind]
-  let outside = !empty(fpos) && fpos[:1] != cpos[:1] && ctag != atag
+  let outside = !empty(fpos) && ipos[:1] != fpos[:1] && itag != ttag
   if cnt < 0 && size > 1 && iloc >= size - 1 && outside  " add <top> pseudo-tag
-    let tname = '<top>'  " updated tag name
-    let item = [expand('%:p'), [line('.'), col('.')], tname]
+    let name = '<top>'  " updated tag name
+    let item = [expand('%:p'), [line('.'), col('.')], name]
     let g:tag_name = item  " push_stack() adds to top of stack
     call stack#push_stack('tag', '', '', 0)
   endif
-  let ipos = cnt < 0 ? fpos : tpos
-  let outside = ipos != slice(cpos, 0, len(ipos))
-  if !empty(ipos)  && tname !=# '<top>' && outside
-    if len(ipos) > 2  " exact position
-      silent call file#open_drop(ipos[0]) | call call('cursor', ipos[1:])
-    else  " automatic position
-      silent call tags#jump_tag(2, a:path, a:line, a:name)
-    endif
-    let noop = cnt < 0 ? cpos[:1] == ipos[:1] : ctag == atag   " ignore from count
+  let jpos = cnt >= 0 || empty(fpos) && iloc == 0 ? tpos : fpos
+  let outside = jpos != slice(ipos, 0, len(jpos))
+  if !empty(jpos) && name !=# '<top>' && outside
+    let [path, lnum; rest] = jpos
+    let iarg = empty(rest) ? lnum : [lnum, rest[0]]
+    silent call tags#_goto_tag(2, path, iarg, name)
+    let noop = cnt < 0 ? ipos[:1] == jpos[:1] : itag == ttag  " ignore from count
     let cnt += noop ? 0 : cnt < 0 ? 1 : -1  " possibly adjust count
   endif
   return cnt
@@ -152,12 +149,12 @@ function! tag#next_stack(...) abort
     let item = stack#get_item('tag')
     let item = empty(item) ? [] : item
   endif
-  let cnt = empty(item) ? cnt : call('s:goto_iloc', item + [cnt])  " jump to 'current'
-  let mode = cnt < 0 ? -1 : 1
+  let cnt = empty(item) ? cnt : s:goto_iloc(item, cnt)
+  let icnt = cnt < 0 ? -1 : 1
   if cnt == 0  " push currently assigned name to stack
     let status = stack#push_stack('tag', '', 0, -1)
   else  " iterate stack then pass to tag jump function
-    let status = stack#push_stack('tag', function('tags#jump_tag', [mode]), cnt, -1)
+    let status = stack#push_stack('tag', function('tags#_goto_tag', [icnt]), cnt, -1)
   endif
   let item = stack#get_item('tag')
   if cnt < 0 && !empty(item)  " mimic :pop behavior
@@ -165,10 +162,10 @@ function! tag#next_stack(...) abort
     let pos = tag#from_stack(item[0], item[2], iloc == 0)
     let pos = empty(pos) ? getpos('.') : pos
     let [bnr, lnum, cnum, vnum] = empty(pos) ? getpos('.') : pos
-    if bnr | silent call file#open_drop(bnr) | endif
+    call file#goto_file(bnr ? bnr : bufnr())  " without tab stack
     call cursor(lnum, cnum, vnum)
   endif
-  if &l:foldopen =~# '\<tag\>' | exe 'normal! zv' | endif
+  exe &l:foldopen =~# '\<tag\>' ? 'normal! zv' : ''
   if !status | call stack#print_item('tag') | endif
 endfunction
 
@@ -237,6 +234,7 @@ function! tag#fzf_btags(bang, query, ...) abort
   catch /.*/
     return s:tag_error()
   endtry
+  call filter(source, {_, val -> s:tag_filter(val, 0, 0, 0)})
   call map(source, {_, val -> substitute(val, s:regex_tag1, '\=s:tag_fmt1(40)', '')})
   let options = {
     \ 'source': source,
@@ -259,9 +257,7 @@ function! tag#fzf_tags(type, bang, ...) abort
   let flags = "-m -d '\t' --with-nth ..4 --nth ..2"
   let flags .= nbytes > maxbytes ? ' --algo=v1' : ''
   let prompt = empty(a:type) ? 'Tags> ' : 'FTags> '
-  let result = tag#read_tags(1, a:type, '', paths[0])
-  if empty(result) || !type(result) | return | endif
-  let [source, cache] = result
+  let [source, cache] = tag#read_tags(1, a:type, '', paths)
   if empty(source) | return s:tag_error() | endif
   let options = {
     \ 'source': source,

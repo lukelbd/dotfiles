@@ -357,9 +357,10 @@ let g:MRU_Open_File_Relative = 1
 
 " Buffer selection and management
 " Note: Here :WipeBufs replaces :Wipeout plugin since has more sources
+command! -bang -nargs=* History call file#fzf_history(<q-args>, <bang>0)
+command! -bang -nargs=0 Recents call file#fzf_recent(<bang>0)
 command! -nargs=0 ShowBufs call file#show_bufs()
 command! -nargs=0 WipeBufs call file#wipe_bufs()
-command! -nargs=* History call file#fzf_history(<q-args>, <bang>0)
 noremap <Leader>q <Cmd>ShowBufs<CR>
 noremap <Leader>Q <Cmd>WipeBufs<CR>
 nnoremap g, <Cmd>call file#fzf_history('')<CR>
@@ -408,9 +409,9 @@ nnoremap <Tab>< <Cmd>call window#fzf_move(tabpagenr() - v:count1)<CR>
 " Open file with optional user input
 " Note: The <Leader> maps open up views of the current file directory
 for s:key in ['q', 'w', 'e', 'r'] | silent! exe 'unmap <Tab>' . s:key | endfor
-nnoremap <Tab>o <Cmd>call file#fzf_input('Drop', parse#find_root())<CR>
+nnoremap <Tab>o <Cmd>call file#fzf_input('Open', parse#find_root())<CR>
+nnoremap <Tab>i <Cmd>call file#fzf_input('Open', expand('%:p:h'))<CR>
 nnoremap <Tab>p <Cmd>call file#fzf_input('Files', parse#find_root())<CR>
-nnoremap <Tab>i <Cmd>call file#fzf_input('Drop', expand('%:p:h'))<CR>
 nnoremap <Tab>y <Cmd>call file#fzf_input('Files', expand('%:p:h'))<CR>
 nnoremap <Tab>e <Cmd>call file#fzf_input('Split', expand('%:p:h'))<CR>
 nnoremap <Tab>r <Cmd>call file#fzf_input('Vsplit', expand('%:p:h'))<CR>
@@ -422,7 +423,7 @@ nnoremap <Tab>r <Cmd>call file#fzf_input('Vsplit', expand('%:p:h'))<CR>
 command! -bang -nargs=* -complete=file Vsplit call file#fzf_init(<bang>0, 0, 0, 'botright vsplit', <f-args>)
 command! -bang -nargs=* -complete=file Split call file#fzf_init(<bang>0, 0, 0, 'botright split', <f-args>)
 command! -bang -nargs=* -complete=file Open call file#fzf_init(<bang>0, 0, 0, 'Drop', <f-args>)
-command! -nargs=* -complete=file Drop call file#open_drop(<f-args>)
+command! -nargs=* -complete=file Drop call file#drop_file(<f-args>)
 nnoremap <C-e> <Cmd>call file#fzf_init(0, 0, 0, 'Split')<CR>
 nnoremap <C-r> <Cmd>call file#fzf_init(0, 0, 0, 'Vsplit')<CR>
 nnoremap <C-y> <Cmd>call file#fzf_init(0, 0, 1, 'Files')<CR>
@@ -439,7 +440,7 @@ command! -nargs=? Local call switch#localdir(<args>)
 noremap zl <Cmd>Paths<CR>
 noremap zL <Cmd>Local<CR>
 noremap gl <Cmd>call file#show_cfile()<CR>
-noremap gL <Cmd>call call('file#open_drop', file#expand_cfile())<CR>
+noremap gL <Cmd>call call('file#drop_file', file#expand_cfile())<CR>
 
 " 'Execute' script with different options
 " Note: Current idea is to use 'ZZ' for running entire file and 'Z<motion>' for
@@ -594,9 +595,10 @@ cnoremap <silent> <expr> <BS> iter#complete_cmdline("\<BS>")
 " Navigation and searching shortcuts
 "-----------------------------------------------------------------------------"
 " Navigate recent tabs and wildmenu options with <C-,>/<C-.>
-" Warning: The g:tab_stack variable is used by tags#buffer_sort() to put recently
+" Warning: The g:tab_stack variable is used by tags#get_recents() to put recently
 " used tabs in stack at higher priority than others. Critical to keep variables.
-augroup recents_setup
+silent! au! recents_setup
+augroup tabs_setup
   au!
   au BufEnter,BufLeave * call window#update_stack(0)  " next update
   au BufWinLeave * call stack#pop_stack('tab', expand('<afile>'))
@@ -735,8 +737,8 @@ call utils#repeat_map('o', 'zm', 'CasePrevEnd',   "<Cmd>call iter#next_motion('g
 " &foldlevel for fortran python and tex files (e.g. always open \begin{document}).
 augroup fold_setup
   au!
+  au BufEnter * setlocal foldtext=fold#fold_text()
   au BufWinEnter * call fold#update_folds(0, 1)
-  au CursorHold * setlocal foldtext=fold#fold_text()
 augroup END
 command! -bang -nargs=? Refold call fold#update_folds(<bang>0, <f-args>)
 for s:key in ['z', 'f', 'F', 'n', 'N'] | silent! exe 'unmap! z' . s:key | endfor
@@ -817,8 +819,8 @@ command! -range=0 -bang -nargs=* -complete=file Find call call('grep#call_rg', [
 command! -range=0 -bang -nargs=+ -complete=file Ag call grep#call_ag(<bang>0, <count>, <f-args>)
 command! -range=0 -bang -nargs=+ -complete=file Rg call grep#call_rg(<bang>0, <count>, <f-args>)
 nnoremap g' <Cmd>call grep#call_grep('rg', 0, 2)<CR>
-nnoremap g" <Cmd>call grep#call_grep('rg', 1, 2)<CR>
-nnoremap z' <Cmd>call grep#call_grep('rg', 1, 0)<CR>
+nnoremap g" <Cmd>call grep#call_grep('rg', 1, 0)<CR>
+nnoremap z' <Cmd>call grep#call_grep('rg', 1, 2)<CR>
 nnoremap z" <Cmd>call grep#call_grep('rg', 1, 3)<CR>
 
 " Convenience grep maps and commands
@@ -1728,7 +1730,7 @@ if s:plug_active('vim-textobj-user')
   let s:textobj_alpha = {
     \ 'g': '\(\<\|[^0-9A-Za-z]\@<=[0-9A-Za-z]\@=\)\r\(\>\|[^0-9A-Za-z]\)',
     \ 'h': '\(\<\|[0-9a-z]\@<=[^0-9a-z]\@=\)\r\(\>\|[0-9a-z]\@<=[^0-9a-z]\@=\)',
-    \ 'v': '[^0-9A-Za-z_][0-9A-Za-z_]\@=\r[0-9A-Za-z_]\@<=[^0-9A-Za-z_]',
+    \ 'v': '[^0-9A-Za-z_.:-][0-9A-Za-z_.:-]\@=\r[0-9A-Za-z_.:-]\@<=[^0-9A-Za-z_.:-]',
   \ }  " 'ag' includes e.g. trailing underscore similar to 'a word'
   let s:textobj_entire = {
     \ 'select-a': 'aE',  'select-a-function': 'textobj#entire#select_a',
@@ -2012,6 +2014,11 @@ endif
 " 'vsnip': {'mark': 'S', 'maxItems': 5}}
 " 'ctags': {'mark': 'T', 'isVolatile': v:true, 'maxItems': 5}}
 if s:plug_active('ddc.vim')
+  augroup ddc_setup
+    au!
+    au InsertEnter * if &l:iskeyword ==# 'vim' | setlocal iskeyword+=: | endif
+    au InsertLeave * if &l:iskeyword ==# 'vim' | setlocal iskeyword-=: | endif
+  augroup END
   command! -nargs=? DdcToggle call switch#ddc(<args>)
   noremap <Leader>* <Cmd>call switch#ddc()<CR>
   let g:popup_preview_config = {

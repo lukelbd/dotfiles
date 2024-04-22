@@ -51,19 +51,14 @@ function! python#dict_to_kw_expr(invert) abort
   return utils#motion_func('python#dict_to_kw', [a:invert, mode()])
 endfunction
 
-" Folding expression to add global constants and docstrings to SimpylFold cache
+" Return SimpylFold expressions plus global constants and docstrings
 " Warning: Only call this when SimpylFold updates to improve performance. Might break
 " if SimpylFold renames internal cache variable (monitor). Note
-function! s:fold_exists(lnum) abort
-  return exists('b:SimpylFold_cache')
-    \ && !empty(b:SimpylFold_cache[a:lnum])
-    \ && !empty(b:SimpylFold_cache[a:lnum]['foldexpr'])  " note empty(0) returns 1
-endfunction
-function! python#fold_expr(lnum) abort
-  let recache = !exists('b:SimpylFold_cache')
-  call SimpylFold#FoldExpr(a:lnum)  " auto recache
-  if recache | call python#fold_cache() | endif
-  return b:SimpylFold_cache[a:lnum]['foldexpr']
+function! s:has_fold(lnum) abort
+  let cache = get(b:, 'SimpylFold_cache', [])
+  let props = get(cache, a:lnum, [])
+  let expr = get(props, 'foldexpr', '')
+  return !empty(expr)  " note empty(0) returns 1
 endfunction
 function! python#fold_cache() abort
   let lnum = 1
@@ -72,7 +67,7 @@ function! python#fold_cache() abort
   let keywords = '^\(elif\|else\|except\|finally\)\>.*:\s*\(#.*\)\?$'
   let docstring = '[frub]*["'']\{3}'  " doctring regex (see fold.vim)
   while lnum <= line('$')
-    if s:fold_exists(lnum) | let lnum += 1 | continue | endif
+    if s:has_fold(lnum) | let lnum += 1 | continue | endif
     let line = getline(lnum)
     let group = []
     " Docstring fold (e.g. _docstring_snippet = '''...)
@@ -82,7 +77,7 @@ function! python#fold_cache() abort
       while lnum < line('$') && getline(lnum)[pos:] !~# docstring  " fold entire docstring
         let [pos, lnum] = [0, lnum + 1]
         call add(group, lnum)
-        if s:fold_exists(lnum)
+        if s:has_fold(lnum)
           let group = [] | break
         endif
       endwhile
@@ -92,7 +87,7 @@ function! python#fold_cache() abort
       call add(group, lnum)
       while lnum < line('$') && (get(cache[lnum + 1], 'indent', 0) || getline(lnum + 1) =~# keywords)
         let lnum += 1 | call add(group, lnum)
-        if s:fold_exists(lnum) && getline(lnum) !~# '^\s*\(from\|import\)\>'
+        if s:has_fold(lnum) && getline(lnum) !~# '^\s*\(from\|import\)\>'
           let group = [] | break
         endif
       endwhile
@@ -110,6 +105,39 @@ function! python#fold_cache() abort
     endif
     let lnum += 1  " e.g. termination of constant group
   endwhile
+endfunction
+
+" Return fold expression and text accounting for global constants and docstrings
+" Note: This includes text following try-except blocks and docstring openers, but
+" skips numpydoc and rest-style dash separators. Should add to this.
+let s:maxlines = 100  " maxumimum lines to search
+function! python#fold_expr(lnum) abort
+  let recache = !exists('b:SimpylFold_cache')
+  call SimpylFold#FoldExpr(a:lnum)  " auto recache
+  if recache | call python#fold_cache() | endif
+  return b:SimpylFold_cache[a:lnum]['foldexpr']
+endfunction
+function! python#fold_text(lnum, ...) abort
+  let [line1, line2] = [a:lnum + 1, a:lnum + s:maxlines]
+  let label = fold#get_label(a:lnum, 0)
+  let width = get(g:, 'linelength', 88) - 10  " minimum width
+  let regex = '["'']\{3}'  " docstring expression
+  if label =~# '^try:\s*$'  " append lines
+    let label .= ' ' . fold#get_label(line1, 1)  " remove indent
+  endif
+  if label =~# regex . '\s*$'  " append lines
+    for lnum in range(line1, min([line2, a:0 ? a:1 : line2]))
+      let itext = fold#get_label(lnum, 1)
+      let itext = substitute(itext, '[-=]\{3,}', '', 'g')
+      let istop = itext =~# regex  " docstring close
+      let label .= repeat(' ', !istop && lnum > line1) . itext
+      if len(label) > width || istop | break | endif
+    endfor
+  endif
+  let l:subs = []  " see: https://vi.stackexchange.com/a/16491/8084
+  let result = substitute(label, regex, '\=add(l:subs, submatch(0))', 'gn')
+  let label .= len(l:subs) % 2 ? '···' . substitute(l:subs[0], '^[frub]*', '', 'g') : ''
+  return label  " closed docstring
 endfunction
 
 " Initiate jupyter-vim connection using the file matching this directory or a parent

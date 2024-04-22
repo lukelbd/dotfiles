@@ -7,7 +7,6 @@
 " e.g. for python classes or tex environments occupying entire document and to
 " enforce universal standard default of foldlevel=0 without hiding everything.
 scriptencoding utf-8
-let s:maxlines = 100  " maxumimum lines to search
 let s:initials = [
   \ ['python', '^class\>', '', 1],
   \ ['fortran', '^\s*\(module\|program\)\>', '', 1],
@@ -120,8 +119,7 @@ function! s:get_delims(label, ...) abort
   let delim2 = map(copy(delim1), {idx, val -> get(delims, val, '')})
   if &l:filetype ==# 'python' && get(delim1, -1, '') ==# ')'
     call add(delim2, a:label =~# '^\s*\(def\|class\)\>' ? ':' : '')
-  endif
-  return [join(delim1, ''), join(delim2, '')]
+  endif | return [join(delim1, ''), join(delim2, '')]
 endfunction
 function! fold#get_label(line, ...) abort
   let char = comment#get_char()
@@ -149,62 +147,20 @@ function! fold#get_label(line, ...) abort
   return label
 endfunction
 
-" Return filetype specific fold label
-" Note: This concatenates python docstring lines and uses frametitle from
-" beamer presentations or labels from tex figures. Should add to this.
-function! fold#get_label_python(line, ...) abort
-  let regex = '["'']\{3}'  " docstring expression
-  let label = fold#get_label(a:line, 0)
-  let width = get(g:, 'linelength', 88) - 10  " minimum width
-  if label =~# '^try:\s*$\|' . regex . '\s*$'  " append lines
-    for lnum in range(a:line + 1, a:0 ? a:1 : a:line + s:maxlines)
-      let doc = fold#get_label(lnum, 1)  " remove indent
-      let doc = substitute(doc, '[-=]\{3,}', '', 'g')
-      let head = label =~# regex . '\s*$'
-      let tail = doc =~# '^\s*' . regex
-      let label .= repeat(' ', !head && !tail && !empty(doc)) . doc
-      if tail || len(label) > width || label =~# '^try:' | break | endif
-    endfor
-  endif
-  let l:subs = []  " see: https://vi.stackexchange.com/a/16491/8084
-  let result = substitute(label, regex, '\=add(l:subs, submatch(0))', 'gn')
-  let label .= len(l:subs) % 2 ? '···' . substitute(l:subs[0], '^[frub]*', '', 'g') : ''
-  return label  " closed docstring
-endfunction
-function! fold#get_label_tex(line, ...) abort
-  let [line, label] = [a:line, fold#get_label(a:line, 0)]
-  let indent = substitute(label, '\S.*$', '', 'g')
-  if label =~# 'begingroup\|begin\s*{\s*\(frame\|figure\|table\|center\)\*\?\s*}'
-    let regex = label =~# 'begingroup\|{\s*frame\*\?\s*}' ? '^\s*\\frametitle' : '^\s*\\label'
-    for lnum in range(a:line + 1, a:0 ? a:1 : a:line + s:maxlines)
-      let bool = getline(lnum) =~# regex
-      if bool | let [line, label] = [lnum, fold#get_label(lnum, 0)] | break | endif
-    endfor
-  endif
-  if label =~# '{\s*\(%.*\)\?$'  " append lines
-    for lnum in range(line + 1, a:0 ? a:1 : line + s:maxlines)
-      let bool = lnum == line + 1 || label[-1:] ==# '{'
-      let label .= (bool ? '' : ' ') . fold#get_label(lnum, 1)
-    endfor
-  endif
-  let label = substitute(label, '\\\@<!\\', '', 'g')  " remove backslashes
-  let label = substitute(label, '\(textbf\|textit\|emph\){', '', 'g')  " remove style
-  let label = indent . substitute(label, '^\s*', '', 'g')
-  return label
-endfunction
-
 " Generate truncated fold text. In future should include error cound information.
 " Note: Since gitgutter signs are not shown over closed folds include summary of
 " changes in fold text. See https://github.com/airblade/vim-gitgutter/issues/655
 function! fold#fold_text(...) abort
+  let winview = winsaveview()  " translate byte column index to character index
   if a:0  " debugging mode
-    let [line1, line2, level] = call('fold#current_fold', a:000)
+    exe winview.lnum | let [line1, line2, level] = fold#current_fold()
+    call winrestview(winview)
   else  " internal mode
-    let [line1, line2, level] = [v:foldstart, v:foldend, len(v:folddashes)]
+    let [line1, line2] = [v:foldstart, v:foldend]
+    let level = len(v:folddashes)
   endif
   let level = repeat(':', level)  " fold level
   let lines = string(line2 - line1 + 1)  " number of lines
-  let winview = winsaveview()  " translate byte column index to character index
   let leftidx = charidx(getline(winview.lnum), winview.leftcol)
   let maxlen = get(g:, 'linelength', 88) - 1  " default maximum
   let hunk = git#hunk_stats(line1, line2, 1)  " abbreviate with '1'
@@ -212,8 +168,8 @@ function! fold#fold_text(...) abort
   let stats = hunk . level . dots . lines  " default statistics
   if &l:diff  " fill with maximum width
     let [label, stats] = [level . dots . lines, repeat('~', maxlen - strwidth(stats) - 2)]
-  elseif exists('*fold#get_label_' . &l:filetype)
-    let label = fold#get_label_{&l:filetype}(line1, min([line1 + s:maxlines, line2]))
+  elseif exists('*' . &l:filetype . '#fold_text')
+    let label = {&l:filetype}#fold_text(line1, line2)
   else  " global default label
     let label = fold#get_label(line1)
   endif
