@@ -238,7 +238,7 @@ function! tag#fzf_btags(bang, query, ...) abort
   call map(source, {_, val -> substitute(val, s:regex_tag1, '\=s:tag_fmt1(40)', '')})
   let options = {
     \ 'source': source,
-    \ 'sink': function('tags#_select_tag', [{}, 0]),
+    \ 'sink': function('tags#_select_tag', [0]),
     \ 'options': flags . ' --prompt "BTags> "',
   \ }
   return call(snr . 'fzf', ['btags', options, [opts, a:bang]])
@@ -261,7 +261,7 @@ function! tag#fzf_tags(type, bang, ...) abort
   if empty(source) | return s:tag_error() | endif
   let options = {
     \ 'source': source,
-    \ 'sink': function('tags#_select_tag', [cache, 0]),
+    \ 'sink': function('tags#_select_tag', [0, cache]),
     \ 'options': flags . ' --prompt ' . string(prompt),
   \ }
   return call(snr . 'fzf', ['tags', options, [opts, a:bang]])

@@ -367,12 +367,13 @@ nnoremap g, <Cmd>call file#fzf_history('')<CR>
 nnoremap g< <Cmd>call file#fzf_recent()<CR>
 
 " Tab selection and management
+" Warning: FZF cannot create terminals when called inside expr mappings.
 " Note: Previously used e.g. '<tab>1' maps but not parse count on one keypress
 " Note: Here :History includes v:oldfiles and open buffers
 for s:key in range(1, 10) | exe 'silent! unmap <Tab>' . s:key | endfor
 for s:key in ['.', ',', '>', '<'] | exe 'silent! xunmap z' . s:key | endfor
-nnoremap g. <Cmd>call window#fzf_tabs(v:count)<CR>
-nnoremap g> <Cmd>call window#fzf_move(v:count)<CR>
+nnoremap g. <Cmd>exe v:count ? 'call window#goto_tab(v:count)' : 'call window#fzf_goto()'<CR>
+nnoremap g> <Cmd>exe v:count ? 'call window#move_tab(v:count)' : 'call window#fzf_move()'<CR>
 nnoremap g<Space> <Cmd>Windows<CR>
 nnoremap z<Space> <Cmd>Buffers<CR>
 
@@ -403,8 +404,8 @@ nnoremap <Tab>[ <Cmd>call window#change_width(-5 * v:count1)<CR>
 nnoremap <Tab>] <Cmd>call window#change_width(5 * v:count1)<CR>
 nnoremap <Tab>{ <Cmd>call window#change_width(-10 * v:count1)<CR>
 nnoremap <Tab>} <Cmd>call window#change_width(10 * v:count1)<CR>
-nnoremap <Tab>> <Cmd>call window#fzf_move(tabpagenr() + v:count1)<CR>
-nnoremap <Tab>< <Cmd>call window#fzf_move(tabpagenr() - v:count1)<CR>
+nnoremap <Tab>> <Cmd>call window#move_tab(tabpagenr() + v:count1)<CR>
+nnoremap <Tab>< <Cmd>call window#move_tab(tabpagenr() - v:count1)<CR>
 
 " Open file with optional user input
 " Note: The <Leader> maps open up views of the current file directory

@@ -6,6 +6,7 @@
 " still works so suppress messages here.
 " Note: Calling quit inside codi buffer triggers 'attempt to close buffer
 " that is in use' error so instead return to main window and toggle codi.
+scriptencoding utf-8
 function! window#close_panes(...) abort
   let bang = a:0 && a:1 ? '!' : ''
   let main = get(b:, 'tabline_bufnr', bufnr())
@@ -125,102 +126,94 @@ function! window#default_size(width, ...) abort
   endif
 endfunction
 
-" Generate tab source and sink
+" Generate table of tabs and paths
 " Note: This sorts by recent access to help replace :Buffers
-" Warning: Critical to keep up-to-date with g:tabline_skip_filetypes name
-scriptencoding utf-8
-let s:path_roots = {}
-function! s:tab_sink(item) abort
-  if !type(a:item) | return [a:item, ''] | endif
-  let [tnr; parts] = split(a:item, ':')
-  let flags = '\s\+\(\[.\]\s*\)*'  " tabline flags
-  let stats = '\([+-~]\d\+\)*'  " statusline stats
-  let path = join(parts, ':')  " e.g. 'fugitive:path'
-  let path = substitute(path, flags . stats . '$', '', 'g')
-  let path = substitute(path, '\(^\s\+\|\s\+$\)', '', 'g')
-  let path = get(s:path_roots, path, '') . path
-  call file#echo_path('tab', path)
-  let icloud = 'iCloud'  " actual path is resolved
-  if strpart(path, 0, len(icloud)) ==# icloud
-    let path = resolve(expand('~/icloud')) . strpart(path, len(icloud))
-  endif
-  return [str2nr(tnr), path]  " returns zero on error
-endfunction
-function! s:tab_source() abort
-  let s:path_roots = {}
+function! s:tab_source(...) abort
   let nprocess = 20  " maximum tablines to process
   let ndigits = len(string(tabpagenr('$')))
-  let values = []
-  let paths = tags#get_paths()
-  for idx in range(len(paths))
-    let path = paths[idx]
+  let lines = []
+  for path in tags#get_paths()
     let bnr = bufnr(path)
     let winids = win_findbuf(bnr)  " iterate tabs
     if empty(winids) | continue | endif
     let staged = getbufvar(bnr, 'tabline_staged_changes', 0)
     let unstaged = getbufvar(bnr, 'tabline_staged_changes', 0)
-    let process = idx < nprocess || staged || unstaged
+    let process = len(lines) < nprocess || staged || unstaged
     let base = parse#find_root(path)  " see also vim-tags/autoload/s:path_name()
-    let root = fnamemodify(fnamemodify(base, ':h'), ':p')  " trailing slash
+    let head = fnamemodify(fnamemodify(base, ':h'), ':p')  " trailing slash
     let ibase = !empty(base) && strpart(path, 0, len(base)) ==# base
     let icwd = !empty(base) && strpart(getcwd(), 0, len(base)) ==# base
-    if ibase && !icwd
-      let name = strpart(path, len(root)) | let s:path_roots[name] = root
+    if a:0 && a:1 && ibase && !icwd
+      let name = strpart(path, len(head))
     else  " show relative path
       let name = RelativePath(path)
     endif
     let flags = TablineFlags(path, process) . ' '  " limit processing
-    let hunks =  getbufvar(bnr, 'gitgutter', {})
+    let hunks = getbufvar(bnr, 'gitgutter', {})
     let [acnt, mcnt, rcnt] = get(hunks, 'summary', [0, 0, 0])
     for [key, cnt] in [['+', acnt], ['~', mcnt], ['-', rcnt]]
       if !empty(cnt) | let flags .= key . cnt | endif
     endfor
     for winid in winids  " iterate windows
-      let [tnr, _] = win_id2tabwin(winid)
+      let [tnr, wnr] = win_id2tabwin(winid)
       let pad = repeat(' ', ndigits - len(string(tnr)))
-      let value = pad . tnr . ': ' . name . flags
-      call add(values, value)
+      let head = pad . tnr . ':' . wnr . ':' . path . ': '
+      call add(lines, head . name . flags)
     endfor
-  endfor
-  return values
+  endfor | return lines
+endfunction
+
+" Helper functions for selecting tabs
+" Note: This handles fzf output lines
+function! window#goto_tab(item) abort
+  let [tnr, wnr] = s:tab_sink(a:item)
+  exe tnr ? tnr . 'tabnext' : ''
+  exe wnr ? wnr . 'wincmd w' : ''
+endfunction
+function! window#move_tab(item) abort
+  let [tnr, _] = s:tab_sink(a:item)
+  if tnr == 0 || tnr == tabpagenr() | return | endif
+  let tnr = tnr > tabpagenr() ? tnr : tnr - 1
+  let tnr = min([tnr, tabpagenr('$')])
+  exe tnr ? 'tabmove ' . tnr : ''
+endfunction
+function! s:tab_sink(item) abort
+  if !type(a:item) | return [a:item, 0] | endif
+  let parts = split(a:item, '\(\d\@<=:\|:\s\@=\)')
+  if len(parts) < 4 | return [0, 0] | endif
+  let [tnr, wnr, path; rest] = parts
+  let flags = '\s\+\(\[.\]\s*\)*'  " tabline flags
+  let stats = '\([+-~]\d\+\)*'  " statusline stats
+  let name = substitute(trim(join(rest, ':')), flags . stats . '$', '', 'g')
+  redraw | echom 'Tab: ' . name
+  return [str2nr(tnr), str2nr(wnr)]  " str2nr() returns 0 on error
 endfunction
 
 " Go to or move to selected tab
-" Note: This displays a list with the tab number and the file. As with other
-" commands sorts by recent access time for ease of use.
-function! s:goto_tab(item) abort
-  let [tnr, path] = s:tab_sink(a:item)
-  exe tnr . 'tabnext'
-endfunction
-function! s:move_tab(item) abort
-  let [tnr, path] = s:tab_sink(a:item)
-  if tnr == 0 || tnr == tabpagenr()
-    return
-  elseif tnr > tabpagenr() && v:version[0] > 7
-    exe 'tabmove ' . min([tnr, tabpagenr('$')])
-  else
-    exe 'tabmove ' . min([tnr - 1, tabpagenr('$')])
-  endif
-endfunction
-function! window#fzf_tabs(...) abort
-  if a:0 && a:1
-    return s:goto_tab(a:1)
-  endif
-  call fzf#run(fzf#wrap({
-    \ 'source': s:tab_source(),
-    \ 'options': '--no-sort --prompt="Tab> "',
-    \ 'sink': function('s:goto_tab'),
-  \ }))
-endfunction
+" Note: This displays a list with the tab number and the file.
 function! window#fzf_move(...) abort
-  if a:0 && a:1
-    return s:move_tab(a:1)
-  endif
-  call fzf#run(fzf#wrap({
-    \ 'source': s:tab_source(),
-    \ 'options': '--no-sort --prompt="Move> "',
-    \ 'sink': function('s:move_tab'),
-  \ }))
+  let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
+  if empty(snr) | return | endif
+  let bang = a:0 ? a:1 : 0
+  let opts = fzf#vim#with_preview({'placeholder': '{3}'})
+  let options = {
+    \ 'sink': function('window#move_tab'),
+    \ 'source' : s:tab_source(1),
+    \ 'options': '-d : --no-sort --with-nth 1,4.. --prompt="Move> "',
+  \ }
+  return call(snr . 'fzf', ['files', options, [opts, bang]])
+endfunction
+function! window#fzf_goto(...) abort
+  let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
+  if empty(snr) | return | endif
+  let bang = a:0 ? a:1 : 0
+  let opts = fzf#vim#with_preview({'placeholder': '{3}'})
+  let options = {
+    \ 'sink': function('window#goto_tab'),
+    \ 'source' : s:tab_source(1),
+    \ 'options': '-d : --no-sort --with-nth 1,4.. --prompt="Goto> "',
+  \ }
+  call call(snr . 'fzf', ['files', options, [opts, bang]]) | return ''
 endfunction
 
 " Scroll recent files
