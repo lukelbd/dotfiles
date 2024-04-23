@@ -45,13 +45,20 @@ endfunction
 " See: https://stackoverflow.com/a/49447600/4970632
 " Note: This is used to override fzf marks commands and support jumping to existing
 " tabs, and to overide jumplist and changelist command for various new settings.
+function! utils#get_scripts(arg, ...) abort
+  let opts = type(a:arg) ? {'name': a:arg} : {'sid': a:arg}
+  let items = []  " no dictionary because confusing
+  for info in getscriptinfo(opts)
+    let item = a:0 && a:1 ? info.sid : RelativePath(info.name)
+    call add(items, item)
+  endfor
+  return items
+endfunction
 function! utils#get_snr(regex, ...) abort
   silent! call fzf#vim#with_preview()  " trigger autoload if not already done
-  let [paths, sids] = utils#get_scripts(1)
-  let path = filter(copy(paths), 'v:val =~# a:regex')
-  let idx = index(paths, get(path, 0, ''))
-  if !empty(path) && idx >= 0
-    return "\<snr>" . sids[idx] . '_'
+  let sids = utils#get_scripts(a:regex, 1)
+  if len(sids) > 0  " return latest script
+    return "\<snr>" . sids[-1] . '_'
   elseif a:0 && a:1  " optionally suppress warning
     return ''
   else  " emit warning
@@ -59,19 +66,6 @@ function! utils#get_snr(regex, ...) abort
     echom "Warning: Autoload script '" . a:regex . "' not found."
     echohl None | return ''
   endif
-endfunction
-function! utils#get_scripts(...) abort
-  let suppress = a:0 > 0 ? a:1 : 0
-  let regex = a:0 > 1 ? a:2 : ''
-  let [names, sids] = [[], []]  " no dictionary because confusing
-  for info in getscriptinfo()
-    let name = fnamemodify(resolve(info.name), ':p')
-    if !empty(regex) && name !~# regex | continue | endif
-    call add(names, name)
-    call add(sids, info.sid)
-  endfor
-  if !suppress | echom 'Script names: ' . join(names, ', ') | endif
-  return [names, sids]
 endfunction
 
 " Get user input with requested default

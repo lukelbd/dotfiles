@@ -1,88 +1,11 @@
 "-----------------------------------------------------------------------------"
 " Utilities for ctags management
 "-----------------------------------------------------------------------------"
-" Helper formatting functions
-" Note: Encountered bug when naming this same as vim-tags (plural).
-" Note: Formatting with more complex regex can cause slowdown. Avoid complex
-" regex patterns e.g. extra globs and non-greedy globs.
-scriptencoding utf-8
-let s:type_cache = {}
-let s:regex_tag1 = '^\([^\t]*\)\(.*\)$'
-let s:regex_tag2 = '^\([^\t]*\)\t\([^\t]*\)\(.*\)$'
-function! s:tag_trunc(name, size) abort
-  let name = a:name | if strchars(name) > a:size
-    let name = strcharpart(name, 0, a:size - 1) . '·'
-  endif | return printf('%-' . a:size . 's', name)
-endfunction
-function! s:tag_fmt1(size, ...) abort  " see fzf.vim/bin/tagpreview.sh
-  let name = s:tag_trunc(trim(submatch(1)), a:size)
-  let append = a:0 ? "\t" . a:1 . '.vimtags' : ''
-  return name . submatch(2) . append
-endfunction
-function! s:tag_fmt2(size, head, base, cache) abort
-  let name = s:tag_trunc(trim(submatch(1)), a:size)
-  let path = a:base . submatch(2)  " submatch with base
-  let a:cache[trim(path)] = a:head  " efficient cache (avoid huge string table)
-  return name . "\t" . path . submatch(3) . "\t" . a:head . '.vimtags'
-endfunction
-function! s:tag_filter(line, ftype, regex, fast) abort
-  if a:line =~# '^\s*!\|^\s*\d\+\>' | return 0 | endif
-  if empty(a:ftype) | return 1 | endif
-  let path = substitute(a:line, s:regex_tag2, '\2', 'g')
-  return tags#type_match(path, a:ftype, a:regex, s:type_cache, a:fast)
-endfunction
-function! tag#show_cache() abort
-  echom 'File type cache (' . len(s:type_cache) . ' entries):'
-  let paths = {}
-  let names = map(copy(s:type_cache), {key, val -> RelativePath(key)})
-  for path in keys(names) | let paths[names[path]] = path | endfor
-  let size = 1 + max(map(keys(paths), 'len(v:val)'))
-  for name in sort(keys(paths))
-    let tail = s:type_cache[paths[name]]
-    if empty(tail) | continue | endif
-    let head = printf('%-' . size . 's', name . ':')
-    echom head . ' ' . tail
-  endfor
-endfunction
-
-" Tag source functions
-" Note: This matches fzf.vim/bin/tags.pl perl script formatting, but adds optional
-" filetype filter (see vim-tags). Note removing vim quotes causes viewer to fail.
-function! tag#read_tags(mode, type, query, ...) abort
-  let sel = a:mode ? s:regex_tag2 : s:regex_tag1
-  let sub = a:mode ? '\=s:tag_fmt2(30, head, base, cache)' : '\=s:tag_fmt1(30, path)'
-  let cmd = 'readtags -t %s -e -p - ' . fzf#shellescape(a:query)
-  if empty(a:type)
-    let [ftype, regex] = ['', '']
-  elseif type(a:type)
-    let [ftype, regex] = [a:type, tags#type_regex(a:type)]
-  else
-    let [ftype, regex] = [&l:filetype, tags#type_regex()]
-  endif
-  let [result, cache] = [[], {}]  " see also tags.vim s:tag_source()
-  for path in a:0 ? a:1 : [expand('%')]
-    if !filereadable(path) | continue | endif
-    if empty(a:query)
-      let lines = readfile(path)
-    else
-      let lines = systemlist(printf(cmd, fzf#shellescape(path)))
-    endif
-    let folder = fnamemodify(path, ':p:h')  " tag file folder
-    let prepend = a:0 > 1 && strpart(expand('%:p'), 0, len(folder)) !=# folder
-    let fast = index(values(s:type_cache), ftype) >= 0  " whether cached
-    let base = prepend ? fnamemodify(folder, ':t') . '/' : ''  " slash required
-    let head = prepend ? fnamemodify(folder, ':h') . '/' : folder . '/'
-    call filter(lines, {_, val -> s:tag_filter(val, ftype, regex, fast)})
-    call map(lines, {_, val -> substitute(val, sel, sub, '')})
-    call extend(result, lines)
-  endfor
-  return [result, cache]
-endfunction
-
 " Return the 'from' position for the given path and tag
+" Note: Encountered bug when naming this same as vim-tags (plural).
 " Note: This only jumps if the destination 'from' line contains the tag (i.e. not
 " jumping to an outdated position or from a random fzf call) or when at the bottom.
-function! tag#from_stack(arg, name, ...) abort
+function! s:from_stack(arg, name, ...) abort
   let path = expand('%:p')
   let wins = type(a:arg) ? win_findbuf(bufnr(a:arg)) : [a:arg]
   let stack = gettagstack(get(wins, 0, winnr()))
@@ -105,7 +28,7 @@ endfunction
 " Note: This adds a pseudo-tag <top> at the top of the stack so we can return to
 " where we started when scrolling backwards, and pushes <top> if cursor is outside
 " both 'from' and 'tag' buffers or inside the 'tag' buffer but outside its bounds.
-function! s:goto_iloc(tag, ...) abort  " see also mark.vim
+function! s:goto_stack(tag, ...) abort  " see also mark.vim
   let [path, tpos, name] = a:tag
   let [iloc, size] = stack#get_loc('tag')
   let [ibnr, tbnr] = [bufnr(), bufnr(path)]
@@ -113,7 +36,7 @@ function! s:goto_iloc(tag, ...) abort  " see also mark.vim
   let itag = [ibnr] + tags#find_tag(line('.'))  " cursor [buf name line kind]
   let tpos = [tbnr] + map(type(tpos) > 1 ? tpos : [tpos], 'str2nr(v:val)')
   let ttag = [tbnr] + tags#find_tag(tpos[:1])  " tag [buf name line kind]
-  let fpos = tag#from_stack(path, name, iloc == 0)
+  let fpos = s:from_stack(path, name, iloc == 0)
   let cnt = a:0 ? a:1 : v:count1
   let outside = !empty(fpos) && ipos[:1] != fpos[:1] && itag != ttag
   if cnt < 0 && size > 1 && iloc >= size - 1 && outside  " add <top> pseudo-tag
@@ -149,7 +72,7 @@ function! tag#next_stack(...) abort
     let item = stack#get_item('tag')
     let item = empty(item) ? [] : item
   endif
-  let cnt = empty(item) ? cnt : s:goto_iloc(item, cnt)
+  let cnt = empty(item) ? cnt : s:goto_stack(item, cnt)
   let icnt = cnt < 0 ? -1 : 1
   if cnt == 0  " push currently assigned name to stack
     let status = stack#push_stack('tag', '', 0, -1)
@@ -159,7 +82,7 @@ function! tag#next_stack(...) abort
   let item = stack#get_item('tag')
   if cnt < 0 && !empty(item)  " mimic :pop behavior
     let [iloc, _] = stack#get_loc('tag')
-    let pos = tag#from_stack(item[0], item[2], iloc == 0)
+    let pos = s:from_stack(item[0], item[2], iloc == 0)
     let pos = empty(pos) ? getpos('.') : pos
     let [bnr, lnum, cnum, vnum] = empty(pos) ? getpos('.') : pos
     call file#goto_file(bnr ? bnr : bufnr())  " without tab stack
@@ -169,7 +92,7 @@ function! tag#next_stack(...) abort
   if !status | call stack#print_item('tag') | endif
 endfunction
 
-" Select from tags in the current window stack
+" Select from tags in the current stack
 " Note: This finds tag kinds using taglist() and ignores missing files.
 " See: https://github.com/junegunn/fzf.vim/issues/240
 function! tag#fzf_stack() abort
@@ -202,7 +125,7 @@ function! tag#fzf_stack() abort
   endif
 endfunction
 
-" Override fzf :Btags and :Tags
+" Select from buffer tags
 " Note: This is similar to fzf except uses custom sink that adds results to window
 " tag stack for navigation with ctrl-bracket maps and tag/pop commands.
 function! s:tag_error() abort
@@ -210,16 +133,12 @@ function! s:tag_error() abort
   echom 'Error: Tags not found or not available.'
   echohl None | return
 endfunction
-function! s:tag_search(...) abort
-  let tags = []
-  for path in a:000
-    let path = resolve(expand(path))
-    if filereadable(path)
-      call add(tags, path)
-    elseif isdirectory(path)
-      call extend(tags, globpath(path, '**/.vimtags', 0, 1))
-    endif
-  endfor | return tags
+function! s:tag_format(size, ...) abort
+  let path = a:0 ? "\t" . a:1 . '.vimtags' : ''  " see fzf.vim/bin/tagpreview.sh
+  let name = strcharpart(submatch(1), 0, a:size - 1)
+  let name = len(name) < len(submatch(1)) ? name . '·' : name
+  let name = printf('%-' . a:size . 's', name)
+  return name . "\t" . submatch(2) . submatch(3) . path
 endfunction
 function! tag#fzf_btags(bang, query, ...) abort
   let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
@@ -234,8 +153,9 @@ function! tag#fzf_btags(bang, query, ...) abort
   catch /.*/
     return s:tag_error()
   endtry
-  call filter(source, {_, val -> s:tag_filter(val, 0, 0, 0)})
-  call map(source, {_, val -> substitute(val, s:regex_tag1, '\=s:tag_fmt1(40)', '')})
+  let regex = '^\([^\t]*\)\t\([^\t]*\)\(.*\)$'
+  call filter(source, {_, val -> val !~# '^!\|^\s*\d\+\>'})
+  call map(source, {_, val -> substitute(val, regex, '\=s:tag_format(40)', '')})
   let options = {
     \ 'source': source,
     \ 'sink': function('tags#_select_tag', [0]),
@@ -243,25 +163,54 @@ function! tag#fzf_btags(bang, query, ...) abort
   \ }
   return call(snr . 'fzf', ['btags', options, [opts, a:bang]])
 endfunction
+
+" Select from the current tag files
+" Note: Tried 'readtags -t - -e -E -Q (#/.py/ $input) -l' but fails since parses
+" the tag file path appended by tags.pl to each line. Instead simply use grep.
+" Note: Formatting with more complex regex can cause slowdown. Avoid complex
+" regex patterns e.g. extra globs and non-greedy globs.
+scriptencoding utf-8
+function! s:tag_search(...) abort
+  let tags = []
+  for path in a:000
+    let path = resolve(expand(path))
+    if filereadable(path)
+      call add(tags, path)
+    elseif isdirectory(path)
+      call extend(tags, globpath(path, '**/.vimtags', 0, 1))
+    endif
+  endfor | return tags
+endfunction
 function! tag#fzf_tags(type, bang, ...) abort
   let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
-  if empty(snr) | return | endif
-  let opts = fzf#vim#with_preview({'placeholder': '--tag {2}:{-1}:{3..}' })
+  let scripts = utils#get_scripts('fzf.vim/autoload/fzf/vim.vim')
+  if empty(snr) || empty(scripts) | return | endif
+  let script = fnamemodify(scripts[0], ':p:h:h:h') . '/bin/tags.pl'
   let paths = a:0 ? call('s:tag_search', a:000) : tags#tag_files()
-  let paths = map(paths, 'fnamemodify(v:val, ":p")')
+  call map(paths, {_, val -> fnamemodify(val, ':p')})
   let [nbytes, maxbytes] = [0, 1024 * 1024 * 200]
   for path in paths
     let nbytes += getfsize(path)
     if nbytes > maxbytes | break | endif
   endfor
+  let regex = tags#type_regex(a:type ? &l:filetype : '')
+  let regex = substitute(regex, '\\\@<![(|)]', '\\\\\&', 'g')
+  let regex = substitute(regex, '\\\([(|)]\)', '\1', 'g')
+  if empty(regex) && !empty(a:type)
+    redraw | echohl WarningMsg
+    echom 'Warning: Unable to filter file type ' . string(a:type) . '.'
+    echohl None
+  endif
+  let post = empty(regex) ? [] : ['|', 'awk', "-F'\t'", shellescape('$2 ~ /' . regex . '/')]
+  let read = map(['perl', script, ''] + paths, 'shellescape(v:val)')
+  let opts = fzf#vim#with_preview({'placeholder': '--tag {2}:{-1}:{3..}' })
   let flags = "-m -d '\t' --with-nth ..4 --nth ..2"
   let flags .= nbytes > maxbytes ? ' --algo=v1' : ''
   let prompt = empty(a:type) ? 'Tags> ' : 'FTags> '
-  let [source, cache] = tag#read_tags(1, a:type, '', paths)
-  if empty(source) | return s:tag_error() | endif
+  let source = join(read + post, ' ')
   let options = {
     \ 'source': source,
-    \ 'sink': function('tags#_select_tag', [0, cache]),
+    \ 'sink': function('tags#_select_tag', [0]),
     \ 'options': flags . ' --prompt ' . string(prompt),
   \ }
   return call(snr . 'fzf', ['tags', options, [opts, a:bang]])

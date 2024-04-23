@@ -35,8 +35,26 @@ function! calc#codi_rephrase(text) abort
   return text
 endfunction
 
-" Custom codi window autocommands Want TextChanged,InsertLeave, not
-" TextChangedI which is enabled with g:codi#autocmd = 'TextChanged'
+" Initialize codi window
+" Note: Vim substitute() function '.' matches newlines and codi silently fails
+" if the rephrased input lines don't match original line count so be careful.
+function! calc#init_codi(...) abort
+  let prompt = 'Calculator path'
+  if a:0 && !empty(a:1)
+    let path = a:1
+  else
+    let base = fnamemodify(resolve(@%), ':p:h')
+    let base = file#format_dir(base, 1)  " trailing slash
+    let path = file#input_path('Calculator', 'calc.py', base)
+  endif
+  if !empty(path)
+    let path = fnamemodify(path, ':r') . '.py'
+    call file#drop_file(path)
+    silent! exe 'Codi!!'
+  endif
+endfunction
+
+" Set up codi window autocommands
 " See: https://github.com/metakirby5/codi.vim/issues/90
 " Note: This sets up the calculator window not the display window
 function! calc#setup_codi(toggle) abort
@@ -51,26 +69,5 @@ function! calc#setup_codi(toggle) abort
       au!
       exe 'au ' . cmds . ' <buffer> call codi#update()'
     augroup END
-  endif
-endfunction
-
-" Setup new codi window
-" Note: This will jump to existing tab and enable codi if present
-" Note: Warning message will be gobbled so don't bother. Just silent failure. Also
-" vim substitute() function '.' matches newlines and codi silently fails if the
-" rephrased input lines don't match original line count so be careful.
-function! calc#start_codi(...) abort
-  let prompt = 'Calculator path'
-  if a:0 && !empty(a:1)
-    let path = a:1
-  else
-    let base = fnamemodify(resolve(@%), ':p:h')
-    let base = file#format_dir(base, 1)  " trailing slash
-    let path = file#input_path('Calculator', 'calc.py', base)
-  endif
-  if !empty(path)
-    let path = fnamemodify(path, ':r') . '.py'
-    call file#drop_file(path)
-    silent! exe 'Codi!!'
   endif
 endfunction

@@ -13,26 +13,23 @@ let s:config_ignore = [
   \ '/\.\?vim/autoload/vim.vim',
   \ '/\.\?vim/after/common.vim',
   \ '/\(micro\|mini\|mamba\)\(forge\|conda\|mamba\)\d\?/'
-\ ]  " manually source common.vim and others are externally managed
+\ ]  " common.vim sourced manually, others managed externally
 function! vim#config_refresh(bang, ...) abort
   silent! runtime autoload/succinct.vim  " remove this after restarting sessions
   let time = get(g:, 'refresh', localtime())
-  let paths = utils#get_scripts(1)[0]
-  let ignore = join(s:config_ignore, '\|')
-  let loaded = []
-  for path in paths
-    if index(loaded, path) != -1
-      continue  " already loaded this
-    endif
-    if path !~# expand('~') || path =~# ignore || a:0 && path !~# a:1 || index(loaded, path) != -1
+  let regex = join(s:config_ignore, '\|')
+  let paths = []
+  for ipath in utils#get_scripts(a:0 ? a:1 : '')
+    let path = fnamemodify(ipath, ':p')
+    if path !~# expand('~') || path =~# regex || index(paths, ipath) != -1
       continue  " skip files not edited by user or matching regex
     endif
     if path =~# '/syntax/\|/ftplugin/'  " sourced by :filetype detect
       let ftype = fnamemodify(path, ':t:r')  " e.g. ftplugin/python.vim --> python
-      if &filetype ==# ftype | call add(loaded, path) | endif
+      if &filetype ==# ftype | call add(paths, ipath) | endif
     elseif a:bang || getftime(path) > time || path =~# '/\.\?vimrc\|/init\.vim'
       exe 'source ' . path
-      call add(loaded, path)
+      call add(paths, ipath)
     endif
   endfor
   let closed = foldclosed('.')
@@ -41,7 +38,7 @@ function! vim#config_refresh(bang, ...) abort
   doautocmd FileType
   runtime after/common.vim
   if closed <= 0 | exe 'silent! normal! zv' | endif | redraw
-  echom 'Loaded: ' . join(map(loaded, "fnamemodify(v:val, ':~')[2:]"), ', ') . '.'
+  echom 'Loaded: ' . join(map(paths, "fnamemodify(v:val, ':~')[2:]"), ', ') . '.'
   let g:refresh = localtime()
 endfunction
 

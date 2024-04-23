@@ -348,8 +348,10 @@ noremap <Leader>W <Cmd>call switch#autosave()<CR>
 
 " Refresh session or re-open previous files
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
-command! -bang -nargs=? Refresh runtime autoload/vim.vim | call vim#config_refresh(<bang>0, <q-args>)
-command! -nargs=? Scripts call utils#get_scripts(0, <q-args>)
+command! -bang -nargs=? Refresh runtime autoload/vim.vim
+  \ | call vim#config_refresh(<bang>0, <q-args>)
+command! -nargs=? Scripts echom 'Scripts matching ' . string(<q-args>) . ':'
+  \ | for s:path in utils#get_scripts(<q-args>) | echom s:path | endfor
 noremap <leader>E <Cmd>call file#reload()<CR>
 noremap <Leader>r <Cmd>redraw! \| echo ''<CR>
 noremap <Leader>R <Cmd>Refresh<CR>
@@ -388,7 +390,7 @@ nnoremap <Tab>h <Cmd>silent! wincmd h<CR>
 nnoremap <Tab>l <Cmd>silent! wincmd l<CR>
 
 " Tab and window resizing
-nnoremap <Tab><Space> <Cmd>exe 'resize ' . window#default_height()<CR>
+nnoremap <Tab><CR> <Cmd>exe 'resize ' . window#default_height()<CR>
   \<Cmd>exe 'vert resize ' . window#default_width()<CR>
 nnoremap <Tab>1 <Cmd>exe 'resize ' . window#default_height(1)<CR>
   \<Cmd>exe 'vert resize ' . window#default_width(1)<CR>
@@ -608,7 +610,7 @@ augroup END
 command! -nargs=0 ClearTabs call stack#clear_stack('tab') | call window#update_stack(0)
 command! -nargs=0 PrintTabs call stack#print_stack('tab')
 command! -nargs=? PopTabs call stack#pop_stack('tab', <f-args>)
-noremap <Tab><Tab> <Cmd>call window#update_stack(0, -1, 2)<CR>
+noremap <Tab><Space> <Cmd>call window#update_stack(0, -1, 2)<CR>
 noremap <F1> <Cmd>call window#scroll_stack(-v:count1)<CR>
 noremap <F2> <Cmd>call window#scroll_stack(v:count1)<CR>
 
@@ -1731,7 +1733,7 @@ if s:plug_active('vim-textobj-user')
   let s:textobj_alpha = {
     \ 'g': '\(\<\|[^0-9A-Za-z]\@<=[0-9A-Za-z]\@=\)\r\(\>\|[^0-9A-Za-z]\)',
     \ 'h': '\(\<\|[0-9a-z]\@<=[^0-9a-z]\@=\)\r\(\>\|[0-9a-z]\@<=[^0-9a-z]\@=\)',
-    \ 'v': '[^0-9A-Za-z_.:-][0-9A-Za-z_.:-]\@=\r[0-9A-Za-z_.:-]\@<=[^0-9A-Za-z_.:-]',
+    \ 'v': '\(\k\|[*:.-]\)\@<!\(\k\|[*:.-]\)\@=\r\(\k\|[*:.-]\)\@<=\(\k\|[*:.-]\)\@!\s*',
   \ }  " 'ag' includes e.g. trailing underscore similar to 'a word'
   let s:textobj_entire = {
     \ 'select-a': 'aE',  'select-a-function': 'textobj#entire#select_a',
@@ -2312,7 +2314,7 @@ if s:plug_active('codi.vim')
     au User CodiEnterPre call calc#setup_codi(1)
     au User CodiLeavePost call calc#setup_codi(0)
   augroup END
-  command! -nargs=* CodiNew call calc#start_codi(<f-args>)
+  command! -nargs=* CodiNew call calc#init_codi(<f-args>)
   noremap <Leader>+ <Cmd>CodiNew<CR>
   noremap <Leader>= <Cmd>silent! Codi!!<CR>
   let g:codi#autocmd = 'None'
