@@ -321,7 +321,7 @@ endfunction
 " Note: This permits using e.g. 'zck' and 'zok' even when outside fold and without
 " fear of accidentally closing huge block e.g. class or document under cursor.
 function! fold#toggle_inner(...) range abort
-  call fold#update_folds(0) | let folds = []
+  if a:0 | call fold#update_folds(0) | endif | let folds = []
   let [lmin, lmax] = sort([a:firstline, a:lastline], 'n')
   let winview = a:0 > 1 ? a:2 : winsaveview()
   let levels = map(range(lmin, lmax), 'foldlevel(v:val)')
@@ -346,5 +346,6 @@ function! fold#toggle_inner(...) range abort
 endfunction
 " For <expr> map accepting motion
 function! fold#toggle_inner_expr(...) abort
-  return utils#motion_func('fold#toggle_inner', a:000 + [winsaveview()], 1)
+  let args = a:0 ? a:000 + [winsaveview()] : []
+  return utils#motion_func('fold#toggle_inner', args, 1)
 endfunction

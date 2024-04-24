@@ -344,7 +344,7 @@ nnoremap q <Cmd>call window#close_panes()<CR>
 nnoremap <C-s> <Cmd>call file#update()<CR>
 nnoremap <C-q> <Cmd>call window#close_tab()<CR>
 nnoremap <C-w> <Cmd>call window#close_panes()<CR><Cmd>call window#close_pane()<CR>
-noremap <Leader>W <Cmd>call switch#autosave()<CR>
+nnoremap <Leader>W <Cmd>call switch#autosave()<CR>
 
 " Refresh session or re-open previous files
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
@@ -352,9 +352,9 @@ command! -bang -nargs=? Refresh runtime autoload/vim.vim
   \ | call vim#config_refresh(<bang>0, <q-args>)
 command! -nargs=? Scripts echom 'Scripts matching ' . string(<q-args>) . ':'
   \ | for s:path in utils#get_scripts(<q-args>) | echom s:path | endfor
-noremap <leader>E <Cmd>call file#reload()<CR>
-noremap <Leader>r <Cmd>redraw! \| echo ''<CR>
-noremap <Leader>R <Cmd>Refresh<CR>
+nnoremap <leader>E <Cmd>call file#reload()<CR>
+nnoremap <Leader>r <Cmd>redraw! \| echo ''<CR>
+nnoremap <Leader>R <Cmd>Refresh<CR>
 let g:MRU_Open_File_Relative = 1
 
 " Buffer selection and management
@@ -363,8 +363,8 @@ command! -bang -nargs=* History call file#fzf_history(<q-args>, <bang>0)
 command! -bang -nargs=0 Recents call file#fzf_recent(<bang>0)
 command! -nargs=0 ShowBufs call file#show_bufs()
 command! -nargs=0 WipeBufs call file#wipe_bufs()
-noremap <Leader>q <Cmd>ShowBufs<CR>
-noremap <Leader>Q <Cmd>WipeBufs<CR>
+nnoremap <Leader>q <Cmd>ShowBufs<CR>
+nnoremap <Leader>Q <Cmd>WipeBufs<CR>
 nnoremap g, <Cmd>call file#fzf_history('')<CR>
 nnoremap g< <Cmd>call file#fzf_recent()<CR>
 
@@ -440,24 +440,26 @@ nnoremap <C-g> <Cmd>GFiles<CR>
 command! -nargs=* -complete=file -bang Rename call file#rename(<q-args>, '<bang>')
 command! -nargs=? Paths call file#show_paths(<f-args>)
 command! -nargs=? Local call switch#localdir(<args>)
-noremap zl <Cmd>Paths<CR>
-noremap zL <Cmd>Local<CR>
-noremap gl <Cmd>call file#show_cfile()<CR>
-noremap gL <Cmd>call call('file#drop_file', file#expand_cfile())<CR>
+nnoremap zl <Cmd>Paths<CR>
+nnoremap zL <Cmd>Local<CR>
+nnoremap gl <Cmd>call file#show_cfile()<CR>
+nnoremap gL <Cmd>call call('file#drop_file', file#expand_cfile())<CR>
 
 " 'Execute' script with different options
 " Note: Current idea is to use 'ZZ' for running entire file and 'Z<motion>' for
 " running chunks of code. Currently 'Z' only defined for python so use workaround.
 " Note: Critical to label these maps so one is not a prefix of another
 " or else we can get a delay. For example do not define <Plug>Execute
-map Z <Plug>ExecuteMotion
+nmap Z <Plug>ExecuteMotion
+vmap Z <Plug>ExecuteMotion
 nmap ZZ <Plug>ExecuteFile0
 nmap <Leader>z <Plug>ExecuteFile1
 nmap <Leader>Z <Plug>ExecuteFile2
-noremap <Plug>ExecuteFile0 <Nop>
-noremap <Plug>ExecuteFile1 <Nop>
-noremap <Plug>ExecuteFile2 <Nop>
-noremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
+nnoremap <Plug>ExecuteFile0 <Nop>
+nnoremap <Plug>ExecuteFile1 <Nop>
+nnoremap <Plug>ExecuteFile2 <Nop>
+nnoremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
+vnoremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
 
 " Cycle through location list options
 " Note: ALE populates the window-local loc list rather than the global quickfix list.
@@ -499,7 +501,7 @@ xmap <F5> <Plug>(fzf-maps-x)
 imap <F5> <Plug>(fzf-maps-i)
 nnoremap <F5> <Cmd>Maps<CR>
 cnoremap <F5> <Esc><Cmd>Commands<CR>
-noremap <Leader><F5> <Cmd>Commands<CR>
+nnoremap <Leader><F5> <Cmd>Commands<CR>
 
 " Vim help and history windows
 " Note: For some reason even though :help :mes claims count N shows the N most recent
@@ -511,8 +513,9 @@ nnoremap <Leader>: <Cmd>History:<CR>
 nnoremap <Leader>? <Cmd>History/<CR>
 nnoremap <Leader>v <Cmd>call vim#show_help()<CR>
 nnoremap <Leader>V <Cmd>Helptags<CR>
-noremap z; <Cmd>20message<CR>
-noremap z: @:
+nnoremap z; <Cmd>20message<CR>
+nnoremap z: @:
+vnoremap z: @:
 
 " Shell commands, search windows, help windows, man pages, and 'cmd --help'. Also
 " add shortcut to search for all non-ASCII chars (previously used all escape chars).
@@ -610,9 +613,22 @@ augroup END
 command! -nargs=0 ClearTabs call stack#clear_stack('tab') | call window#update_stack(0)
 command! -nargs=0 PrintTabs call stack#print_stack('tab')
 command! -nargs=? PopTabs call stack#pop_stack('tab', <f-args>)
-noremap <Tab><Space> <Cmd>call window#update_stack(0, -1, 2)<CR>
-noremap <F1> <Cmd>call window#scroll_stack(-v:count1)<CR>
-noremap <F2> <Cmd>call window#scroll_stack(v:count1)<CR>
+nnoremap <Tab><Space> <Cmd>call window#update_stack(0, -1, 2)<CR>
+nnoremap <F1> <Cmd>call window#scroll_stack(-v:count1)<CR>
+nnoremap <F2> <Cmd>call window#scroll_stack(v:count1)<CR>
+
+" Navigate across recent tag jumps
+" Note: Apply in vimrc to avoid overwriting. This works by overriding both fzf and
+" internal tag jumping utils. Ignores tags resulting from direct :tag or <C-]>
+command! -nargs=0 ClearTags call stack#clear_stack('tag')
+command! -nargs=0 PrintTags call stack#print_stack('tag')
+command! -nargs=* PopTags call stack#pop_stack('tag', <f-args>)
+command! -nargs=* -complete=file ShowIgnores
+  \ echom 'Tag ignores: ' . join(parse#get_ignores(0, 0, 0, <f-args>), ' ')
+noremap <F3> <Cmd>call tag#next_stack(-v:count1)<CR>
+noremap <F4> <Cmd>call tag#next_stack(v:count1)<CR>
+noremap [{ <Cmd>exe v:count1 . 'tag'<CR>
+noremap ]} <Cmd>exe v:count1 . 'pop'<CR>
 
 " Navigate window jumplist with left/right arrows
 " Note: This accounts for iterm function-key maps and karabiner arrow-key maps
@@ -638,7 +654,7 @@ noremap <C-l> <Cmd>call mark#next_change(v:count1)<CR>
 noremap <Left> <Cmd>call mark#next_change(-v:count1)<CR>
 noremap <Right> <Cmd>call mark#next_change(v:count1)<CR>
 
-" Navigate lines and searches
+" Navigate buffer and session lines
 " Note: This overrides default vim-tags g/ and g? maps. Allows selecting range with
 " input motion. Useful for debugging text objexts or when scope algorithm fails.
 for s:map in ['//', '/?', '?/', '??'] | silent! exe 'unmap g' . s:map | endfor
@@ -647,25 +663,24 @@ noremap g/ <Cmd>BLines<CR>
 noremap g? <Cmd>Lines<CR>
 nnoremap g;; <Cmd>call tags#set_search('', 1)<CR><Cmd>call feedkeys(empty(@/) ? '' : '/' . @/, 'n')<CR>
 nnoremap g:: <Cmd>call tags#set_search('', 1)<CR><Cmd>call feedkeys(empty(@/) ? '' : '?' . @/, 'n')<CR>
-nnoremap <expr> g; edit#sel_lines_expr(0)
-nnoremap <expr> g: edit#sel_lines_expr(1)
 vnoremap <expr> / edit#sel_lines_expr(0)
 vnoremap <expr> ? edit#sel_lines_expr(1)
+nnoremap <expr> g; edit#sel_lines_expr(0)
+nnoremap <expr> g: edit#sel_lines_expr(1)
 vnoremap <expr> g; edit#sel_lines_expr(0)
 vnoremap <expr> g: edit#sel_lines_expr(1)
 
-" Navigate across recent tag jumps
-" Note: Apply in vimrc to avoid overwriting. This works by overriding both fzf and
-" internal tag jumping utils. Ignores tags resulting from direct :tag or <C-]>
-command! -nargs=0 ClearTags call stack#clear_stack('tag')
-command! -nargs=0 PrintTags call stack#print_stack('tag')
-command! -nargs=* PopTags call stack#pop_stack('tag', <f-args>)
-command! -nargs=* -complete=file ShowIgnores
-  \ echom 'Tag ignores: ' . join(parse#get_ignores(0, 0, 0, <f-args>), ' ')
-noremap <F3> <Cmd>call tag#next_stack(-v:count1)<CR>
-noremap <F4> <Cmd>call tag#next_stack(v:count1)<CR>
-noremap [{ <Cmd>exe v:count1 . 'tag'<CR>
-noremap ]} <Cmd>exe v:count1 . 'pop'<CR>
+" Configure searching and toggle folds
+" Note: This is only useful when 'search' excluded from &foldopen. Use to quickly
+" jump over possibly-irrelevant matches without opening unrelated folds.
+noremap / <Cmd>let b:open_search = 0<CR>/
+noremap ? <Cmd>let b:open_search = 0<CR>?
+nnoremap zn gE/<C-r>/<CR><Cmd>noh<CR>mzgn
+nnoremap zN W?<C-r>/<CR><Cmd>noh<CR>mzgN
+nnoremap z/ <Cmd>call switch#opensearch()<CR>
+nnoremap z? <Cmd>call switch#opensearch(1)<CR>
+vnoremap z/ <Cmd>call switch#opensearch()<CR>
+vnoremap z? <Cmd>call switch#opensearch(1)<CR>
 
 " Toggle and configure visual mode
 " Note: Select mode (e.g. by typing 'gh') is same as visual but enters insert mode
@@ -673,42 +688,39 @@ noremap ]} <Cmd>exe v:count1 . 'pop'<CR>
 " Note: Throughout vimrc marks y and z are reserved for internal map utilities. Here
 " use 'y' for mouse click location and 'z' for visual mode entrance location, then
 " start new visual selection between 'y' and 'z'. Generally 'y' should be temporary
-for s:key in ['v', 'V'] | exe 'noremap ' . s:key . ' <Esc>mz' . s:key | endfor
-noremap <C-v> <Esc><Cmd>WrapToggle 0<CR>mz<C-v>
-nnoremap zn gE/<C-r>/<CR><Cmd>noh<CR>mzgn
-nnoremap zN W?<C-r>/<CR><Cmd>noh<CR>mzgN
+for s:key in ['v', 'V'] | exe 'nnoremap ' . s:key . ' <Esc>mz' . s:key | endfor
+for s:key in ['v', 'V'] | exe 'vnoremap ' . s:key . ' <Esc>mz' . s:key | endfor
+nnoremap <C-v> <Cmd>WrapToggle 0<CR>mz<C-v>
+vnoremap <C-v> <Esc><Cmd>WrapToggle 0<CR>mz<C-v>
 nnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR>
 vnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
 vnoremap <CR> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
 vnoremap <LeftMouse> <LeftMouse>my<Cmd>exe 'keepjumps normal! `z' . visualmode() . '`y' \| delmark y<CR>
 
-" Override basic cursor motions
+" Override basic cursor and screen motions
+" Note: Use parentheses since g0/g$ are navigation and z0/z9 used for color schemes
 " Note: Mapped jumping commands do not open folds by default, hence the expr below
 " Note: Here h/l skip concealed syntax regions and matchadd() matches (respecting
 " &concealcursor values) and m/M is the missing previous end-of-word mapping.
+for s:key in ['0', '^', 'g0', 'g$'] | exe 'noremap ' . s:key . ' ' . s:key . 'ze' | endfor
+noremap <expr> gg 'gg' . (v:count ? 'zv' : '')
 noremap <expr> h (v:count ? '<Esc>' : '') . syntax#next_char(-v:count1)
 noremap <expr> l (v:count ? '<Esc>' : '') . syntax#next_char(v:count1)
-noremap <expr> gg 'gg' . (v:count ? 'zv' : '')
-noremap m ge
-noremap M gE
-noremap G G
-
-" Adjust screen relative to cursor
-" Note: Use parentheses since g0/g$ are navigation and z0/z9 used for color schemes
-for s:key in ['0', '^', 'g0', 'g$'] | exe 'noremap ' . s:key . ' ' . s:key . 'ze' | endfor
-nnoremap <expr> _ (foldclosed('.') > 0 ? 'zvzz' : foldlevel('.') > 0 ? 'zc' : 'zz') . 'ze'
-vnoremap <expr> _ fold#toggle_inner_expr(-1) . 'zzze'
 noremap g( ze
 noremap g) zs
 noremap z( zb
 noremap z) zt
+noremap m ge
+noremap M gE
+noremap G G
 
 " Navigate without adding to jumplist or opening folds
 " Note: Sentence jumping mapped with textobj#sentence#move_[np] for most filetypes.
 " Note: Original vim idea is that these commands take us far away from cursor but
 " typically use scrolling to go far away. So now use CursorHold approach.
 for s:key in ['(', ')'] | exe 'silent! unmap ' . s:key | endfor
-noremap ; <Cmd>call switch#hlsearch(1 - v:hlsearch, 1)<CR>
+nnoremap ; <Cmd>call switch#hlsearch(1 - v:hlsearch, 1)<CR>
+vnoremap ; <Cmd>call switch#hlsearch(1 - v:hlsearch, 1)<CR>
 noremap N <Cmd>call iter#next_match(-v:count1)<CR>
 noremap n <Cmd>call iter#next_match(v:count1)<CR>
 noremap { <Cmd>exe 'keepjumps normal! ' . v:count1 . '{'<CR>
@@ -750,23 +762,21 @@ augroup fold_setup
 augroup END
 command! -bang -nargs=? Refold call fold#update_folds(<bang>0, <f-args>)
 for s:key in ['z', 'f', 'F', 'n', 'N'] | silent! exe 'unmap! z' . s:key | endfor
-noremap za zn
-noremap zA zN<Cmd>call fold#update_folds(0)<CR>
-noremap zx <Cmd>call fold#update_folds(0, 1)<CR>
-noremap zX <Cmd>call fold#update_folds(0, 2)<CR>
-noremap zv <Cmd>call fold#update_folds(0)<CR>zv
-noremap zV <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>
+nnoremap zx <Cmd>call fold#update_folds(0, 1)<CR>
+nnoremap zX <Cmd>call fold#update_folds(0, 2)<CR>
+nnoremap zv <Cmd>call fold#update_folds(0)<CR>zv
+nnoremap zV <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>
+vnoremap zx <Cmd>call fold#update_folds(0, 1)<CR>
+vnoremap zX <Cmd>call fold#update_folds(0, 2)<CR>
+vnoremap zv <Cmd>call fold#update_folds(0)<CR>zv
+vnoremap zV <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>
 
 " Toggle folds over selection or under matches after updating
 " Note: Here fold#toggle_inner_expr() calls fold#update_folds() before toggling.
 " Note: These will overwrite 'fastfold_fold_command_suffixes' generated fold-updating
 " maps. However now use even faster / more conservative fold#update_folds() method.
-noremap / <Cmd>let b:open_search = 0<CR>/
-noremap ? <Cmd>let b:open_search = 0<CR>?
-nnoremap z/ <Cmd>call switch#opensearch()<CR>
-nnoremap z? <Cmd>call switch#opensearch(1)<CR>
-vnoremap z/ <Cmd>call switch#opensearch()<CR>
-vnoremap z? <Cmd>call switch#opensearch(1)<CR>
+nnoremap <expr> _ (foldclosed('.') > 0 ? 'zvzz' : foldlevel('.') > 0 ? 'zc' : 'zz') . 'ze'
+vnoremap <expr> _ fold#toggle_inner_expr(-1) . 'zzze'
 nnoremap zcc <Cmd>call fold#toggle_inner(1)<CR>
 nnoremap zoo <Cmd>call fold#toggle_inner(0)<CR>
 nnoremap <expr> zc fold#toggle_inner_expr(1)
@@ -781,10 +791,14 @@ vnoremap <expr> zo fold#toggle_inner_expr(0)
 " Note: Here 'zC' will close fold only up to current level or for definitions
 " inside class (special case for python). For recursive motion mapping similar
 " to 'zc' and 'zo' could use e.g. noremap <expr> zC fold#toggle_inner_expr(1, 1)
+nnoremap za zn
+nnoremap zA zN<Cmd>call fold#update_folds(0)<CR>
 nnoremap zi <Cmd>call fold#toggle_children()<CR>
 nnoremap zz <Cmd>call fold#toggle_parent()<CR>
 nnoremap zC <Cmd>call fold#toggle_parent(1)<CR>
 nnoremap zO <Cmd>call fold#toggle_parent(0)<CR>
+vnoremap za zn
+vnoremap zA zN<Cmd>call fold#update_folds(0)<CR>
 vnoremap <expr> zi fold#toggle_children_expr()
 vnoremap <expr> zz fold#toggle_parent_expr(0)
 vnoremap <expr> zC fold#toggle_parent_expr(1, 1)
@@ -2273,34 +2287,34 @@ if s:plug_active('vim-fugitive')
     au!
     au BufEnter * call git#setup_commands()
   augroup END
-  noremap gp <Cmd>BCommits<CR>
-  noremap gP <Cmd>Commits<CR>
-  noremap zP <Cmd>call git#run_map(0, 0, '', 'blame')<CR>
+  nnoremap gp <Cmd>BCommits<CR>
+  nnoremap gP <Cmd>Commits<CR>
+  nnoremap zP <Cmd>call git#run_map(0, 0, '', 'blame')<CR>
+  nnoremap zpp <Cmd>call git#run_map(2, 0, '', 'blame ')<CR>
   nnoremap <expr> zp git#run_map_expr(2, 0, '', 'blame ')
   vnoremap <expr> zp git#run_map_expr(2, 0, '', 'blame ')
-  nnoremap zpp <Cmd>call git#run_map(2, 0, '', 'blame ')<CR>
-  noremap <Leader>' <Cmd>call git#run_map(0, 0, '', '')<CR>
-  noremap <Leader>" <Cmd>call git#run_map(0, 0, '', 'status')<CR>
-  noremap <Leader>p <Cmd>call git#run_map(0, 0, '', 'trunk')<CR>
-  noremap <Leader>P <Cmd>call git#run_map(0, 0, '', 'tree')<CR>
-  noremap <Leader>u <Cmd>call git#run_map(0, 0, '', 'push origin')<CR>
-  noremap <Leader>U <Cmd>call git#run_map(0, 0, '', 'pull origin')<CR>
-  noremap <Leader>i <Cmd>call git#commit_wrap(0, 'oops')<CR>
-  noremap <Leader>I <Cmd>call git#commit_wrap(1, 'oops')<CR>
-  noremap <Leader>o <Cmd>call git#commit_wrap(0, 'commit')<CR>
-  noremap <Leader>O <Cmd>call git#commit_wrap(1, 'commit')<CR>
-  noremap <Leader>y <Cmd>call git#commit_wrap(0, 'stash push --include-untracked')<CR>
-  noremap <Leader>Y <Cmd>call git#commit_wrap(1, 'stash push --include-untracked')<CR>
-  noremap <Leader>h <Cmd>call git#run_map(0, 0, '', 'diff -- :/')<CR>
-  noremap <Leader>H <Cmd>call git#run_map(0, 0, '', 'stage -- :/')<CR>
-  noremap <Leader>j <Cmd>call git#run_map(0, 0, '', 'diff -- %')<CR>
-  noremap <Leader>J <Cmd>call git#run_map(0, 0, '', 'stage -- %')<CR>
-  noremap <Leader>k <Cmd>call git#run_map(0, 0, '', 'diff --staged -- %')<CR>
-  noremap <Leader>K <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- %')<CR>
-  noremap <Leader>l <Cmd>call git#run_map(0, 0, '', 'diff --staged -- :/')<CR>
-  noremap <Leader>L <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- :/')<CR>
-  noremap <Leader>b <Cmd>call git#run_map(0, 0, '', 'branches')<CR>
-  noremap <Leader>B <Cmd>call git#run_map(0, 0, '', 'switch -')<CR>
+  nnoremap <Leader>' <Cmd>call git#run_map(0, 0, '', '')<CR>
+  nnoremap <Leader>" <Cmd>call git#run_map(0, 0, '', 'status')<CR>
+  nnoremap <Leader>p <Cmd>call git#run_map(0, 0, '', 'trunk')<CR>
+  nnoremap <Leader>P <Cmd>call git#run_map(0, 0, '', 'tree')<CR>
+  nnoremap <Leader>u <Cmd>call git#run_map(0, 0, '', 'push origin')<CR>
+  nnoremap <Leader>U <Cmd>call git#run_map(0, 0, '', 'pull origin')<CR>
+  nnoremap <Leader>i <Cmd>call git#commit_wrap(0, 'oops')<CR>
+  nnoremap <Leader>I <Cmd>call git#commit_wrap(1, 'oops')<CR>
+  nnoremap <Leader>o <Cmd>call git#commit_wrap(0, 'commit')<CR>
+  nnoremap <Leader>O <Cmd>call git#commit_wrap(1, 'commit')<CR>
+  nnoremap <Leader>y <Cmd>call git#commit_wrap(0, 'stash push --include-untracked')<CR>
+  nnoremap <Leader>Y <Cmd>call git#commit_wrap(1, 'stash push --include-untracked')<CR>
+  nnoremap <Leader>h <Cmd>call git#run_map(0, 0, '', 'diff -- :/')<CR>
+  nnoremap <Leader>H <Cmd>call git#run_map(0, 0, '', 'stage -- :/')<CR>
+  nnoremap <Leader>j <Cmd>call git#run_map(0, 0, '', 'diff -- %')<CR>
+  nnoremap <Leader>J <Cmd>call git#run_map(0, 0, '', 'stage -- %')<CR>
+  nnoremap <Leader>k <Cmd>call git#run_map(0, 0, '', 'diff --staged -- %')<CR>
+  nnoremap <Leader>K <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- %')<CR>
+  nnoremap <Leader>l <Cmd>call git#run_map(0, 0, '', 'diff --staged -- :/')<CR>
+  nnoremap <Leader>L <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- :/')<CR>
+  nnoremap <Leader>b <Cmd>call git#run_map(0, 0, '', 'branches')<CR>
+  nnoremap <Leader>B <Cmd>call git#run_map(0, 0, '', 'switch -')<CR>
   let g:fugitive_legacy_commands = 1  " include deprecated :Git status to go with :Git
   let g:fugitive_dynamic_colors = 1  " fugitive has no HighlightRecent option
 endif
@@ -2357,14 +2371,20 @@ endif
 if s:plug_active('HowMuch')
   nnoremap g++ :call HowMuch#HowMuch(0, 0, 1, 'py')<CR>
   nnoremap z++ :call HowMuch#HowMuch(1, 1, 1, 'py')<CR>
-  noremap <expr> g+ edit#how_much(0, 0, 1, 'py')
-  noremap <expr> z+ edit#how_much(1, 1, 1, 'py')
+  nnoremap <expr> g+ edit#how_much(0, 0, 1, 'py')
+  nnoremap <expr> z+ edit#how_much(1, 1, 1, 'py')
+  vnoremap <expr> g+ edit#how_much(0, 0, 1, 'py')
+  vnoremap <expr> z+ edit#how_much(1, 1, 1, 'py')
 endif
 if s:plug_active('vim-speeddating')
-  map <silent> + <Plug>SpeedDatingUp:call repeat#set("\<Plug>SpeedDatingUp")<CR>
-  map <silent> - <Plug>SpeedDatingDown:call repeat#set("\<Plug>SpeedDatingDown")<CR>
-  noremap <Plug>SpeedDatingFallbackUp <C-a>
-  noremap <Plug>SpeedDatingFallbackDown <C-x>
+  nmap <silent> + <Plug>SpeedDatingUp:call repeat#set("\<Plug>SpeedDatingUp")<CR>
+  nmap <silent> - <Plug>SpeedDatingDown:call repeat#set("\<Plug>SpeedDatingDown")<CR>
+  vmap <silent> + <Plug>SpeedDatingUp:call repeat#set("\<Plug>SpeedDatingUp")<CR>
+  vmap <silent> - <Plug>SpeedDatingDown:call repeat#set("\<Plug>SpeedDatingDown")<CR>
+  nnoremap <Plug>SpeedDatingFallbackUp <C-a>
+  nnoremap <Plug>SpeedDatingFallbackDown <C-x>
+  vnoremap <Plug>SpeedDatingFallbackUp <C-a>
+  vnoremap <Plug>SpeedDatingFallbackDown <C-x>
 endif
 if s:plug_active('codi.vim')
   augroup codi_setup
@@ -2373,8 +2393,8 @@ if s:plug_active('codi.vim')
     au User CodiLeavePost call calc#setup_codi(0)
   augroup END
   command! -nargs=* CodiNew call calc#init_codi(<f-args>)
-  noremap <Leader>+ <Cmd>CodiNew<CR>
-  noremap <Leader>= <Cmd>silent! Codi!!<CR>
+  nnoremap <Leader>+ <Cmd>CodiNew<CR>
+  nnoremap <Leader>= <Cmd>silent! Codi!!<CR>
   let g:codi#autocmd = 'None'
   let g:codi#rightalign = 0
   let g:codi#rightsplit = 0
@@ -2423,7 +2443,7 @@ if s:plug_active('vim-obsession')  " must manually preserve cursor position
     au BufReadPost * exe line('''"') && line('''"') <= line('$') ? 'keepjumps normal! g`"' : ''
   augroup END
   command! -nargs=* -complete=customlist,vim#complete_sessions Session call vim#init_session(<q-args>)
-  noremap <Leader>$ <Cmd>Session<CR>
+  nnoremap <Leader>$ <Cmd>Session<CR>
 endif
 if s:plug_active('undotree')
   function! Undotree_Augroup() abort  " autoload/undotree.vim s:undotree.Toggle()
@@ -2438,13 +2458,13 @@ if s:plug_active('undotree')
     noremap <buffer> <nowait> u <C-u>
     noremap <buffer> <nowait> d <C-d>
   endfunc
+  nnoremap g\ <Cmd>UndotreeToggle<CR><Cmd>call Undotree_Augroup()<CR>
   let g:undotree_DiffAutoOpen = 0
   let g:undotree_RelativeTimestamp = 0
   let g:undotree_SetFocusWhenToggle = 1
   let g:undotree_ShortIndicators = 1
   let g:undotree_SplitWidth = 30  " overridden above
   let g:undotree_WindowLayout = 1  " see :help undotree_WindowLayout
-  noremap g\ <Cmd>UndotreeToggle<CR><Cmd>call Undotree_Augroup()<CR>
 endif
 
 
@@ -2467,12 +2487,12 @@ command! -nargs=0 ShowBases exe 'help group-name' | exe 'normal! zt'
 command! -nargs=0 ShowColors call vim#show_runtime('syntax', 'colortest')
 command! -nargs=0 ShowSyntax call vim#show_runtime('syntax')
 command! -nargs=0 ShowPlugin call vim#show_runtime('ftplugin')
-noremap <Leader>` <Cmd>ShowGroups<CR>
-noremap <Leader>1 <Cmd>ShowNames<CR>
-noremap <Leader>2 <Cmd>ShowBases<CR>
-noremap <Leader>3 <Cmd>ShowColors<CR>
-noremap <Leader>4 <Cmd>ShowSyntax<CR>
-noremap <Leader>5 <Cmd>ShowPlugin<CR>
+nnoremap <Leader>` <Cmd>ShowGroups<CR>
+nnoremap <Leader>1 <Cmd>ShowNames<CR>
+nnoremap <Leader>2 <Cmd>ShowBases<CR>
+nnoremap <Leader>3 <Cmd>ShowColors<CR>
+nnoremap <Leader>4 <Cmd>ShowSyntax<CR>
+nnoremap <Leader>5 <Cmd>ShowPlugin<CR>
 
 " Repair syntax highlighting
 " Note: :Colorize is from hex-colorizer plugin. Expensive so disable at start
@@ -2483,10 +2503,10 @@ augroup color_setup
 augroup END
 command! -bang -count=0 Syntax
   \ call syntax#sync_lines(<range> == 2 ? abs(<line2> - <line1>) : <count>, <bang>0)
-noremap <Leader>e <Cmd>Syntax<CR>
-noremap <Leader>6 <Cmd>Syntax 100<CR>
-noremap <Leader>7 <Cmd>Syntax!<CR>
-noremap <Leader>8 <Cmd>Colorize<CR>
+nnoremap <Leader>e <Cmd>Syntax<CR>
+nnoremap <Leader>6 <Cmd>Syntax 100<CR>
+nnoremap <Leader>7 <Cmd>Syntax!<CR>
+nnoremap <Leader>8 <Cmd>Colorize<CR>
 
 " Scroll color schemes and toggle colorize
 " Note: Here :Colorize is from colorizer.vim and :Colors from fzf.vim. Note coloring
@@ -2496,8 +2516,8 @@ command! -count=1 Sprev call syntax#next_scheme(-<count>)
 command! -count=1 Snext call syntax#next_scheme(<count>)
 call utils#repeat_map('n', 'z9', 'Sprev', ':<C-u>Sprev<CR>')
 call utils#repeat_map('n', 'z0', 'Snext', ':<C-u>Snext<CR>')
-noremap <Leader>9 <Cmd>Colors<CR>
-noremap <Leader>0 <Cmd>exe 'Scheme ' . g:colors_default<CR>
+nnoremap <Leader>9 <Cmd>Colors<CR>
+nnoremap <Leader>0 <Cmd>exe 'Scheme ' . g:colors_default<CR>
 
 " Apply color scheme from flazz/vim-colorschemes
 " Note: This has to come after color schemes are loaded.
@@ -2558,7 +2578,7 @@ augroup clear_jumps
   au VimEnter,BufWinEnter * exe 'normal! zvzzze' | if get(w:, 'clear_jumps', 1)
     \ | silent clearjumps | let w:clear_jumps = 0 | endif
 augroup END
-noremap <Leader><Leader> <Cmd>echo system('curl https://icanhazdadjoke.com/')<CR>
+nnoremap <Leader><Leader> <Cmd>echo system('curl https://icanhazdadjoke.com/')<CR>
 if !v:vim_did_enter | nohlsearch | endif
 call syntax#update_highlights() | redraw!
 exe 'runtime autoload/repeat.vim'
