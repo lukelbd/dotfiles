@@ -1,6 +1,24 @@
 "-----------------------------------------------------------------------------"
 " Utilities for python files
 "-----------------------------------------------------------------------------"
+" Helper functions for SimPylFold
+" Note: Cache is generated only on autocommands and with fold#update_folds(). Then
+" modify with python#fold_expr to impose e.g. docstring and multi-line lsit folds.
+scriptencoding utf-8
+function! s:get_isdef(lnum) abort
+  return get(get(get(b:, 'SimpylFold_cache', []), a:lnum, []), 'is_def', 0)
+endfunction
+function! s:get_indent(lnum) abort
+  return get(get(get(b:, 'SimpylFold_cache', []), a:lnum, []), 'indent', 0)
+endfunction
+function! s:get_level(lnum) abort
+  let cache = get(b:, 'SimpylFold_cache', [])
+  let props = get(cache, a:lnum, [])
+  let expr = get(props, 'foldexpr', '')
+  let val = !empty(expr) ? type(expr) ? len(expr) > 1 ? expr[1] : expr[0] : expr : 0
+  return str2nr(val)
+endfunction
+
 " Convert between key=value pairs and 'key': value dictionaries
 " Warning: Use kludge where lastcol is always at the end of line. Accounts for weird
 " bug where if opening bracket is immediately followed by newline, then 'inner'
@@ -51,60 +69,41 @@ function! python#dict_to_kw_expr(invert) abort
   return utils#motion_func('python#dict_to_kw', [a:invert, mode()])
 endfunction
 
-" Return SimpylFold expressions plus global constants and docstrings
+" Return SimpylFold expressions for decorators, docstrings, constants
 " Warning: Only call this when SimpylFold updates to improve performance. Might break
 " if SimpylFold renames internal cache variable (monitor). Note
-function! s:has_fold(lnum) abort
-  let cache = get(b:, 'SimpylFold_cache', [])
-  let props = get(cache, a:lnum, [])
-  let expr = get(props, 'foldexpr', '')
-  return !empty(expr)  " note empty(0) returns 1
-endfunction
-function! python#fold_cache() abort
-  let lnum = 1
-  let cache = b:SimpylFold_cache
-  let headers = '^\(if\|for\|while\|with\|try\|def\|class\)\>.*:\s*\(#.*\)\?$'
-  let keywords = '^\(elif\|else\|except\|finally\)\>.*:\s*\(#.*\)\?$'
-  let docstring = '[frub]*["'']\{3}'  " doctring regex (see fold.vim)
-  while lnum <= line('$')
-    if s:has_fold(lnum) | let lnum += 1 | continue | endif
-    let line = getline(lnum)
-    let group = []
-    " Docstring fold (e.g. _docstring_snippet = '''...)
-    let [_, _, pos] = matchstrpos(line, '^\K\k*\s*=\s*' . docstring)
-    if pos > -1  " vint: -ProhibitUsingUndeclaredVariable
-      call add(group, lnum)
-      while lnum < line('$') && getline(lnum)[pos:] !~# docstring  " fold entire docstring
-        let [pos, lnum] = [0, lnum + 1]
-        call add(group, lnum)
-        if s:has_fold(lnum)
-          let group = [] | break
-        endif
-      endwhile
-    endif
-    " Zero-indent fold (e.g. VARIABLE = [... or if condition:...)
-    if empty(group) && line =~# '^\K\k*'
-      call add(group, lnum)
-      while lnum < line('$') && (get(cache[lnum + 1], 'indent', 0) || getline(lnum + 1) =~# keywords)
-        let lnum += 1 | call add(group, lnum)
-        if s:has_fold(lnum) && getline(lnum) !~# '^\s*\(from\|import\)\>'
-          let group = [] | break
-        endif
-      endwhile
-      if len(group) > 1 && line !~# headers
-        let lnum += 1 | call add(group, lnum)
-      endif
-    endif
-    " Apply results (see :help fold-expr)
-    if len(group) > 1  " constant group found
-      let cache[group[0]]['foldexpr'] = '>1'  " fold start
-      let cache[group[-1]]['foldexpr'] = '<1'  " fold end
-      for value in range(group[1], group[-2])
-        let cache[value]['foldexpr'] = 1  " inner fold
-      endfor
-    endif
-    let lnum += 1  " e.g. termination of constant group
+function! s:get_decorator(lnum) abort
+  if getline(a:lnum) !~# '^\s*@\k\+' | return [] | endif
+  let [lnum, level, indent] = [a:lnum, s:get_level(a:lnum), s:get_indent(a:lnum)]
+  while lnum < line('$') && !s:get_isdef(lnum + 1)
+    let lnum += 1
+    if s:get_level(lnum) != level || s:get_indent(lnum) < indent | return [] | endif
   endwhile
+  let level = s:get_level(lnum + 1)  " definition level
+  return ['>' . level] + repeat([level], lnum - a:lnum + 1)
+endfunction
+function! s:get_docstring(lnum) abort
+  let regex = '[frub]*["'']\{3}'  " fold e.g.. _docstring_snippet = '''...
+  let [_, _, pos] = matchstrpos(getline(a:lnum), '^\K\k*\s*=\s*' . regex)
+  if pos == -1 | return [] | endif
+  let lnum = a:lnum
+  while lnum < line('$') && getline(lnum)[pos:] !~# regex  " fold entire docstring
+    let [pos, lnum] = [0, lnum + 1]
+    if s:get_level(lnum) | return [] | endif
+  endwhile
+  return lnum > a:lnum ? ['>1'] + repeat([1], lnum - a:lnum - 1) + ['<1'] : []
+endfunction
+function! s:get_constant(lnum) abort  " e.g. VARIABLE = [... or if condition:...
+  let heads = '^\(if\|for\|while\|with\|try\|def\|class\)\>.*:\s*\(#.*\)\?$'
+  let blocks = '^\(elif\|else\|except\|finally\)\>.*:\s*\(#.*\)\?$'
+  let [lnum, line, indent] = [a:lnum, getline(a:lnum), s:get_indent(a:lnum + 1)]
+  if line !~# '^\K\k*' || !indent | return [] | endif
+  while lnum < line('$') && (s:get_indent(lnum + 1) || getline(lnum + 1) =~# blocks)
+    let lnum += 1
+    if s:get_level(lnum) && getline(lnum) !~# '^\s*\(from\|import\)\>' | return [] | endif
+  endwhile
+  if lnum > a:lnum && line !~# heads | let lnum += 1 | endif
+  return lnum > a:lnum ? ['>1'] + repeat([1], lnum - a:lnum - 1) + ['<1'] : []
 endfunction
 
 " Return fold expression and text accounting for global constants and docstrings
@@ -117,9 +116,25 @@ function! python#fold_expr(lnum) abort
   if recache | call python#fold_cache() | endif
   return b:SimpylFold_cache[a:lnum]['foldexpr']
 endfunction
+function! python#fold_cache() abort
+  let b:fold_lines = {}
+  let [lnum, cache] = [1, b:SimpylFold_cache]
+  while lnum <= line('$')
+    let level = s:get_level(lnum)
+    let exprs = s:get_decorator(lnum)
+    if !empty(exprs) | let b:fold_lines[string(lnum)] = lnum + len(exprs) - 1 | endif
+    let exprs = !level && empty(exprs) ? s:get_docstring(lnum) : exprs
+    let exprs = !level && empty(exprs) ? s:get_constant(lnum) : exprs
+    if empty(exprs) | let lnum += 1 | continue | endif
+    for idx in range(len(exprs))  " apply overrides
+      let cache[lnum].foldexpr = exprs[idx] | let lnum += 1
+    endfor
+  endwhile
+endfunction
 function! python#fold_text(lnum, ...) abort
-  let [line1, line2] = [a:lnum + 1, a:lnum + s:maxlines]
-  let label = fold#get_label(a:lnum, 0)
+  let lnum = get(get(b:, 'fold_lines', {}), string(a:lnum), a:lnum)
+  let [line1, line2] = [lnum + 1, lnum + s:maxlines]
+  let label = fold#get_label(lnum, 0)
   let width = get(g:, 'linelength', 88) - 10  " minimum width
   let regex = '["'']\{3}'  " docstring expression
   if label =~# '^try:\s*$'  " append lines
@@ -128,10 +143,11 @@ function! python#fold_text(lnum, ...) abort
   if label =~# regex . '\s*$'  " append lines
     for lnum in range(line1, min([line2, a:0 ? a:1 : line2]))
       let itext = fold#get_label(lnum, 1)
-      let itext = substitute(itext, '[-=]\{3,}', '', 'g')
       let istop = itext =~# regex  " docstring close
-      let label .= repeat(' ', !istop && lnum > line1) . itext
-      if len(label) > width || istop | break | endif
+      let itext = itext =~# '[-=]\{3,}' ? '' : itext
+      let space = !istop && lnum > line1 ? ' ' : '' 
+      let label .= space . itext
+      if istop || len(label) > width | break | endif
     endfor
   endif
   let l:subs = []  " see: https://vi.stackexchange.com/a/16491/8084
