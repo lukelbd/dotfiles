@@ -78,24 +78,23 @@ endfunction
 " replaces it when user starts typing text or backspace. This is a bit nicer than
 " filling input prompt with default value, simply start typing to drop the default
 function! utils#input_default(prompt, ...) abort
-  let complete = a:0 > 1 ? a:2 : ''
-  let default = a:0 > 0 ? a:1 : ''
+  let default = a:0 ? a:1 : ''
   let paren = a:prompt =~# ')$' || empty(default) ? '' : ' (' . default . ')'
   let prompt = a:prompt . paren . ': '
-  let s:complete_opts = [1, default, complete] + a:000[2:]
+  let s:complete_opts = [1] + a:000
   call feedkeys("\<Tab>", 't')  " auto-complete getchar() results
   return input(prompt, '', 'customlist,utils#input_complete')
 endfunction
-function! utils#input_complete(lead, line, cursor)
-  let [initial, default, complete; rest] = s:complete_opts
-  let force = get(rest, 0, 0)
+function! utils#input_complete(lead, line, cursor) abort
+  let [initial, default; rest] = s:complete_opts
+  let force = len(rest) > 1 ? rest[1] : 0
   if !initial  " get complete options
-    if empty(complete)
+    if empty(rest) || empty(rest[0])
       let opts = []
-    elseif complete =~# '^[a-z_]\+$'
-      let opts = getcompletion(a:lead, complete)
+    elseif type(rest[0]) == 1 && rest[0] =~# '^[a-z_]\+$'
+      let opts = getcompletion(a:lead, rest[0])
     else
-      let opts = call(complete, [a:lead, a:line, a:cursor])
+      let opts = call(rest[0], [a:lead, a:line, a:cursor])
     endif
   else  " initial iteration
     let s:complete_opts[0] = 0

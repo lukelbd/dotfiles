@@ -33,10 +33,15 @@ endfunction
 " Generate list of files in directory
 " Warning: Critical that the list options match the prompt lead or else
 " when a single path is returned <Tab> during input() does not complete it.
+function! file#glob_complete(base, ...) abort
+endfunction
 function! file#glob_files(base, ...) abort
-  let glob = substitute(fnamemodify(a:base, ':p'), '^\@!/\?$', '', '')
-  let paths = globpath(glob, '*', 0, 1) + globpath(glob, '.?*', 0, 1)
-  return extend(map(paths, "fnamemodify(v:val, ':t')"), a:0 && a:1 ? [s:new_file] : [])
+  if a:0 && !empty(a:1)  " input pattern
+    let paths = globpath(a:base, a:1 . '*', 0, 1)
+  else  " all matches
+    let paths = globpath(a:base, '*', 0, 1) + globpath(a:base, '.?*', 0, 1)
+  endif
+  return map(paths, "fnamemodify(v:val, ':t')")
 endfunction
 function! file#glob_paths(lead, ...) abort
   let base = a:lead =~# '^[~.]*/\|^\~$' ? '' : file#format_dir(s:new_dir)
@@ -92,7 +97,7 @@ endfunction
 " Note: Using <expr> instead of this tiny helper function causes <C-c> to
 " display annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
 function! file#fzf_input(cmd, default, ...) abort
-  let input = file#input_path(a:cmd, '', a:default)
+  let input = utils#input_default(a:cmd, '', a:default)
   if empty(input) | return | endif
   return file#fzf_init(a:cmd, input)
 endfunction
@@ -104,6 +109,17 @@ function! file#fzf_init(bang, global, level, cmd, ...) abort
   let func = a:cmd ==# 'Files' ? 'file#fzf_files' : 'file#fzf_open'
   let args = a:cmd ==# 'Files' ? [a:bang] + paths : [a:bang, a:cmd, paths]
   return call(func, args)
+endfunction
+function! file#input_path(prompt, default, ...) abort
+  let base1 = file#format_dir(a:0 ? a:1 : '', 0)
+  let base2 = file#format_dir(a:0 ? a:1 : '', 1)  " leading ./
+  let default1 = empty(a:default) ? base2 : a:default
+  let default2 = empty(a:default) ? base2 : base1 . a:default
+  let prompt = substitute(a:prompt, '^\(\a\)\(\a*\)$', '\u\1\l\2', '')
+  let prompt = prompt . ' (' . default2 . ')'  " prompt with base folder
+  let s:new_dir = base2  " glob using this folder
+  let path = utils#input_default(prompt, default1, 'file#glob_paths')
+  return path =~# '^[~.]*/\|^\~\?$' ? path : base1 . path
 endfunction
 
 " Open arbitrary files recursively
@@ -162,6 +178,18 @@ endfunction
 " Check if user selection is directory, descend until user selects a file.
 " Note: Since fzf executes asynchronously cannot do loop recursion inside the driver
 " function. See https://github.com/junegunn/fzf/issues/1577#issuecomment-492107554
+function! file#open_sink(cmd, ...) abort
+  for path in a:000
+    if empty(path) | continue | endif
+    if path =~# '[*?[\]]' | continue | endif  " unexpanded glob
+    if isdirectory(path)  " false for empty string
+      redraw | echohl WarningMsg
+      echom 'Warning: Skipping directory ' . string(path) . '.'
+      echohl None | continue
+    endif
+    exe a:cmd . ' ' . fnameescape(path)
+  endfor
+endfunction
 function! file#fzf_open(bang, cmd, ...) abort
   " Parse arguments
   if a:0 == 1  " user invocation
@@ -177,53 +205,48 @@ function! file#fzf_open(bang, cmd, ...) abort
     echohl None | return
   endif
   " Process paths input manually or from fzf
+  let base = fnamemodify(base, ':p')  " enforce trailing slash
   let paths = []
   for item in items
     if item ==# s:new_file  " should be recursed at least one level
+      let args = ['.']  " WARNING: fzf sets 'base' to current working directory
+      let file = expand('<cfile>')
       try
-        let item = file#input_path('File', expand('<cfile>'), base)
+        let item = utils#input_default('File', file, function('file#glob_files', args))
       catch /^Vim:Interrupt$/
         let item = ''  " avoid error message
       finally
         if !empty(item) | call add(paths, item) | endif
       endtry
-    elseif item ==# '..'  " :p adds trailing slash so need two :h:h for parent
-      call add(paths, fnamemodify(base, ':p:h:h'))
+    elseif item ==# '..'  " remove slash and tail
+      call add(paths, fnamemodify(base, ':h:h'))
     elseif !empty(item)
-      call add(paths, empty(base) ? item : base . '/' . item)
+      call add(paths, item =~# '^/' ? item : base . item)
     endif
   endfor
   " Possibly activate or re-activate fzf
-  if empty(paths) && a:0 == 1 || len(paths) == 1 && isdirectory(paths[0])
+  " Note: Use feedkeys() if only one selected or else new file template loading fails
+  let ipath = get(paths, 0, '')
+  let recurse = isdirectory(ipath) || fnamemodify(ipath, ':t') ==# '..'
+  if empty(paths) && a:0 == 1 || len(paths) == 1 && recurse
     let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
     if empty(snr) | return | endif
     let base = get(paths, 0, '.')
-    let paths = []  " only continue in recursion
     let opts = fzf#vim#with_preview()
     let prompt = string(a:cmd . '> ' . file#format_dir(base, 1))
     let options = {
       \ 'sink*': function('file#fzf_open', [a:bang, a:cmd, base]),
-      \ 'source': file#glob_files(base, 1),
+      \ 'source': file#glob_files(base) + [s:new_file],
       \ 'options': '--no-sort --prompt=' . prompt,
     \ }
+    let paths = []  " only continue in recursion
     let options.dir = base
     call call(snr . 'fzf', ['open', options, [opts, 0]])
   endif
-  " Open file(s), or if it is already open just to that tab
-  " Note: Use feedkeys() if only one file selected or else template loading
-  " on s:new_file selection will fail.
-  let files = []
-  for path in paths
-    if isdirectory(path)  " false for empty string
-      redraw | echohl WarningMsg
-      echom 'Warning: Skipping directory ' . string(path) . '.'
-      echohl None
-    elseif !empty(path) && path !~# '[*?[\]]'  " not unexpanded glob
-      let icmd = a:cmd . ' ' . fnameescape(path)
-      call feedkeys("\<Cmd>" . icmd . "\<CR>", 'n')
-    endif
-  endfor
-  return files
+  if !empty(paths)
+    let arg = join(map([a:cmd] + paths, 'string(v:val)'), ', ')
+    call feedkeys("\<Cmd>call file#open_sink(" . arg . ")\<CR>", 'n')
+  endif
 endfunction
 
 " Open file or jump to tab. From tab drop plugin: https://github.com/ohjames/tabdrop

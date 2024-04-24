@@ -1795,7 +1795,7 @@ if s:plug_active('tcomment_vim')
   let g:tcomment_mapleader_comment_anyway = 'z>'
 endif
 
-" Custom buffer-specific ctags plugin
+" Sessions-specific tag management
 " Warning: Critical to mamba install 'universal-ctags' instead of outdated 'ctags'
 " or else will get warnings for non-existing kinds.
 " Note: Use .ctags config to ignore kinds or include below to filter bracket jumps. See
@@ -1803,6 +1803,17 @@ endif
 " Note: Custom plugin is similar to :Btags, but does not create or manage tag files,
 " instead creating tags whenever buffer is loaded and tracking tags continuously. Also
 " note / and ? update jumplist but cannot override without keeping interactivity.
+if s:plug_active('taglist')
+  augroup taglist_setup
+    au! | au BufEnter *__Tag_List__* call window#setup_taglist() | call window#setup_panel()
+  augroup END
+  let g:Tlist_Compact_Format = 1
+  let g:Tlist_Enable_Fold_Column = 1
+  let g:Tlist_File_Fold_Auto_Close = 1
+  let g:Tlist_Use_Right_Window = 0
+  let g:Tlist_WinWidth = 40
+  noremap z\ <Cmd>TlistToggle<CR>
+endif
 if s:plug_active('vim-tags')
   exe 'silent! unmap gyy' | exe 'silent! unmap zyy'
   command! -count -nargs=? TagToggle
@@ -1830,7 +1841,7 @@ if s:plug_active('vim-tags')
   let g:tags_next_global_map = ']W'
 endif
 
-" Gutentags project-wide ctags plugin
+" Project-wide ctags management
 " Note: Set g:gutentags_trace to 1 and try :ShowIgnores for debugging.
 " Todo: Update :Open and :Find so they also optionally respect ignore files.
 " Note: Adding directories with '--exclude' flags fails in gutentags since it manually
@@ -2078,7 +2089,7 @@ if s:plug_active('ddc.vim')
   call ddc#enable()
 endif
 
-" Asynchronous linting engine
+" Asynchronous linting engine settings
 " Note: bashate is equivalent to pep8, similar to prettier and beautify
 " for javascript and html, also tried shfmt but not available.
 " Note: black is not a linter (try :ALEInfo) but it is a 'fixer' and can be used
@@ -2087,6 +2098,7 @@ endif
 " by curly braces) so lacheck is best you are going to get.
 " Note: eslint is awful (requires crazy dependencies) and could not get deno
 " to highlight lines so use 'npm install --global quick-lint-js' instead.
+" 'python': ['python', 'flake8', 'mypy'],  " need to improve config
 " https://quick-lint-js.com/install/vim/npm-posix/
 " https://github.com/Kuniwak/vint  # vim linter and format checker (pip install vim-vint)
 " https://github.com/PyCQA/flake8  # python linter and format checker
@@ -2096,9 +2108,6 @@ endif
 " https://github.com/openstack/bashate  # shell format checker
 " https://mypy.readthedocs.io/en/stable/introduction.html  # type annotation checker
 " https://github.com/creativenull/dotfiles/blob/1c23790/config/nvim/init.vim#L481-L487
-" map ]x <Plug>(ale_next_wrap)  " use universal circular scrolling
-" map [x <Plug>(ale_previous_wrap)  " use universal circular scrolling
-" 'python': ['python', 'flake8', 'mypy'],  " need to improve config
 if s:plug_active('ale')
   augroup ale_setup
     au!
@@ -2156,16 +2165,30 @@ if s:plug_active('ale')
   let g:ale_virtualtext_cursor = 0  " no error shown here
 endif
 
-" Formatting plugins related to ale
-" Isort plugin docs:
-" https://github.com/fisadev/vim-isort
-" Black plugin docs:
-" https://black.readthedocs.io/en/stable/integrations/editors.html?highlight=vim#vim
-" Autopep8 plugin docs (or :help autopep8):
-" https://github.com/tell-k/vim-autopep8 (includes a few global variables)
-" Autoformat plugin docs:
-" https://github.com/vim-autoformat/vim-autoformat (expands native 'autoformat' utilities)
-if s:plug_active('ale')
+" Testing and formatting plugin settings
+" Isort: https://github.com/fisadev/vim-isort
+" Black: https://black.readthedocs.io/en/stable/integrations/editors.html?highlight=vim#vim
+" Autopep8: https://github.com/tell-k/vim-autopep8 (includes several global variables)
+" Autoformat: https://github.com/vim-autoformat/vim-autoformat (expands native 'autoformat' utilities)
+if s:plug_active('black')
+  let g:black_linelength = g:linelength
+  let g:black_skip_string_normalization = 1
+endif
+if s:plug_active('vim-autopep8')
+  let g:autopep8_disable_show_diff = 1
+  let g:autopep8_ignore = s:flake8_ignore
+  let g:autopep8_max_line_length = g:linelength
+endif
+if s:plug_active('vim-isort')
+  let g:vim_isort_python_version = 'python3'
+  let g:vim_isort_config_overrides = {
+    \ 'include_trailing_comma': 'true',
+    \ 'force_grid_wrap': 0,
+    \ 'multi_line_output': 3,
+    \ 'line_length': g:linelength,
+  \ }
+endif
+if s:plug_active('vim-autoformat')
   let g:formatdef_isort_black = '"isort '
     \ . '--trailing-comma '
     \ . '--force-grid-wrap 0 '
@@ -2176,18 +2199,19 @@ if s:plug_active('ale')
     \ . '--line-length ' . g:linelength . ' - "'
   let g:formatters_python = ['isort_black']  " defined above
   let g:formatters_fortran = ['fprettify']  " install with mamba
-  let g:autopep8_disable_show_diff = 1
-  let g:autopep8_ignore = s:flake8_ignore
-  let g:autopep8_max_line_length = g:linelength
-  let g:black_linelength = g:linelength
-  let g:black_skip_string_normalization = 1
-  let g:vim_isort_python_version = 'python3'
-  let g:vim_isort_config_overrides = {
-    \ 'include_trailing_comma': 'true',
-    \ 'force_grid_wrap': 0,
-    \ 'multi_line_output': 3,
-    \ 'line_length': g:linelength,
-    \ }
+endif
+if s:plug_active('vim-test')
+  let test#strategy = 'iterm'
+  let g:test#python#pytest#options = '--mpl --verbose'
+  noremap <Leader>\ <Cmd>call utils#catch_errors('TestVisit')<CR>
+  noremap <Leader>, <Cmd>call utils#catch_errors('TestLast')<CR>
+  noremap <Leader>. <Cmd>call utils#catch_errors('TestNearest')<CR>
+  noremap <Leader>< <Cmd>call utils#catch_errors('TestLast --mpl-generate')<CR>
+  noremap <Leader>> <Cmd>call utils#catch_errors('TestNearest --mpl-generate')<CR>
+  noremap <Leader>[ <Cmd>call utils#catch_errors('TestFile')<CR>
+  noremap <Leader>] <Cmd>call utils#catch_errors('TestSuite')<CR>
+  noremap <Leader>{ <Cmd>call utils#catch_errors('TestFile --mpl-generate')<CR>
+  noremap <Leader>} <Cmd>call utils#catch_errors('TestSuite --mpl-generate')<CR>
 endif
 
 " Conflict highlight settings (warning: change below to 'BufEnter?')
@@ -2302,12 +2326,29 @@ if s:plug_active('vim-gitgutter')
   noremap zG <Cmd>GitGutterAll \| echom 'Updated global hunks'<CR>
 endif
 
-" Configure codi (mathematical notepad) without history and settings
+" Calculation plugin settings
 " Julia usage bug: https://github.com/meta Kirby/codi.vim/issues/120
 " Python history bug: https://github.com/metakirby5/codi.vim/issues/85
 " Syncing bug (kludge is workaround): https://github.com/metakirby5/codi.vim/issues/106
 " Note: Recent codi versions use lua-vim which is not provided by conda-forge version.
-" However seems to run fine even without lua lines. So ignore error with silent!
+" However seems to run fine even without lua lines. So ignore errors with silent!
+" Note: Speeddating increments selected item(s), and if selection includes empty lines
+" then extends using step size from preceding lines or using a default step size.
+" Note: Usage is HowMuch#HowMuch(isAppend, withEq, sum, engineType) where isAppend says
+" whether to replace or append, withEq says whether to include equals sign, sum says
+" whether to sum the numbers, and engine is one of 'py', 'bc', 'vim', 'auto'.
+if s:plug_active('HowMuch')
+  nnoremap g++ :call HowMuch#HowMuch(0, 0, 1, 'py')<CR>
+  nnoremap z++ :call HowMuch#HowMuch(1, 1, 1, 'py')<CR>
+  noremap <expr> g+ edit#how_much(0, 0, 1, 'py')
+  noremap <expr> z+ edit#how_much(1, 1, 1, 'py')
+endif
+if s:plug_active('vim-speeddating')
+  map <silent> + <Plug>SpeedDatingUp:call repeat#set("\<Plug>SpeedDatingUp")<CR>
+  map <silent> - <Plug>SpeedDatingDown:call repeat#set("\<Plug>SpeedDatingDown")<CR>
+  noremap <Plug>SpeedDatingFallbackUp <C-a>
+  noremap <Plug>SpeedDatingFallbackDown <C-x>
+endif
 if s:plug_active('codi.vim')
   augroup codi_setup
     au!
@@ -2341,55 +2382,14 @@ if s:plug_active('codi.vim')
   \ }
 endif
 
-" Testing and calculations
-" Note: This overwrites default increment/decrement plugins declared above. Works
-" by incrementing selected item(s), and if selection includes empty lines then extends
-" them using the step size from preceding lines or using a default step size.
-" Note: Usage is HowMuch#HowMuch(isAppend, withEq, sum, engineType) where isAppend
-" says whether to replace or append, withEq says whether to include equals sign, sum
-" says whether to sum the numbers, and engine is one of 'py', 'bc', 'vim', 'auto'.
-if s:plug_active('HowMuch')
-  nnoremap g++ :call HowMuch#HowMuch(0, 0, 1, 'py')<CR>
-  nnoremap z++ :call HowMuch#HowMuch(1, 1, 1, 'py')<CR>
-  noremap <expr> g+ edit#how_much(0, 0, 1, 'py')
-  noremap <expr> z+ edit#how_much(1, 1, 1, 'py')
-endif
-if s:plug_active('vim-speeddating')
-  map <silent> + <Plug>SpeedDatingUp:call repeat#set("\<Plug>SpeedDatingUp")<CR>
-  map <silent> - <Plug>SpeedDatingDown:call repeat#set("\<Plug>SpeedDatingDown")<CR>
-  noremap <Plug>SpeedDatingFallbackUp <C-a>
-  noremap <Plug>SpeedDatingFallbackDown <C-x>
-endif
-if s:plug_active('vim-test')
-  let test#strategy = 'iterm'
-  let g:test#python#pytest#options = '--mpl --verbose'
-  noremap <Leader>\ <Cmd>call utils#catch_errors('TestVisit')<CR>
-  noremap <Leader>, <Cmd>call utils#catch_errors('TestLast')<CR>
-  noremap <Leader>. <Cmd>call utils#catch_errors('TestNearest')<CR>
-  noremap <Leader>< <Cmd>call utils#catch_errors('TestLast --mpl-generate')<CR>
-  noremap <Leader>> <Cmd>call utils#catch_errors('TestNearest --mpl-generate')<CR>
-  noremap <Leader>[ <Cmd>call utils#catch_errors('TestFile')<CR>
-  noremap <Leader>] <Cmd>call utils#catch_errors('TestSuite')<CR>
-  noremap <Leader>{ <Cmd>call utils#catch_errors('TestFile --mpl-generate')<CR>
-  noremap <Leader>} <Cmd>call utils#catch_errors('TestSuite --mpl-generate')<CR>
-endif
-
-" Vertical panel plugins
+" Session saving and undo history
 " Note: Undotree normally triggers on BufEnter but may contribute to slowdowns. Use
 " below to override built-in augroup before enabling buffer.
 " Todo: Currently can only clear history with 'C' in active pane not externally. Need
 " to submit PR for better command. See: https://github.com/mbbill/undotree/issues/158
-if s:plug_active('taglist')
-  augroup taglist_setup
-    au! | au BufEnter *__Tag_List__* call window#setup_taglist() | call window#setup_panel()
-  augroup END
-  let g:Tlist_Compact_Format = 1
-  let g:Tlist_Enable_Fold_Column = 1
-  let g:Tlist_File_Fold_Auto_Close = 1
-  let g:Tlist_Use_Right_Window = 0
-  let g:Tlist_WinWidth = 40
-  noremap z\ <Cmd>TlistToggle<CR>
-endif
+" Note: :Obsession .vimsession activates vim-obsession BufEnter and VimLeavePre
+" autocommands and saved session files call let v:this_session=expand("<sfile>:p")
+" (so that v:this_session is always set when initializing with vim -S .vimsession)
 if s:plug_active('vim-vinegar')
   silent! exe 'runtime plugin/vinegar.vim'
   augroup netrw_setup
@@ -2398,6 +2398,15 @@ if s:plug_active('vim-vinegar')
   nnoremap <Tab>\ <Cmd>call window#show_netrw('topleft vsplit', 1)<CR>
   nnoremap <Tab>= <Cmd>call window#show_netrw('topleft vsplit', 0)<CR>
   nnoremap <Tab>- <Cmd>call window#show_netrw('botright split', 1)<CR>
+endif
+if s:plug_active('vim-obsession')  " must manually preserve cursor position
+  augroup session_setup
+    au!
+    au VimEnter * exe !empty(v:this_session) ? 'Obsession ' . v:this_session : ''
+    au BufReadPost * exe line('''"') && line('''"') <= line('$') ? 'keepjumps normal! g`"' : ''
+  augroup END
+  command! -nargs=* -complete=customlist,vim#complete_sessions Session call vim#init_session(<q-args>)
+  noremap <Leader>$ <Cmd>Session<CR>
 endif
 if s:plug_active('undotree')
   function! Undotree_Augroup() abort  " autoload/undotree.vim s:undotree.Toggle()
@@ -2419,20 +2428,6 @@ if s:plug_active('undotree')
   let g:undotree_SplitWidth = 30  " overridden above
   let g:undotree_WindowLayout = 1  " see :help undotree_WindowLayout
   noremap g\ <Cmd>UndotreeToggle<CR><Cmd>call Undotree_Augroup()<CR>
-endif
-
-" Session saving and updating (the $ matches marker used in statusline)
-" Note: :Obsession .vimsession activates vim-obsession BufEnter and VimLeavePre
-" autocommands and saved session files call let v:this_session=expand("<sfile>:p")
-" (so that v:this_session is always set when initializing with vim -S .vimsession)
-if s:plug_active('vim-obsession')  " must manually preserve cursor position
-  augroup session_setup
-    au!
-    au VimEnter * if !empty(v:this_session) | exe 'Obsession ' . v:this_session | endif
-    au BufReadPost * if line('''"') > 0 && line('''"') <= line('$') | exe 'keepjumps normal! g`"' | endif
-  augroup END
-  command! -nargs=* -complete=customlist,vim#session_list Session call vim#init_session(<q-args>)
-  noremap <Leader>$ <Cmd>Session<CR>
 endif
 
 

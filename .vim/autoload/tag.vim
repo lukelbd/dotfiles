@@ -111,18 +111,16 @@ function! tag#fzf_stack() abort
   let paths = map(copy(items), 'v:val.filename')
   let level = len(uniq(sort(paths))) > 1 ? 2 : 0
   if level > 0
-    let expr = '[v:val.filename, v:val.cmd, v:val.name, v:val.kind]'
+    call map(items, '[v:val.filename, v:val.cmd, v:val.name, v:val.kind]')
   else
-    let expr = '[v:val.cmd, v:val.name, v:val.kind]'
+    call map(items, '[v:val.cmd, v:val.name, v:val.kind]')
   endif
-  let opts = map(copy(items), expr)
-  if !empty(opts)
-    call tags#select_tag(level, reverse(opts), 1)
-  else
+  if empty(items)
     redraw | echohl WarningMsg
     echom 'Error: Tag stack is empty'
-    echohl None
+    echohl None | return
   endif
+  return tags#select_tag(level, reverse(items), 1)
 endfunction
 
 " Select from buffer tags
@@ -201,15 +199,14 @@ function! tag#fzf_tags(type, bang, ...) abort
     echom 'Warning: Unable to filter file type ' . string(a:type) . '.'
     echohl None
   endif
-  let post = empty(regex) ? [] : ['|', 'awk', "-F'\t'", shellescape('$2 ~ /' . regex . '/')]
-  let read = map(['perl', script, ''] + paths, 'shellescape(v:val)')
+  let post = empty(regex) ? '' : " | awk -F'\t' '$2 ~ /" . regex . "/'"
+  let read = join(map(['perl', script, ''] + paths, 'shellescape(v:val)'), ' ')
   let opts = fzf#vim#with_preview({'placeholder': '--tag {2}:{-1}:{3..}' })
   let flags = "-m -d '\t' --with-nth ..4 --nth ..2"
   let flags .= nbytes > maxbytes ? ' --algo=v1' : ''
   let prompt = empty(a:type) ? 'Tags> ' : 'FTags> '
-  let source = join(read + post, ' ')
   let options = {
-    \ 'source': source,
+    \ 'source': read . post,
     \ 'sink': function('tags#_select_tag', [0]),
     \ 'options': flags . ' --prompt ' . string(prompt),
   \ }

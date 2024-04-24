@@ -137,6 +137,6 @@ function! comment#toggle_comment(...) abort
   if line1 == line2  " e.g. both -1
     call feedkeys('g@$', 'n')
   else  " toggle fold
-    call feedkeys(line1 . 'ggg@' . (line2 - line1) . 'j', 'n')
+    call feedkeys(line1 . 'ggg@$', 'n')
   endif
 endfunction

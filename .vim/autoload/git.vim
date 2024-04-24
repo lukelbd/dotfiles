@@ -52,19 +52,11 @@ let s:map_from = [
 " Uses foldlevel=1 ==> file foldlevel=2 ==> hunk. Note context diffs need special
 " treatment, as hunks are defined via context (after '***************'), and checking
 " for '*** ' or ('--- ') only does not work, as file lines have the same marker.
-function! git#setup_panel() abort  " also used for general diff filetypes
-  for val in s:map_remove | silent! exe 'unmap <buffer> ' . val | endfor
-  let &l:foldexpr = 'git#setup_folds(v:lnum)'
-  let &l:foldmethod = &l:filetype ==# 'fugitive' ? 'syntax' : 'expr'
-  call call('utils#map_from', &l:filetype ==# 'diff' ? [] : s:map_from)
-  call fold#update_folds(0, 0)  " re-apply defaults after setting foldexpr
-endfunction
 function! git#setup_blame() abort
   let regex = '^\x\{8}\s\+\d\+\s\+(\zs<\S\+>\s\+'
+  let width = 'vertical resize ' . window#default_width(0)
   call matchadd('Conceal', regex, 0, -1, {'conceal': ''})
-  " if window#count_panes('h') == 1
-  "   call feedkeys("\<Cmd>vertical resize " . window#default_width(0) . "\<CR>", 'n')
-  " endif
+  call feedkeys(window#count_panes('h') == 1 ? "\<Cmd>" . width . "\<CR>": '', 'n')
 endfunction
 function! git#setup_commit(...) abort
   exe 'resize ' . window#default_height(1)
@@ -72,15 +64,19 @@ function! git#setup_commit(...) abort
   setlocal colorcolumn=73
   goto | startinsert  " first row column
 endfunction
-function! git#setup_folds(lnum) abort
+function! git#setup_panel() abort  " also used for general diff filetypes
+  for val in s:map_remove | silent! exe 'unmap <buffer> ' . val | endfor
+  let &l:foldexpr = 'git#fold_expr(v:lnum)'
+  let &l:foldmethod = &l:filetype ==# 'fugitive' ? 'syntax' : 'expr'
+  call matchadd('Conceal', '^[+-]', 0, -1, {'conceal': ''})
+  call call('utils#map_from', &l:filetype ==# 'diff' ? [] : s:map_from)
+  call fold#update_folds(0, 0)  " re-apply defaults after setting foldexpr
+endfunction
+function! git#fold_expr(lnum) abort
   let line = getline(a:lnum)
   if line =~# '^\(diff\|Index\)'     " file
     return '>1'
-  elseif line =~# '^\(@@\|\d\)'  " hunk
-    return '>2'
-  elseif line =~# '^\*\*\* \d\+,\d\+ \*\*\*\*$' " context: file1
-    return '>2'
-  elseif line =~# '^--- \d\+,\d\+ ----$'     " context: file2
+  elseif line =~# '^\(@@\|\d\)\|^[*-]\{3}\s*\d\+,\d\+\s*[*-]\{3}'  " hunk
     return '>2'
   else
     return '='

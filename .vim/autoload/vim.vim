@@ -52,7 +52,7 @@ function! s:session_loaded() abort
   let bufs = map(bufs, 'v:val.name')
   return !empty(filter(bufs, 'v:val =~# regex'))
 endfunction
-function! vim#session_list(lead, line, cursor) abort
+function! vim#complete_sessions(lead, line, cursor) abort
   let regex = glob2regpat(a:lead)
   let regex = regex[0:len(regex) - 2]
   let opts = glob('.vimsession*', 0, 1)
