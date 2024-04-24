@@ -766,10 +766,12 @@ nnoremap zx <Cmd>call fold#update_folds(0, 1)<CR>
 nnoremap zX <Cmd>call fold#update_folds(0, 2)<CR>
 nnoremap zv <Cmd>call fold#update_folds(0)<CR>zv
 nnoremap zV <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>
+nnoremap zZ <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>
 vnoremap zx <Cmd>call fold#update_folds(0, 1)<CR>
 vnoremap zX <Cmd>call fold#update_folds(0, 2)<CR>
 vnoremap zv <Cmd>call fold#update_folds(0)<CR>zv
 vnoremap zV <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>
+nnoremap zZ <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>
 
 " Toggle folds over selection or under matches after updating
 " Note: Here fold#toggle_inner_expr() calls fold#update_folds() before toggling.
