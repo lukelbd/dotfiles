@@ -191,29 +191,27 @@ endfunction
 
 " Go to or move to selected tab
 " Note: This displays a list with the tab number and the file.
-function! window#fzf_move(...) abort
-  let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
-  if empty(snr) | return | endif
+function! window#fzf_goto(...) abort
   let bang = a:0 ? a:1 : 0
   let opts = fzf#vim#with_preview({'placeholder': '{3}'})
+  let opts = join(map(get(opts, 'options', []), 'fzf#shellescape(v:val)'), ' ')
+  let options = {
+    \ 'sink': function('window#goto_tab'),
+    \ 'source' : s:tab_source(1),
+    \ 'options': opts . ' -d : --no-sort --with-nth 1,4.. --prompt="Goto> "',
+  \ }
+  return fzf#run(fzf#wrap('goto', options, bang)) | return ''
+endfunction
+function! window#fzf_move(...) abort
+  let bang = a:0 ? a:1 : 0
+  let opts = fzf#vim#with_preview({'placeholder': '{3}'})
+  let opts = join(map(get(opts, 'options', []), 'fzf#shellescape(v:val)'), ' ')
   let options = {
     \ 'sink': function('window#move_tab'),
     \ 'source' : s:tab_source(1),
     \ 'options': '-d : --no-sort --with-nth 1,4.. --prompt="Move> "',
   \ }
-  return call(snr . 'fzf', ['files', options, [opts, bang]])
-endfunction
-function! window#fzf_goto(...) abort
-  let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
-  if empty(snr) | return | endif
-  let bang = a:0 ? a:1 : 0
-  let opts = fzf#vim#with_preview({'placeholder': '{3}'})
-  let options = {
-    \ 'sink': function('window#goto_tab'),
-    \ 'source' : s:tab_source(1),
-    \ 'options': '-d : --no-sort --with-nth 1,4.. --prompt="Goto> "',
-  \ }
-  call call(snr . 'fzf', ['files', options, [opts, bang]]) | return ''
+  return fzf#run(fzf#wrap('move', options, bang)) | return ''
 endfunction
 
 " Scroll recent files

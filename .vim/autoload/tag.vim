@@ -141,25 +141,27 @@ endfunction
 function! tag#fzf_btags(bang, query, ...) abort
   let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
-  let opts = fzf#vim#with_preview({'placeholder': '{2}:{3..}'})
   let cmd = 'ctags -f - --sort=yes --excmd=number %s 2>/dev/null | sort -s -k 5'
   let cmd = printf(cmd, fzf#shellescape(expand('%')))
-  let flags = "-m -d '\t' --with-nth 1,4.. --nth 1"
-  let flags .= ' --preview-window +{3}-/2 --query ' . shellescape(a:query)
+  let opts = fzf#vim#with_preview({'placeholder': '{2}:{3..}'})
+  let opts = join(map(get(opts, 'options', []), 'fzf#shellescape(v:val)'), ' ')
+  let opts .= " -m -d '\t' --with-nth 1,4.. --nth 1"
+  let opts .= ' --preview-window +{3}-/2 --query ' . shellescape(a:query)
   try
     let source = call(snr . 'btags_source', [[cmd]])
   catch /.*/
     return s:tag_error()
   endtry
   let regex = '^\([^\t]*\)\t\([^\t]*\)\(.*\)$'
+  let prompt = string('BTags> ')
   call filter(source, {_, val -> val !~# '^!\|^\s*\d\+\>'})
   call map(source, {_, val -> substitute(val, regex, '\=s:tag_format(40)', '')})
   let options = {
     \ 'source': source,
     \ 'sink': function('tags#_select_tag', [0]),
-    \ 'options': flags . ' --prompt "BTags> "',
+    \ 'options': opts . ' --prompt=' . prompt,
   \ }
-  return call(snr . 'fzf', ['btags', options, [opts, a:bang]])
+  return fzf#run(fzf#wrap('btags', options, a:bang))
 endfunction
 
 " Select from the current tag files
@@ -180,10 +182,10 @@ function! s:tag_search(...) abort
   endfor | return tags
 endfunction
 function! tag#fzf_tags(type, bang, ...) abort
-  let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
   let scripts = utils#get_scripts('fzf.vim/autoload/fzf/vim.vim')
-  if empty(snr) || empty(scripts) | return | endif
+  if empty(scripts) | return | endif
   let script = fnamemodify(scripts[0], ':p:h:h:h') . '/bin/tags.pl'
+  if !executable(script) | return | endif
   let paths = a:0 ? call('s:tag_search', a:000) : tags#tag_files()
   call map(paths, {_, val -> fnamemodify(val, ':p')})
   let [nbytes, maxbytes] = [0, 1024 * 1024 * 200]
@@ -201,16 +203,17 @@ function! tag#fzf_tags(type, bang, ...) abort
   endif
   let post = empty(regex) ? '' : " | awk -F'\t' '$2 ~ /" . regex . "/'"
   let read = join(map(['perl', script, ''] + paths, 'shellescape(v:val)'), ' ')
-  let opts = fzf#vim#with_preview({'placeholder': '--tag {2}:{-1}:{3..}' })
-  let flags = "-m -d '\t' --with-nth ..4 --nth ..2"
-  let flags .= nbytes > maxbytes ? ' --algo=v1' : ''
-  let prompt = empty(a:type) ? 'Tags> ' : 'FTags> '
+  let opts = fzf#vim#with_preview({'placeholder': '--tag {2}:{-1}:{3..}'})
+  let opts = join(map(get(opts, 'options', []), 'fzf#shellescape(v:val)'), ' ')
+  let opts .= " -m -d '\t' --with-nth ..4 --nth ..2"
+  let opts .= nbytes > maxbytes ? ' --algo=v1' : ''
+  let prompt = string(empty(a:type) ? 'Tags> ' : 'FTags> ')
   let options = {
     \ 'source': read . post,
     \ 'sink': function('tags#_select_tag', [0]),
-    \ 'options': flags . ' --prompt ' . string(prompt),
+    \ 'options': opts . ' --prompt=' . prompt,
   \ }
-  return call(snr . 'fzf', ['tags', options, [opts, a:bang]])
+  return fzf#run(fzf#wrap('tags', options, a:bang))
 endfunction
 
 " Update tags variable (requires g:gutentags_ctags_auto_set_tags = 0)

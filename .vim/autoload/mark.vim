@@ -139,22 +139,21 @@ endfunction
 " Note: This implements navigation across existing open windows and tabs. Native
 " version handles buffer switching separately from s:action_for() invocation.
 function! s:lines_sink(arg) abort
-  if len(a:arg) <= 1 | return | endif
-  let parts = split(a:arg[-1], "\t", 1)
+  if empty(a:arg) | return | endif
+  let parts = split(a:arg[0], "\t", 1)
   silent call file#drop_file(str2nr(parts[0])) | exe parts[2]
 endfunction
 function! mark#fzf_lines(query, ...) abort
-  let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
-  if empty(snr) | return | endif
   let [show, lines] = fzf#vim#_lines(1)
-  let flags = '--layout=reverse-list --tiebreak=index --extended'
-  let flags .= ' --nth ' . (show ? 3 : 2) . '.. --query ' . shellescape(a:query)
+  let opts = ' --nth ' . (show ? 3 : 2) . '..'
+  let opts .= ' --layout=reverse-list --tiebreak=index --extended'
+  let opts .= ' --query ' . shellescape(a:query) . ' --ansi --tabstop=1'
   let options = {
     \ 'source': lines,
     \ 'sink*': function('s:lines_sink'),
-    \ 'options': flags . ' --ansi --tabstop=1 --prompt "Lines> "',
+    \ 'options': opts . ' --prompt "Lines> "',
   \ }
-  return call(snr . 'fzf', ['lines', options, a:000])
+  return fzf#run(fzf#wrap('lines', options, a:0 ? a:1 : 0))
 endfunction
 
 " Override fzf :Jumps and :Changes
@@ -170,30 +169,30 @@ function! mark#next_change(...) abort
   return call('s:next_list', [1] + a:000)
 endfunction
 function! s:jump_sink(arg) abort  " first item is key binding
-  if len(a:arg) > 1 | return s:list_sink(0, a:arg[-1]) | endif
+  return empty(a:arg) ? 1 : s:list_sink(0, a:arg[0])
 endfunction
 function! s:change_sink(arg) abort  " first item is key binding
-  if len(a:arg) > 1 | return s:list_sink(1, a:arg[-1]) | endif
+  return empty(a:arg) ? 1 : s:list_sink(1, a:arg[0])
 endfunction
 function! mark#fzf_jumps(...)
-  let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
-  if empty(snr) | return | endif
+  let opts = '+m -x --ansi --cycle --scroll-off 999'
+  let opts .= ' --sync --header-lines 1 --tiebreak=index'
   let options = {
     \ 'source': s:list_source(0),
     \ 'sink*': function('s:jump_sink'),
-    \ 'options': '+m -x --ansi --cycle --scroll-off 999 --sync --header-lines 1 --tiebreak=index --prompt "Jumps> "',
+    \ 'options': opts . ' --prompt "Jumps> "',
   \ }
-  return call(snr . 'fzf', ['jumps', options, a:000])
+  return fzf#run(fzf#wrap('jumps', options, a:0 ? a:1 : 0))
 endfunction
 function! mark#fzf_changes(...) abort
-  let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
-  if empty(snr) | return | endif
+  let opts = '+m -x --ansi --cycle --scroll-off 999'
+  let opts .= ' --sync --header-lines=1 --tiebreak=index'
   let options = {
     \ 'source': s:list_source(1),
     \ 'sink*': function('s:change_sink'),
-    \ 'options': '+m -x --ansi --cycle --scroll-off 999 --sync --header-lines=1 --tiebreak=index --prompt "Changes> "',
+    \ 'options': opts . ' --prompt "Changes> "',
   \ }
-  return call(snr . 'fzf', ['changes', options, a:000])
+  return fzf#run(fzf#wrap('changes', options, a:0 ? a:1 : 0))
 endfunction
 
 " Push current location to top of jumplist
@@ -260,13 +259,15 @@ endfunction
 function! mark#fzf_marks(...) abort
   let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
-  let lines = split(execute('silent marks'), "\n")
+  let source = split(execute('silent marks'), "\n")
+  call extend(source[0:0], map(source[1:], {idx, val -> call(snr . 'format_mark', [v:val])}))
+  let opts = '+m -x --ansi --header-lines 1 --tiebreak=begin '
   let options = {
-    \ 'source': extend(lines[0:0], map(lines[1:], {idx, val -> call(snr . 'format_mark', [v:val])})),
-    \ 'options': '+m -x --ansi --tiebreak=index --header-lines 1 --tiebreak=begin --prompt "Marks> "',
+    \ 'source': source,
+    \ 'options': opts . ' --prompt "Marks> "',
     \ 'sink': function('stack#push_stack', ['mark', 'mark#goto_mark']),
   \ }
-  return call(snr . 'fzf', ['marks', options, a:000])
+  return fzf#run(fzf#wrap('marks', options, a:0 ? a:1 : 0))
 endfunction
 
 " Iterate over marks (see also tag#next_tag)

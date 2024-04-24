@@ -319,11 +319,12 @@ function! python#doc_list(...) abort
   return filter(pages, '!empty(v:val)')
 endfunction
 function! python#fzf_doc() abort
-  call fzf#run(fzf#wrap({
+  let options = {
     \ 'source': python#doc_list(),
     \ 'options': '--no-sort --prompt="doc> "',
     \ 'sink': function('stack#push_stack', ['doc', 'python#doc_page'])
-  \ }))
+  \ }
+  call fzf#run(fzf#wrap(options))
 endfunction
 
 " Insert pydocstring 'doq' docstrings and convert from single-line to multi-line

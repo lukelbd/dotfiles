@@ -47,11 +47,12 @@ function! shell#help_page(...) abort
   endif
 endfunction
 function! shell#fzf_help() abort
-  call fzf#run(fzf#wrap({
+  let options = {
     \ 'source': getcompletion('', 'shellcmd'),
     \ 'options': '--no-sort --prompt="--help> "',
     \ 'sink': function('stack#push_stack', ['help', 'shell#help_page'])
-  \ }))
+  \ }
+  call fzf#run(fzf#wrap(options))
 endfunction
 
 " Popup tab with man page and navigation tools
@@ -100,11 +101,12 @@ function! shell#man_page(...) abort
   endif
 endfunction
 function! shell#fzf_man() abort
-  call fzf#run(fzf#wrap({
+  let options = {
     \ 'source': getcompletion('', 'shellcmd'),
     \ 'options': '--no-sort --prompt="man> "',
     \ 'sink': function('stack#push_stack', ['man', 'shell#man_page'])
-  \ }))
+  \ }
+  call fzf#run(fzf#wrap(options))
 endfunction
 
 " Show results in panel

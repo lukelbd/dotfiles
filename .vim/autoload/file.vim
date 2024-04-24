@@ -76,20 +76,20 @@ function! file#fzf_history(arg, ...)
   endif
 endfunction
 function! file#fzf_recent(...) abort
-  let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
-  if empty(snr) | return | endif
-  let bang = a:0 ? a:1 : 0
-  let opts = fzf#vim#with_preview()
   let files = readfile(expand(g:MRU_file))
   if files[0] =~# '^#' | call remove(files, 0) | endif
+  let bang = a:0 ? a:1 : 0
+  let opts = fzf#vim#with_preview()
+  let opts = join(map(get(opts, 'options', []), 'fzf#shellescape(v:val)'), ' ')
+  let prompt = string('Recents> ')
   call map(files, {_, val -> RelativePath(val)})
   call map(files, {_, val -> val =~# '^icloud\>' ? '~/' . val : val})
   let options = {
     \ 'sink': function('file#drop_file'),
     \ 'source' : files,
-    \ 'options': '--no-sort --prompt="Global Hist> "',
+    \ 'options': opts . ' --no-sort --prompt=' . prompt,
   \ }
-  return call(snr . 'fzf', ['files', options, [opts, bang]])
+  return fzf#run(fzf#wrap('recents', options, bang))
 endfunction
 
 " Open input files
@@ -107,7 +107,7 @@ function! file#fzf_init(bang, global, level, cmd, ...) abort
   let paths = call('parse#get_paths', [2, a:global, 1 + a:level] + reverse(paths))
   let paths = reverse(paths)  " important paths at top instead of bottom
   let func = a:cmd ==# 'Files' ? 'file#fzf_files' : 'file#fzf_open'
-  let args = a:cmd ==# 'Files' ? [a:bang] + paths : [a:bang, a:cmd, paths]
+  let args = a:cmd ==# 'Files' ? [a:bang, paths] : [a:bang, a:cmd, paths]
   return call(func, args)
 endfunction
 function! file#input_path(prompt, default, ...) abort
@@ -130,7 +130,7 @@ endfunction
 function! file#fzf_files(bang, ...) abort
   " Parse input arguments
   let [bases, warns] = [[], []]
-  for base in a:0 ? copy(a:000) : [getcwd()]
+  for base in a:0 ? type(a:1) > 1 ? copy(a:1) : copy(a:000) : [getcwd()]
     let base = substitute(expand(base), '/$', '', '')
     if filereadable(resolve(base))
       let base = fnamemodify(base, ':h')
@@ -157,22 +157,20 @@ function! file#fzf_files(bang, ...) abort
     echom 'Warning: Ignoring invalid directory path(s): ' . msg
     echohl None
   endif
-  let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
-  if empty(snr) | return | endif
   let flags = '-type d \( -name .git -o -name .svn -o -name .hg \) -prune -o '
   let flags .= join(parse#get_ignores(1, 1, 2), ' ')  " skip .gitignore, skip folders
   let flags .= ' -type f -print | sed ''s@^./@@'''  " remove leading dot
   let source = 'find . ' . join(bases[1:], ' ') . ' ' . flags
   let opts = fzf#vim#with_preview()
-  let opts.dir = fnamemodify(bases[0], ':p')
-  let prompt = file#format_dir(bases[0], 1)
-  let prompt = string('Files> ' . prompt)
+  let opts = join(map(get(opts, 'options', []), 'fzf#shellescape(v:val)'), ' ')
+  let prompt = string('Files> ' . file#format_dir(bases[0], 1))
   let options = {
+    \ 'dir': fnamemodify(bases[0], ':p'),
     \ 'sink*': function('file#fzf_open', [a:bang, 'Drop', bases[0]]),
     \ 'source': source,
-    \ 'options': '--no-sort --prompt=' . prompt,
+    \ 'options': opts . ' --no-sort --prompt=' . prompt,
   \ }
-  return call(snr . 'fzf', ['files', options, [opts, 0]])
+  return fzf#run(fzf#wrap('files', options, 0))
 endfunction
 
 " Check if user selection is directory, descend until user selects a file.
@@ -197,7 +195,7 @@ function! file#fzf_open(bang, cmd, ...) abort
     let items = a:1
   else  " fzf invocation (ignore binding)
     let base = a:1
-    let items = a:2[1:]
+    let items = a:2
   endif
   if !exists(':' . get(split(a:cmd), 0, ''))
     redraw | echohl WarningMsg
@@ -229,19 +227,18 @@ function! file#fzf_open(bang, cmd, ...) abort
   let ipath = get(paths, 0, '')
   let recurse = isdirectory(ipath) || fnamemodify(ipath, ':t') ==# '..'
   if empty(paths) && a:0 == 1 || len(paths) == 1 && recurse
-    let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
-    if empty(snr) | return | endif
-    let base = get(paths, 0, '.')
+    let base = fnamemodify(get(paths, 0, '.'), ':p')
     let opts = fzf#vim#with_preview()
+    let opts = join(map(get(opts, 'options', []), 'fzf#shellescape(v:val)'), ' ')
     let prompt = string(a:cmd . '> ' . file#format_dir(base, 1))
     let options = {
+      \ 'dir': base,
       \ 'sink*': function('file#fzf_open', [a:bang, a:cmd, base]),
       \ 'source': file#glob_files(base) + [s:new_file],
-      \ 'options': '--no-sort --prompt=' . prompt,
+      \ 'options': opts . ' --no-sort --prompt=' . prompt,
     \ }
     let paths = []  " only continue in recursion
-    let options.dir = base
-    call call(snr . 'fzf', ['open', options, [opts, 0]])
+    call fzf#run(fzf#wrap('open', options, a:bang))
   endif
   if !empty(paths)
     let arg = join(map([a:cmd] + paths, 'string(v:val)'), ', ')
