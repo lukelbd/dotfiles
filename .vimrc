@@ -121,7 +121,7 @@ set ttymouse=sgr  " different cursor shapes for different modes
 set undodir=~/.vim_undo_hist  " ./setup enforces existence
 set undofile  " save undo history
 set undolevels=1000  " maximum undo level
-set undoreload=0  " disable reloading
+set undoreload=10000  " save whole buffer in undo history before deleting
 set updatetime=1500  " used for CursorHold autocmds and default is 4000ms
 set verbose=0  " increment for debugging, e.g. verbose=2 prints sourced files, extremely useful
 set viminfo='500,s50  " remember marks for 500 files (e.g. jumps), exclude registers >10kB of text
@@ -643,12 +643,16 @@ noremap <Right> <Cmd>call mark#next_change(v:count1)<CR>
 " input motion. Useful for debugging text objexts or when scope algorithm fails.
 for s:map in ['//', '/?', '?/', '??'] | silent! exe 'unmap g' . s:map | endfor
 command! -bang -nargs=* Lines call mark#fzf_lines(<q-args>, <bang>0)
-noremap <expr> g; edit#sel_lines_expr(0)
-noremap <expr> g: edit#sel_lines_expr(1)
-noremap g;; <Cmd>call tags#set_search('', 1)<CR><Cmd>call feedkeys(empty(@/) ? '' : '/' . @/, 'n')<CR>
-noremap g:: <Cmd>call tags#set_search('', 1)<CR><Cmd>call feedkeys(empty(@/) ? '' : '?' . @/, 'n')<CR>
 noremap g/ <Cmd>BLines<CR>
 noremap g? <Cmd>Lines<CR>
+nnoremap g;; <Cmd>call tags#set_search('', 1)<CR><Cmd>call feedkeys(empty(@/) ? '' : '/' . @/, 'n')<CR>
+nnoremap g:: <Cmd>call tags#set_search('', 1)<CR><Cmd>call feedkeys(empty(@/) ? '' : '?' . @/, 'n')<CR>
+nnoremap <expr> g; edit#sel_lines_expr(0)
+nnoremap <expr> g: edit#sel_lines_expr(1)
+vnoremap <expr> / edit#sel_lines_expr(0)
+vnoremap <expr> ? edit#sel_lines_expr(1)
+vnoremap <expr> g; edit#sel_lines_expr(0)
+vnoremap <expr> g: edit#sel_lines_expr(1)
 
 " Navigate across recent tag jumps
 " Note: Apply in vimrc to avoid overwriting. This works by overriding both fzf and
@@ -692,7 +696,8 @@ noremap G G
 " Adjust screen relative to cursor
 " Note: Use parentheses since g0/g$ are navigation and z0/z9 used for color schemes
 for s:key in ['0', '^', 'g0', 'g$'] | exe 'noremap ' . s:key . ' ' . s:key . 'ze' | endfor
-noremap <expr> _ (foldclosed('.') > 0 ? 'zvzz' : foldlevel('.') > 0 ? 'zc' : 'zz') . 'ze'
+nnoremap <expr> _ (foldclosed('.') > 0 ? 'zvzz' : foldlevel('.') > 0 ? 'zc' : 'zz') . 'ze'
+vnoremap <expr> _ fold#toggle_inner_expr(-1) . 'zzze'
 noremap g( ze
 noremap g) zs
 noremap z( zb
@@ -752,46 +757,52 @@ noremap zX <Cmd>call fold#update_folds(0, 2)<CR>
 noremap zv <Cmd>call fold#update_folds(0)<CR>zv
 noremap zV <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>
 
-" Toggle folds under cursor non-recursively after updating
-" Note: Here fold#toggle_range_expr() calls fold#update_folds() before toggling.
+" Toggle folds over selection or under matches after updating
+" Note: Here fold#toggle_inner_expr() calls fold#update_folds() before toggling.
 " Note: These will overwrite 'fastfold_fold_command_suffixes' generated fold-updating
 " maps. However now use even faster / more conservative fold#update_folds() method.
-noremap <expr> zz '<Cmd>call fold#update_folds(0)<CR>' . (foldclosed('.') > 0 ? 'zo' : 'zc')
-nnoremap zcc <Cmd>call fold#toggle_range(0, 1)<CR>
-nnoremap zoo <Cmd>call fold#toggle_range(0, 0)<CR>
-nnoremap <expr> zc fold#toggle_range_expr(0, 1)
-nnoremap <expr> zo fold#toggle_range_expr(0, 0)
-vnoremap <expr> <nowait> zc fold#toggle_range_expr(0, 1)
-vnoremap <expr> <nowait> zo fold#toggle_range_expr(0, 0)
+noremap / <Cmd>let b:open_search = 0<CR>/
+noremap ? <Cmd>let b:open_search = 0<CR>?
+nnoremap z/ <Cmd>call switch#opensearch()<CR>
+nnoremap z? <Cmd>call switch#opensearch(1)<CR>
+vnoremap z/ <Cmd>call switch#opensearch()<CR>
+vnoremap z? <Cmd>call switch#opensearch(1)<CR>
+nnoremap zcc <Cmd>call fold#toggle_inner(1)<CR>
+nnoremap zoo <Cmd>call fold#toggle_inner(0)<CR>
+nnoremap <expr> zc fold#toggle_inner_expr(1)
+nnoremap <expr> zo fold#toggle_inner_expr(0)
+vnoremap <expr> zc fold#toggle_inner_expr(1)
+vnoremap <expr> zo fold#toggle_inner_expr(0)
 
-" Toggle folds under cursor recursively (fold#update_folds() called internally)
+" Toggle nested or recursive folds after updating
 " Note: Here 'zi' will close or open all nested folds under cursor up to level
-" parent (use :echom fold#current_fold() for debugging). Previously toggled with
+" parent (use :echom fold#get_fold() for debugging). Previously toggled with
 " recursive-open then non-recursive close but annoying e.g. for huge classes.
 " Note: Here 'zC' will close fold only up to current level or for definitions
 " inside class (special case for python). For recursive motion mapping similar
-" to 'zc' and 'zo' could use e.g. noremap <expr> zC fold#toggle_range_expr(1, 1)
-noremap / <Cmd>let b:open_search = 0<CR>/
-noremap ? <Cmd>let b:open_search = 0<CR>?
-noremap zi <Cmd>call fold#toggle_nested()<CR>
-noremap zC <Cmd>call fold#toggle_current(1)<CR>
-noremap zO <Cmd>call fold#toggle_current(0)<CR>
+" to 'zc' and 'zo' could use e.g. noremap <expr> zC fold#toggle_inner_expr(1, 1)
+nnoremap zi <Cmd>call fold#toggle_children()<CR>
+nnoremap zz <Cmd>call fold#toggle_parent()<CR>
+nnoremap zC <Cmd>call fold#toggle_parent(1)<CR>
+nnoremap zO <Cmd>call fold#toggle_parent(0)<CR>
+vnoremap <expr> zi fold#toggle_children_expr()
+vnoremap <expr> zz fold#toggle_parent_expr(0)
+vnoremap <expr> zC fold#toggle_parent_expr(1, 1)
+vnoremap <expr> zO fold#toggle_parent_expr(1, 0)
 
-" Change fold level
-" Note: Here fold#update_level() without arguments calls fold#update_folds()
-" if the level was changed and prints the level change.
-noremap z[ <Cmd>call fold#update_level('m')<CR>
-noremap z] <Cmd>call fold#update_level('r')<CR>
-noremap z{ <Cmd>call fold#update_level('M')<CR>
-noremap z} <Cmd>call fold#update_level('R')<CR>
-
-" Jump to next or previous fold or inside fold
+" Change fold level and jump between or inside folds
 " Note: The bracket maps fail without silent! when inside first fold in file
 " Note: Recursive map required for [Z or ]Z or else way more complicated
+" Note: Here fold#update_level() without arguments calls fold#update_folds()
+" if the level was changed and prints the level change.
 call utils#repeat_map('', '[Z', 'FoldBackward', '<Cmd>keepjumps normal! zkza<CR>')
 call utils#repeat_map('', ']Z', 'FoldForward', '<Cmd>keepjumps normal! zjza<CR>')
 noremap [z <Cmd>keepjumps normal! zk<CR><Cmd>keepjumps normal! [z<CR>
 noremap ]z <Cmd>keepjumps normal! zj<CR><Cmd>keepjumps normal! [z<CR>
+noremap z[ <Cmd>call fold#update_level('m')<CR>
+noremap z] <Cmd>call fold#update_level('r')<CR>
+noremap z{ <Cmd>call fold#update_level('M')<CR>
+noremap z} <Cmd>call fold#update_level('R')<CR>
 noremap zk <Cmd>keepjumps normal! [z<CR>
 noremap zj <Cmd>keepjumps normal! ]z<CR>
 noremap gz <Cmd>Folds<CR>
@@ -1065,8 +1076,10 @@ nnoremap <expr> cx '"_' . edit#insert_mode('c') . 'l'
 nnoremap <expr> cX '"_' . edit#insert_mode('c') . 'h'
 nnoremap dx x
 nnoremap dX X
-noremap x "_x
-noremap X "_X
+nnoremap x "_x
+nnoremap X "_X
+vnoremap x "_x
+vnoremap X "_X
 
 " Spaces and tabs for particular filetypes.
 " Note: This enforces defaults without requiring 'set' during session refresh.
@@ -1082,11 +1095,8 @@ nnoremap <Leader><Tab> <Cmd>call switch#tabs()<CR>
 " Note: To avoid overwriting fugitive inline-diff maps also add these to common.vim
 nnoremap <expr> > '<Esc>' . edit#indent_lines_expr(0, v:count1)
 nnoremap <expr> < '<Esc>' . edit#indent_lines_expr(1, v:count1)
-
-" Insert empty lines around cursor
-" Note: See 'vim-unimpaired' for original. This is similar to vim-succinct 'e' object
-call utils#repeat_map('n', '[e', 'BlankUp', '<Cmd>put!=repeat(nr2char(10), v:count1) \| '']+1<CR>')
-call utils#repeat_map('n', ']e', 'BlankDown', '<Cmd>put=repeat(nr2char(10), v:count1) \| ''[-1<CR>')
+vnoremap <expr> > edit#indent_lines_expr(0, v:count1)
+vnoremap <expr> < edit#indent_lines_expr(1, v:count1)
 
 " Stop cursor from moving after undo or leaving insert mode
 " Note: Otherwise repeated i<Esc>i<Esc> will drift cursor to left. Also
@@ -1143,8 +1153,6 @@ nnoremap <Leader>c <Cmd>call switch#copy(1)<CR>
 nnoremap <Leader>C <Cmd>doautocmd BufWinEnter<CR>
 noremap g[ <Cmd>call switch#reveal(0)<CR>
 noremap g] <Cmd>call switch#reveal(1)<CR>
-noremap z/ <Cmd>call switch#opensearch()<CR>
-noremap z? <Cmd>call switch#opensearch(1)<CR>
 
 " ReST section comment headers
 " Note: <Plug> name cannot be subset of other name or results in delay
@@ -1169,13 +1177,18 @@ call utils#repeat_map('n', 'z.:', '', '<Cmd>call comment#header_line("-", 77, 1)
 call utils#repeat_map('n', "z.'", '', '<Cmd>call comment#header_inchar()<CR>')
 call utils#repeat_map('n', 'z."', '', '<Cmd>call comment#header_inline(5)<CR>')
 
-" Auto wrap the lines or items within motion
+" Auto wrap the lines and insert empty lines
+" Note: See 'vim-unimpaired' for original. This is similar to vim-succinct 'e' object
 " Note: Previously tried to make this operator map but not necessary, should
 " already work with 'g@<motion>' invocation of wrapping operator function.
 command! -range -nargs=? WrapLines <line1>,<line2>call edit#wrap_lines(<args>)
 command! -range -nargs=? WrapItems <line1>,<line2>call edit#wrap_items(<args>)
-noremap <expr> gq edit#wrap_lines_expr(v:count)
-noremap <expr> gQ edit#wrap_items_expr(v:count)
+nnoremap <expr> gq edit#wrap_lines_expr(v:count)
+nnoremap <expr> gQ edit#wrap_items_expr(v:count)
+vnoremap <expr> gq edit#wrap_lines_expr(v:count)
+vnoremap <expr> gQ edit#wrap_items_expr(v:count)
+call utils#repeat_map('n', '[e', 'BlankUp', '<Cmd>put!=repeat(nr2char(10), v:count1) \| '']+1<CR>')
+call utils#repeat_map('n', ']e', 'BlankDown', '<Cmd>put=repeat(nr2char(10), v:count1) \| ''[-1<CR>')
 
 " Show character and search for characters
 " Note: \x7F-\x9F are actually displayable but not part of ISO standard so not shown
@@ -2263,7 +2276,8 @@ if s:plug_active('vim-fugitive')
   noremap gp <Cmd>BCommits<CR>
   noremap gP <Cmd>Commits<CR>
   noremap zP <Cmd>call git#run_map(0, 0, '', 'blame')<CR>
-  noremap <expr> zp git#run_map_expr(2, 0, '', 'blame ')
+  nnoremap <expr> zp git#run_map_expr(2, 0, '', 'blame ')
+  vnoremap <expr> zp git#run_map_expr(2, 0, '', 'blame ')
   nnoremap zpp <Cmd>call git#run_map(2, 0, '', 'blame ')<CR>
   noremap <Leader>' <Cmd>call git#run_map(0, 0, '', '')<CR>
   noremap <Leader>" <Cmd>call git#run_map(0, 0, '', 'status')<CR>
@@ -2314,16 +2328,19 @@ if s:plug_active('vim-gitgutter')
   call utils#repeat_map('', ']G', 'HunkForward', '<Cmd>call git#hunk_next(v:count1, 1)<CR>')
   noremap [g <Cmd>call git#hunk_next(-v:count1, 0)<CR>
   noremap ]g <Cmd>call git#hunk_next(v:count1, 0)<CR>
-  noremap <Leader>g <Cmd>call git#hunk_show()<CR>
-  noremap <Leader>G <Cmd>call switch#gitgutter()<CR>
-  noremap <expr> gh git#hunk_stage_expr(1)
-  noremap <expr> gH git#hunk_stage_expr(0)
+  nnoremap <Leader>g <Cmd>call git#hunk_show()<CR>
+  nnoremap <Leader>G <Cmd>call switch#gitgutter()<CR>
+  nnoremap <expr> zh git#hunk_stats_expr()
+  nnoremap <expr> gh git#hunk_stage_expr(1)
+  nnoremap <expr> gH git#hunk_stage_expr(0)
+  vnoremap <expr> zh git#hunk_stats_expr()
+  vnoremap <expr> gh git#hunk_stage_expr(1)
+  vnoremap <expr> gH git#hunk_stage_expr(0)
+  nnoremap <nowait> zhh <Cmd>call git#hunk_stats()<CR>
   nnoremap <nowait> ghh <Cmd>call git#hunk_stage(1)<CR>
   nnoremap <nowait> gHH <Cmd>call git#hunk_stage(0)<CR>
-  noremap <expr> zh git#hunk_stats_expr()
-  noremap zhh <Cmd>Hunks<CR>
-  noremap zg <Cmd>GitGutter \| echom 'Updated buffer hunks'<CR>
-  noremap zG <Cmd>GitGutterAll \| echom 'Updated global hunks'<CR>
+  nnoremap zg <Cmd>GitGutter \| echom 'Updated buffer hunks'<CR>
+  nnoremap zG <Cmd>GitGutterAll \| echom 'Updated global hunks'<CR>
 endif
 
 " Calculation plugin settings
