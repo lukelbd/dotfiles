@@ -53,8 +53,8 @@ function! parse#find_root(...) abort
   let root = s:proj_root(head, globs, 1)  " lowest-level python distribution indicator
   if !empty(root) | return root | endif
   let projs = ['builds', 'local', 'share', 'bin']
-  let homes = ['com~apple~CloudDocs', 'icloud', 'software', 'research', '']
-  let defaults = ['Mackup', 'Mackup', '', 'dotfiles']
+  let homes = ['com~apple~CloudDocs', 'icloud', 'software', 'research', 'data', '']
+  let defaults = ['Mackup', 'Mackup', '', '', '', 'dotfiles']
   let root = s:dist_root(head, homes + projs, defaults)
   if !empty(root) | return root | endif
   return head
