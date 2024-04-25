@@ -117,12 +117,12 @@ function! python#fold_expr(lnum) abort
   return b:SimpylFold_cache[a:lnum]['foldexpr']
 endfunction
 function! python#fold_cache() abort
-  let b:fold_lines = {}
+  let b:fold_heads = {}
   let [lnum, cache] = [1, b:SimpylFold_cache]
   while lnum <= line('$')
     let level = s:get_level(lnum)
     let exprs = s:get_decorator(lnum)
-    if !empty(exprs) | let b:fold_lines[string(lnum)] = lnum + len(exprs) - 1 | endif
+    if !empty(exprs) | let b:fold_heads[string(lnum)] = lnum + len(exprs) - 1 | endif
     let exprs = !level && empty(exprs) ? s:get_docstring(lnum) : exprs
     let exprs = !level && empty(exprs) ? s:get_constant(lnum) : exprs
     if empty(exprs) | let lnum += 1 | continue | endif
@@ -132,7 +132,7 @@ function! python#fold_cache() abort
   endwhile
 endfunction
 function! python#fold_text(lnum, ...) abort
-  let lnum = get(get(b:, 'fold_lines', {}), string(a:lnum), a:lnum)
+  let lnum = get(get(b:, 'fold_heads', {}), string(a:lnum), a:lnum)
   let [line1, line2] = [lnum + 1, lnum + s:maxlines]
   let label = fold#get_label(lnum, 0)
   let width = get(g:, 'linelength', 88) - 10  " minimum width
