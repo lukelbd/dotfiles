@@ -58,16 +58,13 @@ endfunction
 " See: https://github.com/metakirby5/codi.vim/issues/90
 " Note: This sets up the calculator window not the display window
 function! calc#setup_codi(toggle) abort
-  if !a:toggle
-    exe 'augroup codi_' . bufnr()
-      au!
-    augroup END
-  else
-    let cmds = exists('##TextChanged') ? 'InsertLeave,TextChanged' : 'InsertLeave'
-    call feedkeys("\<Cmd>exe 'vertical resize ' . window#default_width(0)\<CR>", 'n')
-    exe 'augroup codi_' . bufnr()
-      au!
-      exe 'au ' . cmds . ' <buffer> call codi#update()'
-    augroup END
+  let name = 'codi_' . bufnr()
+  silent! exe 'autocmd! ' . name
+  if a:toggle
+    exe 'augroup ' . name
+    exe 'autocmd!'
+    exe 'au InsertLeave,TextChanged <buffer> call codi#update()'
+    exe 'augroup END'
+    call feedkeys("\<Cmd>call window#default_width(0)\<CR>", 'n')
   endif
 endfunction

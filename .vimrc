@@ -390,14 +390,11 @@ nnoremap <Tab>h <Cmd>silent! wincmd h<CR>
 nnoremap <Tab>l <Cmd>silent! wincmd l<CR>
 
 " Tab and window resizing
-nnoremap <Tab><CR> <Cmd>exe 'resize ' . window#default_height()<CR>
-  \<Cmd>exe 'vert resize ' . window#default_width()<CR>
-nnoremap <Tab>1 <Cmd>exe 'resize ' . window#default_height(1)<CR>
-  \<Cmd>exe 'vert resize ' . window#default_width(1)<CR>
-nnoremap <Tab>2 <Cmd>exe 'resize ' . window#default_height(0.5)<CR>
-  \<Cmd>exe 'vert resize ' . window#default_width(0.5)<CR>
-nnoremap <Tab>3 <Cmd>exe 'resize ' . window#default_height(0)<CR>
-  \<Cmd>exe 'vert resize ' . window#default_width(0)<CR>
+nnoremap <Tab><Space> <Cmd>call window#default_width() \| call window#default_height()<CR>
+nnoremap <Tab><Tab> <Cmd>call window#default_width() \| call window#default_height()<CR>
+nnoremap <Tab>1 <Cmd>call window#default_width(1) \| call window#default_height(1)<CR>
+nnoremap <Tab>2 <Cmd>call window#default_width(0.5) \| call window#default_height(0.5)<CR>
+nnoremap <Tab>3 <Cmd>call window#default_width(0) \| call window#default_height(0)<CR>
 nnoremap <Tab>9 <Cmd>call window#change_height(-3 * v:count1)<CR>
 nnoremap <Tab>0 <Cmd>call window#change_height(3 * v:count1)<CR>
 nnoremap <Tab>( <Cmd>call window#change_height(-6 * v:count1)<CR>
@@ -508,8 +505,8 @@ nnoremap <Leader><F5> <Cmd>Commands<CR>
 " Note: For some reason even though :help :mes claims count N shows the N most recent
 " message, for some reason using 1 shows empty line and 2 shows previous plus newline.
 for s:key in ['[[', ']]'] | silent! exe 'unmap! g' . s:key | endfor
-nnoremap <Leader>; <Cmd>let &cmdwinheight = window#default_height(0)<CR>q:
-nnoremap <Leader>/ <Cmd>let &cmdwinheight = window#default_height(0)<CR>q/
+nnoremap <Leader>; <Cmd>let &cmdwinheight = window#get_height(0)<CR>q:
+nnoremap <Leader>/ <Cmd>let &cmdwinheight = window#get_height(0)<CR>q/
 nnoremap <Leader>: <Cmd>History:<CR>
 nnoremap <Leader>? <Cmd>History/<CR>
 nnoremap <Leader>v <Cmd>call vim#show_help()<CR>
@@ -614,7 +611,7 @@ augroup END
 command! -nargs=0 ClearTabs call stack#clear_stack('tab') | call window#update_stack(0)
 command! -nargs=0 PrintTabs call stack#print_stack('tab')
 command! -nargs=? PopTabs call stack#pop_stack('tab', <f-args>)
-nnoremap <Tab><Space> <Cmd>call window#update_stack(0, -1, 2)<CR>
+nnoremap <Tab><CR> <Cmd>call window#update_stack(0, -1, 2)<CR>
 nnoremap <F1> <Cmd>call window#scroll_stack(-v:count1)<CR>
 nnoremap <F2> <Cmd>call window#scroll_stack(v:count1)<CR>
 
@@ -2456,7 +2453,7 @@ if s:plug_active('undotree')
     augroup END
   endfunction
   function! Undotree_CustomMap() abort  " autoload/undotree.vim s:undotree.BindKey()
-    exe 'vertical resize ' . window#default_width(0)
+    call window#default_width(0)
     nmap <buffer> U <Plug>UndotreeRedo
     noremap <buffer> <nowait> u <C-u>
     noremap <buffer> <nowait> d <C-d>

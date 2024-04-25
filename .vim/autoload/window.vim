@@ -89,13 +89,25 @@ endfunction
 " Return standard window width and height
 " Note: Numbers passed to :resize exclude tab and cmd lines but numbers passed to
 " :vertical resize include entire window (i.e. ignoring sign and number columns).
+function! window#get_width(...) abort
+  return call('s:get_size', [1] + a:000)
+endfunction
+function! window#get_height(...) abort
+  return call('s:get_size', [0] + a:000)
+endfunction
+function! window#get_size(...) abort
+  return [call('window#get_width', a:000), call('window#get_height', a:000)]
+endfunction
 function! window#default_width(...) abort
-  return call('window#default_size', [1] + a:000)
+  exe 'vertical resize ' . call('s:get_size', [1] + a:000)
 endfunction
 function! window#default_height(...) abort
-  return call('window#default_size', [0] + a:000)
+  exe 'resize ' . call('s:get_size', [0] + a:000)
 endfunction
-function! window#default_size(width, ...) abort
+function! window#default_size(...) abort
+  call call('window#default_width', a:000) | call call('window#default_height', a:000)
+endfunction
+function! s:get_size(width, ...) abort
   let tabheight = &showtabline > 1 || &showtabline == 1 && tabpagenr('$') > 1
   setlocal cmdheight=1  " hard override
   if a:width  " window width

@@ -47,22 +47,20 @@ let s:map_from = [
 
 " Helper setup functions for commands
 " See: https://github.com/sgeb/vim-diff-fold/
-" Works with normal, context, unified, rcs, ed, subversion and git diffs.
-" For rcs diffs folds only files (rcs has no hunks in the common sense)
-" Uses foldlevel=1 ==> file foldlevel=2 ==> hunk. Note context diffs need special
-" treatment, as hunks are defined via context (after '***************'), and checking
-" for '*** ' or ('--- ') only does not work, as file lines have the same marker.
+" Note: Supports normal, context, unified, rcs, ed, subversion and git diffs. For rcs
+" diffs folds only files (rcs has no hunks in the common sense). Uses foldlevel=1 ==>
+" file foldlevel=2 ==> hunk. Note context diffs need special treatment, as hunks are
+" defined via context (after '***'), and checking for '*** ' or ('--- ') only does
+" not work since the file lines have the same marker.
 function! git#setup_blame() abort
   let regex = '^\x\{8}\s\+\d\+\s\+(\zs<\S\+>\s\+'
-  let width = 'vertical resize ' . window#default_width(0)
   call matchadd('Conceal', regex, 0, -1, {'conceal': ''})
-  call feedkeys(window#count_panes('h') == 1 ? "\<Cmd>" . width . "\<CR>": '', 'n')
+  call feedkeys(window#count_panes('h') == 1 ? "\<Cmd>call window#default_width(0)\<CR>": '', 'n')
 endfunction
 function! git#setup_commit(...) abort
-  exe 'resize ' . window#default_height(1)
+  call window#default_height(1)
   call switch#autosave(1, 1)  " suppress message
-  setlocal colorcolumn=73
-  goto | startinsert  " first row column
+  setlocal colorcolumn=73 | goto | startinsert
 endfunction
 function! git#setup_panel() abort  " also used for general diff filetypes
   for val in s:map_remove | silent! exe 'unmap <buffer> ' . val | endfor
@@ -142,9 +140,9 @@ function! s:run_cmd(bnum, lnum, cmd, ...) abort
     if bufnr() == a:bnum
       exe 'vertical resize ' . width | exe 'resize ' . height
     elseif input =~# '^blame\( %\)\@!' || a:cmd =~# '\<\(vsplit\|vert\(ical\)\?\)\>'
-      exe 'vertical resize ' . window#default_width(resize)
+      call window#default_width(resize)
     else  " bottom panel
-      exe 'resize ' . window#default_height(resize)
+      call window#default_height(resize)
     endif
   endif
   return newbuf && a:cmd !~# '^echoerr'  " whether echo required
