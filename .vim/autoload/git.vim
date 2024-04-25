@@ -58,9 +58,9 @@ function! git#setup_blame() abort
   call feedkeys(window#count_panes('h') == 1 ? "\<Cmd>call window#default_width(0)\<CR>": '', 'n')
 endfunction
 function! git#setup_commit(...) abort
-  call window#default_height(1)
-  call switch#autosave(1, 1)  " suppress message
-  setlocal colorcolumn=73 | goto | startinsert
+  call switch#autosave(1, 1)
+  call window#default_height(1) | setlocal colorcolumn=73
+  goto | call feedkeys("\<Cmd>startinsert\<CR>", 'n')
 endfunction
 function! git#setup_panel() abort  " also used for general diff filetypes
   for val in s:map_remove | silent! exe 'unmap <buffer> ' . val | endfor
