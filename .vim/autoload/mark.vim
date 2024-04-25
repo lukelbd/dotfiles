@@ -54,7 +54,7 @@ function! s:feed_list(changes, iloc, ...) abort
   let init = tnr == tabpagenr() && wnr == winnr() ? '' : '1000' . key2
   let ikey = a:iloc > 0 ? key2 : key1  " motion key
   let ikeys = a:iloc == 0 ? '' : abs(a:iloc) . ikey
-  call feedkeys(init . ikeys, 'n')
+  call feedkeys(init . ikeys . 'zvzzze', 'n')
 endfunction
 function! s:next_list(changes, count) abort  " navigate to nth location in list
   let [opts, idx] = s:get_list(a:changes)
@@ -106,7 +106,7 @@ function! s:list_sink(changes, line) abort
   let parts = matchlist(a:line, regex, '', '')
   let g:length = len(parts)
   if empty(parts)
-    echohl ErrorMsg
+    redraw | echohl ErrorMsg
     echom "Error: Invalid selection '" . a:line . "'"
     echohl None | return
   endif
@@ -141,7 +141,8 @@ endfunction
 function! s:lines_sink(arg) abort
   if empty(a:arg) | return | endif
   let parts = split(a:arg[0], "\t", 1)
-  silent call file#drop_file(str2nr(parts[0])) | exe parts[2]
+  silent call file#drop_file(str2nr(parts[0]))
+  exe parts[2] | exe 'normal! zvzzze'
 endfunction
 function! mark#fzf_lines(query, ...) abort
   let [show, lines] = fzf#vim#_lines(1)
@@ -252,7 +253,7 @@ function! mark#goto_mark(...) abort
   else  " note this does not affect jumplist
     silent call file#drop_file(mrks[0].file)
     call setpos('.', mrks[0].pos)
-    if &l:foldopen =~# 'mark' | exe 'normal! zv' | endif
+    exe 'normal! ' . (&l:foldopen =~# 'mark' ? 'zvzzze' : 'zzze')
   endif
   let g:mark_name = mrk  " mark stack navigation
 endfunction
