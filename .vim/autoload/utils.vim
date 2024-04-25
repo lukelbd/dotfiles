@@ -209,8 +209,7 @@ function! utils#operator_func(type, ...) range abort
   endif
   let [line1, line2] = sort([line1, line2], 'n')
   exe line1 . ',' . line2 . 'call ' . s:operator_func
-  call winrestview(s:operator_view)
-  return ''
+  call winrestview(s:operator_view) | return ''
 endfunction
 
 " Generate repeatable mappings for arbitrary modes

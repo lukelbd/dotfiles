@@ -254,6 +254,14 @@ function! s:toggle_state(line1, line2, ...) abort range
     if foldclosed(lnum) > get(a:000, 0, 0) | return 1 | endif
   endfor | return 0
 endfunction
+function! s:toggle_echo(toggle, count) abort
+  let head = a:toggle > 1 ? 'Toggled' : a:toggle ? 'Closed' : 'Opened'
+  if a:count > 0  " show fold count
+    redraw | echom head . ' ' . a:count . ' fold' . (a:count > 1 ? 's' : '') . '.'
+  else  " consistent with native commands
+    call feedkeys("\<Cmd>echoerr 'E490: No folds found'\<CR>", 'n')
+  endif
+endfunction
 function! s:toggle_children(line1, line2, level, ...) abort
   let parents = []  " closed parent folds
   let nested = []  " fold levels and lines
@@ -267,8 +275,9 @@ function! s:toggle_children(line1, line2, level, ...) abort
       if index(parents, item) == -1 | call add(parents, item) | endif
     endif
   endfor
+  let toggle = a:0 && a:1 >= 0 ? a:1 : !s:toggle_state(a:line1, a:line2, a:line1)
   for [_, lnum] in sort(parents) | exe lnum . 'foldopen' | endfor  " temporarily open
-  if a:0 && a:1 >= 0 ? a:1 : !s:toggle_state(a:line1, a:line2, a:line1)
+  if toggle
     for [_, lnum] in reverse(sort(nested))  " effective recursion
       exe foldclosed(lnum) <= 0 && foldlevel(lnum) > a:level ? lnum . 'foldclose' : ''
     endfor
@@ -278,35 +287,44 @@ function! s:toggle_children(line1, line2, level, ...) abort
     endfor
   endif
   for [_, lnum] in reverse(sort(parents)) | exe lnum . 'foldclose' | endfor  " restore
-  return nested
+  return [toggle, nested]
 endfunction
 
 " Open or close current parent fold or its children
 " Note: If called on already-toggled 'current' folds the explicit 'foldclose/foldopen'
 " toggles the parent. So e.g. 'zCzC' first closes python methods then the class.
 function! fold#toggle_children(...) abort range
+  let [lmin, lmax] = sort([a:firstline, a:lastline], 'n')
   call fold#update_folds(0)
+  let counts = [0, 0]
   for ignore in [0, 1]  " whether to ignore filetype exceptions
-    for [line1, line2, level] in fold#get_folds(ignore)
+    if max(counts) > 0 | continue | endif
+    for [line1, line2, level] in fold#get_folds(lmin, lmax, ignore)
       if line2 <= line1 | continue | endif
       let args = [line1, line2, level] + copy(a:000)
-      let folds = call('s:toggle_children', args)
-      if len(folds) > 0 | return '' | endif
+      let [toggle, folds] = call('s:toggle_children', args)
+      let counts[toggle] += len(folds)  " if zero then continue
     endfor
   endfor
-  call feedkeys("\<Cmd>echoerr 'E490: No folds found'\<CR>", 'n') | return ''
+  let toggle = counts[0] && counts[1] ? 2 : counts[1] ? 1 : 0
+  call s:toggle_echo(toggle, counts[0] + counts[1]) | return ''
 endfunction
 function! fold#toggle_parent(...) abort range
+  let [lmin, lmax] = sort([a:firstline, a:lastline], 'n')
   call fold#update_folds(0)
+  let counts = [0, 0]
   for ignore in [0, 1]
-    for [line1, line2, level] in fold#get_folds(ignore)
+    if max(counts) > 0 | continue | endif
+    for [line1, line2, level] in fold#get_folds(lmin, lmax, ignore)
       if line2 <= line1 | continue | endif
       let toggle = a:0 && a:1 >= 0 ? a:1 : 1 - s:toggle_state(line1, line1)
-      call call('s:toggle_children', [line1, line2, level, toggle])
-      exe line1 . (toggle ? 'foldclose' : 'foldopen') | return ''
+      let [_, folds] = s:toggle_children(line1, line2, level, toggle)
+      exe line1 . (toggle ? 'foldclose' : 'foldopen')
+      let counts[toggle] += 1 + len(folds)
     endfor
   endfor
-  call feedkeys("\<Cmd>echoerr 'E490: No fold found'\<CR>", 'n') | return ''
+  let toggle = counts[0] && counts[1] ? 2 : counts[1] ? 1 : 0
+  call s:toggle_echo(toggle, counts[0] + counts[1]) | return ''
 endfunction
 " For <expr> map accepting motion
 function! fold#toggle_children_expr(...) abort
@@ -340,6 +358,7 @@ function! fold#toggle_inner(...) range abort
     let line2 = min([line2, lmax])
     exe line1 . ',' . line2 . (toggle ? 'foldclose' : 'foldopen')
   endfor
+  call s:toggle_echo(toggle, len(folds)) | return ''
   if empty(folds)
     call feedkeys("\<Cmd>echoerr 'E490: No folds found'\<CR>", 'n')
   endif | return ''

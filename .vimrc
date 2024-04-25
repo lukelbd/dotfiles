@@ -800,9 +800,9 @@ nnoremap zO <Cmd>call fold#toggle_parent(0)<CR>
 vnoremap za zn
 vnoremap zA zN<Cmd>call fold#update_folds(0)<CR>
 vnoremap <expr> zi fold#toggle_children_expr()
-vnoremap <expr> zz fold#toggle_parent_expr(0)
-vnoremap <expr> zC fold#toggle_parent_expr(1, 1)
-vnoremap <expr> zO fold#toggle_parent_expr(1, 0)
+vnoremap <expr> zz fold#toggle_parent_expr()
+vnoremap <expr> zC fold#toggle_parent_expr(1)
+vnoremap <expr> zO fold#toggle_parent_expr(0)
 
 " Change fold level and jump between or inside folds
 " Note: The bracket maps fail without silent! when inside first fold in file
