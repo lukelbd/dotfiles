@@ -2330,7 +2330,7 @@ endif
 " by spell maps ]s, ]S (navigate to spell error, or navigate and fix error).
 if s:plug_active('vim-gitgutter')
   command! -nargs=? GitGutterToggle call switch#gitgutter(<args>)
-  command! -bang -range Hunks call git#hunk_stats(<range> ? <line1> : 0, <range> ? <line2> : 0, <bang>0, 1)
+  command! -bang -range Hunks call git#hunk_stats(<range> ? <line1> : 0, <range> ? <line2> : 0, <bang>0)
   exe 'silent! unmap zgg'
   let g:gitgutter_async = 1  " ensure enabled
   let g:gitgutter_map_keys = 0  " disable all maps yo
@@ -2350,7 +2350,7 @@ if s:plug_active('vim-gitgutter')
   vnoremap <expr> zh git#hunk_stats_expr()
   vnoremap <expr> gh git#hunk_stage_expr(1)
   vnoremap <expr> gH git#hunk_stage_expr(0)
-  nnoremap <nowait> zhh <Cmd>call git#hunk_stats()<CR>
+  nnoremap <nowait> zhh <Cmd>call git#hunk_stats(0, 0)<CR>
   nnoremap <nowait> ghh <Cmd>call git#hunk_stage(1)<CR>
   nnoremap <nowait> gHH <Cmd>call git#hunk_stage(0)<CR>
   nnoremap zg <Cmd>GitGutter \| echom 'Updated buffer hunks'<CR>

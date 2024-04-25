@@ -162,7 +162,7 @@ function! fold#fold_text(...) abort
   let lines = string(line2 - line1 + 1)  " number of lines
   let leftidx = charidx(getline(winview.lnum), winview.leftcol)
   let maxlen = get(g:, 'linelength', 88) - 1  " default maximum
-  let hunk = git#hunk_stats(line1, line2, 1)  " abbreviate with '1'
+  let hunk = git#hunk_stats(line1, line2, 1, 1)  " abbreviate with '1'
   let dots = repeat('·', len(string(line('$'))) - len(lines))
   let stats = hunk . level . dots . lines  " default statistics
   if &l:diff  " fill with maximum width

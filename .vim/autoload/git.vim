@@ -281,13 +281,13 @@ endfunction
 " lists i.e. starting line and counts before and after changes. Adapated s:isadded()
 " s:isremoved() etc. methods from autoload/gitgutter/diff.vim for partitioning into
 " simple added/changed/removed groups (or just 'changed') as shown below.
-function! git#hunk_stats(lmin, lmax, ...) range abort
+function! git#hunk_stats(...) range abort
   let [cnts, delta] = [[0, 0, 0], '']
-  let verbose = a:0 > 1 ? a:2 : 0
-  let single = a:0 > 0 ? a:1 : 0
-  let line1 = a:lmin < 0 ? a:firstline : a:lmin ? a:lmin : 1
-  let line2 = a:lmax < 0 ? a:lastline : a:lmax ? a:lmax : line('$')
-  let idxs = single ? [0, 0, 0] : [0, 1, 2]  " single delta
+  let line1 = a:0 > 0 ? a:1 > 0 ? a:1 : 1 : a:firstline
+  let line2 = a:0 > 1 ? a:2 > 0 ? a:2 : line('$') : a:lastline
+  let single = a:0 > 2 ? a:3 : 0  " single delta
+  let suppress = a:0 > 3 ? a:4 : 0  " suppress message
+  let idxs = single ? [0, 0, 0] : [0, 1, 2]
   let signs = single ? ['~'] : ['+', '~', '-']
   let hunks = &l:diff ? [] : gitgutter#hunk#hunks(bufnr())
   for [hunk0, count0, hunk1, count1] in hunks
@@ -305,16 +305,16 @@ function! git#hunk_stats(lmin, lmax, ...) range abort
     if !cnts[idx] | continue | endif
     let delta .= signs[idx] . cnts[idx]
   endfor
-  if verbose
-    let range = a:lmin || a:lmax ? ' (lines ' . line1 . ' to ' . line2 . ')' : ''
-    echom 'Hunks: ' . delta . range
+  if !suppress
+    let range = ' (lines ' . line1 . ' to ' . line2 . ')'
+    let range = line1 > 1 || line2 < line('$') ? range : ''
+    echom 'Hunks: ' . string(delta) . range
   endif
   return delta
 endfunction
 " For <expr> map accepting motion
-function! git#hunk_stats_expr(...) abort
-  let args = [-1, -1, a:0 ? a:1 : 0, 1]
-  return utils#motion_func('git#hunk_stats', args, 1)
+function! git#hunk_stats_expr() abort
+  return utils#motion_func('git#hunk_stats', [], 1)
 endfunction
 
 " Git gutter staging and unstaging over input lines
