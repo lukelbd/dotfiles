@@ -50,9 +50,9 @@ function! edit#conjoin_lines(before, spaces, ...) abort
   let name = mode() =~? '^n' ? 'Normal' : 'Visual'
   let conjoin = 'call conjoin#join' . name . '(' . string(key) . ')'
   let cursor = "call cursor('.', " . col('.') . ')'
-  let range = mode() =~# 'v\|V\|' ? "\<Esc>\<Cmd>'<,'>" : "\<Cmd>"
+  let range = mode() =~# 'v\|V\|' ? ':' : "\<Cmd>"
   call feedkeys(head . range . conjoin . "\<CR>", 'n')
-  call feedkeys("\<Cmd>" . cursor . "\<CR>", 'n')
+  " call feedkeys("\<Cmd>" . cursor . "\<CR>", 'n')
 endfunction
 " Indent input lines
 function! edit#indent_lines(dedent, count) range abort

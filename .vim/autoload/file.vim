@@ -141,14 +141,7 @@ function! file#fzf_files(bang, ...) abort
     if !empty(bases)
       let base = RelativePath(base, bases[0])
     endif
-    if base =~# '^icloud'
-      if empty(bases)  " icloud file
-        let base = '~/' . base
-      else  " repair e.g. 'icloud/Mackup/shell.sh'
-        let base = RelativePath(expand('~/' . base), fnamemodify(bases[0], ':p'))
-      endif
-    endif
-    call add(bases, base)
+    call add(bases, base . '/')  " resolve symlinks
   endfor
   " Generate and select files
   if !empty(warns)
@@ -159,7 +152,7 @@ function! file#fzf_files(bang, ...) abort
   endif
   let flags = '-type d \( -name .git -o -name .svn -o -name .hg \) -prune -o '
   let flags .= join(parse#get_ignores(1, 1, 2), ' ')  " skip .gitignore, skip folders
-  let flags .= ' -type f -print | sed ''s@^./@@'''  " remove leading dot
+  let flags .= ' -type f -print | sed "s@^./@@;s@^$HOME@~@"'  " remove leading dot
   let source = 'find . ' . join(bases[1:], ' ') . ' ' . flags
   let opts = fzf#vim#with_preview()
   let opts = join(map(get(opts, 'options', []), 'fzf#shellescape(v:val)'), ' ')
@@ -205,7 +198,8 @@ function! file#fzf_open(bang, cmd, ...) abort
   " Process paths input manually or from fzf
   let base = fnamemodify(base, ':p')  " enforce trailing slash
   let paths = []
-  for item in items
+  for item in items  " expand tilde
+    let item = expand(item)
     if item ==# s:new_file  " should be recursed at least one level
       let args = ['.']  " WARNING: fzf sets 'base' to current working directory
       let file = expand('<cfile>')

@@ -1007,9 +1007,9 @@ augroup undo_setup
 augroup END
 inoremap <expr> <F7> '<Cmd>undo<CR><Esc>' . edit#insert_mode()
 inoremap <expr> <F8> edit#insert_undo()
-nmap . <Plug>(RepeatDot)
-nmap u <Plug>(RepeatUndo)
-nmap U <Plug>(RepeatRedo)
+nmap . zv<Plug>(RepeatDot)
+nmap u <Plug>(RepeatUndo)zx
+nmap U <Plug>(RepeatRedo)zx
 
 " Operator register and display utilities
 " Note: Peekaboo uses <C-\><C-o> for insert-mode peekaboo which still moves cursor
@@ -1165,8 +1165,10 @@ cnoremap <expr> <C-v> switch#caps()
 inoremap <expr> <C-v> switch#caps()
 nnoremap <Leader>c <Cmd>call switch#copy(1)<CR>
 nnoremap <Leader>C <Cmd>doautocmd BufWinEnter<CR>
-noremap g[ <Cmd>call switch#reveal(0)<CR>
-noremap g] <Cmd>call switch#reveal(1)<CR>
+nnoremap g[ <Cmd>call switch#reveal(0)<CR>
+nnoremap g] <Cmd>call switch#reveal(1)<CR>
+vnoremap g[ <Cmd>call switch#reveal(0)<CR>
+vnoremap g] <Cmd>call switch#reveal(1)<CR>
 
 " ReST section comment headers
 " Note: <Plug> name cannot be subset of other name or results in delay
@@ -1236,7 +1238,7 @@ for s:spellfile in glob('~/.vim/spell/*.add', 1, 1)
   endif
 endfor
 
-" Toggle spell checking
+" Toggle and navigate spell checking
 " Note: This enforces defaults without requiring 'set' during session refresh.
 augroup spell_setup
   au!
@@ -1252,10 +1254,14 @@ call utils#repeat_map('', '[S', 'SpellBackward', '<Cmd>call edit#spell_next(-v:c
 call utils#repeat_map('', ']S', 'SpellForward', '<Cmd>call edit#spell_next(v:count1)<CR>')
 noremap [s <Cmd>keepjumps normal! [s<CR>
 noremap ]s <Cmd>keepjumps normal! ]s<CR>
-noremap gs <Cmd>call edit#spell_check()<CR>
-noremap gS <Cmd>call edit#spell_check(v:count)<CR>
-noremap zs zg
-noremap zS zug
+nnoremap gs <Cmd>call edit#spell_check()<CR>
+nnoremap gS <Cmd>call edit#spell_check(v:count)<CR>
+vnoremap gs <Cmd>call edit#spell_check()<CR>
+vnoremap gS <Cmd>call edit#spell_check(v:count)<CR>
+nnoremap zs zg
+nnoremap zS zug
+vnoremap zs zg
+vnoremap zS zug
 
 
 "-----------------------------------------------------------------------------"
@@ -1674,8 +1680,10 @@ endfor
 let g:toggle_map = '\|'  " adjust toggle mapping (note this is repeatable)
 let g:scrollwrapped_nomap = 1  " instead have advanced iter#scroll_infer maps
 let g:scrollwrapped_wrap_filetypes = s:info_filetypes + ['tex', 'text']
-exe 'noremap + <C-a>' | exe 'noremap - <C-x>'
-noremap <Leader>w <Cmd>WrapToggle<CR>
+exe 'nnoremap + <C-a>' | exe 'nnoremap - <C-x>'
+exe 'vnoremap + <C-a>' | exe 'vnoremap - <C-x>'
+nnoremap <Leader>w <Cmd>WrapToggle<CR>
+vnoremap <Leader>w <Cmd>WrapToggle<CR>
 
 " End plugin manager. Also declares filetype plugin, syntax, and indent on
 " Note every BufRead autocmd inside an ftdetect/filename.vim file is automatically
@@ -1839,7 +1847,8 @@ if s:plug_active('taglist')
   let g:Tlist_File_Fold_Auto_Close = 1
   let g:Tlist_Use_Right_Window = 0
   let g:Tlist_WinWidth = 40
-  noremap z\ <Cmd>TlistToggle<CR>
+  nnoremap z\ <Cmd>TlistToggle<CR>
+  vnoremap z\ <Cmd>TlistToggle<CR>
 endif
 if s:plug_active('vim-tags')
   exe 'silent! unmap gyy' | exe 'silent! unmap zyy'
@@ -1983,25 +1992,29 @@ if s:plug_active('vim-lsp')
   command! -nargs=? Doc call stack#push_stack('doc', 'python#doc_page', <f-args>)
   noremap [r <Cmd>LspPreviousReference<CR>
   noremap ]r <Cmd>LspNextReference<CR>
-  noremap gr <Cmd>LspReferences<CR>
-  noremap gR <Cmd>LspRename<CR>
-  noremap zr <Cmd>LspDocumentSymbol<CR>
-  noremap zR <Cmd>LspDocumentSymbolSearch<CR>
-  noremap gd <Cmd>LspHover --ui=float<CR>
-  noremap gD <Cmd>LspSignatureHelp<CR>
-  noremap zd <Cmd>LspPeekDefinition<CR>
-  noremap zD <Cmd>LspPeekDeclaration<CR>
-  noremap g<CR> <Cmd>call lsp#ui#vim#definition(0, "call feedkeys('zv', 'n') \| tab")<CR>
-  noremap z<CR> <Cmd>silent! normal! gdzv<CR><Cmd>noh<CR>
-  noremap <Leader>a <Cmd>LspInstallServer<CR>
-  noremap <Leader>A <Cmd>LspUninstallServer<CR>
-  noremap <Leader>f <Cmd>call edit#auto_format(0)<CR>
-  noremap <Leader>F <Cmd>call edit#auto_format(1)<CR>
-  noremap <Leader>d <Cmd>call stack#push_stack('doc', 'python#doc_page')<CR>
-  noremap <Leader>D <Cmd>call python#fzf_doc()<cr>
-  noremap <Leader>& <Cmd>call switch#lsp()<CR>
-  noremap <Leader>% <Cmd>call window#show_health()<CR>
-  noremap <Leader>^ <Cmd>call window#show_manager()<CR>
+  nnoremap gr <Cmd>LspReferences<CR>
+  nnoremap gR <Cmd>LspRename<CR>
+  nnoremap zr <Cmd>LspDocumentSymbol<CR>
+  nnoremap zR <Cmd>LspDocumentSymbolSearch<CR>
+  nnoremap gd <Cmd>LspHover --ui=float<CR>
+  nnoremap gD <Cmd>LspSignatureHelp<CR>
+  nnoremap zd <Cmd>LspPeekDefinition<CR>
+  nnoremap zD <Cmd>LspPeekDeclaration<CR>
+  vnoremap gd <Cmd>LspHover --ui=float<CR>
+  vnoremap gD <Cmd>LspSignatureHelp<CR>
+  vnoremap zd <Cmd>LspPeekDefinition<CR>
+  vnoremap zD <Cmd>LspPeekDeclaration<CR>
+  nnoremap g<CR> <Cmd>call lsp#ui#vim#definition(0, "call feedkeys('zv', 'n') \| tab")<CR>
+  nnoremap z<CR> <Cmd>silent! normal! gdzv<CR><Cmd>noh<CR>
+  nnoremap <Leader>a <Cmd>LspInstallServer<CR>
+  nnoremap <Leader>A <Cmd>LspUninstallServer<CR>
+  nnoremap <Leader>f <Cmd>call edit#auto_format(0)<CR>
+  nnoremap <Leader>F <Cmd>call edit#auto_format(1)<CR>
+  nnoremap <Leader>d <Cmd>call stack#push_stack('doc', 'python#doc_page')<CR>
+  nnoremap <Leader>D <Cmd>call python#fzf_doc()<cr>
+  nnoremap <Leader>& <Cmd>call switch#lsp()<CR>
+  nnoremap <Leader>% <Cmd>call window#show_health()<CR>
+  nnoremap <Leader>^ <Cmd>call window#show_manager()<CR>
   " Lsp and server settings
   " See: https://github.com/python-lsp/python-lsp-server/issues/477
   " Note: See 'jupyterlab-lsp/plugin.jupyterlab-settings' for examples. Results are
@@ -2061,7 +2074,7 @@ if s:plug_active('ddc.vim')
     au InsertLeave * if &l:iskeyword ==# 'vim' | setlocal iskeyword-=: | endif
   augroup END
   command! -nargs=? DdcToggle call switch#ddc(<args>)
-  noremap <Leader>* <Cmd>call switch#ddc()<CR>
+  nnoremap <Leader>* <Cmd>call switch#ddc()<CR>
   let g:popup_preview_config = {
     \ 'border': v:true,
     \ 'maxWidth': g:linelength,
@@ -2141,10 +2154,10 @@ if s:plug_active('ale')
     au BufRead ipython_*config.py,jupyter_*config.py let b:ale_enabled = 0
   augroup END
   command! -nargs=? AleToggle call switch#ale(<args>)
-  noremap <Leader>x <Cmd>cclose<CR><Cmd>exe 'lopen ' . float2nr(0.15 * &lines)<CR>
-  noremap <Leader>X <Cmd>lclose<CR><Cmd>ALEPopulateQuickfix<CR><Cmd>exe 'copen ' . float2nr(0.15 * &lines)<CR>
-  noremap <Leader>@ <Cmd>call switch#ale()<CR>
-  noremap <Leader># <Cmd>ALEInfo<CR>
+  nnoremap <Leader>x <Cmd>cclose<CR><Cmd>exe 'lopen ' . float2nr(0.15 * &lines)<CR>
+  nnoremap <Leader>X <Cmd>lclose<CR><Cmd>ALEPopulateQuickfix<CR><Cmd>exe 'copen ' . float2nr(0.15 * &lines)<CR>
+  nnoremap <Leader>@ <Cmd>call switch#ale()<CR>
+  nnoremap <Leader># <Cmd>ALEInfo<CR>
   let g:ale_linters = {
     \ 'config': [],
     \ 'fortran': ['gfortran'],
@@ -2230,15 +2243,15 @@ endif
 if s:plug_active('vim-test')
   let test#strategy = 'iterm'
   let g:test#python#pytest#options = '--mpl --verbose'
-  noremap <Leader>\ <Cmd>call utils#catch_errors('TestVisit')<CR>
-  noremap <Leader>, <Cmd>call utils#catch_errors('TestLast')<CR>
-  noremap <Leader>. <Cmd>call utils#catch_errors('TestNearest')<CR>
-  noremap <Leader>< <Cmd>call utils#catch_errors('TestLast --mpl-generate')<CR>
-  noremap <Leader>> <Cmd>call utils#catch_errors('TestNearest --mpl-generate')<CR>
-  noremap <Leader>[ <Cmd>call utils#catch_errors('TestFile')<CR>
-  noremap <Leader>] <Cmd>call utils#catch_errors('TestSuite')<CR>
-  noremap <Leader>{ <Cmd>call utils#catch_errors('TestFile --mpl-generate')<CR>
-  noremap <Leader>} <Cmd>call utils#catch_errors('TestSuite --mpl-generate')<CR>
+  nnoremap <Leader>\ <Cmd>call utils#catch_errors('TestVisit')<CR>
+  nnoremap <Leader>, <Cmd>call utils#catch_errors('TestLast')<CR>
+  nnoremap <Leader>. <Cmd>call utils#catch_errors('TestNearest')<CR>
+  nnoremap <Leader>< <Cmd>call utils#catch_errors('TestLast --mpl-generate')<CR>
+  nnoremap <Leader>> <Cmd>call utils#catch_errors('TestNearest --mpl-generate')<CR>
+  nnoremap <Leader>[ <Cmd>call utils#catch_errors('TestFile')<CR>
+  nnoremap <Leader>] <Cmd>call utils#catch_errors('TestSuite')<CR>
+  nnoremap <Leader>{ <Cmd>call utils#catch_errors('TestFile --mpl-generate')<CR>
+  nnoremap <Leader>} <Cmd>call utils#catch_errors('TestSuite --mpl-generate')<CR>
 endif
 
 " Conflict highlight settings (warning: change below to 'BufEnter?')
@@ -2261,10 +2274,10 @@ if s:plug_active('conflict-marker.vim')
   call utils#repeat_map('', ']F', 'ConflictForward', '<Cmd>exe v:count1 . "Cnext" \| ConflictMarkerThemselves<CR>')
   noremap [f <Cmd>exe v:count1 . 'Cprev'<CR>
   noremap ]f <Cmd>exe v:count1 . 'Cnext'<CR>
-  noremap gf <Cmd>ConflictMarkerOurselves<CR>
-  noremap gF <Cmd>ConflictMarkerThemselves<CR>
-  noremap zf <Cmd>ConflictMarkerBoth<CR>
-  noremap zF <Cmd>ConflictMarkerNone<CR>
+  nnoremap gf <Cmd>ConflictMarkerOurselves<CR>
+  nnoremap gF <Cmd>ConflictMarkerThemselves<CR>
+  nnoremap zf <Cmd>ConflictMarkerBoth<CR>
+  nnoremap zF <Cmd>ConflictMarkerNone<CR>
   let g:conflict_marker_enable_detect = 1
   let g:conflict_marker_enable_highlight = 1
   let g:conflict_marker_enable_matchit = 1

@@ -108,8 +108,8 @@ function! window#default_size(...) abort
   call call('window#default_width', a:000) | call call('window#default_height', a:000)
 endfunction
 function! s:get_size(width, ...) abort
-  let tabheight = &showtabline > 1 || &showtabline == 1 && tabpagenr('$') > 1
   setlocal cmdheight=1  " hard override
+  let tabheight = &showtabline > 1 || &showtabline == 1 && tabpagenr('$') > 1
   if a:width  " window width
     let direcs = ['l', 'h']
     let size = &columns
