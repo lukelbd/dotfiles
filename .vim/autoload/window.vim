@@ -168,8 +168,9 @@ function! s:tab_source(...) abort
     endfor
     for winid in winids  " iterate windows
       let [tnr, wnr] = win_id2tabwin(winid)
+      let lnr = line('.', winid)
       let pad = repeat(' ', ndigits - len(string(tnr)))
-      let head = pad . tnr . ':' . wnr . ':' . path . ': '
+      let head = pad . tnr . ':' . wnr . ':' . lnr . ':' . path . ': '
       call add(lines, head . name . flags)
     endfor
   endfor | return lines
@@ -192,7 +193,7 @@ endfunction
 function! s:tab_sink(item) abort
   if !type(a:item) | return [a:item, 0] | endif
   let parts = split(a:item, '\(\d\@<=:\|:\s\@=\)')
-  if len(parts) < 4 | return [0, 0] | endif
+  if len(parts) < 5 | return [0, 0] | endif
   let [tnr, wnr, path; rest] = parts
   let flags = '\s\+\(\[.\]\s*\)*'  " tabline flags
   let stats = '\([+-~]\d\+\)*'  " statusline stats
@@ -205,23 +206,25 @@ endfunction
 " Note: This displays a list with the tab number and the file.
 function! window#fzf_goto(...) abort
   let bang = a:0 ? a:1 : 0
-  let opts = fzf#vim#with_preview({'placeholder': '{3}'})
+  let opts = fzf#vim#with_preview({'placeholder': '{4}:{3..}'})
   let opts = join(map(get(opts, 'options', []), 'fzf#shellescape(v:val)'), ' ')
+  let opts .= " -d : --with-nth 1,5.. --preview-window '+{3}-/2' --no-sort"
   let options = {
     \ 'sink': function('window#goto_tab'),
     \ 'source' : s:tab_source(1),
-    \ 'options': opts . ' -d : --no-sort --with-nth 1,4.. --prompt="Goto> "',
+    \ 'options': opts . ' --prompt="Goto> "',
   \ }
   return fzf#run(fzf#wrap('goto', options, bang)) | return ''
 endfunction
 function! window#fzf_move(...) abort
   let bang = a:0 ? a:1 : 0
-  let opts = fzf#vim#with_preview({'placeholder': '{3}'})
+  let opts = fzf#vim#with_preview({'placeholder': '{4}:{3..}'})
   let opts = join(map(get(opts, 'options', []), 'fzf#shellescape(v:val)'), ' ')
+  let opts .= " -d : --with-nth 1,5.. --preview-window '+{3}-/2' --no-sort"
   let options = {
     \ 'sink': function('window#move_tab'),
     \ 'source' : s:tab_source(1),
-    \ 'options': '-d : --no-sort --with-nth 1,4.. --prompt="Move> "',
+    \ 'options': opts . ' --prompt="Move> "',
   \ }
   return fzf#run(fzf#wrap('move', options, bang)) | return ''
 endfunction
