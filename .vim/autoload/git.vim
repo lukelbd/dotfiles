@@ -334,17 +334,19 @@ function! git#hunk_stage(stage) range abort
   call s:hunk_process()
   let hunks = gitgutter#hunk#hunks(bufnr(''))
   let ranges = []  " ranges staged
-  let [range1, range2] = sort([a:firstline, a:lastline], 'n')
+  let [iline, jline] = sort([a:firstline, a:lastline], 'n')
+  let [ifold, jfold] = [foldclosed(iline), foldclosedend(jline)]
+  let [iline, jline] = [ifold > 0 ? ifold : iline, jfold > 0 ? jfold : jline]
   for [line0, count0, line1, count1] in hunks
     let line2 = count1 ? line1 + count1 - 1 : line1  " to closing line
-    if range1 <= line1 && range2 >= line2
+    if iline <= line1 && jline >= line2
       let range = []  " selection encapsulates hunk
-    elseif range1 >= line1 && range2 <= line2
-      let range = count0 ? [] : [range1, range2]
-    elseif range1 <= line2 && range2 >= line2  " starts inside goes outside
-      let range = count0 ? [] : [range1, line2]
-    elseif range1 <= line1 && range2 >= line1  " starts outside goes inside
-      let range = count0 ? [] : [line1, range2]
+    elseif iline >= line1 && jline <= line2
+      let range = count0 ? [] : [iline, jline]
+    elseif iline <= line2 && jline >= line2  " starts inside goes outside
+      let range = count0 ? [] : [iline, line2]
+    elseif iline <= line1 && jline >= line1  " starts outside goes inside
+      let range = count0 ? [] : [line1, jline]
     else  " no update needed
       continue
     endif

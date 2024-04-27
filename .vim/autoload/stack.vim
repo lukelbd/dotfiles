@@ -112,9 +112,10 @@ endfunction
 " buffer. Functions should return non-zero on failure (either manually or through
 " vim error triggered on function with abort-label, which returns -1 by default).
 function! stack#pop_stack(head, ...) abort
-  let name = a:0 ? a:1 : stack#get_name(a:head)
+  let warn = a:0 > 1 ? a:2 : 0
+  let name = a:0 > 0 ? a:1 : stack#get_name(a:head)
   let isnum = type(name) == 1 && name =~# '^\d\+$'
-  let isfile = type(name) == 1 && filereadable(name)
+  let isfile = type(name) == 1 && filereadable(resolve(name))
   let name = isnum ? str2nr(name) : isfile ? fnamemodify(name, ':p') : name
   let [num, nmax] = [0, 100]
   while num < nmax
@@ -124,6 +125,11 @@ function! stack#pop_stack(head, ...) abort
     let idx = idx > kdx ? idx - 1 : idx  " if idx == jdx float to next entry
     call s:set_stack(a:head, stack, idx)
   endwhile
+  if warn && empty(num)
+    redraw | echohl WarningMsg
+    echom 'Warning: Failed to pop name ' . string(name) . ' from ' . a:head . ' stack'
+    echohl None
+  endif
 endfunction
 function! stack#push_stack(head, func, ...) abort
   let level = a:0 > 1 ? a:2 : 1

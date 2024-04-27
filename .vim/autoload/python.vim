@@ -6,17 +6,31 @@
 " modify with python#fold_expr to impose e.g. docstring and multi-line lsit folds.
 scriptencoding utf-8
 function! s:get_isdef(lnum) abort
-  return get(get(get(b:, 'SimpylFold_cache', []), a:lnum, []), 'is_def', 0)
+  let opts = get(get(b:, 'SimpylFold_cache', []), a:lnum, {})
+  if has_key(opts, 'is_def')
+    let isdef = opts.is_def
+  else  " manual detection (slower)
+    let isdef = getline(a:lnum) =~# '^\s\+\%(class\|def\)\>'
+  endif
+  return isdef
 endfunction
 function! s:get_indent(lnum) abort
-  return get(get(get(b:, 'SimpylFold_cache', []), a:lnum, []), 'indent', 0)
+  let opts = get(get(b:, 'SimpylFold_cache', []), a:lnum, {})
+  if has_key(opts, 'indent')
+    let indent = opts.indent
+  else  " manual detection (slower)
+    let indent = strdisplaywidth(matchstr(getline(a:lnum), '^\s*')) / &l:tabstop
+  endif
+  return indent
 endfunction
 function! s:get_level(lnum) abort
-  let cache = get(b:, 'SimpylFold_cache', [])
-  let props = get(cache, a:lnum, [])
-  let expr = get(props, 'foldexpr', '')
-  let val = !empty(expr) ? type(expr) ? len(expr) > 1 ? expr[1] : expr[0] : expr : 0
-  return str2nr(val)
+  let opts = get(get(b:, 'SimpylFold_cache', []), a:lnum, {})
+  if !empty(opts)
+    let expr = get(opts, 'foldexpr', 0)
+  else  " manual detection (possibly outdated)
+    let expr = foldlevel(a:lnum)
+  endif
+  return !empty(expr) ? type(expr) ? len(expr) > 1 ? expr[1] : expr[0] : expr : 0
 endfunction
 
 " Convert between key=value pairs and 'key': value dictionaries
@@ -70,8 +84,8 @@ function! python#dict_to_kw_expr(invert) abort
 endfunction
 
 " Return SimpylFold expressions for decorators, docstrings, constants
-" Warning: Only call this when SimpylFold updates to improve performance. Might break
-" if SimpylFold renames internal cache variable (monitor). Note
+" Warning: Only call this when SimpylFold updates to improve performance. Might
+" break if SimpylFold renames internal cache variable (monitor).
 function! s:get_decorator(lnum) abort
   if getline(a:lnum) !~# '^\s*@\k\+' | return [] | endif
   let [lnum, level, indent] = [a:lnum, s:get_level(a:lnum), s:get_indent(a:lnum)]
@@ -132,7 +146,13 @@ function! python#fold_cache() abort
   endwhile
 endfunction
 function! python#fold_text(lnum, ...) abort
-  let lnum = get(get(b:, 'fold_heads', {}), string(a:lnum), a:lnum)
+  let heads = get(b:, 'fold_heads', {})
+  let lnum = get(heads, string(a:lnum), a:lnum)
+  let exprs = lnum != a:lnum ? [] : s:get_decorator(a:lnum)
+  if !empty(exprs)  " recache
+    let lnum = a:lnum + len(exprs) - 1
+    let heads[string(a:lnum)] = lnum
+  endif
   let [line1, line2] = [lnum + 1, lnum + s:maxlines]
   let label = fold#get_label(lnum, 0)
   let width = get(g:, 'linelength', 88) - 10  " minimum width

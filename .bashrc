@@ -1833,8 +1833,8 @@ echo 'done'
 _fzf_options=" \
 --ansi --color=bg:-1,bg+:-1 --layout=default --exit-0 --inline-info --height=6 \
 --bind=ctrl-k:up,ctrl-j:down,btab:clear-query,tab:accept,f1:clear-query,f2:accept,\
-f3:preview-page-up,f4:preview-page-down,ctrl-g:jump,ctrl-s:toggle,ctrl-a:toggle-all,\
-ctrl-u:half-page-up,ctrl-d:half-page-down,ctrl-b:page-up,ctrl-f:page-down,\
+f3:preview-page-up,f4:preview-page-down,ctrl-t:toggle,ctrl-s:select,ctrl-a:select-all,\
+ctrl-g:jump,ctrl-u:half-page-up,ctrl-d:half-page-down,ctrl-b:page-up,ctrl-f:page-down,\
 ctrl-q:cancel,ctrl-w:cancel\
 "  # critical to export so used by vim
 

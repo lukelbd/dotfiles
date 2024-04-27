@@ -431,7 +431,7 @@ nnoremap <C-y> <Cmd>call file#fzf_init(0, 0, 1, 'Files')<CR>
 nnoremap <F7> <Cmd>call file#fzf_init(0, 0, 0, 'Drop')<CR>
 nnoremap <C-o> <Cmd>call file#fzf_init(0, 0, 1, 'Drop')<CR>
 nnoremap <C-p> <Cmd>call file#fzf_init(0, 1, 1, 'Files')<CR>
-nnoremap <C-g> <Cmd>GFiles<CR>
+nnoremap <C-g> <Cmd>exe fugitive#Command(0, 0, 0, 0, '', '') =~# '^echoerr' ? 'Git' : 'GFiles'<CR>
 
 " Related file utilities
 " Note: Here :Rename is adapted from the :Rename2 plugin. Usage is :Rename! <dest>
@@ -459,16 +459,24 @@ nnoremap <Plug>ExecuteFile2 <Nop>
 nnoremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
 vnoremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
 
-" Cycle through location list options
-" Note: ALE populates the window-local loc list rather than the global quickfix list.
+" Navigate tag stack, location list, and quickfix list
+" Note: In general location list and quickfix list filled by ale, but quickfix also
+" temporarily filled by lsp commands or fzf mappings, so add below generalized
+" mapping for jumping between e.g. variables, grep matches, tag matches, etc.
 command! -count=1 Lprev call iter#next_loc(<count>, 'loc', 1)
 command! -count=1 Lnext call iter#next_loc(<count>, 'loc', 0)
 command! -count=1 Qprev call iter#next_loc(<count>, 'qf', 1)
 command! -count=1 Qnext call iter#next_loc(<count>, 'qf', 0)
+noremap [{ <Cmd>exe v:count1 . 'Qprev'<CR>
+noremap ]} <Cmd>exe v:count1 . 'Qnext'<CR>
 noremap [x <Cmd>exe v:count1 . 'Lprev'<CR>
 noremap ]x <Cmd>exe v:count1 . 'Lnext'<CR>
 noremap [X <Cmd>exe v:count1 . 'Qprev'<CR>
 noremap ]X <Cmd>exe v:count1 . 'Qnext'<CR>
+noremap [y <Cmd>exe v:count1 . 'tag'<CR>
+noremap ]y <Cmd>exe v:count1 . 'pop'<CR>
+noremap [Y <Cmd>exe v:count1 . 'tag'<CR>
+noremap ]Y <Cmd>exe v:count1 . 'pop'<CR>
 
 " Helper window style adjustments with less-like shortcuts
 " Note: Also tried 'FugitiveIndex' and 'FugitivePager' but kept getting confusing
@@ -522,9 +530,9 @@ vnoremap z: @:
 command! -nargs=? -complete=shellcmd Help call stack#push_stack('help', 'shell#help_page', <f-args>)
 command! -nargs=? -complete=shellcmd Man call stack#push_stack('man', 'shell#man_page', <f-args>)
 command! -nargs=0 ClearMan call stack#clear_stack('man')
-command! -nargs=0 PrintHelp call stack#print_stack('help')
-command! -nargs=0 PrintMan call stack#print_stack('man')
-command! -nargs=? PopMan call stack#pop_stack('man', <f-args>)
+command! -nargs=0 ListHelp call stack#print_stack('help')
+command! -nargs=0 ListMan call stack#print_stack('man')
+command! -nargs=? PopMan call stack#pop_stack('man', 1, <f-args>)
 nnoremap <Leader>n <Cmd>call stack#push_stack('help', 'shell#help_page')<CR>
 nnoremap <Leader>m <Cmd>call stack#push_stack('man', 'shell#man_page')<CR>
 nnoremap <Leader>N <Cmd>call shell#fzf_help()<CR>
@@ -609,7 +617,7 @@ augroup tabs_setup
   au CursorHold * if localtime() - get(g:, 'tab_time', 0) > 10 | call window#update_stack(0) | endif
 augroup END
 command! -nargs=0 ClearTabs call stack#clear_stack('tab') | call window#update_stack(0)
-command! -nargs=0 PrintTabs call stack#print_stack('tab')
+command! -nargs=0 ListTabs call stack#print_stack('tab')
 command! -nargs=? PopTabs call stack#pop_stack('tab', <f-args>)
 nnoremap <Tab><CR> <Cmd>call window#update_stack(0, -1, 2)<CR>
 nnoremap <F1> <Cmd>call window#scroll_stack(-v:count1)<CR>
@@ -619,14 +627,12 @@ nnoremap <F2> <Cmd>call window#scroll_stack(v:count1)<CR>
 " Note: Apply in vimrc to avoid overwriting. This works by overriding both fzf and
 " internal tag jumping utils. Ignores tags resulting from direct :tag or <C-]>
 command! -nargs=0 ClearTags call stack#clear_stack('tag')
-command! -nargs=0 PrintTags call stack#print_stack('tag')
+command! -nargs=0 ListTags call stack#print_stack('tag')
 command! -nargs=* PopTags call stack#pop_stack('tag', <f-args>)
 command! -nargs=* -complete=file ShowIgnores
   \ echom 'Tag ignores: ' . join(parse#get_ignores(0, 0, 0, <f-args>), ' ')
 noremap <F3> <Cmd>call tag#next_stack(-v:count1)<CR>
 noremap <F4> <Cmd>call tag#next_stack(v:count1)<CR>
-noremap [{ <Cmd>exe v:count1 . 'tag'<CR>
-noremap ]} <Cmd>exe v:count1 . 'pop'<CR>
 
 " Navigate window jumplist with left/right arrows
 " Note: This accounts for iterm function-key maps and karabiner arrow-key maps
@@ -1379,12 +1385,14 @@ let g:gutentags_enabled = 1
 " let g:gutentags_enabled = 0
 
 " Fuzzy selection and searching
+" Note: Use
 " Note: For consistency, specify ctags command below and set 'tags' above accordingly,
 " however this is only used if gutentags files unavailable and after confirm prompt.
 " Note: Use fzf#wrap to apply global settings, and never use fzf#run return value to
 " get results (will result in weird hard-to-debug issues due to async calling).
 " Note: 'Drop' opens selection in existing window, similar to switchbuf=useopen,usetab.
 " However :Buffers still opens duplicate tabs even with fzf_buffers_jump=1.
+" See: https://github.com/junegunn/fzf.vim/issues/185
 " See: https://github.com/junegunn/fzf/issues/1577#issuecomment-492107554
 " See: https://www.reddit.com/r/vim/comments/9504rz/denite_the_best_vim_pluggin/e3pbab0/
 " call plug#('mhinz/vim-grepper')  " for ag/rg but seems like easymotion, too much
@@ -1398,10 +1406,14 @@ call plug#('~/.fzf')  " fzf installation location, will add helptags and runtime
 call plug#('junegunn/fzf.vim')  " pin to version supporting :Drop
 call plug#('roosta/fzf-folds.vim')  " jump to folds
 let g:fzf_action = {'ctrl-m': 'Drop', 'ctrl-e': 'split', 'ctrl-r': 'vsplit' }  " have file search and grep open to existing window if possible
-let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
-let g:fzf_tags_command = 'ctags -R -f .vimtags ' . join(parse#get_ignores(0, 0, 1), ' ')
-let g:fzf_require_dir = 0  " see lukelbd/fzf.vim completion-edits branch
 let g:fzf_buffers_jump = 1  " jump to existing window if already open
+let g:fzf_history_dir = expand('~/.vim_fzf_hist')  " navigate searches with ctrl-n, ctrl-p
+let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
+let g:fzf_require_dir = 0  " see lukelbd/fzf.vim completion-edits branch
+let g:fzf_tags_command = 'ctags -R -f .vimtags ' . join(parse#get_ignores(0, 0, 1), ' ')
+" function! s:build_quickfix_list(lines)
+"   call setqflist(map(copy(a:lines), '{ "filename": v:val }')) | copen | cc
+" endfunction
 
 " Language server integration
 " Note: Here vim-lsp-ale sends diagnostics generated by vim-lsp to ale, does nothing
@@ -1987,7 +1999,7 @@ if s:plug_active('vim-lsp')
   augroup END
   command! -nargs=? LspToggle call switch#lsp(<args>)
   command! -nargs=? ClearDoc call stack#clear_stack('doc')
-  command! -nargs=? PrintDoc call stack#print_stack('doc')
+  command! -nargs=? ListDoc call stack#print_stack('doc')
   command! -nargs=? PopDoc call stack#pop_stack('doc', <f-args>)
   command! -nargs=? Doc call stack#push_stack('doc', 'python#doc_page', <f-args>)
   noremap [r <Cmd>LspPreviousReference<CR>
