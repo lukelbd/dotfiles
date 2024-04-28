@@ -195,12 +195,12 @@ function! git#run_map_expr(...) abort
   return utils#motion_func('git#run_map', a:000)
 endfunction
 
-" Git commit and edit actions
+" Run git commit with or without editor
 " Note: Git commit is asynchronous unlike others so resize must be reapplied here. In
 " general do not apply resize to setup functions since could be panel or full-screen.
 " Note: This prevents annoying <press enter to continue> message showing up when
 " committing with no staged changes, issues a warning instead of showing the message.
-function! git#complete_msg(lead, line, cursor, ...) abort
+function! git#complete_commit(lead, line, cursor, ...) abort
   let cnt = a:0 ? a:1 : 50  " default count
   let lead = '^' . escape(a:lead, '[]\/.*$~')
   let input = get(get(s:, 'messages', {}), FugitiveGitDir(), '')
@@ -209,7 +209,7 @@ function! git#complete_msg(lead, line, cursor, ...) abort
   let opts = filter(opts, '!empty(v:val) && v:val =~# ' . string(lead))
   return map(opts, 'substitute(v:val, "\s\+", "", "g")')
 endfunction
-function! git#commit_wrap(editor, ...) abort
+function! git#run_commit(editor, ...) abort
   let cmd = a:0 ? a:1 : 'commit'  " commit version
   let flag = cmd =~# '^stash' ? [] : ['--staged']
   let args = ['diff', '--quiet']  " see: https://stackoverflow.com/a/1587877/4970632
@@ -226,16 +226,16 @@ function! git#commit_wrap(editor, ...) abort
   endif
   if !a:editor
     let s:messages = get(s:, 'messages', {})
-    let default = get(git#complete_msg('', '', '', 1), 0, '')
+    let default = get(git#complete_commit('', '', '', 1), 0, '')
     let base = FugitiveGitDir()  " base directory
     let opts = FugitiveExecute(['log', '-n', '50', '--pretty=%B'])
-    let msg = utils#input_default('Git ' . cmd, default, 'git#complete_msg')
+    let msg = utils#input_default('Git ' . cmd, default, 'git#complete_commit')
     if !empty(msg) | let s:messages[base] = msg[:49] | endif
     while !empty(msg) && len(msg) > 50  " see .bashrc git()
       redraw | echohl WarningMsg
       echom 'Error: Message has length ' . len(msg) . '. Must be less than or equal to 50.'
       echohl None
-      let msg = utils#input_default('Git ' . cmd, msg[:49], 'git#complete_msg')
+      let msg = utils#input_default('Git ' . cmd, msg[:49], 'git#complete_commit')
       if !empty(msg) | let s:messages[base] = msg[:49] | endif
     endwhile
     if empty(msg) | return | endif
@@ -244,13 +244,39 @@ function! git#commit_wrap(editor, ...) abort
   call git#run_command(0, line('.'), -1, 0, 0, '', cmd)
 endfunction
 
-" Git hunk jumping and previewing
+" Navigate git merge conflicts
+" Note: This is adapted from conflict-marker.vim/autoload/conflict_marker.vim. Only
+" searches for complete blocks, ignores false-positive matches e.g. markdown ===
+function! git#next_conflict(count, ...) abort
+  let winview = winsaveview()
+  let reverse = a:0 && a:1
+  if !reverse
+    for _ in range(a:count) | let pos0 = searchpos(g:conflict_marker_begin, 'w') | endfor
+    let pos1 = searchpos(g:conflict_marker_separator, 'cW')
+    let pos2 = searchpos(g:conflict_marker_end, 'cW')
+  else
+    for _ in range(a:count) | let pos2 = searchpos(g:conflict_marker_end, 'bw') | endfor
+    let pos1 = searchpos(g:conflict_marker_separator, 'bcW')
+    let pos0 = searchpos(g:conflict_marker_begin, 'bcW')
+  endif
+  if pos2[0] > pos1[0] && pos1[0] > pos0[0]
+    call cursor(pos0)  " always open folds (same as gitgutter)
+    exe 'normal! zv'
+  else  " echo warning
+    call winrestview(winview)
+    echohl ErrorMsg
+    echom 'Error: No conflicts'
+    echohl None
+  endif
+endfunction
+
+" Navigate and preview git gutter hunks
 " Note: Git gutter works by triggering on &updatetime after CursorHold only if
 " text was changed and starts async process. Here temporarily make synchronous.
 " Note: Always ensure gitgutter on and up-to-date before actions. Note CursorHold
 " triggers conservative update gitgutter#process_buffer('.', 0) that only runs if
 " text was changed while GitGutter and staging commands trigger forced update.
-function! s:hunk_process(...) abort
+function! s:update_hunks(...) abort
   call switch#gitgutter(1, 1)
   let force = a:0 ? a:1 : 0
   try
@@ -260,17 +286,17 @@ function! s:hunk_process(...) abort
     let g:gitgutter_async = 1
   endtry
 endfunction
-function! git#hunk_next(count, stage) abort
-  call s:hunk_process()
+function! git#next_hunk(count, stage) abort
+  call s:update_hunks()
   let str = a:count < 0 ? 'Prev' : 'Next'
   let cmd = 'keepjumps GitGutter' . str . 'Hunk'
   for _ in range(abs(a:count))
     exe cmd | exe a:stage ? 'GitGutterStageHunk' : ''
   endfor
 endfunction
-function! git#hunk_show() abort
+function! git#show_hunk() abort
   call map(popup_list(), 'popup_close(v:val)')
-  call s:hunk_process()
+  call s:update_hunks()
   GitGutterPreviewHunk
   silent wincmd j
   call window#setup_preview()
@@ -283,7 +309,7 @@ endfunction
 " lists i.e. starting line and counts before and after changes. Adapated s:isadded()
 " s:isremoved() etc. methods from autoload/gitgutter/diff.vim for partitioning into
 " simple added/changed/removed groups (or just 'changed') as shown below.
-function! git#hunk_stats(...) range abort
+function! git#stat_hunks(...) range abort
   let [cnts, delta] = [[0, 0, 0], '']
   let line1 = a:0 > 0 ? a:1 > 0 ? a:1 : 1 : a:firstline
   let line2 = a:0 > 1 ? a:2 > 0 ? a:2 : line('$') : a:lastline
@@ -315,23 +341,23 @@ function! git#hunk_stats(...) range abort
   return delta
 endfunction
 " For <expr> map accepting motion
-function! git#hunk_stats_expr() abort
-  return utils#motion_func('git#hunk_stats', [], 1)
+function! git#stat_hunks_expr() abort
+  return utils#motion_func('git#stat_hunks', [], 1)
 endfunction
 
 " Git gutter staging and unstaging over input lines
 " Note: Currently GitGutterStageHunk only supports partial staging of additions
 " specified by visual selection, not different hunks. This supports both, iterates in
 " reverse in case lines change. See: https://github.com/airblade/vim-gitgutter/issues/279
-" Note: Created below by studying s:process_hunk() and gitgutter#diff#process_hunks().
+" Note: Created below by studying s:update_hunks() and gitgutter#diff#process_hunks().
 " in autoload/gitgutter/diff.vim. Addition-only hunks have from_count '0' and to_count
 " non-zero since no text was present before the change. Also note gitgutter#hunk#stage()
 " requires cursor inside lines and fails when specifying lines outside of addition hunk
 " (see s:hunk_op) so explicitly navigate lines below before calling stage commands.
-function! git#hunk_stage(stage) range abort
+function! git#stage_hunks(stage) range abort
   let action = a:stage ? 'Stage' : 'Undo'
   let cmd = 'GitGutter' . action . 'Hunk'
-  call s:hunk_process()
+  call s:update_hunks()
   let hunks = gitgutter#hunk#hunks(bufnr(''))
   let ranges = []  " ranges staged
   let [iline, jline] = sort([a:firstline, a:lastline], 'n')
@@ -357,11 +383,11 @@ function! git#hunk_stage(stage) range abort
     call add(ranges, join(uniq(range), '-'))
   endfor
   if !empty(ranges)
-    call s:hunk_process() | redraw
+    call s:update_hunks() | redraw
     echom action . ' hunks: ' . join(ranges, ', ')
   endif
 endfunction
 " For <expr> map accepting motion
-function! git#hunk_stage_expr(...) abort
-  return utils#motion_func('git#hunk_stage', a:000)
+function! git#stage_hunks_expr(...) abort
+  return utils#motion_func('git#stage_hunks', a:000)
 endfunction

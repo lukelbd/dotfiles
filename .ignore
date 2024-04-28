@@ -3,9 +3,6 @@
 # integration and bash aliases actually also include '.wildignore' but keep
 # that as separate optional file to handle native vim expansion.
 # External or auto-generated
-*.html
-*.json
-*.xml
 .git/
 .svn/
 .hg/

@@ -202,6 +202,7 @@
 	unstaged = false
 	tag = false
 [push]
+	autoSetupRemote = true
 	default = upstream
 	followTags = true
 [remote]

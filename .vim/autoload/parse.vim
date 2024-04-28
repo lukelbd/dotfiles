@@ -40,7 +40,7 @@ function! s:dist_root(head, tails, ...) abort
   let suff = matchstr(suff, '^[\/]\+' . tail . '[0-9]*[\/]\@=')
   return head . suff  " optional version subfolder
 endfunction
-function! parse#find_root(...) abort
+function! parse#get_root(...) abort
   let path = resolve(expand(a:0 ? a:1 : '%'))
   let head = fnamemodify(path, ':p:h')  " no trailing slash
   let tails = ['servers', 'user-settings']  " e.g. @jupyterlab, .vim_lsp_settings
@@ -73,7 +73,7 @@ function! parse#get_paths(mode, global, level, ...)
     let paths = [resolve(expand('%:p'))]
   endif
   if empty(args) && a:level >= 2  " path projects
-    let paths = map(paths, 'parse#find_root(v:val)')
+    let paths = map(paths, 'parse#get_root(v:val)')
   elseif empty(args) && a:level >= 1  " path folders
     let paths = map(paths, "empty(v:val) || isdirectory(v:val) ? v:val : fnamemodify(v:val, ':h')")
   else  " general paths and folders

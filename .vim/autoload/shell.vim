@@ -109,7 +109,7 @@ function! shell#fzf_man() abort
   call fzf#run(fzf#wrap(options))
 endfunction
 
-" Show results in panel
+" Run job and feed standard output to preview window
 " Note: Add 'set -x' to display commands and no-op ':' to signal completion. The
 " '/bin/sh' is needed to permit command chains with e.g. && or || otherwise fails.
 " Note: Use 'pty' intead of pipe to prevent output buffering and delayed
@@ -153,8 +153,8 @@ function! shell#job_win(cmd, ...) abort
 endfunction
 
 " Man page and pydoc page utilities
-" Warning: Calling :Man changes the buffer, so use buffer variables specific to each
-" page to record navigation history. Order of assignment below is critical.
+" Warning: Order of assignment of variables below is critical, since use buffer
+" variables specific to each page then allow :Man to change the buffer in stack.
 function! s:setup_syntax() abort  " man-style pydoc syntax
   let indent = '^\(\s\{4}\)*'
   let item = indent . '\zs\(class\s\+\)\?\k\+\ze(.*)'
@@ -193,4 +193,28 @@ function! shell#setup_man(...) abort
   exe 'noremap <buffer> <CR> ' . printf(push, string(key), string(cmd), string(''))
   exe 'noremap <nowait> <buffer> [ ' . printf(push, string(key), string(cmd), '-v:count1')
   exe 'noremap <nowait> <buffer> ] ' . printf(push, string(key), string(cmd), 'v:count1')
+endfunction
+
+" Show directory network and terminal
+" Warning: Critical to load vim-vinegar plugin/vinegar.vim before
+" setup_netrw() or else mappings are overwritten (see vimrc).
+function! shell#setup_netrw() abort
+  let maps = [['n', '<CR>', 't'], ['n', '.', 'gn'], ['n', ',', '-'], ['nx', ';', '.']]
+  call call('utils#map_from', maps)
+  for char in 'fbFL' | silent! exe 'unmap <buffer> q' . char | endfor
+endfunction
+function! shell#show_netrw(cmd, local) abort
+  let base = a:local ? expand('%:p:h') : parse#get_root()
+  let [width, height] = [window#get_width(0), window#get_height(0)]
+  exe a:cmd . ' ' . base | goto
+  exe a:cmd =~# 'vsplit' ? 'vert resize ' . width : 'resize ' . height 
+endfunction
+function! shell#show_terminal() abort
+  if !has('terminal')
+    redraw | echohl ErrorMsg
+    echom 'Error: Terminal not supported.'
+    echohl None | return
+  endif
+  let $VIMTERMDIR = expand('%:p:h')
+  terminal | call feedkeys('cd $VIMTERMDIR', 'tn')
 endfunction

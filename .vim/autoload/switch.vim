@@ -268,14 +268,14 @@ function! switch#reveal(...) abort
   let toggle = a:0 > 0 ? a:1 : 1 - state
   if !toggle && exists('s:reveal_option')
     echom 'Reveal mode disabled.'
-    doautocmd reveal_mode TextChanged
+    doautocmd reveal_restore TextChanged
   elseif toggle && !exists('s:reveal_option')
     echom 'Reveal mode enabled.'
     let s:reveal_option = &l:conceallevel
     setlocal conceallevel=0  " incsearch only
-    augroup reveal_mode
+    augroup reveal_restore
       au!
-      au TextChanged,InsertEnter,InsertLeave * call s:reveal_restore() | autocmd! reveal_mode
+      au TextChanged,InsertEnter,InsertLeave * call s:reveal_restore() | autocmd! reveal_restore
     augroup END
   endif | return ''
 endfunction

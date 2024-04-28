@@ -131,7 +131,7 @@ function! fold#get_label(line, ...) abort
   if &l:filetype =~# '^git$\|^fugitive$'  " show only statistics
     let label = substitute(label, '^\(@@.\{-}@@\).*$', '\1', '')
   endif
-  if !a:0  " avoid recursion
+  if !a:0 || !a:1  " avoid recursion
     let label1 = fold#get_label(a:line, 1)
     let [delim1, outer] = s:get_delims(label1)
     if label1 ==# delim1  " naked delimiter
@@ -162,7 +162,7 @@ function! fold#fold_text(...) abort
   let lines = string(line2 - line1 + 1)  " number of lines
   let leftidx = charidx(getline(winview.lnum), winview.leftcol)
   let maxlen = get(g:, 'linelength', 88) - 1  " default maximum
-  let hunk = git#hunk_stats(line1, line2, 0, 1)  " abbreviate with '1'
+  let hunk = git#stat_hunks(line1, line2, 0, 1)  " abbreviate with '1'
   let dots = repeat('·', len(string(line('$'))) - len(lines))
   let stats = level . dots . lines  " default statistics
   if &l:diff  " fill with maximum width

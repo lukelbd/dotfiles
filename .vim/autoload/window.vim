@@ -1,56 +1,77 @@
 "-----------------------------------------------------------------------------"
 " Utilities for vim windows and sessions
 "-----------------------------------------------------------------------------"
-" Safely closing tabs and windows
+" Close general windows and tabs
 " Note: Currently codi emits annoying error messages when turning on/off but
 " still works so suppress messages here.
 " Note: Calling quit inside codi buffer triggers 'attempt to close buffer
 " that is in use' error so instead return to main window and toggle codi.
 scriptencoding utf-8
-function! window#close_panes(...) abort
-  let bang = a:0 && a:1 ? '!' : ''
-  let main = get(b:, 'tabline_bufnr', bufnr())
-  let ftypes = map(tabpagebuflist(), "getbufvar(v:val, '&filetype', '')")
-  call map(popup_list(), 'popup_close(v:val)')
-  if index(ftypes, 'codi') != -1
-    silent! exe 'Codi!!'
-  endif
-  for bnr in tabpagebuflist()
-    exe bnr == main ? '' : bufwinnr(bnr) . 'windo quit' . bang
-  endfor
-  if index(ftypes, 'gitcommit') == -1 | call feedkeys('zezv', 'n') | endif
-endfunction
-function! window#close_pane(...) abort
-  let bang = a:0 && a:1 ? '!' : ''
-  let ntabs = tabpagenr('$')
-  let islast = ntabs == tabpagenr()
-  let ftypes = map(tabpagebuflist(), "getbufvar(v:val, '&filetype', '')")
-  if &filetype ==# 'codi'
-    wincmd p | silent! Codi!!
-  elseif index(ftypes, 'codi') != -1
-    silent! Codi!! | exe 'quit' . bang
-  else
-    exe 'quit' . bang
-  endif
-  if ntabs != tabpagenr('$') && !islast
-    silent! tabprevious
-  endif
-  if index(ftypes, 'gitcommit') == -1 | call feedkeys('zv', 'n') | endif
-endfunction
-function! window#close_tab(...) abort
-  let bang = a:0 && a:1 ? '!' : ''
-  let ntabs = tabpagenr('$')
-  let islast = ntabs == tabpagenr()
+function! s:close_codi() abort
   let ftypes = map(tabpagebuflist(), "getbufvar(v:val, '&filetype', '')")
   if &filetype ==# 'codi'
     wincmd p | silent! Codi!!
   elseif index(ftypes, 'codi') != -1
     silent! Codi!!
   endif
-  if ntabs == 1 | quitall | else
-    exe 'tabclose' . bang | if !islast | silent! tabprevious | endif
+endfunction
+function! window#close_panes(...) abort
+  let bang = a:0 && a:1 ? '!' : ''
+  let main = get(b:, 'tabline_bufnr', bufnr())
+  call map(popup_list(), 'popup_close(v:val)')
+  call s:close_codi()
+  for bnr in tabpagebuflist()
+    exe bnr == main ? '' : bufwinnr(bnr) . 'windo quit' . bang
+  endfor
+  call feedkeys("\<Cmd>normal! zvzzze\<CR>", 'n')
+endfunction
+function! window#close_pane(...) abort
+  let bang = a:0 && a:1 ? '!' : ''
+  let [cnt, tnr] = [tabpagenr('$'), tabpagenr()]
+  let islast = cnt == tabpagenr()
+  let iscodi = &l:filetype ==# 'codi'
+  call s:close_codi()
+  exe iscodi ? '' : 'quit' . bang
+  if tnr != cnt && cnt != tabpagenr('$') | silent! tabprevious | endif
+  call feedkeys("\<Cmd>normal! zvzzze\<CR>", 'n')
+endfunction
+function! window#close_tab(...) abort
+  let bang = a:0 && a:1 ? '!' : ''
+  let [cnt, tnr] = [tabpagenr('$'), tabpagenr()]
+  call s:close_codi()
+  if cnt == 1 | quitall | else
+    exe 'tabclose' . bang | if tnr != cnt | silent! tabprevious | endif
   endif
-  if index(ftypes, 'gitcommit') == -1 | call feedkeys('zv', 'n') | endif
+  call feedkeys("\<Cmd>normal! zvzzze\<CR>", 'n')
+endfunction
+
+" Perform action conditional on insert-mode popup or cmdline wild-menu state
+" Note: This supports hiding complete-mode options or insert-mode popup menu
+" before proceeding with other actions. See vimrc for details
+function! window#close_popup(map, ...) abort
+  let s = a:0 > 1 && a:2 ? '' : a:map
+  if a:0 && a:1 > 1  " select item or perform action
+    let [map1, map2, map3] = ["\<C-y>" . s, "\<C-n>\<C-y>" . s, a:map]
+  elseif a:0 && a:1 > 0  " select item only if scrolled
+    let [map1, map2, map3] = ["\<C-y>" . s, a:map, a:map]
+  else  " exit popup or perform action
+    let [map1, map2, map3] = ["\<C-e>" . s, "\<C-e>" . s, a:map]
+  endif
+  let state = get(b:, 'scroll_state', 0) | let b:scroll_state = 0
+  return state && pumvisible() ? map1 : pumvisible() ? map2 : map3
+endfunction
+function! window#close_wild(map, ...) abort
+  let state = get(b:, 'complete_state', 0)  " tabbed through entries
+  if a:0 && a:1 || !state && !wildmenumode()
+    let [keys1, keys2] = ['', a:map]
+    let b:complete_state = state
+  else  " e.g. cursor motions
+    let [pos, line] = [getcmdpos(), getcmdline()]  " pos 1 is string index 0
+    let keys1 = "\<C-c>\<Cmd>redraw\<CR>:" . line . a:map
+    let keys2 = pos >= len(line) && a:map ==# "\<Right>" ? "\<Tab>" : ''
+    let b:complete_state = 0  " manually disabled
+  endif
+  call feedkeys(keys1, 'n') | call feedkeys(keys2, 'tn') | return ''
 endfunction
 
 " Change window size in given direction
@@ -94,9 +115,6 @@ function! window#get_width(...) abort
 endfunction
 function! window#get_height(...) abort
   return call('s:get_size', [0] + a:000)
-endfunction
-function! window#get_size(...) abort
-  return [call('window#get_width', a:000), call('window#get_height', a:000)]
 endfunction
 function! window#default_width(...) abort
   exe 'vertical resize ' . call('s:get_size', [1] + a:000)
@@ -151,7 +169,7 @@ function! s:tab_source(...) abort
     let staged = getbufvar(bnr, 'tabline_staged_changes', 0)
     let unstaged = getbufvar(bnr, 'tabline_staged_changes', 0)
     let process = len(lines) < nprocess || staged || unstaged
-    let base = parse#find_root(path)  " see also vim-tags/autoload/s:path_name()
+    let base = parse#get_root(path)  " see also vim-tags/autoload/s:path_name()
     let head = fnamemodify(fnamemodify(base, ':h'), ':p')  " trailing slash
     let ibase = !empty(base) && strpart(path, 0, len(base)) ==# base
     let icwd = !empty(base) && strpart(getcwd(), 0, len(base)) ==# base
@@ -194,7 +212,7 @@ function! s:tab_sink(item) abort
   if !type(a:item) | return [a:item, 0] | endif
   let parts = split(a:item, '\(\d\@<=:\|:\s\@=\)')
   if len(parts) < 5 | return [0, 0] | endif
-  let [tnr, wnr, path; rest] = parts
+  let [tnr, wnr, lnr, path; rest] = parts
   let flags = '\s\+\(\[.\]\s*\)*'  " tabline flags
   let stats = '\([+-~]\d\+\)*'  " statusline stats
   let name = substitute(trim(join(rest, ':')), flags . stats . '$', '', 'g')
@@ -203,7 +221,8 @@ function! s:tab_sink(item) abort
 endfunction
 
 " Go to or move to selected tab
-" Note: This displays a list with the tab number and the file.
+" Note: This displays a list with the tab number file and git status, then positions
+" preview window on cursor line.
 function! window#fzf_goto(...) abort
   let bang = a:0 ? a:1 : 0
   let opts = fzf#vim#with_preview({'placeholder': '{4}:{3..}'})
@@ -261,35 +280,64 @@ function! window#update_stack(scroll, ...) abort  " set current buffer
   let g:tab_time = localtime()  " previous update time
 endfunction
 
-" Show helper windows
-" Note: These are for managing plugins and viewing directory contents
-" Warning: Critical to load vim-vinegar plugin/vinegar.vim before setup_netrw()
-let s:map_from = [['n', '<CR>', 't'], ['n', '.', 'gn'], ['n', ',', '-'], ['nx', ';', '.']]
-function! window#setup_quickfix() abort
-  exe 'nnoremap <buffer> <CR> <CR>zv'
-endfunction
-function! window#setup_taglist() abort
-  for char in 'ud' | silent! exe 'nunmap <buffer> ' . char | endfor
-endfunction
-function! window#setup_vinegar() abort
-  call call('utils#map_from', s:map_from) | for char in 'fbFL' | silent! exe 'unmap <buffer> q' . char | endfor
-endfunction
-function! window#show_health() abort
-  exe 'CheckHealth' | setlocal foldlevel=1 syntax=checkhealth.markdown | doautocmd BufRead
-endfunction
-function! window#show_netrw(cmd, local) abort
-  let base = a:local ? expand('%:p:h') : parse#find_root()
-  let [width, height] = [window#default_width(0), window#default_height(0)]
-  exe a:cmd . ' ' . base | goto
-  exe a:cmd =~# 'vsplit' ? 'vert resize ' . width : 'resize ' . height 
-endfunction
-function! window#show_manager() abort
-  silent tabnew | if bufexists('lsp-manager')
-    buffer lsp-manager
-  else  " new manager
-    silent exe 'LspManage' | call window#setup_panel(0) | silent file lsp-manage
+" Insert complete menu items and scroll complete or preview windows (whichever open).
+" Note: Used 'verb function! lsp#scroll' to figure out how to detect preview windows
+" (also verified lsp#scroll l:window.find does not return popup completion windows)
+function! s:scroll_popup(scroll, ...) abort
+  let size = a:0 ? a:1 : get(pum_getpos(), 'size', 1)
+  let state = get(b:, 'scroll_state', 0)
+  let cnt = type(a:scroll) ? float2nr(a:scroll * size) : a:scroll
+  let cnt = a:scroll > 0 ? max([cnt, 1]) : min([cnt, -1])
+  if type(a:scroll) && state != 0   " disable circular scroll
+    let cnt = max([0 - state + 1, cnt])
+    let cnt = min([size - state, cnt])
   endif
-  redraw | echom 'Type i to install, or x to uninstall, b to open browser, ? to show description'
+  let cmax = size + 1  " i.e. nothing selected
+  let state += cnt + cmax * (1 + abs(cnt) / cmax)
+  let state %= cmax  " only works with positive integers
+  let keys = repeat(cnt > 0 ? "\<C-n>" : "\<C-p>", abs(cnt))
+  let b:scroll_state = state | return keys
+endfunction
+function! s:scroll_preview(scroll, ...) abort
+  for winid in a:000  " iterate previews
+    let info = popup_getpos(winid)
+    if !info.visible | continue | endif
+    let width = info.core_width  " excluding borders (as with minwidth)
+    let height = info.core_height  " excluding borders (as with minheight)
+    let cnt = type(a:scroll) ? float2nr(a:scroll * height) : a:scroll
+    let cnt = a:scroll > 0 ? max([cnt, 1]) : min([cnt, -1])
+    let lmax = max([line('$', winid) - height + 2, 1])  " up to one after end
+    let lnum = info.firstline + cnt
+    let lnum = min([max([lnum, 1]), lmax])
+    let opts = {'firstline': lnum, 'minwidth': width, 'minheight': height}
+    call popup_setoptions(winid, opts)
+  endfor
+  return "\<Cmd>doautocmd User lsp_float_opened\<CR>"
+endfunction
+
+" Scroll complete menu or preview popup windows
+" Note: This prevents vim's baked-in circular complete menu scrolling.
+" Scroll normal mode lines
+function! window#scroll_normal(scroll, ...) abort
+  let height = a:0 ? a:1 : winheight(0)
+  let cnt = type(a:scroll) ? float2nr(a:scroll * height) : a:scroll
+  let rev = a:scroll > 0 ? 0 : 1  " forward or reverse scroll
+  let cmd = 'call scrollwrapped#scroll(' . abs(cnt) . ', ' . rev . ')'
+  return mode() =~? '^[ir]' ? '' : "\<Cmd>" . cmd . "\<CR>"  " only normal mode
+endfunction
+" Scroll and update the count
+function! window#scroll_infer(scroll, ...) abort
+  let popup_pos = pum_getpos()
+  let preview_ids = popup_list()
+  if a:0 && a:1 || !empty(popup_pos)  " automatically returns empty if not present
+    return call('s:scroll_popup', [a:scroll])
+  elseif !empty(preview_ids)
+    return call('s:scroll_preview', [a:scroll] + preview_ids)
+  elseif a:0 && !a:1
+    return call('window#scroll_normal', [a:scroll])
+  else  " default fallback is arrow press
+    return a:scroll > 0 ? "\<Down>" : a:scroll < 0 ? "\<Up>" : ''
+  endif
 endfunction
 
 " Setup preview windows
@@ -313,13 +361,8 @@ function! window#setup_preview(...) abort
 endfunction
 
 " Setup panel windows
-" Note: Tried setting 'nomodifiable' but causes errors for e.g. shell#job_win() logs.
-" Note: Handle switch#copy(1) from vimrc (but set nolist still required for e.g. man)
-" Warning: Critical error happens if try to auto-quit when only panel window is
-" left... fzf will take up the whole window in small terminals, and even when fzf
-" immediately runs and closes as e.g. with non-tex BufNewFile template detection,
-" this causes vim to crash and breaks the terminal. Instead never auto-close windows
-" and simply get in habit of closing entire tabs with session#close_tab().
+" Note: Tried setting 'nomodifiable' but causes errors for e.g. shell#job_win()
+" logs. Handle switch#copy(1) from vimrc (but set nolist required for e.g. man)
 function! window#setup_panel(...) abort
   setlocal nolist nocursorline colorcolumn=
   let g:ft_man_folding_enable = 1  " see :help Man
@@ -330,7 +373,7 @@ function! window#setup_panel(...) abort
     return
   endif
   for [char, frac] in [['d', 0.5], ['u', -0.5]]
-    exe 'noremap <expr> <nowait> <buffer> ' . char . ' iter#scroll_normal(' . frac . ')'
+    exe 'noremap <expr> <nowait> <buffer> ' . char . ' window#scroll_normal(' . frac . ')'
   endfor
   for char in 'uUrRxXpPdDcCaAiIoO'  " in lieu of set nomodifiable
     if !get(maparg(char, 'n', 0, 1), 'buffer', 0)  " preserve buffer-local maps
@@ -340,4 +383,18 @@ function! window#setup_panel(...) abort
       exe 'nmap <buffer> g' . char . ' <Nop>'
     endif
   endfor
+endfunction
+
+" Setup or show specific panel windows
+" Note: These are for managing plugins and viewing directory contents
+function! window#show_health() abort
+  exe 'CheckHealth' | setlocal foldlevel=1 syntax=checkhealth.markdown | doautocmd BufRead
+endfunction
+function! window#show_manager() abort
+  silent tabnew | if bufexists('lsp-manager')
+    buffer lsp-manager
+  else  " new manager
+    silent exe 'LspManage' | call window#setup_panel(0) | silent file lsp-manage
+  endif
+  redraw | echom 'Type i to install, or x to uninstall, b to open browser, ? to show description'
 endfunction

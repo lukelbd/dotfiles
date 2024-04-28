@@ -22,7 +22,7 @@ endfunction
 function! file#expand_cfile(...) abort
   let show = a:0 ? a:1 : 0
   let path = expand('<cfile>')
-  for root in ['', getcwd(), expand('%:p:h'), parse#find_root(expand('%:p'))]
+  for root in ['', getcwd(), expand('%:p:h'), parse#get_root(expand('%:p'))]
     let check = empty(root) ? path : root . '/' . path
     let files = glob(check, 0, 1)
     if !empty(files) | break | endif
@@ -296,7 +296,7 @@ function! file#show_paths(...) abort
   let chars = ' *[]()?!#%&<>'
   let paths = a:0 ? a:000 : [@%]
   for path in paths
-    let root = parse#find_root(path)
+    let root = parse#get_root(path)
     let root = RelativePath(root)
     let show = RelativePath(path)
     let root = empty(root) ? fnamemodify(getcwd(), ':~:.') : root
@@ -374,8 +374,8 @@ function! file#rename(name, bang)
   let v:errmsg = ''  " reset message
   if exists('*FugitiveGitDir') && !empty(FugitiveGitDir())
     silent! exe 'GMove' . a:bang . ' ' . path2
-  else  " standard move
-    silent! exe 'saveas' . a:bang . ' ' . path2
+  else  " eunuch move
+    silent! exe 'Move' . a:bang . ' ' . path2
   endif
   if v:errmsg !~# '^$\|^E329\|^E108'
     throw v:errmsg

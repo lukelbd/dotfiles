@@ -5,6 +5,7 @@
 " Note: Encountered bug when naming this same as vim-tags (plural).
 " Note: This only jumps if the destination 'from' line contains the tag (i.e. not
 " jumping to an outdated position or from a random fzf call) or when at the bottom.
+scriptencoding utf-8
 function! s:from_stack(arg, name, ...) abort
   let path = expand('%:p')
   let wins = type(a:arg) ? win_findbuf(bufnr(a:arg)) : [a:arg]
@@ -126,12 +127,12 @@ endfunction
 " Select from buffer tags
 " Note: This is similar to fzf except uses custom sink that adds results to window
 " tag stack for navigation with ctrl-bracket maps and tag/pop commands.
-function! s:tag_error() abort
+function! s:raise() abort
   redraw | echohl ErrorMsg
   echom 'Error: Tags not found or not available.'
   echohl None | return
 endfunction
-function! s:tag_format(size, ...) abort
+function! s:format(size, ...) abort
   let path = a:0 ? "\t" . a:1 . '.vimtags' : ''  " see fzf.vim/bin/tagpreview.sh
   let name = strcharpart(submatch(1), 0, a:size - 1)
   let name = len(name) < len(submatch(1)) ? name . '·' : name
@@ -150,12 +151,12 @@ function! tag#fzf_btags(bang, query, ...) abort
   try
     let source = call(snr . 'btags_source', [[cmd]])
   catch /.*/
-    return s:tag_error()
+    return s:raise()
   endtry
   let regex = '^\([^\t]*\)\t\([^\t]*\)\(.*\)$'
   let prompt = string('BTags> ')
   call filter(source, {_, val -> val !~# '^!\|^\s*\d\+\>'})
-  call map(source, {_, val -> substitute(val, regex, '\=s:tag_format(40)', '')})
+  call map(source, {_, val -> substitute(val, regex, '\=s:format(40)', '')})
   let options = {
     \ 'source': source,
     \ 'sink': function('tags#_select_tag', [0]),
@@ -166,12 +167,11 @@ endfunction
 
 " Select from the current tag files
 " Note: Tried 'readtags -t - -e -E -Q (#/.py/ $input) -l' but fails since parses
-" the tag file path appended by tags.pl to each line. Instead simply use grep.
+" the tag file path appended by tags.pl to each line. Instead simply use awk.
 " Note: Formatting with more complex regex can cause slowdown. Avoid complex
 " regex patterns e.g. extra globs and non-greedy globs.
-scriptencoding utf-8
-function! s:tag_search(...) abort
-  let tags = []
+function! s:get_files(...) abort
+  let tags = [] |
   for path in a:000
     let path = resolve(expand(path))
     if filereadable(path)
@@ -186,13 +186,15 @@ function! tag#fzf_tags(type, bang, ...) abort
   if empty(scripts) | return | endif
   let script = fnamemodify(scripts[0], ':p:h:h:h') . '/bin/tags.pl'
   if !executable(script) | return | endif
-  let paths = a:0 ? call('s:tag_search', a:000) : tags#tag_files()
-  call map(paths, {_, val -> fnamemodify(val, ':p')})
-  let [nbytes, maxbytes] = [0, 1024 * 1024 * 200]
+  let paths = a:0 ? call('s:get_files', a:000) : tags#tag_files()
+  let [args, nbytes, maxbytes] = [[], 0, 1024 * 1024 * 200]
   for path in paths
+    if !filereadable(path) | continue | endif
+    call add(args, fnamemodify(path, ':p'))
     let nbytes += getfsize(path)
     if nbytes > maxbytes | break | endif
   endfor
+  if empty(args) | return s:raise() | endif
   let regex = tags#type_regex(a:type ? &l:filetype : '')
   let regex = substitute(regex, '\\\@<![(|)]', '\\\\\&', 'g')
   let regex = substitute(regex, '\\\([(|)]\)', '\1', 'g')
@@ -202,7 +204,7 @@ function! tag#fzf_tags(type, bang, ...) abort
     echohl None
   endif
   let post = empty(regex) ? '' : " | awk -F'\t' '$2 ~ /" . regex . "/'"
-  let read = join(map(['perl', script, ''] + paths, 'shellescape(v:val)'), ' ')
+  let read = join(map(['perl', script, ''] + args, 'shellescape(v:val)'), ' ')
   let opts = fzf#vim#with_preview({'placeholder': '--tag {2}:{-1}:{3..}'})
   let opts = join(map(get(opts, 'options', []), 'fzf#shellescape(v:val)'), ' ')
   let opts .= " -m -d '\t' --with-nth ..4 --nth ..2"
@@ -224,7 +226,10 @@ endfunction
 " and native :tags features use all projects but prioritize the file project.
 " Note: Vim resolves all symlinks so unfortunately cannot just commit to using
 " the symlinked $HOME version in other projects. Resolve below for safety.
-function! tag#update_paths(...) abort
+function! tag#setup_taglist() abort
+  for char in 'ud' | silent! exe 'nunmap <buffer> ' . char | endfor
+endfunction
+function! tag#update_files(...) abort
   if a:0  " append to existing
     let toggle = !type(a:1) ? a:1 : 1  " type zero i.e. number (see :help empty)
     let args = copy(a:000[!type(a:1):])
