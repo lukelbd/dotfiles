@@ -460,10 +460,10 @@ vnoremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
 " Note: In general location list and quickfix list filled by ale, but quickfix also
 " temporarily filled by lsp commands or fzf mappings, so add below generalized
 " mapping for jumping between e.g. variables, grep matches, tag matches, etc.
-command! -count=1 Lprev call jump#next_loc(<count>, 'loc', 1)
-command! -count=1 Lnext call jump#next_loc(<count>, 'loc', 0)
-command! -count=1 Qprev call jump#next_loc(<count>, 'qf', 1)
-command! -count=1 Qnext call jump#next_loc(<count>, 'qf', 0)
+command! -count=1 Lprev call jump#next_list(<count>, 'loc', 1)
+command! -count=1 Lnext call jump#next_list(<count>, 'loc', 0)
+command! -count=1 Qprev call jump#next_list(<count>, 'qf', 1)
+command! -count=1 Qnext call jump#next_list(<count>, 'qf', 0)
 noremap [{ <Cmd>exe v:count1 . 'Qprev'<CR>
 noremap ]} <Cmd>exe v:count1 . 'Qnext'<CR>
 noremap [x <Cmd>exe v:count1 . 'Lprev'<CR>
@@ -486,7 +486,7 @@ augroup panel_setup
   au TerminalWinOpen * call window#setup_panel(1)
   au BufRead,BufEnter fugitive://* if &filetype !=# 'fugitive' | call window#setup_panel() | endif
   au FileType help call vim#setup_help()
-  au FileType qf call jump#setup_loc()
+  au FileType qf call jump#setup_list()
   au FileType man call shell#setup_man()
   au FileType gitcommit call git#setup_commit()
   au FileType fugitiveblame call git#setup_blame() | call git#setup_panel()
@@ -606,7 +606,7 @@ cnoremap <silent> <expr> <BS> window#close_wild("\<BS>")
 " Navigate recent tabs and wildmenu options with <C-,>/<C-.>
 " Warning: The g:tab_stack variable is used by tags#get_recents() to put recently
 " used tabs in stack at higher priority than others. Critical to keep variables.
-silent! au! recents_setup
+silent! exe 'au! recents_setup'
 augroup tabs_setup
   au!
   au BufEnter,BufLeave * call window#update_stack(0)  " next update
@@ -634,7 +634,8 @@ noremap <F4> <Cmd>call tag#next_stack(v:count1)<CR>
 " Navigate window jumplist with left/right arrows
 " Note: This accounts for iterm function-key maps and karabiner arrow-key maps
 " See: https://stackoverflow.com/a/27194972/4970632
-augroup jumplist_setup
+silent! exe 'au! jumplist_setup'
+augroup jumps_setup
   au!
   au CursorHold,TextChanged,InsertLeave * if utils#none_pending() | call jump#push_jump() | endif
 augroup END
@@ -727,25 +728,25 @@ noremap } <Cmd>exe 'keepjumps normal! ' . v:count1 . '}'<CR>
 " Move between alphanumeric groups of characters (i.e. excluding dots, dashes,
 " underscores). This is consistent with tmux vim selection navigation
 silent! exe 'runtime autoload/utils.vim'
-noremap gw <Cmd>call jump#next_motion('w', 0)<CR>
-noremap gb <Cmd>call jump#next_motion('b', 0)<CR>
-noremap ge <Cmd>call jump#next_motion('e', 0)<CR>
-noremap gm <Cmd>call jump#next_motion('ge', 0)<CR>
-call utils#repeat_map('o', 'gw', 'AlphaNextStart', "<Cmd>call jump#next_motion('w', 0, v:operator)<CR>")
-call utils#repeat_map('o', 'gb', 'AlphaPrevStart', "<Cmd>call jump#next_motion('b', 0, v:operator)<CR>")
-call utils#repeat_map('o', 'ge', 'AlphaNextEnd',   "<Cmd>call jump#next_motion('e', 0, v:operator)<CR>")
-call utils#repeat_map('o', 'gm', 'AlphaPrevEnd',   "<Cmd>call jump#next_motion('ge, 0, v:operator)<CR>")
+noremap gw <Cmd>call jump#next_alpha('w', 0)<CR>
+noremap gb <Cmd>call jump#next_alpha('b', 0)<CR>
+noremap ge <Cmd>call jump#next_alpha('e', 0)<CR>
+noremap gm <Cmd>call jump#next_alpha('ge', 0)<CR>
+call utils#repeat_map('o', 'gw', 'AlphaNextStart', "<Cmd>call jump#next_alpha('w', 0, v:operator)<CR>")
+call utils#repeat_map('o', 'gb', 'AlphaPrevStart', "<Cmd>call jump#next_alpha('b', 0, v:operator)<CR>")
+call utils#repeat_map('o', 'ge', 'AlphaNextEnd',   "<Cmd>call jump#next_alpha('e', 0, v:operator)<CR>")
+call utils#repeat_map('o', 'gm', 'AlphaPrevEnd',   "<Cmd>call jump#next_alpha('ge, 0, v:operator)<CR>")
 
 " Move between groups of characters with the same case
 " Note: This is helpful when refactoring and renaming variables
-noremap zw <Cmd>call jump#next_motion('w', 1)<CR>
-noremap zb <Cmd>call jump#next_motion('b', 1)<CR>
-noremap ze <Cmd>call jump#next_motion('e', 1)<CR>
-noremap zm <Cmd>call jump#next_motion('ge', 1)<CR>
-call utils#repeat_map('o', 'zw', 'CaseNextStart', "<Cmd>call jump#next_motion('w', 1, v:operator)<CR>")
-call utils#repeat_map('o', 'zb', 'CasePrevStart', "<Cmd>call jump#next_motion('b', 1, v:operator)<CR>")
-call utils#repeat_map('o', 'ze', 'CaseNextEnd',   "<Cmd>call jump#next_motion('e', 1, v:operator)<CR>")
-call utils#repeat_map('o', 'zm', 'CasePrevEnd',   "<Cmd>call jump#next_motion('ge, 1, v:operator)<CR>")
+noremap zw <Cmd>call jump#next_alpha('w', 1)<CR>
+noremap zb <Cmd>call jump#next_alpha('b', 1)<CR>
+noremap ze <Cmd>call jump#next_alpha('e', 1)<CR>
+noremap zm <Cmd>call jump#next_alpha('ge', 1)<CR>
+call utils#repeat_map('o', 'zw', 'CaseNextStart', "<Cmd>call jump#next_alpha('w', 1, v:operator)<CR>")
+call utils#repeat_map('o', 'zb', 'CasePrevStart', "<Cmd>call jump#next_alpha('b', 1, v:operator)<CR>")
+call utils#repeat_map('o', 'ze', 'CaseNextEnd',   "<Cmd>call jump#next_alpha('e', 1, v:operator)<CR>")
+call utils#repeat_map('o', 'zm', 'CasePrevEnd',   "<Cmd>call jump#next_alpha('ge, 1, v:operator)<CR>")
 
 " Reset manually open-closed folds accounting for custom overrides
 " Note: Also call fold#update_folds() in common.vim but with 0 to avoid resetting level

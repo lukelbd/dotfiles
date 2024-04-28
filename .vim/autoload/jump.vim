@@ -126,49 +126,28 @@ function! s:list_source(changes) abort
   return table
 endfunction
 
-" Override fzf :Lines
-" Note: This implements navigation across existing open windows and tabs. Native
-" version handles buffer switching separately from s:action_for() invocation.
-function! s:lines_sink(arg) abort
-  if empty(a:arg) | return | endif
-  let parts = split(a:arg[0], "\t", 1)
-  silent call file#drop_file(str2nr(parts[0]))
-  exe parts[2] | exe 'normal! zvzzze'
-endfunction
-function! jump#fzf_lines(query, ...) abort
-  let [show, lines] = fzf#vim#_lines(1)
-  let opts = ' --nth ' . (show ? 3 : 2) . '..'
-  let opts .= ' --layout=reverse-list --tiebreak=index --extended'
-  let opts .= ' --query ' . shellescape(a:query) . ' --ansi --tabstop=1'
-  let options = {
-    \ 'source': lines,
-    \ 'sink*': function('s:lines_sink'),
-    \ 'options': opts . ' --prompt "Lines> "',
-  \ }
-  return fzf#run(fzf#wrap('lines', options, a:0 ? a:1 : 0))
-endfunction
-
 " Override fzf :Jumps and :Changes
-" Note: This fixes issue where getbufline() output can be empty (filter assumes this
-" is non-empty) and because default flag --bind start:post:etc caused error.
+" Note: This implements :Lines navigation across existing open windows and tabs. Native
+" version handles buffer switching separately from s:action_for() invocation.
+" Note: This fixes :Jumps issue where getbufline() output can be empty (filter assumes
+" this is non-empty) and because default flag --bind start:post:etc caused error.
 " Note: Changelist is managed from the top-down by filtering out double and empty-line
 " entries or entries with invalid lines, then navigating using using drop_file and
 " setpos('.', ...) instead of the native g,/g; keys. Compare with jumplist above.
-function! jump#next_jump(...) abort
-  return call('s:next_list', [0] + a:000)
-endfunction
-function! jump#next_change(...) abort
-  return call('s:next_list', [1] + a:000)
-endfunction
 function! s:jump_sink(arg) abort  " first item is key binding
   return empty(a:arg) ? 1 : s:list_sink(0, a:arg[0])
 endfunction
 function! s:change_sink(arg) abort  " first item is key binding
    return empty(a:arg) ? 1 : s:list_sink(1, a:arg[0])
 endfunction
+function! s:lines_sink(arg) abort
+  if empty(a:arg) | return | endif
+  let parts = split(a:arg[0], "\t", 1)
+  silent call file#drop_file(str2nr(parts[0]))
+  exe parts[2] | exe 'normal! zvzzze'
+endfunction
 function! jump#fzf_jumps(...)
   let opts = '+m -x --ansi --cycle --scroll-off 999'
-
   let opts .= ' --sync --header-lines 1 --tiebreak=index'
   let options = {
     \ 'source': s:list_source(0),
@@ -186,6 +165,18 @@ function! jump#fzf_changes(...) abort
     \ 'options': opts . ' --prompt "Changes> "',
   \ }
   return fzf#run(fzf#wrap('changes', options, a:0 ? a:1 : 0))
+endfunction
+function! jump#fzf_lines(query, ...) abort
+  let [show, lines] = fzf#vim#_lines(1)
+  let opts = ' --nth ' . (show ? 3 : 2) . '..'
+  let opts .= ' --layout=reverse-list --tiebreak=index --extended'
+  let opts .= ' --query ' . shellescape(a:query) . ' --ansi --tabstop=1'
+  let options = {
+    \ 'source': lines,
+    \ 'sink*': function('s:lines_sink'),
+    \ 'options': opts . ' --prompt "Lines> "',
+  \ }
+  return fzf#run(fzf#wrap('lines', options, a:0 ? a:1 : 0))
 endfunction
 
 " Push current location to top of jumplist
@@ -229,70 +220,17 @@ function! jump#push_jump() abort
   endif
 endfunction
 
-" Navigate location list errors cyclically
-" Adding '+ 1 - reverse' fixes vint issue where ]x does not move from final error
-" See: https://vi.stackexchange.com/a/14359
-function! jump#setup_loc() abort
-  exe 'nnoremap <buffer> <CR> <CR>zv'
-endfunction
-function! jump#next_loc(count, list, ...) abort
-  " Generate list of loc dictionaries
-  let cmd = a:list ==# 'loc' ? 'll' : 'cc'
-  let func = 'get' . a:list . 'list'
-  let reverse = a:0 && a:1
-  let params = a:list ==# 'loc' ? [0] : []
-  let items = call(func, params)
-  call map(items, "extend(v:val, {'idx': v:key + 1})")
-  if reverse  " reverse search
-    call reverse(items)
-  endif
-  if empty(items)
-    echohl ErrorMsg
-    echom 'Error: No errors'
-    echohl None | return
-  endif
-  " Circularly jump to next loc
-  let [lnum, cnum] = [line('.'), col('.')]
-  let [cmps, oper] = [[], reverse ? '<' : '>']
-  call add(cmps, 'v:val.lnum ' . oper . ' lnum')
-  call add(cmps, 'v:val.col ' . oper . ' cnum + 1 - reverse')
-  call filter(items, join(cmps, ' || '))
-  let idx = get(get(items, 0, {}), 'idx', '')
-  if type(idx) != 0
-    exe reverse ? line('$') : 1 | call jump#next_loc(a:count, a:list, reverse)
-  elseif a:count > 1
-    exe cmd . ' ' . idx | call jump#next_loc(a:count - 1, a:list, reverse)
-  else  " jump to error
-    exe cmd . ' ' . idx
-  endif
-  if &l:foldopen =~# 'quickfix' | exe 'normal! zv' | endif
-endfunction
-
-" Navigate matches without editing jumplist
-" Note: This implements indexed-search directional consistency
-" and avoids adding to the jumplist to prevent overpopulation
-function! jump#next_match(count) abort
-  let forward = get(g:, 'indexed_search_n_always_searches_forward', 0)  " default
-  if forward && !v:searchforward
-    let map = a:count > 0 ? 'N' : 'n'
-  else
-    let map = a:count > 0 ? 'n' : 'N'
-  endif
-  let b:prevpos = getcurpos()
-  if !empty(@/)
-    call feedkeys("\<Cmd>keepjumps normal! " . abs(a:count) . map . "\<CR>", 'n')
-  else
-    echohl ErrorMsg | echom 'Error: Pattern not set' | echohl None
-  endif
-  if !empty(@/)
-    call feedkeys("\<Cmd>exe b:prevpos == getcurpos() ? '' : 'ShowSearchIndex'\<CR>", 'n')
-  endif
-endfunction
-
 " Navigate words with restricted &iskeyword
 " Note: This implements 'g' and 'h' text object motions using word jump mappings.
 " Use gw/ge/gb/gm for snake_case and zw/ze/zb/zm for CapitalCaseFooBar or camelCase.
-function! s:count_case(motion) abort
+function! jump#next_alpha(motion, mode, ...) abort
+  let cmd = 'setlocal iskeyword=' . &l:iskeyword  " vint: next-line -ProhibitUnnecessaryDoubleQuote
+  let &l:iskeyword = a:mode ? "a-z,48-57" : "@,48-57,192-255"
+  let cnt = a:mode ? s:adjust_count(a:motion) : v:count1
+  let action = a:0 ? a:1 ==# 'c' ? "\<Esc>c" : a:1 : ''
+  call feedkeys(action . cnt . a:motion . "\<Cmd>" . cmd . "\<CR>", 'n')
+endfunction
+function! s:adjust_count(motion) abort
   let [line, idx, cnt] = [getline('.'), col('.') - 1, v:count1]
   for _ in range(v:count1)
     if a:motion =~# '^[we]$'  " vint: next-line -ProhibitUsingUndeclaredVariable
@@ -316,10 +254,65 @@ function! s:count_case(motion) abort
     let idx += a:motion =~# '^[we]$' ? jdx : -jdx
   endfor | return cnt
 endfunction
-function! jump#next_motion(motion, mode, ...) abort
-  let cmd = 'setlocal iskeyword=' . &l:iskeyword  " vint: next-line -ProhibitUnnecessaryDoubleQuote
-  let &l:iskeyword = a:mode ? "a-z,48-57" : "@,48-57,192-255"
-  let cnt = a:mode ? s:count_case(a:motion) : v:count1
-  let action = a:0 ? a:1 ==# 'c' ? "\<Esc>c" : a:1 : ''
-  call feedkeys(action . cnt . a:motion . "\<Cmd>" . cmd . "\<CR>", 'n')
+
+" Navigate matches and lists without editing jumplist
+" Note: This implements indexed-search directional consistency
+" and avoids adding to the jumplist to prevent overpopulation
+function! jump#next_jump(...) abort
+  return call('s:next_list', [0] + a:000)
+endfunction
+function! jump#next_change(...) abort
+  return call('s:next_list', [1] + a:000)
+endfunction
+function! jump#next_match(count) abort
+  let forward = get(g:, 'indexed_search_n_always_searches_forward', 0)  " default
+  if forward && !v:searchforward  " implement 'always forward'
+    let map = a:count > 0 ? 'N' : 'n'
+  else  " standard direction
+    let map = a:count > 0 ? 'n' : 'N'
+  endif
+  let b:curpos = getcurpos()
+  if !empty(@/)
+    call feedkeys("\<Cmd>keepjumps normal! " . abs(a:count) . map . "\<CR>", 'n')
+  else
+    echohl ErrorMsg | echom 'Error: Pattern not set' | echohl None
+  endif
+  if !empty(@/)
+    call feedkeys("\<Cmd>exe b:curpos == getcurpos() ? '' : 'ShowSearchIndex'\<CR>", 'n')
+  endif
+endfunction
+
+" Navigate location list errors cyclically
+" Adding '+ 1 - reverse' fixes vint issue where ]x does not move from final error
+" See: https://vi.stackexchange.com/a/14359
+function! jump#setup_list() abort
+  exe 'nnoremap <buffer> <CR> <CR>zv'
+endfunction
+function! jump#next_list(count, list, ...) abort
+  let cmd = a:list ==# 'loc' ? 'll' : 'cc'
+  let func = 'get' . a:list . 'list'
+  let reverse = a:0 && a:1
+  let params = a:list ==# 'loc' ? [0] : []
+  let items = call(func, params)
+  call map(items, "extend(v:val, {'idx': v:key + 1})")
+  if reverse | call reverse(items) | endif
+  if empty(items)
+    redraw | echohl ErrorMsg
+    echom 'Error: No locations'
+    echohl None | return
+  endif
+  let [lnum, cnum] = [line('.'), col('.')]
+  let [cmps, oper] = [[], reverse ? '<' : '>']
+  call add(cmps, 'v:val.lnum ' . oper . ' lnum')
+  call add(cmps, 'v:val.col ' . oper . ' cnum + 1 - reverse')
+  call filter(items, join(cmps, ' || '))
+  let idx = get(get(items, 0, {}), 'idx', '')
+  if type(idx) != 0
+    exe reverse ? line('$') : 1 | call jump#next_list(a:count, a:list, reverse)
+  elseif a:count > 1
+    exe cmd . ' ' . idx | call jump#next_list(a:count - 1, a:list, reverse)
+  else  " jump to error
+    exe cmd . ' ' . idx
+  endif
+  if &l:foldopen =~# 'quickfix' | exe 'normal! zv' | endif
 endfunction
