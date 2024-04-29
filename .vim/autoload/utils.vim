@@ -176,17 +176,17 @@ endfunction
 " entire block which causes issues with some functions. So use below clunky method.
 " Also ensure functions accept :[range]call function(args) for consistency with vim
 " standard paradigm and so they can be called with e.g. V<motion>:call func().
-function! utils#motion_func(funcname, args, ...) abort
-  let string = string(a:args)[1:-2]  " remove square brackets
-  let string = a:funcname . '(' . string . ')'
+function! utils#motion_func(name, args, ...) abort
+  let signature = string(a:args)[1:-2]  " remove square brackets
+  let operator = a:name . '(' . signature . ')'
   let s:operator_view = a:0 && a:1 ? winsaveview() : {}
-  let s:operator_func = string
+  let s:operator_func = operator
   if mode() =~# '^\(v\|V\|\)$'  " call operator function with line range
     return ":call utils#operator_func('')\<CR>"
-  elseif mode() ==# 'n'
+  elseif mode() ==# 'n'  " await motion and call operator function over those lines
     set operatorfunc=utils#operator_func
-    return "\<Esc>g@"  " await user motion and call operator function over those lines
-  else
+    return "\<Esc>g@"
+  else  " fallback
     echoerr 'E999: Illegal mode: ' . string(mode())
     return "\<Esc>"
   endif

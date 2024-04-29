@@ -773,17 +773,18 @@ vnoremap zV <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>
 nnoremap zZ <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>
 
 " Toggle folds over selection or under matches after updating
-" Note: Here fold#toggle_inner_expr() calls fold#update_folds() before toggling.
+" Note: Here fold#toggle_folds_expr() calls fold#update_folds() before toggling.
 " Note: These will overwrite 'fastfold_fold_command_suffixes' generated fold-updating
 " maps. However now use even faster / more conservative fold#update_folds() method.
 nnoremap <expr> _ (foldclosed('.') > 0 ? 'zvzz' : foldlevel('.') > 0 ? 'zc' : 'zz') . 'ze'
-vnoremap <expr> _ fold#toggle_inner_expr(-1) . 'zzze'
-nnoremap zcc <Cmd>call fold#toggle_inner(1)<CR>
-nnoremap zoo <Cmd>call fold#toggle_inner(0)<CR>
-nnoremap <expr> zc fold#toggle_inner_expr(1)
-nnoremap <expr> zo fold#toggle_inner_expr(0)
-vnoremap <expr> zc fold#toggle_inner_expr(1)
-vnoremap <expr> zo fold#toggle_inner_expr(0)
+vnoremap <expr> _ fold#toggle_folds_expr() . 'zzze'
+nnoremap zz <Cmd>call fold#toggle_folds()<CR>
+nnoremap zcc <Cmd>call fold#toggle_folds(1)<CR>
+nnoremap zoo <Cmd>call fold#toggle_folds(0)<CR>
+nnoremap <expr> zc fold#toggle_folds_expr(1)
+nnoremap <expr> zo fold#toggle_folds_expr(0)
+vnoremap <expr> zc fold#toggle_folds_expr(1)
+vnoremap <expr> zo fold#toggle_folds_expr(0)
 
 " Toggle nested or recursive folds after updating
 " Note: Here 'zi' will close or open all nested folds under cursor up to level
@@ -791,11 +792,10 @@ vnoremap <expr> zo fold#toggle_inner_expr(0)
 " recursive-open then non-recursive close but annoying e.g. for huge classes.
 " Note: Here 'zC' will close fold only up to current level or for definitions
 " inside class (special case for python). For recursive motion mapping similar
-" to 'zc' and 'zo' could use e.g. noremap <expr> zC fold#toggle_inner_expr(1, 1)
+" to 'zc' and 'zo' could use e.g. noremap <expr> zC fold#toggle_folds_expr(1, 1)
 nnoremap za zn
 nnoremap zA zN<Cmd>call fold#update_folds(0)<CR>
 nnoremap zi <Cmd>call fold#toggle_children()<CR>
-nnoremap zz <Cmd>call fold#toggle_parent()<CR>
 nnoremap zC <Cmd>call fold#toggle_parent(1)<CR>
 nnoremap zO <Cmd>call fold#toggle_parent(0)<CR>
 vnoremap za zn
