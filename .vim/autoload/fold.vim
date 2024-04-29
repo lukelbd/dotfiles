@@ -51,6 +51,7 @@ endfunction
 " all its children), and outer force (as with outer but ignoring regexes).
 function! fold#get_parent(...) abort
   let toplevel = a:0 ? a:1 : &l:foldlevel
+  let toplevel = max([toplevel, 0])
   let [lnum, level] = [line('.'), toplevel + 1]
   let result = fold#get_fold(level)
   if empty(result) || foldclosed(result[0]) > 0
@@ -65,6 +66,7 @@ function! fold#get_fold(...) abort
   if foldlevel('.') <= 0 | return [] | endif
   let winview = winsaveview()
   let level = a:0 ? a:1 : foldlevel('.')
+  let level = max([level, 0])
   let [inum, fnum] = [0, foldclosed('.')]
   let fnum = fnum > 0 ? fnum : line('.')  " ignore inaccessible closed folds
   while fnum != inum && foldlevel(fnum) > level
@@ -99,17 +101,10 @@ function! fold#get_fold(...) abort
   call winrestview(winview) | return result
 endfunction
 
-
 " Return folds and properties across line range
 " Note: This ignores folds defined in s:folds_ignore, e.g. python classes and
 " tex documents. Used to close-open smaller fold blocks ignoring huge blocks.
-function! fold#get_folds(...) abort
-  return call('s:get_range', ['fold#get_fold'] + a:000)
-endfunction
-function! fold#get_parents(...) abort
-  return call('s:get_range', ['fold#get_parent'] + a:000)
-endfunction
-function! s:get_range(func, ...) abort
+function! s:get_folds(func, ...) abort
   let [lmin, lmax] = a:0 ? a:000[:1] : [1, line('$')]
   let winview = winsaveview()
   let nmax = a:0 > 3 ? a:4 : 0
@@ -131,6 +126,12 @@ function! s:get_range(func, ...) abort
     endif
   endwhile
   call winrestview(winview) | return results
+endfunction
+function! fold#get_folds(...) abort
+  return call('s:get_folds', ['fold#get_fold'] + a:000)
+endfunction
+function! fold#get_parents(...) abort
+  return call('s:get_folds', ['fold#get_parent'] + a:000)
 endfunction
 
 " Return default fold label
@@ -275,66 +276,59 @@ function! fold#update_folds(force, ...) abort
   call winrestview(winview)
 endfunction
 
-" Return result of function while folds over range are toggled
-" Note: This is needed to detect properties of child folds within closed parents. No
-" way to otherwise distinguish unique adjacent folds or toggle target nested folds.
+" Toggle inner folds within requested range
+" Note: Necessary to temporarily open outer folds before toggling inner folds. No way
+" to target them with :fold commands or distinguish adjacent children with same level
 function! s:toggle_state(line1, line2, ...) abort range
+  let level = a:0 ? a:1 : 0
   for lnum in range(a:line1, a:line2)
-    if foldclosed(lnum) > get(a:000, 0, 0) | return 1 | endif
-  endfor | return 0
+    let inum = foldclosed(lnum)
+    if inum > 0 && (!level || level == foldlevel(inum))
+      return 1
+    endif
+  endfor
+  return 0
 endfunction
-function! s:while_open(func, line1, line2, level, ...) abort
-  let folds = []
+function! s:toggle_inner(line1, line2, level, ...) abort
+  let [outer, inner] = [[], []]
   let [fold1, fold2] = [foldclosed(a:line1), foldclosedend(a:line2)]
   let [line1, line2] = [fold1 > 0 ? fold1 : a:line1, fold2 > 0 ? fold2 : a:line2]
   for lnum in range(line1, line2)
     let ilevel = foldlevel(lnum)
-    if !ilevel || ilevel > a:level | return | endif
-    let iclose = foldclosed(lnum)
-    if iclose < 0 | return | endif
-    let ifold = [ilevel, iclose]
-    if index(folds, ifold) == -1 | call add(folds, ifold) | endif
-  endfor | return folds
-  try  " open lowest-level first
-    for [_, lnum] in sort(folds)
-      exe lnum . 'foldopen'
-    endfor
-    return call(a:func, [line1, line2, a:level] + a:000)
-  finally  " close highest-level first
-    for [_, lnum] in reverse(sort(folds))
-      exe lnum . 'foldclose'
-    endfor
-  endtry
-endfunction
-
-" Toggle folds within input range
-" Note: This is required because recursive :foldclose! also closes parent
-" and :[range]foldclose does not close children. Have to go one-by-one.
-function! s:toggle_inner(line1, line2, level, ...) abort
-  let range = []  " options
-  let toggle = a:0 && a:1 >= 0 ? a:1 : !s:toggle_state(a:line1, a:line2, a:line1)
-  for lnum in range(a:line1, a:line2)
-    let ilevel = foldlevel(lnum)
-    if ilevel && ilevel > a:level
-      call add(range, [ilevel, lnum])
+    if !ilevel | continue | endif
+    let iline = foldclosed(lnum)
+    if ilevel > a:level
+      call add(inner, [ilevel, lnum])
+    elseif iline > 0 && index(outer, [ilevel, iline]) == -1
+      call add(outer, [ilevel, iline])
     endif
   endfor
-  let folds = []
-  for [_, lnum] in toggle ? reverse(sort(range)) : sort(range)
-    let iclose = foldclosed(lnum)
-    let ilevel = foldlevel(iclose > 0 ? iclose : lnum)
-    if toggle && iclose <= 0 && ilevel > a:level
-      exe lnum . 'foldclose'
-      call add(folds, [foldclosed(lnum), foldclosedend(lnum), ilevel])
-    elseif !toggle && iclose > 0 && ilevel > a:level
-      call add(folds, [iclose, foldclosedend(lnum), ilevel])
-      exe lnum . 'foldopen'
+  for [_, lnum] in sort(outer) | exe lnum . 'foldopen' | endfor
+  let level = a:level + 1  " minimum folding level
+  let toggle = a:0 ? a:1 : 1 - s:toggle_state(a:line1, a:line2, level)
+  let recurse = a:0 > 0 ? a:2 : 0
+  let toggled = []
+  for [_, lnum] in toggle ? reverse(sort(inner)) : sort(inner)
+    let inum = foldclosed(lnum)
+    let ilevel = foldlevel(inum > 0 ? inum : lnum)
+    if ilevel == level || recurse && ilevel > level
+      if toggle && inum <= 0
+        exe lnum . 'foldclose'
+        call add(toggled, [foldclosed(lnum), foldclosedend(lnum), ilevel])
+      elseif !toggle && inum > 0
+        call add(toggled, [inum, foldclosedend(lnum), ilevel])
+        exe lnum . 'foldopen'
+      endif
     endif
-  endfor | return [toggle, folds]
+  endfor
+  for [_, lnum] in reverse(sort(outer)) | exe lnum . 'foldclose' | endfor
+  return [toggle, toggled]
 endfunction
 
-" Open or close current children under cursor
-function! s:toggle_echo(toggle, count) abort
+" Open or close parent fold under cursor and its children
+" Note: If called on already-toggled 'current' folds the explicit 'foldclose/foldopen'
+" toggles the parent. So e.g. 'zCzC' first closes python methods then the class.
+function! s:show_toggle(toggle, count) abort
   let head = a:toggle > 1 ? 'Toggled' : a:toggle ? 'Closed' : 'Opened'
   if a:count > 0  " show fold count
     redraw | echom head . ' ' . a:count . ' fold' . (a:count > 1 ? 's' : '') . '.'
@@ -342,50 +336,55 @@ function! s:toggle_echo(toggle, count) abort
     call feedkeys("\<Cmd>echoerr 'E490: No folds found'\<CR>", 'n')
   endif
 endfunction
-function! fold#toggle_children(...) abort range
-  let [lmin, lmax] = sort([a:firstline, a:lastline], 'n')
-  call fold#update_folds(0)
-  let counts = [0, 0]
-  for ignore in [0, 1]  " whether to ignore filetype exceptions
-    if max(counts) > 0 | continue | endif
-    for [line1, line2, level] in fold#get_parents(lmin, lmax, ignore)
-      if line2 <= line1 | continue | endif
-      let args = ['s:toggle_inner', line1, line2, level] + copy(a:000)
-      let [toggle, folds] = call('s:while_open', args)
-      let counts[toggle] += len(folds)  " if zero then continue
-    endfor
-  endfor
-  let toggle = counts[0] && counts[1] ? 2 : counts[1] ? 1 : 0
-  call s:toggle_echo(toggle, counts[0] + counts[1]) | return ''
-endfunction
-" For <expr> map accepting motion
-function! fold#toggle_children_expr(...) abort
-  return utils#motion_func('fold#toggle_children', a:000, 1)
-endfunction
-
-" Open or close parent fold under cursor and its children
-" Note: If called on already-toggled 'current' folds the explicit 'foldclose/foldopen'
-" toggles the parent. So e.g. 'zCzC' first closes python methods then the class.
 function! fold#toggle_parent(...) abort range
   let [lmin, lmax] = sort([a:firstline, a:lastline], 'n')
   call fold#update_folds(0)
   let counts = [0, 0]
-  for ignore in [0, 1]
-    if max(counts) > 0 | continue | endif
-    for [line1, line2, level] in fold#get_parents(lmin, lmax, ignore)
-      if line2 <= line1 | continue | endif
-      let toggle = a:0 && a:1 >= 0 ? a:1 : 1 - s:toggle_state(line1, line1)
-      let [_, folds] = s:toggle_inner(line1, line2, level, toggle)
-      exe line1 . (toggle ? 'foldclose' : 'foldopen')
-      let counts[toggle] += 1 + len(folds)
-    endfor
+  for [line1, line2, level] in fold#get_parents(lmin, lmax)
+    if line2 <= line1 | continue | endif
+    let toggle = a:0 ? a:1 : 1 - s:toggle_state(line1, line1)
+    let [_, folds] = s:toggle_inner(line1, line2, level, toggle, 1)
+    exe line1 . (toggle ? 'foldclose' : 'foldopen')
+    let counts[toggle] += 1 + len(folds)
   endfor
   let toggle = counts[0] && counts[1] ? 2 : counts[1] ? 1 : 0
-  call s:toggle_echo(toggle, counts[0] + counts[1]) | return ''
+  call s:show_toggle(toggle, counts[0] + counts[1]) | return ''
 endfunction
 " For <expr> map accepting motion
 function! fold#toggle_parent_expr(...) abort
   return utils#motion_func('fold#toggle_parent', a:000, 1)
+endfunction
+
+" Open or close current children under cursor
+" Note: This is required because recursive :foldclose! also closes parent
+" and :[range]foldclose does not close children. Have to go one-by-one.
+function! fold#toggle_children(top, ...) abort range
+  let [lmin, lmax] = sort([a:firstline, a:lastline], 'n')
+  call fold#update_folds(0)
+  let counts = [0, 0]
+  if a:top  " outer-most inner folds
+    let folds = fold#get_parents(lmin, lmax)
+  else  " inner-most inner folds
+    let level = foldlevel('.')
+    let folds = fold#get_folds(lmin, lmax, level)
+    let fmin = min(map(copy(folds), 'v:val[0]'))
+    let fmax = max(map(copy(folds), 'v:val[1]'))
+    let [fmin, fmax] = fmin && fmax ? [fmin, fmax] : [lmin, lmax]
+    let levels = map(range(fmin, fmax), 'foldlevel(v:val)')
+    let folds = min(levels) == max(levels) ? fold#get_folds(lmin, lmax, level - 1) : folds
+  endif
+  for [line1, line2, level] in folds
+    if line2 <= line1 | continue | endif
+    let args = [line1, line2, level] + copy(a:000)
+    let [toggle, folds] = call('s:toggle_inner', args)
+    let counts[toggle] += len(folds)  " if zero then continue
+  endfor
+  let toggle = counts[0] && counts[1] ? 2 : counts[1] ? 1 : 0
+  call s:show_toggle(toggle, counts[0] + counts[1]) | return ''
+endfunction
+" For <expr> map accepting motion
+function! fold#toggle_children_expr(...) abort
+  return utils#motion_func('fold#toggle_children', a:000, 1)
 endfunction
 
 " Open or close inner folds within range (i.e. maximum fold level)
@@ -396,15 +395,15 @@ function! fold#toggle_folds(...) range abort
   let [lmin, lmax] = sort([a:firstline, a:lastline], 'n')
   let winview = a:0 > 1 && !empty(a:2) ? a:2 : winsaveview()
   call fold#update_folds(0)
-  let levs = map(range(lmin, lmax), 'foldlevel(v:val)')
-  let folds = fold#get_folds(lmin, lmax, max(levs))
+  let levels = map(range(lmin, lmax), 'foldlevel(v:val)')
+  let folds = fold#get_folds(lmin, lmax, max(levels))
   let state = s:toggle_state(lmin, lmax)
   if lmin == lmax || mode() !=# 'n'
     let motion = 0  " input cursor motion
   else
     let motion = lmin == line('.') ? 1 : lmax == line('.') ? -1 : 0
   endif
-  if motion && state == 0 && max(levs) == min(levs)  " search for inner folds
+  if motion && state == 0 && max(levels) == min(levels)  " search for inner folds
     let fmin = min(map(copy(folds), 'v:val[0]'))
     let fmax = max(map(copy(folds), 'v:val[1]'))
     if motion < 0
@@ -412,7 +411,7 @@ function! fold#toggle_folds(...) range abort
     else
       let [imin, imax] = [lmax, fmax ? fmax : winview.topline + &l:lines]
     endif
-    let others = fold#get_folds(imin, imax, max(levs) + 1, 1)  " search for children
+    let others = fold#get_folds(imin, imax, max(levels) + 1, 1)  " search for children
     if !empty(others)
       let [folds, ifold] = [others, others[0]]
       if motion < 0  " toggle from the end of line
@@ -428,7 +427,7 @@ function! fold#toggle_folds(...) range abort
     let line2 = min([line2, lmax])
     exe line1 . ',' . line2 . (toggle ? 'foldclose' : 'foldopen')
   endfor
-  call s:toggle_echo(toggle, len(folds)) | return ''
+  call s:show_toggle(toggle, len(folds)) | return ''
   if empty(folds)
     call feedkeys("\<Cmd>echoerr 'E490: No folds found'\<CR>", 'n')
   endif | return ''

@@ -795,12 +795,14 @@ vnoremap <expr> zo fold#toggle_folds_expr(0)
 " to 'zc' and 'zo' could use e.g. noremap <expr> zC fold#toggle_folds_expr(1, 1)
 nnoremap za zn
 nnoremap zA zN<Cmd>call fold#update_folds(0)<CR>
-nnoremap zi <Cmd>call fold#toggle_children()<CR>
+nnoremap zi <Cmd>call fold#toggle_children(0)<CR>
+nnoremap zI <Cmd>call fold#toggle_children(1)<CR>
 nnoremap zC <Cmd>call fold#toggle_parent(1)<CR>
 nnoremap zO <Cmd>call fold#toggle_parent(0)<CR>
 vnoremap za zn
 vnoremap zA zN<Cmd>call fold#update_folds(0)<CR>
-vnoremap <expr> zi fold#toggle_children_expr()
+vnoremap <expr> zi fold#toggle_children_expr(0)
+vnoremap <expr> zI fold#toggle_children_expr(1)
 vnoremap <expr> zz fold#toggle_parent_expr()
 vnoremap <expr> zC fold#toggle_parent_expr(1)
 vnoremap <expr> zO fold#toggle_parent_expr(0)
