@@ -195,7 +195,7 @@ function! fold#fold_text(...) abort
     let [line1, line2] = [v:foldstart, v:foldend]
     let level = len(v:folddashes)
   endif
-  let level = repeat(':', level)  " fold level
+  let level = level . repeat(':', level)  " fold level
   let lines = string(line2 - line1 + 1)  " number of lines
   let leftidx = charidx(getline(winview.lnum), winview.leftcol)
   let maxlen = get(g:, 'linelength', 88) - 1  " default maximum
@@ -269,9 +269,10 @@ function! fold#update_folds(force, ...) abort
     silent! FastFoldUpdate
     let b:fastfold_queued = 0
   endif
+  let ftype = get(b:, 'fugitive_type', '')
   if a:0  " initialize
     if a:1 > 0  " apply defaults
-      let &l:foldlevel = !empty(get(b:, 'fugitive_type', ''))
+      let &l:foldlevel = !empty(ftype) || &l:foldmethod ==# 'marker'
     endif
     for lnum in fold#get_ignores()
       exe lnum . 'foldopen'
@@ -336,10 +337,12 @@ endfunction
 " Open or close parent fold under cursor and its children
 " Note: If called on already-toggled 'current' folds the explicit 'foldclose/foldopen'
 " toggles the parent. So e.g. 'zCzC' first closes python methods then the class.
-function! s:show_toggle(toggle, count) abort
+function! s:toggle_finish(toggle, count) abort
+  exe a:toggle ? '' : 'normal! zzze'
   let head = a:toggle > 1 ? 'Toggled' : a:toggle ? 'Closed' : 'Opened'
+  let msg = head . ' ' . a:count . ' fold' . (a:count > 1 ? 's' : '') . '.'
   if a:count > 0  " show fold count
-    redraw | echom head . ' ' . a:count . ' fold' . (a:count > 1 ? 's' : '') . '.'
+    call feedkeys("\<Cmd>echom " . string(msg) . "\<CR>", 'n')
   else  " consistent with native commands
     call feedkeys("\<Cmd>echoerr 'E490: No folds found'\<CR>", 'n')
   endif
@@ -356,7 +359,7 @@ function! fold#toggle_parents(...) abort range
     let counts[toggle] += 1 + len(folds)
   endfor
   let toggle = counts[0] && counts[1] ? 2 : counts[1] ? 1 : 0
-  call s:show_toggle(toggle, counts[0] + counts[1]) | return ''
+  call s:toggle_finish(toggle, counts[0] + counts[1]) | return ''
 endfunction
 " For <expr> map accepting motion
 function! fold#toggle_parents_expr(...) abort
@@ -388,7 +391,7 @@ function! fold#toggle_children(top, ...) abort range
     let counts[toggle] += len(folds)  " if zero then continue
   endfor
   let toggle = counts[0] && counts[1] ? 2 : counts[1] ? 1 : 0
-  call s:show_toggle(toggle, counts[0] + counts[1]) | return ''
+  call s:toggle_finish(toggle, counts[0] + counts[1]) | return ''
 endfunction
 " For <expr> map accepting motion
 function! fold#toggle_children_expr(...) abort
@@ -435,7 +438,7 @@ function! fold#toggle_folds(...) range abort
     let line2 = min([line2, lmax])
     exe line1 . ',' . line2 . (toggle ? 'foldclose' : 'foldopen')
   endfor
-  call s:show_toggle(toggle, len(folds)) | return ''
+  call s:toggle_finish(toggle, len(folds)) | return ''
   if empty(folds)
     call feedkeys("\<Cmd>echoerr 'E490: No folds found'\<CR>", 'n')
   endif | return ''
