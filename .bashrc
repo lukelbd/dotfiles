@@ -90,8 +90,8 @@
 #   ~# -- Give list of forwarded connections in this session
 #   ~? -- Give list of these commands
 #-----------------------------------------------------------------------------
-# General settings {{{2
-# Apply prompt "<comp name>[<job count>]:<push dir N>:...:<push dir 1>:<work dir> <user>$"
+# Apply general settings {{{2
+# Prompt "<comp name>[<job count>]:<push dir N>:...:<push dir 1>:<work dir> <user>$"
 # Ensure the prompt is applied only once so modules can modify it
 # See: https://unix.stackexchange.com/a/124408/112647
 # See: https://unix.stackexchange.com/a/420362/112647
