@@ -13,7 +13,7 @@
 " let rhs = substitute(rhs, '\C\<tabe\a*', 'drop', 'g')  " use :Git drop?
 let s:log_trim = '--graph --abbrev-commit --max-count=50'
 let s:log_format = '--date=relative --branches --decorate'
-let s:cmd_vert = ['commits', 'log', 'tree', 'trunk']  " vertical commands
+let s:cmd_vert = ['commits', 'log', 'refs', 'tree', 'trunk']  " vertical commands
 let s:cmd_editor = ['merge', 'commit', 'oops']  " commands open editor
 let s:cmd_oneline = ['add', 'stage', 'reset', 'push', 'pull', 'fetch', 'switch', 'restore', 'checkout']
 let s:cmd_resize = {
@@ -159,7 +159,7 @@ function! git#run_command(msg, line1, count, range, bang, mods, cmd, ...) range 
   let icmd = get(s:cmd_translate, name, name) . ' ' . join(flags, ' ')
   if !empty(a:mods) || a:cmd =~# '^blame\( %\)\@!'
     let imod = a:mods
-  elseif index(s:cmd_vert, name) > 0
+  elseif index(s:cmd_vert, name) >= 0
     let imod = 'vert botright'
   else
     let imod = 'botright'

@@ -625,14 +625,14 @@ cnoremap <silent> <expr> <BS> window#close_wild("\<BS>")
 " &foldlevel for fortran python and tex files (e.g. always open \begin{document}).
 command! -bang -nargs=? Refold call fold#update_folds(<bang>0, <f-args>)
 for s:key in ['z', 'f', 'F', 'n', 'N'] | silent! exe 'unmap! z' . s:key | endfor
+nnoremap zv zvzzze
+vnoremap zv zvzzze
 nnoremap zx <Cmd>call fold#update_folds(0, 1)<CR>
-nnoremap zX <Cmd>call fold#update_folds(0, 2)<CR>
-nnoremap zv <Cmd>call fold#update_folds(0)<CR>zvzzze
-nnoremap zV <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>zzze
+nnoremap zX <Cmd>call fold#update_folds(1, 2)<CR><Cmd>echom 'Updated folds'<CR>
+nnoremap zV <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>zvzzze
 vnoremap zx <Cmd>call fold#update_folds(0, 1)<CR>
-vnoremap zX <Cmd>call fold#update_folds(0, 2)<CR>
-vnoremap zv <Cmd>call fold#update_folds(0)<CR>zvzzze
-vnoremap zV <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>zzze
+vnoremap zX <Cmd>call fold#update_folds(1, 2)<CR><Cmd>echom 'Updated folds'<CR>
+vnoremap zV <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>zvzzze
 
 " Toggle folds over selection or under matches after updating
 " Note: Here fold#toggle_folds_expr() calls fold#update_folds() before toggling.
@@ -797,8 +797,8 @@ command! -range=0 -bang -nargs=* -complete=file Grep call call('grep#call_rg', [
 command! -range=0 -bang -nargs=* -complete=file Find call call('grep#call_rg', [<bang>0, <count>, tags#get_search(1), <f-args>])
 command! -range=0 -bang -nargs=+ -complete=file Ag call grep#call_ag(<bang>0, <count>, <f-args>)
 command! -range=0 -bang -nargs=+ -complete=file Rg call grep#call_rg(<bang>0, <count>, <f-args>)
-nnoremap g' <Cmd>call grep#call_grep('rg', 0, 2)<CR>
-nnoremap g" <Cmd>call grep#call_grep('rg', 1, 0)<CR>
+nnoremap g' <Cmd>call grep#call_grep('rg', 1, 0)<CR>
+nnoremap g" <Cmd>call grep#call_grep('rg', 0, 2)<CR>
 nnoremap z' <Cmd>call grep#call_grep('rg', 1, 2)<CR>
 nnoremap z" <Cmd>call grep#call_grep('rg', 1, 3)<CR>
 
@@ -1032,7 +1032,7 @@ vnoremap <expr> gQ edit#wrap_items_expr(v:count)
 call utils#repeat_map('n', '[e', 'BlankUp', '<Cmd>put!=repeat(nr2char(10), v:count1) \| '']+1<CR>')
 call utils#repeat_map('n', ']e', 'BlankDown', '<Cmd>put=repeat(nr2char(10), v:count1) \| ''[-1<CR>')
 
-" Join lines and keep cursor column {{{2
+" Join lines and keep cursor column
 " Note: Here e.g. '2J' joins 'next two lines' instead of 'current plus one'
 noremap <silent> J <Cmd>call edit#conjoin_lines(0, 0)<CR>
 noremap <silent> K <Cmd>call edit#conjoin_lines(1, 0)<CR>
@@ -1608,9 +1608,9 @@ let g:riv_python_rst_hl = 0  " highlight rest in python docstrings
 let g:vim_markdown_conceal = 1  " conceal stuff
 let g:vim_markdown_conceal_code_blocks = 0  " show code fences
 let g:vim_markdown_fenced_languages = ['html', 'python']
-let g:vim_markdown_folding_level = 0  " pythonic folding level
+let g:vim_markdown_folding_level = 1  " pythonic folding level
 let g:vim_markdown_folding_style_pythonic = 1  " repair fold close issue
-let g:vim_markdown_override_foldtext = 1  " also overwrite function (see common.vim)
+let g:vim_markdown_override_foldtext = 0  " also overwrite function (see common.vim)
 let g:vim_markdown_math = 1 " turn on $$ math
 
 " Filetype utilities
@@ -1719,7 +1719,7 @@ silent! delcommand SplitjoinSplit
 " Matches and delimiters {{{2
 " Note: Here vim-tags searching integrates with indexed-search and vim-succinct
 " surround delimiters integrate with matchup '%' keys.
-if s:has_plug('vim-matchup') || s:has_plug('vim-indexed-search')
+if s:has_plug('vim-matchup') || s:has_plug('vim-indexed-search')  " {{{
   let g:indexed_search_center = 0  " disable centered match jumping
   let g:indexed_search_colors = 0  " disable colors for speed
   let g:indexed_search_dont_move = 1  " irrelevant due to custom mappings
@@ -1735,12 +1735,12 @@ if s:has_plug('vim-matchup') || s:has_plug('vim-indexed-search')
   let g:matchup_surround_enabled = 1  " enable 'ds%' 'cs%' mappings
   let g:matchup_transmute_enabled = 0  " issues with tex, use vim-succinct instead
   let g:matchup_text_obj_linewise_operators = ['y', 'd', 'c', 'v', 'V', "\<C-v>"]
-endif
+endif  " }}}
 
 " Navigation and delimiters
 " Note: Tried easy motion but way too complicated / slows everything down
 " See: https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
-if s:has_plug('vim-succinct') || s:has_plug('vim-sneak')
+if s:has_plug('vim-succinct') || s:has_plug('vim-sneak')  " {{{
   map f <Plug>Sneak_f
   map F <Plug>Sneak_F
   map t <Plug>Sneak_t
@@ -1763,12 +1763,12 @@ if s:has_plug('vim-succinct') || s:has_plug('vim-sneak')
   let g:delimitMate_expand_space = 1
   let g:delimitMate_jump_expansion = 1
   let g:delimitMate_excluded_regions = 'String'  " disabled inside by default
-endif
+endif  " }}}
 
 " Text object settings
 " Note: Here use mnemonic 'v' for 'value' and 'C' for comment. The first avoids
 " conflicts with ftplugin/tex.vim and the second with 'c' curly braces.
-if s:has_plug('vim-textobj-user')
+if s:has_plug('vim-textobj-user')  " {{{
   augroup textobj_setup
     au!
     au VimEnter * call textobj#sentence#init()
@@ -1801,16 +1801,15 @@ if s:has_plug('vim-textobj-user')
   call succinct#add_objects('alpha', s:textobj_alpha, 0, 1)  " do not escape
   call textobj#user#plugin('comment', {'-': s:textobj_comment})  " do not add <Plug> suffix
   call textobj#user#plugin('entire', {'-': s:textobj_entire})  " do not add <Plug> suffix
-endif
+endif  " }}}
 
-" Alignment and comments {{{2
 " Easy-align settings. Support case/esac block parentheses and seimcolons, chained
 " && and || symbols, trailing comments. See file empty.txt for easy-align tests.
 " Note: Use <Left> to stick delimiter to left instead of right and use * to align
 " by all delimiters instead of the default of 1 delimiter.
 " Note: Use :EasyAlign<Delim>is, id, or in for shallowest, deepest, or no indentation
 " and use <Tab> in interactive mode to cycle through these.
-if s:has_plug('vim-easy-align')
+if s:has_plug('vim-easy-align')  " {{{
   augroup easy_align_setup
     au!
     au BufEnter * let g:easy_align_delimiters['c']['pattern'] = '\s' . comment#get_regex()
@@ -1826,12 +1825,12 @@ if s:has_plug('vim-easy-align')
     \ '&': s:chain_group,
     \ 'c': s:comment_group,
   \ }
-endif
+endif  " }}}
 
 " Comment toggle settings
 " Note: This disable several maps but keeps many others. Remove unmap commands
 " after restarting existing vim sessions.
-if s:has_plug('tcomment_vim')
+if s:has_plug('tcomment_vim')  " {{{
   for s:key1 in ['>', '<'] | for s:key2 in ['b', 'c', '>', '<>']
     silent! exe 'unmap g' . s:key1 . s:key2
   endfor | endfor
@@ -1849,7 +1848,7 @@ if s:has_plug('tcomment_vim')
   let g:tcomment_textobject_inlinecomment = ''  " default of 'ic' disables text object
   let g:tcomment_mapleader_uncomment_anyway = 'z<'
   let g:tcomment_mapleader_comment_anyway = 'z>'
-endif
+endif  " }}}
 
 " Tags and folds {{{2
 " Buffer specific tag management
@@ -1860,7 +1859,7 @@ endif
 " Note: Custom plugin is similar to :Btags, but does not create or manage tag files,
 " instead creating tags whenever buffer is loaded and tracking tags continuously. Also
 " note / and ? update jumplist but cannot override without keeping interactivity.
-if s:has_plug('taglist')
+if s:has_plug('taglist')  " {{{
   augroup taglist_setup
     au! | au BufEnter *__Tag_List__* call tag#setup_taglist() | call window#setup_panel()
   augroup END
@@ -1871,8 +1870,8 @@ if s:has_plug('taglist')
   let g:Tlist_WinWidth = 40
   nnoremap z\ <Cmd>TlistToggle<CR>
   vnoremap z\ <Cmd>TlistToggle<CR>
-endif
-if s:has_plug('vim-tags')
+endif  " }}}
+if s:has_plug('vim-tags')  " {{{
   exe 'silent! unmap gyy' | exe 'silent! unmap zyy'
   command! -count -nargs=? TagToggle
     \ call call('switch#tags', <range> ? [<count>] : [<args>])
@@ -1897,13 +1896,13 @@ if s:has_plug('vim-tags')
   let g:tags_next_local_map = ']w'  " keyword jumping
   let g:tags_prev_global_map = '[W'
   let g:tags_next_global_map = ']W'
-endif
+endif  " }}}
 
 " Project-wide ctags management
 " Note: Adding directories with '--exclude' flags fails in gutentags since it manually
 " feeds files to 'ctags' executable which bypasses recursive exclude folder-name
 " checking. Instead exclude folders using manual file generation executable.
-if s:has_plug('vim-gutentags')
+if s:has_plug('vim-gutentags')  " {{{
   augroup tags_setup
     au!
     au User GutentagsUpdated call tag#update_files()
@@ -1939,13 +1938,12 @@ if s:has_plug('vim-gutentags')
   " let g:gutentags_cache_dir = '~/.vim_tags_cache'  " alternative cache specification
   " let g:gutentags_ctags_tagfile = 'tags'  " used with cache dir
   " let g:gutentags_file_list_command = 'git ls-files'  " alternative to exclude ignores
-endif
+endif  " }}}
 
 " Enable native vim syntax folding and configure fastfold
-" Note: Critical to run custom update after built-in update, and requires calling
-" vim enter autocommand after fast fold autocommand.
-" Note: FastFold suggestion for python files is to locally set foldmethod=indent but
-" this is constraining. Use SimpylFold instead (they recommend FastFold integration).
+" Warning: Have to refresh after VimEnter since fastfold does bunch of setup stuff
+" that affects current buffer. When opening sessions windows not-in-focus have
+" correct fold-open status and marker updates but main window does not.
 " Note: Use native mappings. zr reduces fold level by 1, zm folds more by 1 level,
 " zR is big reduction (opens everything), zM is big increase (closes everything),
 " zj and zk jump to start/end of *this* fold, [z and ]z jump to next/previous fold,
@@ -1953,15 +1951,16 @@ endif
 " zn and zN fold toggle between no folds/previous folds without affecting foldlevel.
 " See: https://www.reddit.com/r/vim/comments/c5g6d4/why_is_folding_so_slow/
 " See: https://github.com/Konfekt/FastFold and https://github.com/tmhedberg/SimpylFold
-if &g:foldenable || s:has_plug('FastFold')
-  silent! exe 'runtime plugin/fastfold.vim'
-  let s:script = get(utils#get_scripts('fastfold.vim'), 0, '')
-  exe empty(s:script) ? 'source ' . s:script : ''
-  augroup fastfold_setup
+if &g:foldenable || s:has_plug('FastFold')  " {{{
+  let g:fastfold_savehook = 0  " use custom instead
+  let g:fastfold_fold_command_suffixes =  []  " use custom instead
+  let g:fastfold_fold_movement_commands = []  " use custom instead
+  exe 'runtime plugin/fastfold.vim'
+  augroup fold_setup
     au!
-    au VimEnter * call fold#update_folds(1, 1)
-    au BufEnter * setlocal foldtext=fold#fold_text()
-    au BufWinEnter * call fold#update_folds(0, 1)
+    au VimEnter * exe 'runtime after/common.vim'
+    au BufEnter * setlocal foldtext=fold#fold_text()  " re-apply fold text
+    au BufWinEnter * call fold#update_folds(0, 1)  " apply default level
     au TextChanged,TextChangedI * let b:fastfold_queued = 1
   augroup END
   let g:baan_fold = 1
@@ -1982,10 +1981,7 @@ if &g:foldenable || s:has_plug('FastFold')
   let g:vimsyn_folding = 'af'
   let g:xml_syntax_folding = 1
   let g:zsh_fold_enable = 1
-  let g:fastfold_savehook = 0  " use custom instead
-  let g:fastfold_fold_command_suffixes =  []  " use custom instead
-  let g:fastfold_fold_movement_commands = []  " use custom instead
-endif
+endif  " }}}
 
 " Lsp server integration {{{2
 " Note: LspDefinition accepts <mods> and stays in current buffer for local definitions,
@@ -2000,7 +1996,7 @@ endif
 " Warning: foldexpr=lsp#ui#vim#folding#foldexpr() foldtext=lsp#ui#vim#folding#foldtext()
 " cause insert mode slowdowns even with g:lsp_fold_enabled = 0. Now use fast fold with
 " native syntax foldmethod. Also tried tagfunc=lsp#tagfunc but now use LspDefinition
-if s:has_plug('vim-lsp')
+if s:has_plug('vim-lsp')  " {{{
   " Autocommands and mappings
   " Note: The autocmd gives signature popups the same borders as hover popups, or else
   " they have double border. See: https://github.com/prabirshrestha/vim-lsp/issues/594
@@ -2074,7 +2070,7 @@ if s:has_plug('vim-lsp')
   let g:lsp_preview_fixup_conceal = -1  " fix window size in terminal vim
   let g:lsp_signature_help_enabled = 1  " sigature help
   let g:lsp_signature_help_delay = 100  " milliseconds
-endif
+endif  " }}}
 
 " Lsp completion settings (see :help ddc-options). Note underscore seems to
 " indicate all sources, used for global filter options, and filetype-specific
@@ -2091,7 +2087,7 @@ endif
 " ['around', 'buffer', 'file', 'ctags', 'vim-lsp', 'vsnip']
 " 'vsnip': {'mark': 'S', 'maxItems': 5}}
 " 'ctags': {'mark': 'T', 'isVolatile': v:true, 'maxItems': 5}}
-if s:has_plug('ddc.vim')
+if s:has_plug('ddc.vim')  " {{{
   augroup ddc_setup
     au!
     au InsertEnter * if &l:iskeyword ==# 'vim' | setlocal iskeyword+=: | endif
@@ -2151,7 +2147,7 @@ if s:has_plug('ddc.vim')
   call ddc#custom#patch_global('sources', g:ddc_sources)
   call ddc#custom#patch_global(g:ddc_options)
   call ddc#enable()
-endif
+endif  " }}}
 
 " Asynchronous linting {{{2
 " Note: bashate is equivalent to pep8, similar to prettier and beautify
@@ -2172,7 +2168,7 @@ endif
 " https://github.com/openstack/bashate  # shell format checker
 " https://mypy.readthedocs.io/en/stable/introduction.html  # type annotation checker
 " https://github.com/creativenull/dotfiles/blob/1c23790/config/nvim/init.vim#L481-L487
-if s:has_plug('ale')
+if s:has_plug('ale')  " {{{
   augroup ale_setup
     au!
     au BufRead ipython_*config.py,jupyter_*config.py let b:ale_enabled = 0
@@ -2227,23 +2223,23 @@ if s:has_plug('ale')
   let g:ale_sh_shellcheck_options = '-e ' . s:shellcheck_ignore
   let g:ale_update_tagstack = 0  " use ctags for this
   let g:ale_virtualtext_cursor = 0  " no error shown here
-endif
+endif  " }}}
 
 " Testing and formatting plugin settings
 " Isort: https://github.com/fisadev/vim-isort
 " Black: https://black.readthedocs.io/en/stable/integrations/editors.html?highlight=vim#vim
 " Autopep8: https://github.com/tell-k/vim-autopep8 (includes several global variables)
 " Autoformat: https://github.com/vim-autoformat/vim-autoformat (expands native 'autoformat' utilities)
-if s:has_plug('black')
+if s:has_plug('black')  " {{{
   let g:black_linelength = g:linelength
   let g:black_skip_string_normalization = 1
-endif
-if s:has_plug('vim-autopep8')
+endif  " }}}
+if s:has_plug('vim-autopep8')  " {{{
   let g:autopep8_disable_show_diff = 1
   let g:autopep8_ignore = s:flake8_ignore
   let g:autopep8_max_line_length = g:linelength
-endif
-if s:has_plug('vim-isort')
+endif  " }}}
+if s:has_plug('vim-isort')  " {{{
   let g:vim_isort_python_version = 'python3'
   let g:vim_isort_config_overrides = {
     \ 'include_trailing_comma': 'true',
@@ -2251,8 +2247,8 @@ if s:has_plug('vim-isort')
     \ 'multi_line_output': 3,
     \ 'line_length': g:linelength,
   \ }
-endif
-if s:has_plug('vim-autoformat')
+endif  " }}}
+if s:has_plug('vim-autoformat')  " {{{
   let g:formatdef_isort_black = '"isort '
     \ . '--trailing-comma '
     \ . '--force-grid-wrap 0 '
@@ -2263,8 +2259,8 @@ if s:has_plug('vim-autoformat')
     \ . '--line-length ' . g:linelength . ' - "'
   let g:formatters_python = ['isort_black']  " defined above
   let g:formatters_fortran = ['fprettify']  " install with mamba
-endif
-if s:has_plug('vim-test')
+endif  " }}}
+if s:has_plug('vim-test')  " {{{
   let test#strategy = 'iterm'
   let g:test#python#pytest#options = '--mpl --verbose'
   nnoremap <Leader>\ <Cmd>call utils#catch_errors('TestVisit')<CR>
@@ -2276,7 +2272,7 @@ if s:has_plug('vim-test')
   nnoremap <Leader>] <Cmd>call utils#catch_errors('TestSuite')<CR>
   nnoremap <Leader>{ <Cmd>call utils#catch_errors('TestFile --mpl-generate')<CR>
   nnoremap <Leader>} <Cmd>call utils#catch_errors('TestSuite --mpl-generate')<CR>
-endif
+endif  " }}}
 
 " Git plugin settings {{{2
 " Conflict highlight settings (warning: change below to 'BufEnter?')
@@ -2287,7 +2283,7 @@ endif
 " basis and they wipe out syntax highlighting between the conflict markers.
 " See: https://vi.stackexchange.com/q/31623/8084
 " See: https://github.com/rhysd/conflict-marker.vim
-if s:has_plug('conflict-marker.vim')
+if s:has_plug('conflict-marker.vim')  " {{{
   augroup conflict_marker_setup
     au!
     au BufWinEnter * if conflict_marker#detect#markers()
@@ -2312,7 +2308,7 @@ if s:has_plug('conflict-marker.vim')
   let g:conflict_marker_separator = '^=======$'
   let g:conflict_marker_common_ancestors = '^||||||| .*$'
   highlight ConflictMarker cterm=inverse gui=inverse
-endif
+endif  " }}}
 
 " Fugitive settings
 " Note: Fugitive overwrites commands for some reason so re-declare them
@@ -2320,7 +2316,7 @@ endif
 " Note: All of the file-opening commands throughout fugitive funnel them through
 " commands like Gedit, Gtabedit, etc. So can prevent duplicate tabs by simply
 " overwriting this with custom tab-jumping :Drop command (see also git.vim).
-if s:has_plug('vim-fugitive')
+if s:has_plug('vim-fugitive')  " {{{
   augroup fugitive_setup
     au!
     au BufEnter * call git#setup_commands()
@@ -2333,7 +2329,7 @@ if s:has_plug('vim-fugitive')
   vnoremap <expr> zp git#run_map_expr(2, 0, '', 'blame ')
   nnoremap <Leader>' <Cmd>call git#run_map(0, 0, '', '')<CR>
   nnoremap <Leader>" <Cmd>call git#run_map(0, 0, '', 'status')<CR>
-  nnoremap <Leader>p <Cmd>call git#run_map(0, 0, '', 'trunk')<CR>
+  nnoremap <Leader>p <Cmd>call git#run_map(0, 0, '', 'commits')<CR>
   nnoremap <Leader>P <Cmd>call git#run_map(0, 0, '', 'tree')<CR>
   nnoremap <Leader>u <Cmd>call git#run_map(0, 0, '', 'push origin')<CR>
   nnoremap <Leader>U <Cmd>call git#run_map(0, 0, '', 'pull origin')<CR>
@@ -2355,7 +2351,7 @@ if s:has_plug('vim-fugitive')
   nnoremap <Leader>B <Cmd>call git#run_map(0, 0, '', 'switch -')<CR>
   let g:fugitive_legacy_commands = 1  " include deprecated :Git status to go with :Git
   let g:fugitive_dynamic_colors = 1  " fugitive has no HighlightRecent option
-endif
+endif  " }}}
 
 " Git gutter settings
 " Note: Use custom command for toggling on/off. Older vim versions always show
@@ -2366,7 +2362,7 @@ endif
 " Note: Staging maps below were inspired by tcomment maps 'gc', 'gcc', 'etc.', and
 " navigation maps ]g, ]G (navigate to hunks, or navigate and stage hunks) were inspired
 " by spell maps ]s, ]S (navigate to spell error, or navigate and fix error).
-if s:has_plug('vim-gitgutter')
+if s:has_plug('vim-gitgutter')  " {{{
   command! -nargs=? GitGutterToggle call switch#gitgutter(<args>)
   command! -bang -range Hunks call git#stat_hunks(<range> ? <line1> : 0, <range> ? <line2> : 0, <bang>0)
   exe 'silent! unmap zgg'
@@ -2393,7 +2389,7 @@ if s:has_plug('vim-gitgutter')
   nnoremap <nowait> gHH <Cmd>call git#stage_hunks(0)<CR>
   nnoremap zg <Cmd>GitGutter \| echom 'Updated buffer hunks'<CR>
   nnoremap zG <Cmd>GitGutterAll \| echom 'Updated global hunks'<CR>
-endif
+endif  " }}}
 
 " Calculation plugin settings {{{2
 " Julia usage bug: https://github.com/meta Kirby/codi.vim/issues/120
@@ -2406,15 +2402,15 @@ endif
 " Note: Usage is HowMuch#HowMuch(isAppend, withEq, sum, engineType) where isAppend says
 " whether to replace or append, withEq says whether to include equals sign, sum says
 " whether to sum the numbers, and engine is one of 'py', 'bc', 'vim', 'auto'.
-if s:has_plug('HowMuch')
+if s:has_plug('HowMuch')  " {{{
   nnoremap g++ :call HowMuch#HowMuch(0, 0, 1, 'py')<CR>
   nnoremap z++ :call HowMuch#HowMuch(1, 1, 1, 'py')<CR>
   nnoremap <expr> g+ edit#how_much(0, 0, 1, 'py')
   nnoremap <expr> z+ edit#how_much(1, 1, 1, 'py')
   vnoremap <expr> g+ edit#how_much(0, 0, 1, 'py')
   vnoremap <expr> z+ edit#how_much(1, 1, 1, 'py')
-endif
-if s:has_plug('vim-speeddating')
+endif  " }}}
+if s:has_plug('vim-speeddating')  " {{{
   nmap <silent> + <Plug>SpeedDatingUp:call repeat#set("\<Plug>SpeedDatingUp")<CR>
   nmap <silent> - <Plug>SpeedDatingDown:call repeat#set("\<Plug>SpeedDatingDown")<CR>
   vmap <silent> + <Plug>SpeedDatingUp:call repeat#set("\<Plug>SpeedDatingUp")<CR>
@@ -2423,8 +2419,8 @@ if s:has_plug('vim-speeddating')
   nnoremap <Plug>SpeedDatingFallbackDown <C-x>
   vnoremap <Plug>SpeedDatingFallbackUp <C-a>
   vnoremap <Plug>SpeedDatingFallbackDown <C-x>
-endif
-if s:has_plug('codi.vim')
+endif  " }}}
+if s:has_plug('codi.vim')  " {{{
   augroup codi_setup
     au!
     au User CodiEnterPre call calc#setup_codi(1)
@@ -2455,7 +2451,7 @@ if s:has_plug('codi.vim')
       \ 'rephrase': function('calc#codi_rephrase'),
     \ },
   \ }
-endif
+endif  " }}}
 
 " Session saving and undo history
 " Warning: Critical to load vinegar before sinse setup_netrw() manipulates vinegar
@@ -2467,7 +2463,7 @@ endif
 " Note: :Obsession .vimsession activates vim-obsession BufEnter and VimLeavePre
 " autocommands and saved session files call let v:this_session=expand("<sfile>:p")
 " (so that v:this_session is always set when initializing with vim -S .vimsession)
-if s:has_plug('vim-obsession')  " must manually preserve cursor position
+if s:has_plug('vim-obsession')  " {{{
   augroup session_setup
     au!
     au VimEnter * exe !empty(v:this_session) ? 'Obsession ' . v:this_session : ''
@@ -2475,8 +2471,8 @@ if s:has_plug('vim-obsession')  " must manually preserve cursor position
   augroup END
   command! -nargs=* -complete=customlist,vim#complete_sessions Session call vim#init_session(<q-args>)
   nnoremap <Leader>$ <Cmd>Session<CR>
-endif
-if s:has_plug('vim-eunuch')
+endif  " }}}
+if s:has_plug('vim-eunuch')  " {{{
   silent! exe 'runtime plugin/eunuch.vim'
   silent! exe 'runtime plugin/vinegar.vim'
   augroup netrw_setup
@@ -2486,8 +2482,8 @@ if s:has_plug('vim-eunuch')
   nnoremap <Tab>\ <Cmd>call shell#show_netrw('topleft vsplit', 1)<CR>
   nnoremap <Tab>= <Cmd>call shell#show_netrw('topleft vsplit', 0)<CR>
   nnoremap <Tab>- <Cmd>call shell#show_netrw('botright split', 1)<CR>
-endif
-if s:has_plug('undotree')
+endif  " }}}
+if s:has_plug('undotree')  " {{{
   function! Undotree_Augroup() abort  " autoload/undotree.vim s:undotree.Toggle()
     if !undotree#UndotreeIsVisible() | return | endif
     augroup Undotree
@@ -2507,61 +2503,12 @@ if s:has_plug('undotree')
   let g:undotree_ShortIndicators = 1
   let g:undotree_SplitWidth = 30  " overridden above
   let g:undotree_WindowLayout = 1  " see :help undotree_WindowLayout
-endif
+endif  " }}}
 
 "-----------------------------------------------------------------------------" {{{1
 " Syntax settings
 "-----------------------------------------------------------------------------"
-" Syntax highlighting {{{2
-" Show popup windows and things
-" Note: This fixes 'riv' bug where changing g:riv_python_rst_hl after startup has no
-" effect. Grepped vim runtime and plugged, riv is literally only place where 'syntax'
-" file employs 'loaded' variables with finish block (typically only used for plugins).
-" Also note Syntax triggers after 'set syntax=' and after loading syntax files, since
-" load is triggered by higher-priority 'au Syntax * call s:SynSet()' (see :au Syntax).
-augroup syntax_setup
-  au!
-  au Syntax * exe 'unlet! b:af_py_loaded' | exe 'unlet! b:af_rst_loaded'
-augroup END
-command! -nargs=? ShowGroups call syntax#show_stack(<f-args>)
-command! -nargs=0 ShowNames exe 'help highlight-groups' | exe 'normal! zt'
-command! -nargs=0 ShowBases exe 'help group-name' | exe 'normal! zt'
-command! -nargs=0 ShowColors call vim#show_runtime('syntax', 'colortest')
-command! -nargs=0 ShowSyntax call vim#show_runtime('syntax')
-command! -nargs=0 ShowPlugin call vim#show_runtime('ftplugin')
-nnoremap <Leader>` <Cmd>ShowGroups<CR>
-nnoremap <Leader>1 <Cmd>ShowNames<CR>
-nnoremap <Leader>2 <Cmd>ShowBases<CR>
-nnoremap <Leader>3 <Cmd>ShowColors<CR>
-nnoremap <Leader>4 <Cmd>ShowSyntax<CR>
-nnoremap <Leader>5 <Cmd>ShowPlugin<CR>
-
-" Repair syntax highlighting
-" Note: :Colorize is from hex-colorizer plugin. Expensive so disable at start
-" Note: Here :set background triggers colorscheme autocmd so must avoid infinite loop
-augroup color_setup
-  au!
-  au VimEnter * exe 'runtime after/common.vim' | call mark#init_marks()
-augroup END
-command! -bang -count=0 Syntax
-  \ call syntax#sync_lines(<range> == 2 ? abs(<line2> - <line1>) : <count>, <bang>0)
-nnoremap <Leader>e <Cmd>Syntax<CR>
-nnoremap <Leader>6 <Cmd>Syntax 100<CR>
-nnoremap <Leader>7 <Cmd>Syntax!<CR>
-nnoremap <Leader>8 <Cmd>Colorize<CR>
-
-" Scroll color schemes and toggle colorize
-" Note: Here :Colorize is from colorizer.vim and :Colors from fzf.vim. Note coloring
-" hex strings can cause massive slowdowns so disable by default.
-command! -nargs=? -complete=color Scheme call syntax#next_scheme(<f-args>)
-command! -count=1 Sprev call syntax#next_scheme(-<count>)
-command! -count=1 Snext call syntax#next_scheme(<count>)
-call utils#repeat_map('n', 'z9', 'Sprev', ':<C-u>Sprev<CR>')
-call utils#repeat_map('n', 'z0', 'Snext', ':<C-u>Snext<CR>')
-nnoremap <Leader>9 <Cmd>Colors<CR>
-nnoremap <Leader>0 <Cmd>exe 'Scheme ' . g:colors_default<CR>
-
-" Color schemes {{{2
+" Highlighting and colors {{{2
 " Apply and list schemes from flazz/vim-colorschemes
 " Note: This has to come after color schemes are loaded.
 " https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
@@ -2590,14 +2537,14 @@ if !exists('g:colors_default')
   let g:colors_default = get(g:, 'colors_name', 'default')
 endif
 
-" General highlight defaults
+" General default colors
 " Use main colors instead of light and dark colors instead of main
 " Note: The bulk operations are in autoload/syntax.vim
-augroup colorscheme_setup
+augroup scheme_setup
   au!
   exe 'au ColorScheme ' . g:colors_default . ' so ~/.vimrc'
 augroup END
-if !has('gui_running') && get(g:, 'colors_name', 'default') ==? 'default'
+if !has('gui_running') && get(g:, 'colors_name', 'default') ==? 'default'  " {{{
   noautocmd set background=dark  " standardize colors
   highlight Todo ctermbg=Red ctermfg=NONE
   highlight MatchParen ctermbg=Blue ctermfg=NONE
@@ -2610,20 +2557,56 @@ if !has('gui_running') && get(g:, 'colors_name', 'default') ==? 'default'
   highlight Special ctermbg=NONE ctermfg=DarkRed
   highlight PreProc ctermbg=NONE ctermfg=DarkCyan
   highlight Indentifier ctermbg=NONE ctermfg=Cyan cterm=Bold
-endif
+endif  " }}}
 
-" Finish everything up {{{2
-" Note: Critical to run custom update after built-in update, and requires calling
-" vim enter autocommand after fast fold autocommand.
-silent! exe 'runtime plugin/fastfold.vim'
-let s:script = get(utils#get_scripts('fastfold.vim'), 0, '')
-exe empty(s:script) ? 'source ' . s:script : ''
-augroup fold_setup
+" Syntax utilities {{{2
+" Show popup windows and things
+" Note: This fixes 'riv' bug where changing g:riv_python_rst_hl after startup has no
+" effect. Grepped vim runtime and plugged, riv is literally only place where 'syntax'
+" file employs 'loaded' variables with finish block (typically only used for plugins).
+" Also note Syntax triggers after 'set syntax=' and after loading syntax files, since
+" load is triggered by higher-priority 'au Syntax * call s:SynSet()' (see :au Syntax).
+augroup syntax_setup
   au!
-  au VimEnter * call fold#update_folds(1, 1)
-  au BufEnter * setlocal foldtext=fold#fold_text()
-  au BufWinEnter * call fold#update_folds(0, 1)
+  au Syntax * exe 'unlet! b:af_py_loaded' | exe 'unlet! b:af_rst_loaded'
 augroup END
+command! -nargs=? ShowGroups call syntax#show_stack(<f-args>)
+command! -nargs=0 ShowNames exe 'help highlight-groups' | exe 'normal! zt'
+command! -nargs=0 ShowBases exe 'help group-name' | exe 'normal! zt'
+command! -nargs=0 ShowColors call vim#show_runtime('syntax', 'colortest')
+command! -nargs=0 ShowSyntax call vim#show_runtime('syntax')
+command! -nargs=0 ShowPlugin call vim#show_runtime('ftplugin')
+nnoremap <Leader>` <Cmd>ShowGroups<CR>
+nnoremap <Leader>1 <Cmd>ShowPlugin<CR>
+nnoremap <Leader>2 <Cmd>ShowSyntax<CR>
+nnoremap <Leader>3 <Cmd>ShowNames<CR>
+nnoremap <Leader>4 <Cmd>ShowBases<CR>
+nnoremap <Leader>5 <Cmd>ShowColors<CR>
+
+" Repair syntax highlighting
+" Note: :Colorize is from hex-colorizer plugin. Expensive so disable at start
+" Note: Here :set background triggers colorscheme autocmd so must avoid infinite loop
+augroup mark_setup
+  au!
+  au VimEnter * call mark#init_marks()
+augroup END
+command! -bang -count=0 Syntax
+  \ call syntax#sync_lines(<range> == 2 ? abs(<line2> - <line1>) : <count>, <bang>0)
+nnoremap <Leader>e <Cmd>Syntax<CR>
+nnoremap <Leader>6 <Cmd>Syntax 100<CR>
+nnoremap <Leader>7 <Cmd>Syntax!<CR>
+nnoremap <Leader>8 <Cmd>Colorize<CR>
+
+" Scroll color schemes and toggle colorize
+" Note: Here :Colorize is from colorizer.vim and :Colors from fzf.vim. Note coloring
+" hex strings can cause massive slowdowns so disable by default.
+command! -nargs=? -complete=color Scheme call syntax#next_scheme(<f-args>)
+command! -count=1 Sprev call syntax#next_scheme(-<count>)
+command! -count=1 Snext call syntax#next_scheme(<count>)
+call utils#repeat_map('n', 'z9', 'Sprev', ':<C-u>Sprev<CR>')
+call utils#repeat_map('n', 'z0', 'Snext', ':<C-u>Snext<CR>')
+nnoremap <Leader>9 <Cmd>Colors<CR>
+nnoremap <Leader>0 <Cmd>exe 'Scheme ' . g:colors_default<CR>
 
 " Clear jumps for new tabs and to ignore stuff from vimrc and plugin files.
 " See: https://stackoverflow.com/a/2419692/4970632

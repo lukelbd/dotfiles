@@ -117,13 +117,12 @@ function! window#get_height(...) abort
   return call('s:get_size', [0] + a:000)
 endfunction
 function! window#default_width(...) abort
+  if window#count_panes('h', 'l') == 1 | return | endif
   exe 'vertical resize ' . call('s:get_size', [1] + a:000)
 endfunction
 function! window#default_height(...) abort
+  if window#count_panes('j', 'k') == 1 | return | endif
   exe 'resize ' . call('s:get_size', [0] + a:000)
-endfunction
-function! window#default_size(...) abort
-  call call('window#default_width', a:000) | call call('window#default_height', a:000)
 endfunction
 function! s:get_size(width, ...) abort
   setlocal cmdheight=1  " hard override
@@ -139,11 +138,11 @@ function! s:get_size(width, ...) abort
   let panes = call('window#count_panes', direcs)
   let size1 = size - panes + 1  " e.g. 2 panes == 1 divider
   let size2 = float2nr(ceil(0.23 * size1))
-  if !a:0  " inferred size
-    if !panel || panes == 1
-      return size1
-    else
+  if !a:0  " implicit based on current sizes
+    if panel && panes > 1
       return size2
+    else  " main window size
+      return size1
     endif
   else  " scaling or default
     if type(a:1)  " scaled window

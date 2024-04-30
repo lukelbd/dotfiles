@@ -2,6 +2,8 @@
 " Utilities for vim folds
 "-----------------------------------------------------------------------------"
 " Add fastfold-managed manual folds with marks
+" Warning: Critical to re-open folds after defining or subsequent fold definitions
+" fail. Still want to initialize with closed folds though so do that afterwards.
 " Note: Previously tried using regions with 'vim-syntaxMarkerFold' but causes major
 " issues since either disables highlighting or messes up inner highlight items when
 " trying to use e.g. contains=ALL since several use naked 'contained' property.
@@ -30,6 +32,7 @@ function! fold#add_markers() abort
       let level = empty(level) ? max(keys(heads)) : str2nr(level)
       if has_key(heads, string(level))
         call add(queue, [level, heads[level], lnum])
+        call remove(heads, level)
       endif
     else  " open fold after deleting previous and closing inner
       let level = empty(level) ? max(keys(heads)) + 1 : str2nr(level)
@@ -46,8 +49,10 @@ function! fold#add_markers() abort
     call add(queue, [str2nr(level), heads[level], line('$')])
   endfor
   for [level, line1, line2] in sort(queue)
-    exe line1 . ',' . line2 . 'fold'
-    silent! exe line1 . 'foldopen'
+    exe line1 . ',' . line2 . 'fold' | exe line1 . 'foldopen'
+  endfor
+  for [_, line1, _] in reverse(sort(queue))
+    exe line1 . 'foldclose'
   endfor
   call winrestview(winview)
   let b:fastfold_markers = queue
