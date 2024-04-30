@@ -1,4 +1,4 @@
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------" {{{1
 " An enormous vim configuration that does all sorts of magical things.
 " Note: Use karabiner to convert ctrl-j/k/h/l into arrow keys. So anything
 " mapped to these control combinations below must also be assigned to arrow keys.
@@ -20,7 +20,7 @@
 " F11: 0x1b 0x5b 0x32 0x33 0x7e (forum codes required)
 " F12: 0x1b 0x5b 0x32 0x34 0x7e
 "-----------------------------------------------------------------------------"
-" Critical stuff
+" Critical stuff {{{1
 " Note: See .vim/after/common.vim and .vim/after/filetype.vim for overrides of
 " buffer-local syntax and 'conceal-', 'format-' 'linebreak', and 'joinspaces'.
 " Note: The refresh variable used in .vim/autoload/vim.vim to autoload recently
@@ -318,9 +318,8 @@ if !empty(mapcheck('<Esc>', 'n'))  " maps staring with escape
   for s:key in s:insert_maps | exe 'silent! iunmap <Esc>' . s:key | endfor
 endif
 
-
-"-----------------------------------------------------------------------------"
-" File and window utilities
+"-----------------------------------------------------------------------------" {{{1
+" Files and windows
 "-----------------------------------------------------------------------------"
 " Toggle built-in terminal (mnemonic '!' is similar to ':!')
 " Note: Map Ctrl-c to literal keypress so it does not close window and use environment
@@ -599,9 +598,8 @@ cnoremap <silent> <expr> <Left> window#close_wild("\<Left>")
 cnoremap <silent> <expr> <Delete> window#close_wild("\<Delete>")
 cnoremap <silent> <expr> <BS> window#close_wild("\<BS>")
 
-
-"-----------------------------------------------------------------------------"
-" Navigation and searching shortcuts
+"-----------------------------------------------------------------------------" {{{1
+" Navigation and searching
 "-----------------------------------------------------------------------------"
 " Navigate recent tabs and wildmenu options with <C-,>/<C-.>
 " Warning: The g:tab_stack variable is used by tags#get_recents() to put recently
@@ -783,6 +781,7 @@ nnoremap zcc <Cmd>call fold#toggle_folds(1)<CR>
 nnoremap zoo <Cmd>call fold#toggle_folds(0)<CR>
 nnoremap <expr> zc fold#toggle_folds_expr(1)
 nnoremap <expr> zo fold#toggle_folds_expr(0)
+vnoremap <expr> zz fold#toggle_folds_expr()
 vnoremap <expr> zc fold#toggle_folds_expr(1)
 vnoremap <expr> zo fold#toggle_folds_expr(0)
 
@@ -797,15 +796,16 @@ nnoremap za zn
 nnoremap zA zN<Cmd>call fold#update_folds(0)<CR>
 nnoremap zi <Cmd>call fold#toggle_children(0)<CR>
 nnoremap zI <Cmd>call fold#toggle_children(1)<CR>
-nnoremap zC <Cmd>call fold#toggle_parent(1)<CR>
-nnoremap zO <Cmd>call fold#toggle_parent(0)<CR>
+nnoremap zZ <Cmd>call fold#toggle_parents()<CR>
+nnoremap zC <Cmd>call fold#toggle_parents(1)<CR>
+nnoremap zO <Cmd>call fold#toggle_parents(0)<CR>
 vnoremap za zn
 vnoremap zA zN<Cmd>call fold#update_folds(0)<CR>
 vnoremap <expr> zi fold#toggle_children_expr(0)
 vnoremap <expr> zI fold#toggle_children_expr(1)
-vnoremap <expr> zz fold#toggle_parent_expr()
-vnoremap <expr> zC fold#toggle_parent_expr(1)
-vnoremap <expr> zO fold#toggle_parent_expr(0)
+vnoremap <expr> zZ fold#toggle_parents_expr()<CR>
+vnoremap <expr> zC fold#toggle_parents_expr(1)
+vnoremap <expr> zO fold#toggle_parents_expr(0)
 
 " Change fold level and jump between or inside folds
 " Note: The bracket maps fail without silent! when inside first fold in file
@@ -997,9 +997,8 @@ vnoremap <expr> \' call('edit#search_replace_expr', g:sub_dsingle)
 nnoremap <expr> \" call('edit#search_replace_expr', g:sub_ddouble)
 vnoremap <expr> \" call('edit#search_replace_expr', g:sub_ddouble)
 
-
-"-----------------------------------------------------------------------------"
-" Normal and insert-mode editing
+"-----------------------------------------------------------------------------" {{{1
+" Normal and insert-mode
 "-----------------------------------------------------------------------------"
 " Undo behavior and mappings
 " Note: Here edit#insert_undo() returns undo-resetting <C-g>u and resets b:insert_mode
@@ -1266,8 +1265,7 @@ nnoremap zS zug
 vnoremap zs zg
 vnoremap zS zug
 
-
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------" {{{1
 " External plugins
 "-----------------------------------------------------------------------------"
 " Initialize plugin manager
@@ -1717,9 +1715,8 @@ call plug#end()
 silent! delcommand SplitjoinJoin
 silent! delcommand SplitjoinSplit
 
-
-"-----------------------------------------------------------------------------"
-" Plugin sttings
+"-----------------------------------------------------------------------------" {{{1
+" Plugin settings
 "-----------------------------------------------------------------------------"
 " Highlighting matches
 " Note: Here vim-tags searching integrates with indexed-search and vim-succinct
@@ -2041,7 +2038,7 @@ if s:has_plug('vim-lsp')
   " See: https://github.com/python-lsp/python-lsp-server/issues/477
   " Note: See 'jupyterlab-lsp/plugin.jupyterlab-settings' for examples. Results are
   " shown in :CheckHelath. Try below when debugging (should disable :LspHover)
-  " let s:pylsp_settings = {'plugins': {'jedi_hover': {'enabled': v:false}}}
+  " let s:pylsp_settings = {'plugins': {'jedi_hover': {'enabled': v:false} } }
   let s:pylsp_settings = {
     \ 'configurationSources': ['flake8'],
     \ 'plugins': {'jedi': {'auto_import_modules': ['numpy', 'pandas', 'matplotlib', 'proplot']}},
@@ -2506,9 +2503,8 @@ if s:has_plug('undotree')
   let g:undotree_WindowLayout = 1  " see :help undotree_WindowLayout
 endif
 
-
-"-----------------------------------------------------------------------------"
-" Final tasks
+"-----------------------------------------------------------------------------" {{{1
+" Syntax settings
 "-----------------------------------------------------------------------------"
 " Show syntax under cursor and syntax types
 " Note: This fixes 'riv' bug where changing g:riv_python_rst_hl after startup has no
@@ -2621,3 +2617,4 @@ nnoremap <Leader><Leader> <Cmd>echo system('curl https://icanhazdadjoke.com/')<C
 if !v:vim_did_enter | nohlsearch | endif
 call syntax#update_highlights() | redraw!
 exe 'runtime autoload/repeat.vim'
+" vim:foldmethod=marker

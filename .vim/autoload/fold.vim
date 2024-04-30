@@ -50,7 +50,7 @@ endfunction
 " inner (folds within current 'main' parent fold), outer recursirve (parent fold and
 " all its children), and outer force (as with outer but ignoring regexes).
 function! fold#get_parent(...) abort
-  let toplevel = a:0 ? a:1 : &l:foldlevel
+  let toplevel = a:0 ? a:1 : &l:foldlevelstart
   let toplevel = max([toplevel, 0])
   let [lnum, level] = [line('.'), toplevel + 1]
   let result = fold#get_fold(level)
@@ -137,6 +137,16 @@ endfunction
 " Return default fold label
 " Note: This filters trailing comments, removes git-diff chunk text following stats,
 " and adds following line if the fold line is a single open delimiter (e.g. json).
+function! s:fix_delims(line) abort
+  let label1 = fold#get_label(a:line, 1)
+  let [delim1, outer] = s:get_delims(label1)
+  if label1 !=# delim1 | return '' | endif
+  let label2 = fold#get_label(a:line + 1, 1)  " after naked delimiter
+  let [delim2, _] = s:get_delims(label2)
+  if label2 ==# delim2 | return '' | endif  " only open and close
+  let inner = substitute(label2, '\s*\([[({<]*\)\s*$', '', 'g')
+  return ' ' . inner . ' ··· ' . outer  " e.g. json folds
+endfunction
 function! s:get_delims(label, ...) abort
   let delims = {'[': ']', '(': ')', '{': '}', '<': '>'}  " delimiter mapping
   let regex = '\([[({<]*\)\s*$'  " opening delimiter regex
@@ -148,27 +158,27 @@ function! s:get_delims(label, ...) abort
   endif | return [join(delim1, ''), join(delim2, '')]
 endfunction
 function! fold#get_label(line, ...) abort
+  let recursed = a:0 && a:1  " whether already recursed
+  let regex = comment#get_regex()
   let char = comment#get_char()
-  let ftype = get(b:, 'fugitive_type', '')
-  let regex = a:0 && a:1 ? '\(^\s*\|' : '\('  " strip leading space
-  let regex .= '\S\@<=\s*' . comment#get_regex()
-  let regex .= strwidth(char) == 1 ? '[^' . char . ']*$' : '.*$'
-  let regex .= '\|\s*$\)'  " delimiter trim
-  let label = substitute(getline(a:line), regex, '', 'g')
-  if &l:filetype =~# '^git$\|^fugitive$'  " show only statistics
+  let head = '^\s*' . regex . '\s*[-=]\{3,}' . regex . '\?\(\s\|$\)'
+  let text = getline(a:line)
+  if &l:foldmethod ==# 'marker' && text =~# head
+    let text = getline(a:line + 1)  " ignore header
+  endif
+  if &l:foldmethod ==# 'marker'
+    let text = substitute(text, split(&l:foldmarker, ',')[0] . '\d*\s*$', '', '')
+  endif
+  let trim = a:0 && a:1 ? '\(^\s*\|' : '\('  " strip leading space
+  let trim .= '\S\@<=\s*' . regex
+  let trim .= strwidth(char) == 1 ? '[^' . char . ']*$' : '.*$'
+  let trim .= '\|\s*$\)'  " delimiter trim
+  let label = substitute(text, trim, '', 'g')
+  if !empty(get(b:, 'fugitive_type', '')) || &l:filetype =~# '^git$\|^fugitive$'
     let label = substitute(label, '^\(@@.\{-}@@\).*$', '\1', '')
   endif
-  if !a:0 || !a:1  " avoid recursion
-    let label1 = fold#get_label(a:line, 1)
-    let [delim1, outer] = s:get_delims(label1)
-    if label1 ==# delim1  " naked delimiter
-      let label2 = fold#get_label(a:line + 1, 1)
-      let [delim2, _] = s:get_delims(label2)
-      if label2 !=# delim2  " append closing
-        let inner = substitute(label2, '\s*\([[({<]*\)\s*$', '', 'g')
-        let label = label . ' ' . inner . ' ··· ' . outer  " e.g. json folds
-      endif
-    endif
+  if !recursed && &l:foldmethod !=# 'marker'
+    let label .= s:fix_delims(a:line)
   endif
   return label
 endfunction
@@ -215,14 +225,12 @@ function! fold#fold_text(...) abort
 endfunction
 
 " Update the fold bounds, level, and open-close status
-" Warning: Sometimes run into issue where opening new files or reading updates
+" Note: Could use e.g. &foldlevel = v:vount but want to keep foldlevel truncated
+" to maximum number found in file as native 'zr' does. So use the below instead
+" Note: Sometimes run into issue where opening new files or reading updates
 " permanently disables 'expr' folds. Account for this by re-applying fold method.
 " Warning: Regenerating b:SimPylFold_cache with manual SimpylFold#FoldExpr() call
 " can produce strange internal bug. Instead rely on FastFoldUpdate to fill the cache.
-" Note: Python block overrides b:SimPylFold_cache while markdown block overwrites
-" foldtext from $RUNTIME/syntax/[markdown|javascript] and re-applies vim-markdown.
-" Note: Could use e.g. &foldlevel = v:vount but want to keep foldlevel truncated
-" to maximum number found in file as native 'zr' does. So use the below instead
 function! fold#update_level(...) abort
   let level = &l:foldlevel
   if a:0  " input direction
@@ -336,7 +344,7 @@ function! s:show_toggle(toggle, count) abort
     call feedkeys("\<Cmd>echoerr 'E490: No folds found'\<CR>", 'n')
   endif
 endfunction
-function! fold#toggle_parent(...) abort range
+function! fold#toggle_parents(...) abort range
   let [lmin, lmax] = sort([a:firstline, a:lastline], 'n')
   call fold#update_folds(0)
   let counts = [0, 0]
@@ -351,8 +359,8 @@ function! fold#toggle_parent(...) abort range
   call s:show_toggle(toggle, counts[0] + counts[1]) | return ''
 endfunction
 " For <expr> map accepting motion
-function! fold#toggle_parent_expr(...) abort
-  return utils#motion_func('fold#toggle_parent', a:000, 1)
+function! fold#toggle_parents_expr(...) abort
+  return utils#motion_func('fold#toggle_parents', a:000, 1)
 endfunction
 
 " Open or close current children under cursor

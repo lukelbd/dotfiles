@@ -89,7 +89,7 @@ function! comment#header_line(fill, nfill, ...) abort  " inserts above by defaul
 endfunction
 
 " Navigate between comment blocks and headers
-" Note: The '$' required for lookbehind for some reason
+" Note: The '$' is required for lookbehind for some reason
 function! comment#next_comment(count, ...) abort
   let head = a:0 && a:1 ? '' : '\s*'  " include indented
   let tail = comment#get_regex() . '.\+$\n'
@@ -103,9 +103,9 @@ function! comment#next_comment(count, ...) abort
 endfunction
 function! comment#next_header(count, ...) abort
   let head = a:0 && a:1 ? '' : '\s*'  " include indented
-  let tail = comment#get_regex() . '\s*[-=]\{3,}' . comment#get_regex() . '\?\s*$'
   let back = '^\(' . head . comment#get_regex() . '.\+$\n\)\@<!'
-  let regex = back . head . '\zs' . tail
+  let tail = comment#get_regex() . '\s*[-=]\{3,}' . comment#get_regex() . '\?'
+  let regex = back . head . '\zs' . tail .'\(\s\|$\)'
   let flags = a:count >= 0 ? 'w' : 'bw'
   for _ in range(abs(a:count))
     call search(regex, flags, 0, 0, "tags#get_skip(0, 'Comment')")
