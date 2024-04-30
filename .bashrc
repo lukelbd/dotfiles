@@ -1,6 +1,9 @@
 #!/bin/bash
-# shellcheck disable=1090,2181,2120,2076
+#----------------------------------------------------------------------------- {{{1
+# General shell defaults
 #-----------------------------------------------------------------------------
+# Installation and configuration notes {{{2
+# shellcheck disable=1090,2181,2120,2076
 # This should override defaults in /etc/profile in /etc/bashrc. Check out the system
 # default setting before using this and make sure your $PATH is populated. To permit
 # pulling from github use ssh-keygen -R github.com and to SSH between servers see below:
@@ -87,6 +90,7 @@
 #   ~# -- Give list of forwarded connections in this session
 #   ~? -- Give list of these commands
 #-----------------------------------------------------------------------------
+# General settings {{{2
 # Apply prompt "<comp name>[<job count>]:<push dir N>:...:<push dir 1>:<work dir> <user>$"
 # Ensure the prompt is applied only once so modules can modify it
 # See: https://unix.stackexchange.com/a/124408/112647
@@ -152,7 +156,7 @@ _setup_shell() {         # apply shell options (list available with shopt -p)
 _setup_shell 2>/dev/null  # ignore if opton unavailable
 unalias -a  # critical (also use declare -F for definitions)
 
-# Apply machine dependent settings
+# Apply machine dependent settings {{{2
 # * List homebrew installs with 'brew list' (narrow with --formulae or --casks).
 #   Show package info with 'brew info package'. Use 'brew install trash' for trash cmd
 # * List macport installs with 'port installed requested'.
@@ -271,7 +275,7 @@ case "${HOSTNAME%%.*}" in
     ;;
 esac
 
-# Access custom executables and git repos
+# Access custom executables and git repos {{{2
 # NOTE: Install go with mamba for availability on workstations without pseudo
 # access. Then install shfmt with: go install mvdan.cc/sh/v3/cmd/shfmt@latest
 # NOTE: Install deno with mamba to get correct binaries. Using install script
@@ -334,9 +338,10 @@ export CFLAGS=-stdlib=libc++
 export GOOGLE_APPLICATION_CREDENTIALS=$HOME/pypi-downloads.json  # for pypinfo
 echo 'done'
 
-#-----------------------------------------------------------------------------
+#----------------------------------------------------------------------------- {{{1
 # General aliases and functions
 #-----------------------------------------------------------------------------
+# Inspecting and listing {{{2
 # Standardize colors and configure ls and cd commands
 # For less/man/etc. colors see: https://unix.stackexchange.com/a/329092/112647
 _setup_message 'Utility setup'
@@ -349,6 +354,7 @@ alias curl='curl -O'                # always download associated file
 alias dirs='dirs -p | tac | xargs'  # show dir stack matching prompt order
 alias ctime='date +%s'              # current time in seconds since epoch
 alias mtime='date +%s -r'           # modification time of input file
+mv() { git mv "$@" 2>/dev/null || command mv "$@"; }    # prefer git mv to standard
 popd() { command popd "$@" >/dev/null || return 1; }    # suppress wrong-order printing
 pushd() { command pushd "$@" >/dev/null || return 1; }  # suppress wrong-order printing
 export LESS="--RAW-CONTROL-CHARS"
@@ -391,7 +397,8 @@ else  # shellcheck disable=2142
   alias bindings="bind -ps | egrep '\\\\C|\\\\e' | grep -v do-lowercase-version | sort"
 fi
 
-# Helper functions
+# Folder statistics {{{2
+# Helper functions for below
 # The _columnize function splits lines into columns so they fill the terminal window
 calc() {  # wrapper around bc, make 'x'-->'*' so don't have to quote glob all the time
   echo "$*" | tr 'x' '*' | bc -l | awk '{printf "%f", $0}'
@@ -423,9 +430,6 @@ _columnize() {
 alias du='du -h'
 alias d0='du -h -d 1'  # single directory, see also r0 a0
 alias df='df -h'
-function mv() {
-  git mv "$@" 2>/dev/null || command mv "$@"
-}
 dl() {
   local dir='.'
   [ $# -gt 1 ] && echo "Too many directories." && return 1
@@ -458,6 +462,7 @@ space() {
   done
 }
 
+# Logging and processes {{{2
 # Listing jobs
 # TODO: Add to these utilities?
 alias toc='mpstat -P ALL 1'  # table of core processes (similar to 'top')
@@ -515,9 +520,10 @@ pskill() {  # jobs by ps name
   done
 }
 
-#-----------------------------------------------------------------------------
+#----------------------------------------------------------------------------- {{{1
 # Editing and scripting utilities
 #-----------------------------------------------------------------------------
+# Helper utilities {{{2
 # Environment variables
 export EDITOR='command vim'  # default editor, nice and simple
 export LC_ALL=en_US.UTF-8  # needed to make Vim syntastic work
@@ -598,6 +604,7 @@ isempty() {
   fi
 }
 
+# Page and help displays {{{2
 # Either pipe the output of the remaining commands into the less pager
 # or open the files. Use the latter only for executables on $PATH
 function less() {
@@ -645,6 +652,7 @@ function man() {
   fi
 }
 
+# Git and vim overrides {{{2
 # Prevent git stash from running without 'git stash push' and test message length.
 # Note 'git stash --staged push' will stash only staged changes. Should use more often.
 # https://stackoverflow.com/q/48751491/4970632
@@ -768,10 +776,11 @@ open() {
   done
 }
 
-#-----------------------------------------------------------------------------
+#----------------------------------------------------------------------------- {{{1
 # Searching utilities
 #-----------------------------------------------------------------------------
-# Parse .ignore file for custom utilities (compare to vim tags#ignores())
+# Parse ignores {{{2
+# See also vim tags#ignores()
 # TODO: Add utility for *just* ignoring directories not others. Or add utility
 # for ignoring absolutely nothing but preserving syntax of other utilities.
 # NOTE: Unlike 'ctags --exclude' and 'grep --exclude-dir' flags 'find -o -name'
@@ -817,7 +826,7 @@ ignores() {
   fi
 }
 
-# Grep or find files and pattern
+# Grep or find files and pattern {{{2
 # NOTE: Currently silver searcher does not respect global '~/.ignore' folder in $HOME
 # so use override. See: https://github.com/ggreer/the_silver_searcher/issues/1097
 # NOTE: Exclude list should be kept in sync with '.ignore' for ripgrep 'rg' and silver
@@ -872,12 +881,10 @@ f1() { _find 1 "$@"; }  # custom find with ignore excludes and hidden files
 g2() { _grep 2 "$@"; }  # custom grep with no excludes
 f2() { _find 2 "$@"; }  # custom find with no excludes
 
-#-----------------------------------------------------------------------------#
-# Git-related utilities
-#-----------------------------------------------------------------------------#
-# Differencing utilities. Here 'fs' prints git status-style directory diffs,
-# 'fd' prints git diff-style file diffs, 'ds' prints recursive directory status
-# differences, and 'dd' prints basic directory modification time diferences.
+# Differencing utilities {{{2
+# Here 'fs' prints git status-style directory diffs, 'fd' prints git diff-style file
+# diffs, 'ds' prints recursive directory status differences, and 'dd' prints basic
+# directory modification time diferences. See below for more info.
 # NOTE: The --textconv option described here: https://stackoverflow.com/a/52201926/4970632
 # NOTE: Tried using :(exclude) and :! but does not work with no-index. See following:
 # https://stackoverflow.com/a/58845608/4970632 and https://stackoverflow.com/a/53475515/4970632
@@ -932,6 +939,7 @@ dd() {  # directory modification time differences
   done
 }
 
+# Combine and refactor {{{2
 # Merge fileA and fileB into merge.{ext}
 # See this answer: https://stackoverflow.com/a/9123563/4970632
 merge() {
@@ -980,9 +988,10 @@ refactor() {
   fi
 }
 
-#-----------------------------------------------------------------------------
+#----------------------------------------------------------------------------- {{{1
 # Remote session utilities
 #-----------------------------------------------------------------------------
+# General stuff {{{2
 # Supercomputer queue utilities
 alias suser="squeue -u \$USER"
 alias sjobs="squeue -u \$USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d a-z"
@@ -991,6 +1000,29 @@ alias sjobs="squeue -u \$USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d a
 alias connections="ps aux | grep -v grep | grep 'ssh '"
 SSH_ENV="$HOME/.ssh/environment"  # for below
 
+# View ip address
+# See: https://stackoverflow.com/q/13322485/4970632
+# See: https://apple.stackexchange.com/q/20547/214359
+address() {
+  if ! $_macos; then
+    command ip route get 1 | awk '{print $NF; exit}'
+  else
+    ifconfig | grep "inet " | grep -Fv 127.0.0.1 | awk '{print $2}'
+  fi
+}
+
+# List available ports
+ports() {
+  if [ $# -eq 0 ]; then
+    sudo lsof -iTCP -sTCP:LISTEN -n -P
+  elif [ $# -eq 1 ]; then
+    sudo lsof -iTCP -sTCP:LISTEN -n -P | grep -i --color $1
+  else
+    echo "Usage: listening [pattern]"
+  fi
+}
+
+# Address and port names {{{2
 # Define address names and ports. To enable passwordless login, use "ssh-copy-id $host".
 # For cheyenne, to hook up to existing screen/tmux sessions, pick one of the 1-6 login
 # nodes. From testing it seems 4 is most empty (probably human psychology thing; 3 seems
@@ -1053,28 +1085,7 @@ _port() {
   res=$(_address_port "$@") && echo "${res#*:}"
 }
 
-# View ip address
-# See: https://stackoverflow.com/q/13322485/4970632
-# See: https://apple.stackexchange.com/q/20547/214359
-address() {
-  if ! $_macos; then
-    command ip route get 1 | awk '{print $NF; exit}'
-  else
-    ifconfig | grep "inet " | grep -Fv 127.0.0.1 | awk '{print $2}'
-  fi
-}
-
-# List available ports
-ports() {
-  if [ $# -eq 0 ]; then
-    sudo lsof -iTCP -sTCP:LISTEN -n -P
-  elif [ $# -eq 1 ]; then
-    sudo lsof -iTCP -sTCP:LISTEN -n -P | grep -i --color $1
-  else
-    echo "Usage: listening [pattern]"
-  fi
-}
-
+# Core ssh wrapper {{{2
 # SSH wrapper that sets up ports used for jupyter and scp copying
 # For initial idea see: https://stackoverflow.com/a/25486130/4970632
 # For why we alias the function see: https://serverfault.com/a/656535/427991
@@ -1104,6 +1115,7 @@ _ssh() {
   command ssh -t $flags "$address"
 }
 
+# Refresh connection {{{2
 # Reestablish two-way connections between server and local macbook. Use standard
 # port numbers. This function can be called on macbook or on remote server.
 # ssh -f (port-forwarding in background) -N (don't issue command)
@@ -1128,6 +1140,7 @@ ssh-refresh() {
   echo "Exit status $stat for connection over ports: ${ports[*]:1}."
 }
 
+# Initialize connection {{{2
 # Trigger ssh-agent if not already running and add the Github private key. Make sure
 # to make private key passwordless for easy login. All we want is to avoid storing
 # plaintext username/password in ~/.git-credentials, but free private key is fine.
@@ -1176,9 +1189,7 @@ kill-port() {
   echo "Processes $pids killed. Connections over port $port removed."
 }
 
-#-----------------------------------------------------------------------------#
-# Copying utilities
-#-----------------------------------------------------------------------------#
+# Transfering files {{{2
 # Copy files between macbook and servers. When on remote server use the ssh tunnel set
 # up by _ssh. When on macbook use prestored address name (should have passwordless login).
 # NOTE: Below we use the bash parameter expansion ${!#} --> 'variable whose name is
@@ -1264,9 +1275,10 @@ figcp() {
   _scp_bulk "${flags[@]}" "$forward" $@ "$path" "$path"  # address may expand to nothing
 }
 
-#-----------------------------------------------------------------------------
+#----------------------------------------------------------------------------- {{{1
 # REPLs and interactive servers
 #-----------------------------------------------------------------------------
+# General aliases {{{2
 # Add jupyter kernels with custom profiles. Goal is to have all kernels managed
 # by conda using nb_conda_kernels (see above). Installing julia using conda then
 # running Pkg.add('IJulia') should create julia kernel also managed by conda.
@@ -1326,6 +1338,7 @@ iperl() {  # see this answer: https://stackoverflow.com/a/22840242/4970632
   rlwrap -A -p"green" -S"perl> " perl -wnE'say eval()//$@'  # rlwrap stands for readline wrapper
 }
 
+# Jupyter lab {{{2
 # Set up jupyter lab with necessary port-forwarding connections
 # Install nbstripout with 'pip install nbstripout', then add to global .gitattributes
 # for automatic stripping during git differencing. No need for 'jupyter contrib
@@ -1359,6 +1372,7 @@ jupyter-lab() {
   jupyter lab $flag --no-browser
 }
 
+# Jupyter conversion {{{2
 # Save a concise HTML snapshot of the jupyter notebook for collaboration
 # NOTE: The PDF version requires xelatex. Try to use drop-in xelatex replacement
 # tectonic for speed. Install with 'mamba install tectonic' and correspondingly update
@@ -1401,6 +1415,7 @@ jupyter-convert() {
   done
 }
 
+# Jupyter connections {{{2
 # Refresh stale connections from macbook to server
 # WARNING: Using pseudo-tty allocation, i.e. simulating active shell with
 # -t flag, causes ssh command to mess up. Skip this flag.
@@ -1463,9 +1478,10 @@ _jekyll_flags="--incremental --watch --config '_config.yml,_config.dev.yml'"
 alias server="python -m http.server"
 alias jekyll="bundle exec jekyll serve $_jekyll_flags 2>/dev/null"  # ignore deprecations
 
-#-----------------------------------------------------------------------------
+#----------------------------------------------------------------------------- {{{1
 # Dataset utilities
 #-----------------------------------------------------------------------------
+# Parsing stuff {{{2
 # Code parsing tools
 namelist() {  # list all namelist parameters
   local file files
@@ -1486,7 +1502,7 @@ graphicspath() {  # list all graphics paths (used in autoload tex.vim)
   ' "$@"  # RS is the 'record separator' and RT is '*this* record separator'
 }
 
-# Extract generalized files
+# Extract files {{{2
 # Shell actually passes *already expanded* glob pattern when you call it as
 # argument to a function; so, need to cat all input arguments with @ into list
 extract() {
@@ -1514,7 +1530,7 @@ extract() {
   done
 }
 
-# NetCDF tools (should just remember these).
+# NetCDF tools {{{2
 # ncks behavior very different between versions, so use ncdump instead
 # * Note if HDF4 is installed in your anaconda distro, ncdump points to *that location*
 #   before the homebrew install location 'brew tap homebrew/science, brew install cdo'.
@@ -1548,7 +1564,7 @@ ncversion() {
   done
 }
 
-# General summaries
+# General summaries {{{2
 ncinfo() {
   # Show just the variable info (and linebreak before global attributes)
   # ncdump -h "$1" | sed '/^$/q' | sed '1,1d;$d'
@@ -1592,7 +1608,7 @@ ncglobals() {
   done
 }
 
-# Listing stuff
+# Listing stuff {{{2
 nclist() {
   # Only get text between variables: and linebreak before global attributes
   # note variables don't always have dimensions (i.e. constants). For constants
@@ -1632,7 +1648,7 @@ ncvarlist() {
   done
 }
 
-# Inquiries about specific variables
+# Variable inquiries {{{2
 ncvarinfo() {
   # As above but just for one variable.
   # See: https://docs.unidata.ucar.edu/nug/current/_c_d_l.html#cdl_data_types).
@@ -1683,10 +1699,10 @@ ncvardetails() {
     done
 }
 
-#-----------------------------------------------------------------------------
+#----------------------------------------------------------------------------- {{{1
 # PDF and image utilities
 #-----------------------------------------------------------------------------
-# Converting between things
+# Converting between things {{{2
 # Flatten gets rid of transparency/renders it against white background, and
 # the units/density specify a <N>dpi resulting bitmap file. Another option
 # is "-background white -alpha remove", try this. Note imagemagick does *not* handle
@@ -1740,7 +1756,7 @@ webm2mp4() {
   done
 }
 
-# Modifying and merging pdfs
+# Modifying and merging pdfs {{{2
 pdf2flat() {
   # This page is helpful:
   # https://unix.stackexchange.com/a/358157/112647
@@ -1778,7 +1794,7 @@ pdfmerge() {
   pdftk "$@" cat output "${1%.pdf} (merged).pdf"
 }
 
-# Converting between fonts
+# Converting between fonts {{{2
 # Requires brew install fontforge
 otf2ttf() {
   for f in "$@"; do
@@ -1806,7 +1822,7 @@ ttf2otf() {
   done
 }
 
-# Rudimentary wordcount with detex
+# Rudimentary wordcount {{{2
 # The -e flag ignores certain environments (e.g. abstract environment)
 wctex() {
   local detexed
@@ -1821,9 +1837,10 @@ wctex() {
 # This is *the end* of all function and alias declarations
 echo 'done'
 
-#-----------------------------------------------------------------------------
+#----------------------------------------------------------------------------- {{{1
 # FZF fuzzy file completion tool
 #-----------------------------------------------------------------------------
+# Overrall settings {{{2
 # Default fzf flags (see man page for more info, e.g. --bind and --select-1)
 # Inline info puts the number line thing on same line as text. Bind slash to accept
 # so behavior matches shell completion behavior. Enforce terminal background default
@@ -1847,7 +1864,7 @@ _fzf_prune_bases=" \
 \\( -fstype devfs -o -fstype devtmpfs -o -fstype proc -o -fstype sysfs \\) -prune -o \
 "
 
-# Run installation script; similar to the above one
+# Run installation script {{{2
 # if [ -f ~/.fzf.bash ] && ! [[ "$PATH" =~ fzf ]]; then
 if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
   # Apply default fzf marks options
@@ -1921,10 +1938,10 @@ if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
   echo 'done'
 fi
 
-#-----------------------------------------------------------------------------
+#----------------------------------------------------------------------------- {{{1
 # Conda stuff
 #-----------------------------------------------------------------------------
-# Add conda base
+# General utilities {{{2
 # NOTE: Must save brew path before setup (conflicts with conda; try 'brew doctor')
 # See: https://github.com/conda-forge/miniforge
 alias brew="PATH=\"$PATH\" brew"
@@ -1966,7 +1983,8 @@ mamba-avail() {
   echo "Available versions: $versions"
 }
 
-# Fucntions to backup and restore conda environments. This is useful when conda breaks
+# Manage environments {{{2
+# Functions to backup and restore conda environments. This is useful when conda breaks
 # due to usage errors or issues with permissions after a crash and backblaze restore.
 # NOTE: This can also be used to sync across macbooks. Just clone 'dotfiles' there.
 mamba-backup() {
@@ -1999,6 +2017,7 @@ mamba-restore() {
   done
 }
 
+# Initiate conda {{{2
 # Optionally initiate conda (generate this code with 'mamba init')
 # WARNING: Making conda environments work with jupyter is complicated. Have
 # to remove stuff from ipykernel and then install them manually.
@@ -2028,10 +2047,11 @@ if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda|mamb
   echo 'done' # commands returned by '__conda_exe shell.posix activate'
 fi
 
-#-----------------------------------------------------------------------------
+#----------------------------------------------------------------------------- {{{1
 # Shell integration and session management
 #-----------------------------------------------------------------------------
-# Enable shell integration and show inline figures with fixed 300dpi
+# Enable shell integration {{{2
+# Show inline figures with fixed 300dpi
 # Pane badges: https://iterm2.com/documentation-badges.html
 # Prompt markers: https://stackoverflow.com/a/38913948/4970632
 # Use `printf "\e]1337;SetBadgeFormat=%s\a" $(echo -n "\(path)" | base64)` to print
@@ -2064,6 +2084,7 @@ if [ "${ITERM_SHELL_INTEGRATION_SKIP:-0}" == 0 ] \
   echo 'done'
 fi
 
+# Title settings {{{2
 # Change directory based on session title
 _title_cwd() {
   local _ sub dir title
@@ -2136,3 +2157,4 @@ $_macos && [ -r $HOME/mackup/shell.sh ] \
 [ -z "$_bashrc_loaded" ] && [[ "$(hostname)" =~ "$HOSTNAME" ]] \
   && command curl https://icanhazdadjoke.com/ 2>/dev/null && echo
 _bashrc_loaded=true
+# vim:foldmethod=marker
