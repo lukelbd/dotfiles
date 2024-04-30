@@ -33,7 +33,7 @@ function! window#close_pane(...) abort
   call s:close_codi()
   exe iscodi ? '' : 'quit' . bang
   if tnr != cnt && cnt != tabpagenr('$') | silent! tabprevious | endif
-  call feedkeys("\<Cmd>normal! zvzzze\<CR>", 'n')
+  call feedkeys("\<Cmd>normal! zzze\<CR>", 'n')
 endfunction
 function! window#close_tab(...) abort
   let bang = a:0 && a:1 ? '!' : ''
@@ -197,16 +197,19 @@ endfunction
 " Helper functions for selecting tabs
 " Note: This handles fzf output lines
 function! window#goto_tab(item) abort
+  if empty(a:item) | return | endif
   let [tnr, wnr] = s:tab_sink(a:item)
+  if tnr == 0 || wnr == 0 | return | endif
   exe tnr ? tnr . 'tabnext' : ''
   exe wnr ? wnr . 'wincmd w' : ''
 endfunction
 function! window#move_tab(item) abort
+  if empty(a:item) | return | endif
   let [tnr, _] = s:tab_sink(a:item)
-  if tnr == 0 || tnr == tabpagenr() | return | endif
+  if tnr == tabpagenr() | return | endif
   let tnr = tnr > tabpagenr() ? tnr : tnr - 1
-  let tnr = min([tnr, tabpagenr('$')])
-  exe tnr ? 'tabmove ' . tnr : ''
+  let tnr = min([max([tnr, 0]), tabpagenr('$')])
+  exe 'tabmove ' . tnr
 endfunction
 function! s:tab_sink(item) abort
   if !type(a:item) | return [a:item, 0] | endif

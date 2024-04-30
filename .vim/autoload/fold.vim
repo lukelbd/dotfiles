@@ -1,67 +1,66 @@
 "-----------------------------------------------------------------------------"
 " Utilities for vim folds
 "-----------------------------------------------------------------------------"
-" Return ignored auto-opened folds matching given regex
-" Note: This provides 'pseudo-levels' that auto-open when level is at or above
-" the first regex and when that regex is not preceded by the second regex. Useful
-" e.g. for python classes or tex environments occupying entire document and to
-" enforce universal standard default of foldlevel=0 without hiding everything.
-" Return fold under cursor above a given level
-scriptencoding utf-8
-let s:folds_ignore = [
-  \ ['python', '^class\>', '', 1],
-  \ ['fortran', '^\s*\(module\|program\)\>', '', 1],
-  \ ['javascript', '^\s*\(export\s\+\|default\s\+\)*class\>', '', 1],
-  \ ['typescript', '^\s*\(export\s\+\|default\s\+\)*class\>', '', 1],
-  \ ['tex', '^\s*\\begin{document}', '', 1],
-  \ ['tex', '^\s*\\begin{frame}', '^\s*\\begin{block}', 2],
-  \ ['tex', '^\s*\\\(sub\)*section\>', '^\s*\\begin{frame}', 2],
-\ ]
-function! fold#get_ignores(...) abort range
-  let [line1, line2] = a:0 > 1 ? a:000 : a:0 ? [a:1, a:1] : [1, line('$')]
-  let ignores = []
-  for [ftype, regex1, regex2, level] in s:folds_ignore
-    if ftype !=# &l:filetype
-      continue  " ignore non-matching filetypes
+" Add fastfold-managed manual folds with marks
+" Note: Previously tried using regions with 'vim-syntaxMarkerFold' but causes major
+" issues since either disables highlighting or messes up inner highlight items when
+" trying to use e.g. contains=ALL since several use naked 'contained' property.
+function! fold#add_markers() abort
+  let winview = winsaveview()
+  let [mark1, mark2] = split(&l:foldmarker, ',')
+  let [head, tail] = ['\%(^\|\s\)\zs', '\(\d*\)\s*$']  " end of line only
+  let regex = head . '\(' . mark1 . '\|' . mark2 . '\)' . tail
+  let queue = []  " fold queue
+  let heads = {}  " mark lines
+  goto | while v:true
+    let flags = empty(heads) ? 'cW' : 'W'
+    let [lnum, cnum] = searchpos(regex, flags, "tags#get_skip(0, 'Comment')")
+    if lnum == 0 || cnum == 0 | break | endif
+    let line = getline(lnum)
+    let parts = matchlist(line, regex, cnum - 1)
+    if empty(parts)
+      echohl WarningMsg
+      echom 'Warning: Failed to setup mark folds.'
+      echohl None | break
     endif
-    if &l:diff || &l:foldmethod !~# '\<\(manual\|syntax\|expr\)\>'
-      continue  " ignore irrelevant documents
+    let mark = parts[1]
+    let level = parts[2]
+    if parts[1] =~# mark2  " close previously defined fold
+      let level = empty(level) ? max(keys(heads)) : str2nr(level)
+      if has_key(heads, string(level))
+        call add(queue, [level, heads[level], lnum])
+      endif
+    else  " open fold after deleting previous and closing inner
+      let level = empty(level) ? max(keys(heads)) + 1 : str2nr(level)
+      for ilevel in range(level, 10)
+        if has_key(heads, string(ilevel))
+          call add(queue, [ilevel, heads[ilevel], lnum - 1])
+          call remove(heads, ilevel)
+        endif
+      endfor
+      let heads[level] = lnum
     endif
-    if !empty(regex2) && !search(regex2, 'nwc')
-      continue  " ignore first regex when second missing from document
-    endif
-    let winview = winsaveview()
-    exe line1 | let skip = 'foldlevel(".") != level'
-    while search(regex1, 'cW', line2, 0, skip)
-      let lnum = line('.') | call add(ignores, lnum)
-      exe lnum + 1 | if lnum + 1 >= line('$') | break | endif
-    endwhile
-    call winrestview(winview)
+  endwhile
+  for level in keys(heads)
+    call add(queue, [str2nr(level), heads[level], line('$')])
   endfor
-  return ignores
+  for [level, line1, line2] in sort(queue)
+    exe line1 . ',' . line2 . 'fold'
+    silent! exe line1 . 'foldopen'
+  endfor
+  call winrestview(winview)
+  let b:markers = queue
+  return queue
 endfunction
 
 " Return bounds and level for any closed fold or open fold of requested level
 " Note: No native way to get bounds if fold is open so use normal-mode algorithm.
 " Also [z never raises error, but does update jumplist even though not documented
 " in :help jump-motions. See: https://stackoverflow.com/a/4776436/4970632 
-" Note: This file supports following toggles: non-recursive (highest level in range),
+" Note: This helps supports following toggles: non-recursive (highest level in range),
 " inner inner (folds within highest-level fold under cursor that hs children), outer
 " inner (folds within current 'main' parent fold), outer recursirve (parent fold and
 " all its children), and outer force (as with outer but ignoring regexes).
-function! fold#get_parent(...) abort
-  let toplevel = a:0 ? a:1 : &l:foldlevelstart
-  let toplevel = max([toplevel, 0])
-  let [lnum, level] = [line('.'), toplevel + 1]
-  let result = fold#get_fold(level)
-  if empty(result) || foldclosed(result[0]) > 0
-    return result
-  elseif empty(fold#get_ignores(result[0]))  " does not match regex
-    return result
-  endif
-  let other = fold#get_fold(level + 1)
-  return empty(other) ? result : other
-endfunction
 function! fold#get_fold(...) abort
   if foldlevel('.') <= 0 | return [] | endif
   let winview = winsaveview()
@@ -99,6 +98,58 @@ function! fold#get_fold(...) abort
     let result = valid ? [line1, line2, level] : []
   endif
   call winrestview(winview) | return result
+endfunction
+
+" Return ignored auto-opened folds matching given regex
+" Note: This provides 'pseudo-levels' that auto-open when level is at or above
+" the first regex and when that regex is not preceded by the second regex. Useful
+" e.g. for python classes or tex environments occupying entire document and to
+" enforce universal standard default of foldlevel=0 without hiding everything.
+" Return fold under cursor above a given level
+scriptencoding utf-8
+let s:folds_ignore = [['python', '^class\>', '', 1],
+  \ ['fortran', '^\s*\(module\|program\)\>', '', 1],
+  \ ['javascript', '^\s*\(export\s\+\|default\s\+\)*class\>', '', 1],
+  \ ['typescript', '^\s*\(export\s\+\|default\s\+\)*class\>', '', 1],
+  \ ['tex', '^\s*\\begin{document}', '', 1],
+  \ ['tex', '^\s*\\begin{frame}', '^\s*\\begin{block}', 2],
+  \ ['tex', '^\s*\\\(sub\)*section\>', '^\s*\\begin{frame}', 2],
+\ ]
+function! fold#get_parent(...) abort
+  let toplevel = a:0 ? a:1 : &l:foldlevelstart
+  let toplevel = max([toplevel, 0])
+  let [lnum, level] = [line('.'), toplevel + 1]
+  let result = fold#get_fold(level)
+  if empty(result) || foldclosed(result[0]) > 0
+    return result
+  elseif empty(fold#get_ignores(result[0]))  " does not match regex
+    return result
+  endif
+  let other = fold#get_fold(level + 1)
+  return empty(other) ? result : other
+endfunction
+function! fold#get_ignores(...) abort range
+  let [line1, line2] = a:0 > 1 ? a:000 : a:0 ? [a:1, a:1] : [1, line('$')]
+  let ignores = []
+  for [ftype, regex1, regex2, level] in s:folds_ignore
+    if ftype !=# &l:filetype
+      continue  " ignore non-matching filetypes
+    endif
+    if &l:diff || &l:foldmethod !~# '\<\(manual\|syntax\|expr\)\>'
+      continue  " ignore irrelevant documents
+    endif
+    if !empty(regex2) && !search(regex2, 'nwc')
+      continue  " ignore first regex when second missing from document
+    endif
+    let winview = winsaveview()
+    exe line1 | let skip = 'foldlevel(".") != level'
+    while search(regex1, 'cW', line2, 0, skip)
+      let lnum = line('.') | call add(ignores, lnum)
+      exe lnum + 1 | if lnum + 1 >= line('$') | break | endif
+    endwhile
+    call winrestview(winview)
+  endfor
+  return ignores
 endfunction
 
 " Return folds and properties across line range
@@ -261,14 +312,18 @@ function! fold#update_folds(force, ...) abort
     elseif method ==# 'manual' && cached ==# 'manual'
       setlocal foldmethod=syntax
     endif
+    let b:markers = []
     call SimpylFold#Recache()
     silent! FastFoldUpdate
+    call fold#add_markers()
     let b:fastfold_queued = 0
   endif
   let ftype = get(b:, 'fugitive_type', '')
+  let marker = get(b:, 'markers', '')
+  let method = &l:foldmethod ==# 'marker'
   if a:0  " initialize
     if a:1 > 0  " apply defaults
-      let &l:foldlevel = !empty(ftype) || &l:foldmethod ==# 'marker'
+      let &l:foldlevel = !empty(ftype) || !empty(marker) || method
     endif
     for lnum in fold#get_ignores()
       exe lnum . 'foldopen'

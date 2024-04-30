@@ -141,6 +141,7 @@ let &g:numberwidth = 4  " number column minimum width
 let &g:scrolloff = 4  " screen lines above and below cursor
 let &g:shortmess .= &buftype ==# 'nofile' ? 'I' : ''  " no intro when starting vim
 let &g:shiftwidth = 2  " default 2 spaces
+let &g:sidescrolloff = 4  " screen columns left and right of cursor
 let &g:signcolumn = 'auto'  " show signs automatically number column
 let &g:softtabstop = 2  " default 2 spaces
 let &g:spell = 0  " global spell disable (only use text files)
@@ -167,7 +168,8 @@ let &t_EI = "\e[2 q"  " insert/replace end
 let &t_ZH = "\e[3m"  " italics start
 let &t_ZR = "\e[23m"  " italics end
 
-" File types for different unified settings {{{2
+" Shared plugin settings {{{2
+" Filetypes for several different settings
 " Note: Here 'man' is for custom man page viewing utils, 'ale-preview' is used with
 " :ALEDetail output, 'diff' is used with :GitGutterPreviewHunk output, 'git' is used
 " with :Fugitive [show|diff] displays, 'fugitive' is used with other :Fugitive comamnds,
@@ -630,12 +632,12 @@ command! -bang -nargs=? Refold call fold#update_folds(<bang>0, <f-args>)
 for s:key in ['z', 'f', 'F', 'n', 'N'] | silent! exe 'unmap! z' . s:key | endfor
 nnoremap zx <Cmd>call fold#update_folds(0, 1)<CR>
 nnoremap zX <Cmd>call fold#update_folds(0, 2)<CR>
-nnoremap zv <Cmd>call fold#update_folds(0)<CR>zv
-nnoremap zV <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>
+nnoremap zv <Cmd>call fold#update_folds(0)<CR>zvzzze
+nnoremap zV <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>zzze
 vnoremap zx <Cmd>call fold#update_folds(0, 1)<CR>
 vnoremap zX <Cmd>call fold#update_folds(0, 2)<CR>
-vnoremap zv <Cmd>call fold#update_folds(0)<CR>zv
-vnoremap zV <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>
+vnoremap zv <Cmd>call fold#update_folds(0)<CR>zvzzze
+vnoremap zV <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>zzze
 
 " Toggle folds over selection or under matches after updating
 " Note: Here fold#toggle_folds_expr() calls fold#update_folds() before toggling.
@@ -1272,7 +1274,7 @@ vnoremap <expr> \" call('edit#search_replace_expr', g:sub_ddouble)
 " Currently use junegunn/vim-plug but could switch to Shougo/dein.vim which was derived
 " from Shougo/neobundle.vim which was based on vundle. Just a bit faster.
 call plug#begin('~/.vim/plugged')
-let s:forks = ['vim-gitgutter']  " managed by s:plug()
+let s:forks = ['vim-syntaxMarkerFold']  " previous attempt
 let s:enable_ddc = 1  " popup completion
 let s:enable_lsp = 1  " lsp integration
 
@@ -1323,7 +1325,7 @@ function! s:push(auto, arg) abort
 endfunction
 command! -nargs=* AddPlug call s:push(0, <f-args>)
 
-" Core integrated utilities {{{2
+" Core utilities and integration {{{2
 " Use bash 'vim-session' to start form existing .vimsession or start new session with
 " input file file, or use 'vim' then ':so .vimsession' or ':Session' command.
 " Note: Here mru can be used to replace current file in window with files from recent
@@ -1344,62 +1346,7 @@ let g:peekaboo_window = 'vertical topleft 30new'
 let g:peekaboo_prefix = "\1"  " disable mappings in lieu of 'nomap' option
 let g:peekaboo_ins_prefix = "\1"  " disable mappings in lieu of 'nomap' option
 
-" Navigation and searching
-" Note: The vim-tags @#&*/?! mappings auto-integrate with vim-indexed-search. Also
-" disable colors for increased speed.
-" See: https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
-" call s:plug('tpope/vim-unimpaired')  " bracket map navigation, no longer used
-" call s:plug('kshenoy/vim-signature')  " mark signs, unneeded and abandoned
-" call s:plug('vim-scripts/EnhancedJumps')  " jump list, unnecessary
-" call s:plug('easymotion/vim-easymotion')  " extremely slow and overkill
-call s:plug('henrik/vim-indexed-search')
-call s:plug('andymass/vim-matchup')
-call s:plug('justinmk/vim-sneak')  " simple and clean
-silent! unlet g:loaded_sneak_plugin
-let g:matchup_mappings_enabled = 1  " enable default mappings
-let g:indexed_search_mappings = 0  " note this also disables <Plug>(mappings)
-
-" Error checking utilities
-" Note: Test plugin works for every filetype (simliar to ale).
-" Note: ALE plugin looks for all checkers in $PATH
-" call plut#('scrooloose/syntastic')  " out of date: https://github.com/vim-syntastic/syntastic/issues/2319
-" call s:plug('tweekmonster/impsort.vim') " conflicts with isort plugin, also had major issues
-if has('python3') | call s:plug('fisadev/vim-isort') | endif
-call s:plug('vim-test/vim-test')
-call s:plug('dense-analysis/ale')
-call s:plug('Chiel92/vim-autoformat')
-call s:plug('tell-k/vim-autopep8')
-call s:plug('psf/black')
-let g:autoformat_autoindent = 0
-let g:autoformat_retab = 0
-let g:autoformat_remove_trailing_spaces = 0
-
-" Git integration utilities
-" Note: vim-flog and gv.vim are heavyweight and lightweight commit branch viewing
-" plugins. Probably not necessary unless in giant project with tons of branches.
-" See: https://github.com/rbong/vim-flog/issues/15
-" See: https://vi.stackexchange.com/a/21801/8084
-" call s:plug('rbong/vim-flog')  " view commit graphs with :Flog, filetype 'Flog' (?)
-" call s:plug('junegunn/gv.vim')  " view commit graphs with :GV, filetype 'GV'
-call s:plug('rhysd/conflict-marker.vim')  " highlight conflicts
-call s:plug('airblade/vim-gitgutter')
-call s:plug('tpope/vim-fugitive')
-let g:conflict_marker_enable_mappings = 0
-let g:fugitive_no_maps = 1  " disable cmap <C-r><C-g> and nmap y<C-g>
-
-" Tag integration utilities
-" Note: This should work for both fzf ':Tags' (uses 'tags' since relies on tagfiles()
-" for detection in autoload/vim.vim) and gutentags (uses only g:gutentags_ctags_tagfile
-" for both detection and writing).
-" call s:plug('xolox/vim-misc')  " dependency for easytags
-" call s:plug('xolox/vim-easytags')  " kind of old and not that useful honestly
-" call s:plug('preservim/tagbar')  " unnecessarily complex interface
-call s:plug('yegappan/taglist')  " simpler interface plus mult-file support
-call s:plug('ludovicchabant/vim-gutentags')  " slows things down without config
-let g:gutentags_enabled = 1
-" let g:gutentags_enabled = 0
-
-" Fuzzy selection and searching
+" Shared plugin frameworks (e.g. fzf)
 " Todo: Use ctrl-a then enter or e.g. ctrl-q to auto-populate quickfix list with lines
 " in window. Figure out setqflist() filename and line using dedicated parsing funcs
 " Note: Use fzf#wrap to apply global settings, and never use fzf#run return value to
@@ -1412,7 +1359,6 @@ let g:gutentags_enabled = 1
 " See: https://github.com/junegunn/fzf/issues/1577#issuecomment-492107554
 " See: https://www.reddit.com/r/vim/comments/9504rz/denite_the_best_vim_pluggin/e3pbab0/
 " call setqflist(map(copy(a:lines), '{''filename'': v:val }')) | copen | cc
-" call s:plug('mhinz/vim-grepper')  " for ag/rg but seems like easymotion, too much
 " call s:plug('Shougo/pum.vim')  " pum completion mappings, but mine are nicer
 " call s:plug('Shougo/unite.vim')  " first generation
 " call s:plug('Shougo/denite.vim')  " second generation
@@ -1429,7 +1375,39 @@ let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
 let g:fzf_require_dir = 0  " see lukelbd/fzf.vim completion-edits branch
 let g:fzf_tags_command = 'ctags -R -f .vimtags ' . join(parse#get_ignores(0, 0, 1), ' ')
 
-" Language server and errors {{{2
+" Navigation and searching
+" Note: The vim-tags @#&*/?! mappings auto-integrate with vim-indexed-search. Also
+" disable colors for increased speed.
+" See: https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
+" call s:plug('tpope/vim-unimpaired')  " bracket map navigation, no longer used
+" call s:plug('kshenoy/vim-signature')  " mark signs, unneeded and abandoned
+" call s:plug('vim-scripts/EnhancedJumps')  " jump list, unnecessary
+" call s:plug('easymotion/vim-easymotion')  " extremely slow and overkill
+" call s:plug('mhinz/vim-grepper')  " for ag/rg but seems like easymotion, too much
+call s:plug('henrik/vim-indexed-search')
+call s:plug('andymass/vim-matchup')
+call s:plug('justinmk/vim-sneak')  " simple and clean
+silent! unlet g:loaded_sneak_plugin
+let g:matchup_mappings_enabled = 1  " enable default mappings
+let g:indexed_search_mappings = 0  " note this also disables <Plug>(mappings)
+
+" Errors and lsp servers {{{2
+" Asynchronous linting engine settings
+" Note: Test plugin works for every filetype (simliar to ale).
+" Note: ALE plugin looks for all checkers in $PATH
+" call plut#('scrooloose/syntastic')  " out of date: https://github.com/vim-syntastic/syntastic/issues/2319
+" call s:plug('tweekmonster/impsort.vim') " conflicts with isort plugin, also had major issues
+if has('python3') | call s:plug('fisadev/vim-isort') | endif
+call s:plug('vim-test/vim-test')
+call s:plug('dense-analysis/ale')
+call s:plug('Chiel92/vim-autoformat')
+call s:plug('tell-k/vim-autopep8')
+call s:plug('psf/black')
+let g:autoformat_autoindent = 0
+let g:autoformat_retab = 0
+let g:autoformat_remove_trailing_spaces = 0
+
+" Language server settings
 " Note: Here vim-lsp-ale sends diagnostics generated by vim-lsp to ale, does nothing
 " when g:lsp_diagnostics_enabled = 0 and can cause :ALEReset to fail, so skip for now.
 " In future should use let g:lsp_ale_auto_enable_linter = 0 and then restrict
@@ -1451,7 +1429,7 @@ if s:enable_lsp
   let g:lsp_preview_max_height = 2 * g:linelength
 endif
 
-" Insert completion engines
+" Insert completion engines {{{2
 " Note: Autocomplete requires deno (install with mamba). Older verison requires pynvim
 " Warning: denops.vim frequently upgrades requirements to most recent vim
 " distribution but conda-forge version is slower to update. Workaround by pinning
@@ -1544,7 +1522,8 @@ let g:textobj_numeral_no_default_key_mappings = 1  " defined in vim-succinct blo
 let g:loaded_textobj_comment = 1  " avoid default mappings (see below)
 let g:loaded_textobj_entire = 1  " avoid default mappings (see below)
 
-" Alignment and calculations
+" Folds indents and alignment {{{2
+" General plugins for aligning and formatting under text
 " Note: tcomment_vim is nice minimal extension of vim-commentary, include explicit
 " commenting and uncommenting and 'blockwise' commenting with g>b and g<b
 " See: https://www.reddit.com/r/vim/comments/g71wyq/delete_continuation_characters_when_joining_lines/
@@ -1577,7 +1556,7 @@ let g:splitjoin_trailing_comma = 1
 let g:splitjoin_normalize_whitespace = 1
 let g:splitjoin_python_brackets_on_separate_lines = 1
 
-" File type folds and indentation {{{2
+" File type folds and indentation
 " Note: SimPylFold seems to have nice improvements, but while vim-tex-fold adds
 " environment folding support, only native vim folds document header, which is
 " sometimes useful. Will stick to default unless things change.
@@ -1591,7 +1570,7 @@ let g:splitjoin_python_brackets_on_separate_lines = 1
 " call s:plug('matze/vim-tex-fold')  " folding tex environments (but no preamble)
 " call s:plug('yggdroot/indentline')  " vertical indent line
 " call s:plug('nathanaelkane/vim-indent-guides')  " alternative indent guide
-call s:plug('Jorengarenar/vim-syntaxMarkerFold')  " markers in syntax (turns everything into comment)
+" call s:plug('Jorengarenar/vim-syntaxMarkerFold')  " markers in syntax (now use fastfold method)
 call s:plug('tweekmonster/braceless.vim')  " partial overlap with vim-textobj-indent, but these include header
 call s:plug('tmhedberg/SimpylFold')  " python folding
 call s:plug('Konfekt/FastFold')  " speedup folding
@@ -1600,7 +1579,7 @@ let g:braceless_generate_scripts = 1  " see :help, required since we active in f
 let g:tex_fold_override_foldtext = 0  " disable foldtext() override
 let g:SimpylFold_docstring_preview = 0  " disable foldtext() override
 
-" Syntax highlighting
+" Syntax and filetypes {{{2
 " Note: Use :InlineEdit within blocks to open temporary buffer for editing. The buffer
 " will have filetype-aware settings. See: https://github.com/AndrewRadev/inline_edit.vim
 " Note: Here 'pythonic' vim-markdown folding prevents bug where folds auto-close after
@@ -1687,6 +1666,31 @@ let g:vimtex_fold_types = {'envs' : {'whitelist': ['enumerate', 'itemize', 'math
 call s:plug('tpope/vim-eunuch')  " shell utils like chmod rename and move
 call s:plug('tpope/vim-vinegar')  " netrw enhancements (acts on filetype netrw)
 let g:LargeFile = 1  " megabyte limit
+
+" Git related utilities
+" Note: vim-flog and gv.vim are heavyweight and lightweight commit branch viewing
+" plugins. Probably not necessary unless in giant project with tons of branches.
+" See: https://github.com/rbong/vim-flog/issues/15
+" See: https://vi.stackexchange.com/a/21801/8084
+" call s:plug('rbong/vim-flog')  " view commit graphs with :Flog, filetype 'Flog' (?)
+" call s:plug('junegunn/gv.vim')  " view commit graphs with :GV, filetype 'GV'
+call s:plug('rhysd/conflict-marker.vim')  " highlight conflicts
+call s:plug('airblade/vim-gitgutter')
+call s:plug('tpope/vim-fugitive')
+let g:conflict_marker_enable_mappings = 0
+let g:fugitive_no_maps = 1  " disable cmap <C-r><C-g> and nmap y<C-g>
+
+" Tag navigation utilities
+" Note: This should work for both fzf ':Tags' (uses 'tags' since relies on tagfiles()
+" for detection in autoload/vim.vim) and gutentags (uses only g:gutentags_ctags_tagfile
+" for both detection and writing).
+" call s:plug('xolox/vim-misc')  " dependency for easytags
+" call s:plug('xolox/vim-easytags')  " kind of old and not that useful honestly
+" call s:plug('preservim/tagbar')  " unnecessarily complex interface
+call s:plug('yegappan/taglist')  " simpler interface plus mult-file support
+call s:plug('ludovicchabant/vim-gutentags')  " slows things down without config
+let g:gutentags_enabled = 1
+" let g:gutentags_enabled = 0
 
 " Custom plugins or forks and try to load locally if possible
 " Note: This needs to come after or else (1) vim-succinct will not be able to use
@@ -2622,4 +2626,3 @@ nnoremap <Leader><Leader> <Cmd>echo system('curl https://icanhazdadjoke.com/')<C
 if !v:vim_did_enter | nohlsearch | endif
 call syntax#update_highlights() | redraw!
 exe 'runtime autoload/repeat.vim'
-" vim:foldmethod=marker
