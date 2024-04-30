@@ -1591,6 +1591,7 @@ let g:splitjoin_python_brackets_on_separate_lines = 1
 " call s:plug('matze/vim-tex-fold')  " folding tex environments (but no preamble)
 " call s:plug('yggdroot/indentline')  " vertical indent line
 " call s:plug('nathanaelkane/vim-indent-guides')  " alternative indent guide
+" call s:plug('Jorengarenar/vim-syntaxMarkerFold')  " markers in syntax (turns everything into comment)
 call s:plug('tweekmonster/braceless.vim')  " partial overlap with vim-textobj-indent, but these include header
 call s:plug('tmhedberg/SimpylFold')  " python folding
 call s:plug('Konfekt/FastFold')  " speedup folding

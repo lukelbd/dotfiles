@@ -163,12 +163,8 @@ function! fold#get_label(line, ...) abort
   let char = comment#get_char()
   let head = '^\s*' . regex . '\s*[-=]\{3,}' . regex . '\?\(\s\|$\)'
   let text = getline(a:line)
-  if &l:foldmethod ==# 'marker' && text =~# head
-    let text = getline(a:line + 1)  " ignore header
-  endif
-  if &l:foldmethod ==# 'marker'
-    let text = substitute(text, split(&l:foldmarker, ',')[0] . '\d*\s*$', '', '')
-  endif
+  let text = text =~# head ? getline(a:line + 1) : text
+  let text = substitute(text, split(&l:foldmarker, ',')[0] . '\d*\s*$', '', '')
   let trim = a:0 && a:1 ? '\(^\s*\|' : '\('  " strip leading space
   let trim .= '\S\@<=\s*' . regex
   let trim .= strwidth(char) == 1 ? '[^' . char . ']*$' : '.*$'
