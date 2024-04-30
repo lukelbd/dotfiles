@@ -49,7 +49,7 @@ function! utils#get_scripts(arg, ...) abort
   let opts = type(a:arg) ? {'name': a:arg} : {'sid': a:arg}
   let items = []  " no dictionary because confusing
   for info in getscriptinfo(opts)
-    let item = a:0 && a:1 ? info.sid : RelativePath(info.name)
+    let item = a:0 && a:1 ? info.sid : exists('*RelativePath') ? RelativePath(info.name) : info.name
     call add(items, item)
   endfor
   return items

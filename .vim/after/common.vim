@@ -41,7 +41,7 @@ endif
 function! Foldtext_markdown(...)
   return call('fold#fold_text', [])
 endfunction
-call fold#update_folds(0, 0)
+call fold#update_folds(1, 1)
 silent! doautocmd CursorHold
 silent! doautocmd ConflictMarkerDetect BufReadPost
 silent! doautocmd conflict_marker_setup BufWinEnter

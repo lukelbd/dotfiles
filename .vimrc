@@ -623,11 +623,6 @@ cnoremap <silent> <expr> <BS> window#close_wild("\<BS>")
 " Note: Here fold#update_folds() re-enforces special expr fold settings for markdown
 " and python files then applies default toggle status that differs from buffer-wide
 " &foldlevel for fortran python and tex files (e.g. always open \begin{document}).
-augroup fold_setup
-  au!
-  au BufEnter * setlocal foldtext=fold#fold_text()
-  au BufWinEnter * call fold#update_folds(0, 1)
-augroup END
 command! -bang -nargs=? Refold call fold#update_folds(<bang>0, <f-args>)
 for s:key in ['z', 'f', 'F', 'n', 'N'] | silent! exe 'unmap! z' . s:key | endfor
 nnoremap zx <Cmd>call fold#update_folds(0, 1)<CR>
@@ -1947,21 +1942,26 @@ if s:has_plug('vim-gutentags')
 endif
 
 " Enable native vim syntax folding and configure fastfold
+" Note: Critical to run custom update after built-in update, and requires calling
+" vim enter autocommand after fast fold autocommand.
+" Note: FastFold suggestion for python files is to locally set foldmethod=indent but
+" this is constraining. Use SimpylFold instead (they recommend FastFold integration).
 " Note: Use native mappings. zr reduces fold level by 1, zm folds more by 1 level,
 " zR is big reduction (opens everything), zM is big increase (closes everything),
 " zj and zk jump to start/end of *this* fold, [z and ]z jump to next/previous fold,
 " zv is open folds enough to view cursor (useful when jumping lines or searching), and
 " zn and zN fold toggle between no folds/previous folds without affecting foldlevel.
-" Note: Also tried 'vim-lsp' folding but caused huge slowdowns. Should see folding as
-" similar to linting/syntax/tags and use separate utility.
-" Note: FastFold suggestion for python files is to locally set foldmethod=indent but
-" this is constraining. Use SimpylFold instead (they recommend FastFold integration).
 " See: https://www.reddit.com/r/vim/comments/c5g6d4/why_is_folding_so_slow/
 " See: https://github.com/Konfekt/FastFold and https://github.com/tmhedberg/SimpylFold
 if &g:foldenable || s:has_plug('FastFold')
+  silent! exe 'runtime plugin/fastfold.vim'
+  let s:script = get(utils#get_scripts('fastfold.vim'), 0, '')
+  exe empty(s:script) ? 'source ' . s:script : ''
   augroup fastfold_setup
     au!
-    au BufWinEnter * call fold#update_folds(0)
+    au VimEnter * call fold#update_folds(1, 1)
+    au BufEnter * setlocal foldtext=fold#fold_text()
+    au BufWinEnter * call fold#update_folds(0, 1)
     au TextChanged,TextChangedI * let b:fastfold_queued = 1
   augroup END
   let g:baan_fold = 1
@@ -2613,16 +2613,27 @@ if !has('gui_running') && get(g:, 'colors_name', 'default') ==? 'default'
 endif
 
 " Finish everything up {{{2
-" Clear jumps for new tabs and to ignore stuff from vimrc and plugin files. Note
-" that feedkeys required or else this fails for e.g.
+" Note: Critical to run custom update after built-in update, and requires calling
+" vim enter autocommand after fast fold autocommand.
+silent! exe 'runtime plugin/fastfold.vim'
+let s:script = get(utils#get_scripts('fastfold.vim'), 0, '')
+exe empty(s:script) ? 'source ' . s:script : ''
+augroup fold_setup
+  au!
+  au VimEnter * call fold#update_folds(1, 1)
+  au BufEnter * setlocal foldtext=fold#fold_text()
+  au BufWinEnter * call fold#update_folds(0, 1)
+augroup END
+
+" Clear jumps for new tabs and to ignore stuff from vimrc and plugin files.
 " See: https://stackoverflow.com/a/2419692/4970632
 " See: http://vim.1045645.n5.nabble.com/Clearing-Jumplist-td1152727.html
-augroup clear_jumps
+silent! exe 'runtime autoload/repeat.vim'
+if !v:vim_did_enter | nohlsearch | endif
+call syntax#update_highlights() | redraw!
+augroup jump_setup
   au!
-  au VimEnter,BufWinEnter * exe 'normal! zvzzze' | if get(w:, 'clear_jumps', 1)
+  au VimEnter,BufWinEnter * if get(w:, 'clear_jumps', 1)
     \ | silent clearjumps | let w:clear_jumps = 0 | endif
 augroup END
 nnoremap <Leader><Leader> <Cmd>echo system('curl https://icanhazdadjoke.com/')<CR>
-if !v:vim_did_enter | nohlsearch | endif
-call syntax#update_highlights() | redraw!
-exe 'runtime autoload/repeat.vim'

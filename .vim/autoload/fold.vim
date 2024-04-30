@@ -6,6 +6,7 @@
 " issues since either disables highlighting or messes up inner highlight items when
 " trying to use e.g. contains=ALL since several use naked 'contained' property.
 function! fold#add_markers() abort
+  if &l:foldmethod !=# 'manual' | return | endif
   let winview = winsaveview()
   let [mark1, mark2] = split(&l:foldmarker, ',')
   let [head, tail] = ['\%(^\|\s\)\zs', '\(\d*\)\s*$']  " end of line only
@@ -13,7 +14,7 @@ function! fold#add_markers() abort
   let queue = []  " fold queue
   let heads = {}  " mark lines
   goto | while v:true
-    let flags = empty(heads) ? 'cW' : 'W'
+    let flags = line('.') == 1 && col('.') == 1 ? 'cW' : 'W'
     let [lnum, cnum] = searchpos(regex, flags, "tags#get_skip(0, 'Comment')")
     if lnum == 0 || cnum == 0 | break | endif
     let line = getline(lnum)
@@ -49,8 +50,7 @@ function! fold#add_markers() abort
     silent! exe line1 . 'foldopen'
   endfor
   call winrestview(winview)
-  let b:markers = queue
-  return queue
+  let b:fastfold_markers = queue
 endfunction
 
 " Return bounds and level for any closed fold or open fold of requested level
@@ -312,14 +312,14 @@ function! fold#update_folds(force, ...) abort
     elseif method ==# 'manual' && cached ==# 'manual'
       setlocal foldmethod=syntax
     endif
-    let b:markers = []
+    let b:fastfold_markers = []
     call SimpylFold#Recache()
     silent! FastFoldUpdate
     call fold#add_markers()
     let b:fastfold_queued = 0
   endif
   let ftype = get(b:, 'fugitive_type', '')
-  let marker = get(b:, 'markers', '')
+  let marker = get(b:, 'fastfold_markers', '')
   let method = &l:foldmethod ==# 'marker'
   if a:0  " initialize
     if a:1 > 0  " apply defaults
@@ -329,7 +329,7 @@ function! fold#update_folds(force, ...) abort
       exe lnum . 'foldopen'
     endfor
     if a:1 <= 1  " open under cursor
-      exe 'normal! zv'
+      exe 'normal! zvzzze'
     endif
   endif
   setlocal foldtext=fold#fold_text()

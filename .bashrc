@@ -2157,4 +2157,3 @@ $_macos && [ -r $HOME/mackup/shell.sh ] \
 [ -z "$_bashrc_loaded" ] && [[ "$(hostname)" =~ "$HOSTNAME" ]] \
   && command curl https://icanhazdadjoke.com/ 2>/dev/null && echo
 _bashrc_loaded=true
-# vim:foldmethod=marker
