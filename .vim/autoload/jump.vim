@@ -40,12 +40,12 @@ function! s:feed_list(changes, iloc, ...) abort
   " vint: -ProhibitUnnecessaryDoubleQuote
   let [key1, key2] = a:changes ? ["g;", "g,"] : ["\<C-o>", "\<C-i>"]
   let [tnr, wnr; rest] = a:0 ? a:000 : [tabpagenr(), winnr(), 0]
-  silent exe tnr . 'tabnext'
-  silent exe wnr . 'wincmd w'
-  let init = tnr == tabpagenr() && wnr == winnr() ? '' : '1000' . key2
-  let ikey = a:iloc > 0 ? key2 : key1  " motion key
-  let ikeys = a:iloc == 0 ? '' : abs(a:iloc) . ikey
-  call feedkeys(init . ikeys . 'zvzzze', 'n')
+  silent exe tnr . 'tabnext' | silent exe wnr . 'wincmd w'
+  let keys = tnr == tabpagenr() && wnr == winnr() ? '' : '1000' . key2  " initial
+  let keys .= a:iloc == 0 ? '' : abs(a:iloc)  " count
+  let keys .= a:iloc > 0 ? key2 : key1  " motion
+  let keys .= &l:foldopen =~# '\<jump\>' ? 'zv' : ''
+  call feedkeys(keys . 'zzze', 'n')
 endfunction
 function! s:next_list(changes, count) abort  " navigate to nth location in list
   let [opts, idx] = s:get_list(a:changes)
@@ -314,5 +314,5 @@ function! jump#next_list(count, list, ...) abort
   else  " jump to error
     exe cmd . ' ' . idx
   endif
-  if &l:foldopen =~# 'quickfix' | exe 'normal! zv' | endif
+  if &l:foldopen =~# '\<quickfix\>' | exe 'normal! zv' | endif
 endfunction
