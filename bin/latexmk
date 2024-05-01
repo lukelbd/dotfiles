@@ -389,15 +389,15 @@ if $texdiff; then
 fi
 
 # Convert to docx with pandoc; keeps figures and formats sections with Word styling
-# * For citeproc see: https://github.com/jgm/citeproc
-# * For xnos see: https://github.com/tomduck/pandoc-xnos
-# Unfortunately neither xnos nor crossref work for numbering equations and figures
+# Use natbib flag for bst support (works): https://github.com/jgm/pandoc/issues/5405
+# Use xnos is for auto numbering (does not work): https://github.com/tomduck/pandoc-xnos
+# Use crossref for auto numbering (works): https://github.com/lierdakil/pandoc-crossref
+# Use citeproc to handle crossref-output csl (works): https://github.com/jgm/citeproc
 if $texdocx; then
   type pandoc &>/dev/null || raise "Cannot convert to docx because pandoc is not installed. Try brew install pandoc."
   # flags=(--citeproc --filter=pandoc-crossref)
   # flags=(-M cref=true --citeproc --filter=pandoc-crossref)
-  # flags=(-M cref=true --filter pandoc-crossref --citeproc)
-  flags=(-M cref=true --filter pandoc-xnos)
+  flags=(-M cref=true --filter pandoc-xnos --filter pandoc-crossref --citeproc)
   if ! $nobbl && $bibliography; then
     if [[ " ${packages[*]} " =~ natbib ]]; then
       flags+=(--natbib)

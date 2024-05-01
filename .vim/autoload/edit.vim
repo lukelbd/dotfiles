@@ -1,15 +1,14 @@
 "-----------------------------------------------------------------------------"
 " Utilities for formatting text
 "-----------------------------------------------------------------------------"
-" Call external plugins
+" Helper function
 " Note: Native delimitMate#ExpandReturn() issues <Esc> then fails to split brackets due
 " to InsertLeave autocommand that repositions cursor. Use <C-c> to avoid InsertLeave.
-let s:delimit_mate = {'s': 'ExpandSpace', 'r': 'ExpandReturn', 'b': 'BS'}
-function! edit#echo_range(msg, num) range abort
-  echo a:msg . (a:msg =~# '\s' ? ' on' : '') . ' ' . a:num . ' line(s)'
-endfunction
-function! edit#how_much(...) abort
-  return utils#motion_func('HowMuch#HowMuch', a:000)
+function! edit#echo_range(msg, num, ...) range abort
+  let head = a:msg =~# '\s' ? ' on ' : ' '
+  let tail = join(a:000, '')
+  let tail = empty(tail) ? '' : ' (args ' . tail . ')'
+  redraw | echom a:msg . head  . a:num . ' line(s)' . tail
 endfunction
 
 " Auto formatting utilities
@@ -68,13 +67,14 @@ endfunction
 " with edit#insert_mode() then run edit#insert_undo() on InsertLeave (e.g. after 'ciw')
 " Note: Remove single tab or up to &tabstop spaces to the right of cursor. This
 " enforces consistency with 'softtab' backspace-by-tabs behavior.
+let s:insert_keys = {'s': 'ExpandSpace', 'r': 'ExpandReturn', 'b': 'BS'}
 function! edit#insert_mode(...) abort
   let imode = a:0 ? a:1 : get(b:, 'insert_mode', '')
   let b:insert_mode = imode  " save character
   return imode
 endfunction
 function! edit#insert_char(key, ...) abort
-  let name = get(s:delimit_mate, a:key, a:key)
+  let name = get(s:insert_keys, a:key, a:key)
   let keys = call('delimitMate#' . name, a:000)
   return substitute(keys, "\<Esc>", "\<C-c>", 'g')
 endfunction
@@ -140,9 +140,9 @@ function! edit#sel_lines(...) range abort
   call feedkeys((a:0 && a:1 ? '?' : '/') . range, 'n')
   call edit#echo_range('Searching', a:lastline - a:firstline - 1)
 endfunction
-function! edit#sort_lines() range abort  " vint: -ProhibitUnnecessaryDoubleQuote
+function! edit#sort_lines(...) range abort  " vint: -ProhibitUnnecessaryDoubleQuote
   let range = a:firstline == a:lastline ? '' : a:firstline . ',' . a:lastline
-  exe 'silent ' . range . 'sort'
+  exe 'silent ' . range . 'sort ' . join(a:000, '')
   call edit#echo_range('Sorted', a:lastline - a:firstline + 1)
 endfunction
 function! edit#reverse_lines() range abort  " vint: -ProhibitUnnecessaryDoubleQuote
@@ -154,7 +154,7 @@ endfunction
 function! edit#sel_lines_expr(...) abort
   return utils#motion_func('edit#sel_lines', a:000)
 endfunction
-function! edit#sort_lines_expr() range abort
+function! edit#sort_lines_expr(...) range abort
   return utils#motion_func('edit#sort_lines', a:000)
 endfunction
 function! edit#reverse_lines_expr() abort

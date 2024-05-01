@@ -1162,27 +1162,39 @@ nnoremap zS zug
 vnoremap zs zg
 vnoremap zS zug
 
-" Preset substitution {{{2
+" Preset substitutions {{{2
 " Note: Critical to have separate visual and normal maps
 " Note: This works recursively with the below maps.
-function! s:regex_line() abort
+function! s:feed_replace() abort
   let char = getcharstr()
   let rmap = '\' . char
   if empty(maparg(rmap)) | return | endif  " replacement exists
-  let motion = mode() !~? '^n' ? '' : char =~? '^[ar]' ? 'ip' : 'al'
+  let motion = mode() !~? '^n' ? '' : char =~? '^[arnu]' ? 'ip' : 'al'
   call feedkeys(rmap . motion, 'm')
 endfunction
-noremap \\ <Cmd>call <sid>regex_line()<CR>
+noremap \\ <Cmd>call <sid>feed_replace()<CR>
 
-" Sort selected or motion lines
+" Sort or reverse lines using variety of :sort arguments
+" Here 'i' ignores case, 'n' is numeric, 'f' is by float
 " See: https://superuser.com/a/189956/506762
 vnoremap <expr> \a edit#sort_lines_expr()
 nnoremap <expr> \a edit#sort_lines_expr()
+vnoremap <expr> \A edit#sort_lines_expr('i')
+nnoremap <expr> \A edit#sort_lines_expr('i')
+vnoremap <expr> \n edit#sort_lines_expr('n')
+nnoremap <expr> \n edit#sort_lines_expr('n')
+vnoremap <expr> \N edit#sort_lines_expr('f')
+nnoremap <expr> \N edit#sort_lines_expr('f')
 
-" Reverse selected or motion lines
+" Reverse or filter to unique lines
+" Here 'i' ignores case, 'u' is unique sort
 " See: https://vim.fandom.com/wiki/Reverse_order_of_lines
 vnoremap <expr> \r edit#reverse_lines_expr()
 nnoremap <expr> \r edit#reverse_lines_expr()
+vnoremap <expr> \u edit#sort_lines_expr('u')
+nnoremap <expr> \u edit#sort_lines_expr('u')
+vnoremap <expr> \U edit#sort_lines_expr('ui')
+nnoremap <expr> \U edit#sort_lines_expr('ui')
 
 " Retab lines and remove trailing whitespace
 " Note: Here define g:regex variables analogous to 'g:surround' and 'g:snippet'
@@ -2405,10 +2417,10 @@ endif  " }}}
 if s:has_plug('HowMuch')  " {{{
   nnoremap g++ :call HowMuch#HowMuch(0, 0, 1, 'py')<CR>
   nnoremap z++ :call HowMuch#HowMuch(1, 1, 1, 'py')<CR>
-  nnoremap <expr> g+ edit#how_much(0, 0, 1, 'py')
-  nnoremap <expr> z+ edit#how_much(1, 1, 1, 'py')
-  vnoremap <expr> g+ edit#how_much(0, 0, 1, 'py')
-  vnoremap <expr> z+ edit#how_much(1, 1, 1, 'py')
+  nnoremap <expr> g+ utils#motion_func('HowMuch#HowMuch', [0, 0, 1, 'py'])
+  nnoremap <expr> z+ utils#motion_func('HowMuch#HowMuch', [1, 1, 1, 'py'])
+  vnoremap <expr> g+ utils#motion_func('HowMuch#HowMuch', [0, 0, 1, 'py'])
+  vnoremap <expr> z+ utils#motion_func('HowMuch#HowMuch', [1, 1, 1, 'py'])
 endif  " }}}
 if s:has_plug('vim-speeddating')  " {{{
   nmap <silent> + <Plug>SpeedDatingUp:call repeat#set("\<Plug>SpeedDatingUp")<CR>
