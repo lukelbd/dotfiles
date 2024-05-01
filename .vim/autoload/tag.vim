@@ -39,16 +39,19 @@ function! s:goto_stack(tag, ...) abort  " see also mark.vim
   let ttag = [tbnr] + tags#find_tag(tpos[:1])  " tag [buf name line kind]
   let fpos = s:from_stack(path, name, iloc == 0)
   let cnt = a:0 ? a:1 : v:count1
-  let outside = !empty(fpos) && ipos[:1] != fpos[:1] && itag != ttag
+  let outside = itag != ttag && (empty(fpos) || ipos[:1] != fpos[:1])
   if cnt < 0 && size > 1 && iloc >= size - 1 && outside  " add <top> pseudo-tag
-    let name = '<top>'  " updated tag name
-    let item = [expand('%:p'), [line('.'), col('.')], name]
-    let g:tag_name = item  " push_stack() adds to top of stack
-    call stack#push_stack('tag', '', '', 0)
+    if name ==# '<top>'
+      let iloc -= 1 | call stack#pop_stack('tag', a:tag)
+    else
+      let name = '<top>'  " updated tag name
+    endif
+    let g:tag_name = [expand('%:p'), [line('.'), col('.')], name]
+    call stack#push_stack('tag', '', '', 0)  " adds to top of stack
   endif
   let jpos = cnt >= 0 || empty(fpos) && iloc == 0 ? tpos : fpos
-  let outside = jpos != slice(ipos, 0, len(jpos))
-  if !empty(jpos) && name !=# '<top>' && outside
+  let outside = !empty(jpos) && jpos != slice(ipos, 0, len(jpos))
+  if outside && name !=# '<top>'
     let [path, lnum; rest] = jpos
     let iarg = empty(rest) ? lnum : [lnum, rest[0]]
     silent call tags#_goto_tag(2, path, iarg, name)
@@ -66,13 +69,6 @@ function! tag#next_stack(...) abort
   let cnt = a:0 ? a:1 : v:count1
   let item = stack#get_item('tag')
   let item = empty(item) ? [] : item
-  let [iloc, size] = stack#get_loc('tag')
-  if iloc >= size - 1 && get(item, 2, '') ==# '<top>'
-    call stack#pop_stack('tag', item)
-    let [iloc, size] = stack#get_loc('tag')
-    let item = stack#get_item('tag')
-    let item = empty(item) ? [] : item
-  endif
   let cnt = empty(item) ? cnt : s:goto_stack(item, cnt)
   let icnt = cnt < 0 ? -1 : 1
   if cnt == 0  " push currently assigned name to stack
