@@ -739,8 +739,8 @@ noremap <expr> g_ v:count ? '`' . parse#get_register('`') : '<Cmd>call mark#fzf_
 noremap <Leader>- <Cmd>call mark#del_marks()<CR>
 noremap <Leader>_ <Cmd>call mark#del_marks(get(g:, 'mark_name', 'A'))<CR>
 noremap z_ <Cmd>call mark#set_marks(parse#get_register('m'))<CR>
-noremap <C-n> <Cmd>call jump#next_mark(-v:count1)<CR>
-noremap <F8> <Cmd>call jump#next_mark(v:count1)<CR>
+noremap <C-n> <Cmd>call mark#next_mark(-v:count1)<CR>
+noremap <F8> <Cmd>call mark#next_mark(v:count1)<CR>
 
 " Navigate tag stack, location list, and quickfix list
 " Note: In general location list and quickfix list filled by ale, but quickfix also

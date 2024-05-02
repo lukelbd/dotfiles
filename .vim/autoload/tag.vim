@@ -6,7 +6,14 @@
 " Note: This only jumps if the destination 'from' line contains the tag (i.e. not
 " jumping to an outdated position or from a random fzf call) or when at the bottom.
 scriptencoding utf-8
-function! s:from_stack(arg, name, ...) abort
+function! s:goto_pos(...) abort
+  let [bnr, lnum; rest] = a:0 ? a:000 : getpos('.')
+  call file#goto_file(bnr ? bnr : bufnr())  " without tab stack
+  let ipos = empty(rest) ? [lnum, 1] : [lnum] + rest
+  return call('cursor', ipos)
+endfunction
+function! s:get_from(arg, name, ...) abort
+  let force = a:0 && a:1  " always keep bottom of stack
   let path = expand('%:p')
   let wins = type(a:arg) ? win_findbuf(bufnr(a:arg)) : [a:arg]
   let stack = gettagstack(get(wins, 0, winnr()))
@@ -19,7 +26,7 @@ function! s:from_stack(arg, name, ...) abort
     let [bnr, lnum, cnum, onum] = item.from
     let bnr = empty(bnr) ? bufnr() : bnr
     let text = get(getbufline(bnr, lnum), 0, '')
-    if a:0 && a:1 || text =~# escape(iname, '[]\.*$~')
+    if force || text =~# escape(iname, '[]\.*$~')
       return [bnr, lnum, cnum, onum]
     endif
   endfor | return []
@@ -39,14 +46,9 @@ function! s:goto_stack(item, count, ...) abort  " see also mark.vim
   let itag = [ibnr] + tags#find_tag(line('.'))  " cursor [buf name line kind]
   let tpos = [tbnr] + map(type(tpos) > 1 ? tpos : [tpos], 'str2nr(v:val)')
   let ttag = [tbnr] + tags#find_tag(tpos[:1])  " tag [buf name line kind]
-  let fpos = s:from_stack(path, name, iloc == 0)
-  let outside = itag != ttag && (empty(fpos) || ipos[:1] != fpos[:1])
-  if iloc < size - 1  " remove current <top> pseudo-tag
-    let itop = stack#get_item('tag', -2)
-    if get(itop, 2, '') ==# '<top>'
-      call stack#pop_stack('tag', itop)
-    endif
-  elseif icnt && size && outside  " add <top> pseudo-tag
+  let fpos = s:get_from(path, name, iloc == 0)  " always allow returning to bottom
+  let noop = itag == ttag || !empty(fpos) && ipos[:1] == fpos[:1]
+  if icnt && size && !noop && iloc >= size - 1  " add <top> pseudo-tag
     if name ==# '<top>'
       let iloc -= 1 | call stack#pop_stack('tag', a:item)
     endif
@@ -54,43 +56,60 @@ function! s:goto_stack(item, count, ...) abort  " see also mark.vim
     let g:tag_name = [expand('%:p'), [line('.'), col('.')], name]
     call stack#push_stack('tag', '', '', 0)  " adds to top of stack
   endif
-  let jpos = icnt > 0 || empty(fpos) && iloc == 0 ? tpos : fpos
-  let outside = !empty(jpos) && jpos != slice(ipos, 0, len(jpos))
-  if icnt && outside && name !=# '<top>'
+  let from = icnt < 0 && !empty(fpos)
+  let jpos = from ? fpos : tpos
+  let ipos = slice(ipos, 0, len(jpos))
+  if icnt && ipos != jpos && name !=# '<top>'
     let [path, lnum; rest] = jpos
     let iarg = empty(rest) ? lnum : [lnum, rest[0]]
-    silent call tags#_goto_tag(2, path, iarg, name)
-    let outside = icnt > 0 ? itag != ttag : ipos[:1] != jpos[:1]  " exclude from count
-    let icnt += outside ? icnt > 0 ? -1 : 1 : 0  " possibly adjust count
+    if from  " go to from position
+      call call('s:goto_pos', [path, lnum] + rest)
+    else  " go to exact tag position
+      silent call tags#_goto_tag(2, path, iarg, name)
+    endif
+    let noop = from ? ipos[:1] == jpos[:1] : itag == ttag  " exclude from count
+    let icnt += noop ? 0 : icnt > 0 ? -1 : 1  " possibly adjust count
   endif
   return [name, icnt]
 endfunction
 
 " Iterate over tags (see also mark#next_mark)
 " Note: Here pass '-1' verbosity to disable both function messages and stack message.
+" Note: Tag jumps with <Enter> or fzf selection may float selections above <top> entry,
+" so here remove any <top> entries not already on the top before iterating stack.
 " Note: This implicitly adds 'current' location to top of stack before navigation,
 " and additionally jumps to the tag stack 'from' position when navigating backwards.
+function! s:clean_stack() abort
+  let items = []  " outdated pseudo-tags
+  let [_, size] = stack#get_loc('tag')
+  for idx in range(size - 2)  " skip final tag
+    let item = stack#get_item('tag', idx)
+    let name = get(item, 2, '')
+    if name ==# '<top>' | call add(items, item) | endif
+  endfor
+  for item in items  " remove top tags
+    call stack#pop_stack('tag', item)
+  endfor
+endfunction
 function! tag#next_stack(...) abort
+  call s:clean_stack()
   let icnt = a:0 ? a:1 : v:count1
   let item = stack#get_item('tag')
   let [name, icnt] = s:goto_stack(item, icnt)
   let iarg = icnt >= 0 ? 1 : -1
   if !icnt  " push currently assigned name to stack
-    let status = stack#push_stack('tag', '', 0, -1)
+    let result = stack#push_stack('tag', '', 0, -1)
   else  " iterate stack then pass to tag jump function
-    let status = stack#push_stack('tag', function('tags#_goto_tag', [iarg]), icnt, -1)
+    let result = stack#push_stack('tag', function('tags#_goto_tag', [iarg]), icnt, -1)
   endif
-  let item = stack#get_item('tag')
+  let item = stack#get_item('tag')  " current tag
   if icnt < 0 && !empty(item) && name !=# '<top>'  " mimic :pop behavior
-    let [iloc, _] = stack#get_loc('tag')
-    let pos = s:from_stack(item[0], item[2], iloc == 0)
-    let pos = empty(pos) ? getpos('.') : pos
-    let [bnr, lnum, cnum, vnum] = empty(pos) ? getpos('.') : pos
-    call file#goto_file(bnr ? bnr : bufnr())  " without tab stack
-    call cursor(lnum, cnum, vnum)
+    let [iloc, _] = stack#get_loc('tag')  " force on zero
+    let ipos = s:get_from(item[0], item[2], iloc == 0)
+    call call('s:goto_pos', ipos)  " possibly empty
   endif
   exe &l:foldopen =~# '\<tag\>' ? 'normal! zv' : ''
-  if !status | call stack#print_item('tag') | endif
+  if !result | call stack#print_item('tag') | endif
 endfunction
 
 " Select from tags in the current stack

@@ -9,8 +9,8 @@ function! stack#get_loc(head, ...) abort
   return [idx, len(stack)]  " return length
 endfunction
 function! stack#get_name(head, ...) abort
-  let [key, name] = [a:head . '_name', a:0 ? a:1 : '']  " set by input function
-  return type(a:1) ? name : getbufvar(name, key, get(g:, key, ''))
+  let [key, iarg] = [a:head . '_name', a:0 ? a:1 : '']  " set by input function
+  return type(a:1) ? iarg : getbufvar(iarg, key, get(g:, key, ''))
 endfunction
 function! stack#get_item(head, ...) abort
   let [stack, idx] = s:get_stack(a:head)
@@ -153,11 +153,11 @@ function! stack#push_stack(head, func, ...) abort
   if !empty(a:func)
     let args = type(item) == type([]) ? item : [item]
     if !level  " preserve function message
-      let status = call(a:func, args)
+      let result = call(a:func, args)
     else  " show stack message instead
-      silent let status = call(a:func, args)
+      silent let result = call(a:func, args)
     endif
-    if status != 0 | return status | endif
+    return result
   endif
   let [stack, idx] = s:get_stack(a:head)  " in case triggered
   call stack#update_stack(a:head, scroll, jdx, level)
