@@ -29,36 +29,41 @@ endfunction
 " Note: This adds a pseudo-tag <top> at the top of the stack so we can return to
 " where we started when scrolling backwards, and pushes <top> if cursor is outside
 " both 'from' and 'tag' buffers or inside the 'tag' buffer but outside its bounds.
-function! s:goto_stack(tag, ...) abort  " see also mark.vim
-  let [path, tpos, name] = a:tag
+function! s:goto_stack(item, count, ...) abort  " see also mark.vim
+  if empty(a:item) | return ['', a:count] | endif
+  let [path, tpos, name] = a:item
   let [iloc, size] = stack#get_loc('tag')
   let [ibnr, tbnr] = [bufnr(), bufnr(path)]
+  let icnt = a:count  " input count
   let ipos = [ibnr] + slice(getpos('.'), 1)
   let itag = [ibnr] + tags#find_tag(line('.'))  " cursor [buf name line kind]
   let tpos = [tbnr] + map(type(tpos) > 1 ? tpos : [tpos], 'str2nr(v:val)')
   let ttag = [tbnr] + tags#find_tag(tpos[:1])  " tag [buf name line kind]
   let fpos = s:from_stack(path, name, iloc == 0)
-  let cnt = a:0 ? a:1 : v:count1
   let outside = itag != ttag && (empty(fpos) || ipos[:1] != fpos[:1])
-  if cnt < 0 && size > 1 && iloc >= size - 1 && outside  " add <top> pseudo-tag
-    if name ==# '<top>'
-      let iloc -= 1 | call stack#pop_stack('tag', a:tag)
-    else
-      let name = '<top>'  " updated tag name
+  if iloc < size - 1  " remove current <top> pseudo-tag
+    let itop = stack#get_item('tag', -2)
+    if get(itop, 2, '') ==# '<top>'
+      call stack#pop_stack('tag', itop)
     endif
+  elseif icnt && size && outside  " add <top> pseudo-tag
+    if name ==# '<top>'
+      let iloc -= 1 | call stack#pop_stack('tag', a:item)
+    endif
+    let name = '<top>'  " updated tag name
     let g:tag_name = [expand('%:p'), [line('.'), col('.')], name]
     call stack#push_stack('tag', '', '', 0)  " adds to top of stack
   endif
-  let jpos = cnt >= 0 || empty(fpos) && iloc == 0 ? tpos : fpos
+  let jpos = icnt > 0 || empty(fpos) && iloc == 0 ? tpos : fpos
   let outside = !empty(jpos) && jpos != slice(ipos, 0, len(jpos))
-  if outside && name !=# '<top>'
+  if icnt && outside && name !=# '<top>'
     let [path, lnum; rest] = jpos
     let iarg = empty(rest) ? lnum : [lnum, rest[0]]
     silent call tags#_goto_tag(2, path, iarg, name)
-    let noop = cnt < 0 ? ipos[:1] == jpos[:1] : itag == ttag  " ignore from count
-    let cnt += noop ? 0 : cnt < 0 ? 1 : -1  " possibly adjust count
+    let outside = icnt > 0 ? itag != ttag : ipos[:1] != jpos[:1]  " exclude from count
+    let icnt += outside ? icnt > 0 ? -1 : 1 : 0  " possibly adjust count
   endif
-  return cnt
+  return [name, icnt]
 endfunction
 
 " Iterate over tags (see also mark#next_mark)
@@ -66,18 +71,17 @@ endfunction
 " Note: This implicitly adds 'current' location to top of stack before navigation,
 " and additionally jumps to the tag stack 'from' position when navigating backwards.
 function! tag#next_stack(...) abort
-  let cnt = a:0 ? a:1 : v:count1
+  let icnt = a:0 ? a:1 : v:count1
   let item = stack#get_item('tag')
-  let item = empty(item) ? [] : item
-  let cnt = empty(item) ? cnt : s:goto_stack(item, cnt)
-  let icnt = cnt < 0 ? -1 : 1
-  if cnt == 0  " push currently assigned name to stack
+  let [name, icnt] = s:goto_stack(item, icnt)
+  let iarg = icnt >= 0 ? 1 : -1
+  if !icnt  " push currently assigned name to stack
     let status = stack#push_stack('tag', '', 0, -1)
   else  " iterate stack then pass to tag jump function
-    let status = stack#push_stack('tag', function('tags#_goto_tag', [icnt]), cnt, -1)
+    let status = stack#push_stack('tag', function('tags#_goto_tag', [iarg]), icnt, -1)
   endif
   let item = stack#get_item('tag')
-  if cnt < 0 && !empty(item)  " mimic :pop behavior
+  if icnt < 0 && !empty(item) && name !=# '<top>'  " mimic :pop behavior
     let [iloc, _] = stack#get_loc('tag')
     let pos = s:from_stack(item[0], item[2], iloc == 0)
     let pos = empty(pos) ? getpos('.') : pos
