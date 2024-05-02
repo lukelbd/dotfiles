@@ -1319,15 +1319,15 @@ function! s:push(auto, arg) abort
   endif
   let name = fnamemodify(path, ':t')
   let plug = 'lukelbd/' . name
-  let ipath = escape(path, ' ~')
+  let item = escape(path, ' ~')
   if !a:auto && !isdirectory(path)
     redraw | echohl WarningMsg
     echom 'Warning: Plugin ' . string(name) . ' not found.'
     echohl None
   elseif a:auto && !isdirectory(path)
-    return s:plug(name)
-  elseif &runtimepath !~# ipath  " remaining tildes
-    exe 'set runtimepath^=' . ipath | exe 'set runtimepath+=' . ipath . '/after'
+    return s:plug(plug)
+  elseif &runtimepath !~# item  " remaining tildes
+    exe 'set runtimepath^=' . item | exe 'set runtimepath+=' . item . '/after'
   endif
 endfunction
 command! -nargs=* AddPlug call s:push(0, <f-args>)
