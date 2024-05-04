@@ -47,13 +47,14 @@ let s:map_from = [
 
 " Helper setup functions for commands
 " See: https://github.com/sgeb/vim-diff-fold/
+" Note: Renamed files additionally have file name next to the commit number.
 " Note: Supports normal, context, unified, rcs, ed, subversion and git diffs. For rcs
 " diffs folds only files (rcs has no hunks in the common sense). Uses foldlevel=1 ==>
 " file foldlevel=2 ==> hunk. Note context diffs need special treatment, as hunks are
 " defined via context (after '***'), and checking for '*** ' or ('--- ') only does
 " not work since the file lines have the same marker.
 function! git#setup_blame() abort
-  let regex = '^\x\{8}\s\+\d\+\s\+(\zs<\S\+>\s\+'
+  let regex = '^\x\{8}\s\+.\{-}\s\+(\zs<\S\+>\s\+'
   call matchadd('Conceal', regex, 0, -1, {'conceal': ''})
   call feedkeys(window#count_panes('h') == 1 ? "\<Cmd>call window#default_width(0)\<CR>": '', 'n')
 endfunction

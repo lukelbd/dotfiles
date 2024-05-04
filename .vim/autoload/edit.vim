@@ -211,9 +211,9 @@ function! edit#search_replace(msg, ...) range abort
       call histdel('/', -1)  " preserve history
     endfor
   endfor
-  call edit#echo_range(a:msg, nlines)
   let @/ = search
   call winrestview(winview)
+  call edit#echo_range(a:msg, nlines)
 endfunction
 " For <expr> map accepting motion
 function! edit#search_replace_expr(...) abort

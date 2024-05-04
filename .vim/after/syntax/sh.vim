@@ -1,10 +1,9 @@
+"------------------------------------------------------------------------------" {{{1
+" Improve shell script syntax.
 "------------------------------------------------------------------------------"
-" Tweak bash syntax to support sbatch
+" Figure out shell type {{{2
 " Todo: Try awk highlighting from https://stackoverflow.com/a/13925238/4970632
 " Todo: Try heredoc highlighting from .vim/after/syntax/perl/heredoc-perl.vim
-"------------------------------------------------------------------------------"
-" Manage shell type
-" Copied from somewhere, maybe part of PBS
 if !exists('b:is_kornshell') && !exists('b:is_bash')
   if exists('g:is_posix') && !exists('g:is_kornshell')
    let g:is_kornshell = g:is_posix
@@ -24,7 +23,8 @@ if !exists('b:is_kornshell') && !exists('b:is_bash')
   endif
 endif
 
-" PBS system copied from SBATCH example below.
+" PBS supercomputer system {{{2
+" Note: This was adapated from sbatch block below
 " See: https://unix.stackexchange.com/q/452461/112647
 syn region shPBSComment start='^#\(PBS\)' end="\n" oneline contains=shPBSKeyword,shPBSOption,shPBSValue
 syn region shPBSValue start="=" end="$" contains=shPBSString,shPBSMailType,shPBSIdentifier,shPBSEnv,shPBSHint,shPBSMode,shPBSPropag,shPBSInterval,shPBSDist,shPBSEmail
@@ -60,10 +60,10 @@ hi def link shPBSInterval Special
 hi def link shPBSDist Special
 hi def link shPBSEmail Special
 
-" Slurm / sbatch supercomputer system.
-" See: https://github.com/SchedMD/slurm/blob/master/contribs/slurm_completion_help/slurm.vim
-" Note shSBATCHString are suspect.Shouldcould be narrowed down to more
+" Slurm and sbatch supercomputer system {{{2
+" Note: shSBATCHString are suspect.Shouldcould be narrowed down to more
 " specific regular expressions. Typical example is --mail-type or --begin.
+" See: https://github.com/SchedMD/slurm/blob/master/contribs/slurm_completion_help/slurm.vim
 syn region shSBATCHComment start='^#\(SBATCH\)' end="\n" oneline contains=shSBATCHKeyword,shSBATCHOption,shSBATCHValue
 syn region shSBATCHValue start="=" end="$" contains=shSBATCHString,shSBATCHMailType,shSBATCHIdentifier,shSBATCHEnv,shSBATCHHint,shSBATCHMode,shSBATCHPropag,shSBATCHInterval,shSBATCHDist,shSBATCHEmail
 syn match shSBATCHKeyword contained '#\(SBATCH\)\s*'

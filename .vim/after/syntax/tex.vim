@@ -1,9 +1,8 @@
+"------------------------------------------------------------------------------" {{{1
+" Improve tex syntax. Adapted from vimtex and builds on $VIMRUNTIME/syntax/tex.vim
 "------------------------------------------------------------------------------"
-" Author: Karl Yngve Lervåg
-" Forked: Luke Davis
-" Edited: 2018-07-26
-" Tweak tex syntax. Adapted from vimtex. Builds on $VIMRUNTIME/syntax/tex.vim
-"------------------------------------------------------------------------------"
+" Perform spell checking when no syntax {{{2
+" This will enable spell checking e.g. in toplevel of included files
 if !exists('b:current_syntax')
   let b:current_syntax = 'tex'
 elseif b:current_syntax !=# 'tex'
@@ -11,18 +10,19 @@ elseif b:current_syntax !=# 'tex'
 endif
 scriptencoding utf-8  " non-ascii character below
 syntax sync minlines=500  " increase highlight accuracy
+syntax spell toplevel
 
-" Disable spellcheck within yellow-highlighted curly brace commands (e.g. preamble)
-" but do not disable spellcheck within environments like textbf and naked braces {}.
+" Disable spellcheck within commands {{{2
+" Avoid disabling spellcheck within environments like textbf and naked braces {}.
 " Note: Here just copied the $VIMRUNTIME/syntax/tex.vim line and removed the
 " 'transparent' flag. Could revisit and consider improving but so far so good.
 syntax region texMatcherNM matchgroup=Delimiter
   \ start='{' skip='\\\|\[{}]' end="}"
   \ contains=@NoSpell,@texMatchNMGroup,texError
 
-" Enable syntax folding of comment blocks. Ignores empty and comment-character-only
-" lines when defining beginning and ends of folding regions. This is useful during
-" revisions or when using templates with huge commented-out instruction blocks.
+" Support comment block folding {{{2
+" Ignores empty and comment-character-only lines when defining beginning and ends of
+" folding regions. This is useful for revisions and templates with instruction blocks
 " Note: Critical to use contains=texComment since contains=@texFoldGroup creates nested
 " comment zones that require extra lookbehind 'start' regex. Not sure why this works.
 " Note: Have to wrap 'start' in zero-length atom so end can be found on same line,
@@ -34,8 +34,8 @@ syntax region texCommentZone transparent
 syntax cluster texFoldGroup add=texCommentZone
 syntax cluster texPreambleMatchGroup add=texCommentZone
 
-" Enable syntax folding of figures and tables. By default only math environments
-" are folded (see TexNewMathZone below and in $VIMRUNTIME/syntax/tex.vim)
+" Support figure and table folding {{{2
+" Math regions are folded by default (see TexNewMathZone, $VIMRUNTIME/syntax/tex.vim)
 " Note: The 'keepend' is critical or else zone can persist beyond figures. Not sure
 " why... supposedly just ends nested environments when parent environment is found.
 syntax region texAlertZone transparent
@@ -71,8 +71,8 @@ syntax cluster texFoldGroup add=texGroupZone
 syntax cluster texFoldGroup add=texTableZone
 syntax cluster texFoldGroup add=texTabular
 
-" Enable syntax folding of abstracts authors and captions. By default only begin..end
-" begin..end texAbstract environment is folded and only outside of the preamble
+" Support abstract author and caption folding {{{2
+" Only begin..end texAbstract environment outside preamble is folded by default
 " Note: Adapted from texTitle and texAbstract in $VIMRUNTIME/syntax/tex.vim. Here
 " 'matchgroup' highlights the 'start' and 'end' patterns differently from region.
 " Note: Caption texStatement is consistent with existing \label{} and \ref{} assignment
@@ -101,14 +101,10 @@ syntax cluster texPreambleMatchGroup add=texAuthors
 syntax cluster texPreambleMatchGroup add=texAbstracts
 syntax cluster texPreambleMatchGroup add=texAbstract
 
+"------------------------------------------------------------------------------" {{{1
+" Command improvements
 "------------------------------------------------------------------------------"
-" Original plugin
-"------------------------------------------------------------------------------"
-" Perform spell checking when there is no syntax
-" This will enable spell checking e.g. in toplevel of included files
-syntax spell toplevel
-
-" Improve handling of newcommand and newenvironment commands
+" Improve handling of newcommand and newenvironment {{{2
 " Allow arguments in newenvironments
 syntax region texEnvName contained matchgroup=Delimiter
   \ start="{"rs=s+1 end="}"
@@ -119,13 +115,11 @@ syntax region texEnvArgs contained matchgroup=Delimiter
   \ skipwhite skipnl
 syntax cluster texEnvGroup add=texDefParm,texNewEnv,texComment
 
-" Add support for \renewcommand and \renewenvironment
+" Add support for \renewcommand, \renewenvironment, DefParams {{{2
 syntax match texNewCmd "\\renewcommand\>"
   \ nextgroup=texCmdName skipwhite skipnl
 syntax match texNewEnv "\\renewenvironment\>"
   \ nextgroup=texEnvName skipwhite skipnl
-
-" Match nested DefParms
 syntax match texDefParmNested contained "##\+\d\+"
 syntax cluster texEnvGroup add=texDefParmNested
 syntax cluster texCmdGroup add=texDefParmNested
@@ -134,13 +128,7 @@ syntax match texInputFile
   \ contains=texStatement,texInputCurlies,texInputFileOpt
 highlight def link texDefParmNested Identifier
 
-" Allow subequations (fixes #1019)
-" This should be temporary, as it seems subequations is erroneously part of
-" texBadMath from Charles Campbell's syntax plugin.
-syntax match texBeginEnd
-  \ "\(\\begin\>\|\\end\>\)\ze{subequations}" nextgroup=texBeginEndName
-
-" Italic font, bold font, and conceals
+" Italic font, bold font, and conceals {{{2
 if get(g:, 'tex_fast', 'b') =~# 'b'
   let s:conceal =
     \ (has('conceal') && get(g:, 'tex_conceal', 'b') =~# 'b')
@@ -159,8 +147,7 @@ if get(g:, 'tex_fast', 'b') =~# 'b'
   endfor
 endif
 
-" Add syntax highlighting for \url, \href, \hyperref
-
+" Add syntax highlighting for \url, \href, \hyperref {{{2
 syntax match texStatement '\\url\ze[^\ta-zA-Z]' nextgroup=texUrlVerb
 syntax region texUrlVerb matchgroup=Delimiter
       \ start='\z([^\ta-zA-Z]\)' end='\z1' contained
@@ -180,7 +167,10 @@ highlight link texUrlVerb texUrl
 highlight link texHref texUrl
 highlight link texHyperref texRefZone
 
-" Add support for biblatex and csquotes packages (cite commands)
+"-----------------------------------------------------------------------------" {{{1
+" Integration support
+"-----------------------------------------------------------------------------"
+" Add support for biblatex and csquotes packages {{{2
 if get(g:, 'tex_fast', 'r') =~# 'r'
   for s:pattern in [
     \ 'bibentry',
@@ -243,10 +233,9 @@ if get(g:, 'tex_fast', 'r') =~# 'r'
   highlight def link texCites texCite
 endif
 
-" Add support for array package
-" The following code changes inline math so as to support the column
-" specifiers [0], e.g.
-" \begin{tabular}{*{3}{>{$}c<{$}}}
+" Add support for array package {{{2
+" The following code changes inline math so as to support the
+" column specifiers [0], e.g. \begin{tabular}{*{3}{>{$}c<{$}}}
 " [0]: https://en.wikibooks.org/wiki/LaTeX/Tables#Column_specification_using_.3E.7B.5Ccmd.7D_and_.3C.7B.5Ccmd.7D
 if exists('b:vimtex.packages.array') && get(g:, 'tex_fast', 'M') =~# 'M'
   syntax clear texMathZoneX
@@ -265,7 +254,7 @@ if exists('b:vimtex.packages.array') && get(g:, 'tex_fast', 'M') =~# 'M'
   endif
 endif
 
-" Add support for cleveref package
+" Add support for cleveref package {{{2
 if get(g:, 'tex_fast', 'r') =~# 'r'
   syntax match texStatement '\\\(\(label\)\?c\(page\)\?\|C\|auto\)ref\>'
     \ nextgroup=texCRefZone
@@ -291,7 +280,7 @@ if get(g:, 'tex_fast', 'r') =~# 'r'
   highlight link texCRefLabelOpts texCmdArgs
 endif
 
-" Add support for varioref package
+" Add support for varioref package {{{2
 if get(g:, 'tex_fast', 'r') =~# 'r'
   syntax match texStatement '\\Vref\>' nextgroup=texVarioRefZone
   syntax region texVarioRefZone contained matchgroup=Delimiter
@@ -299,7 +288,7 @@ if get(g:, 'tex_fast', 'r') =~# 'r'
   highlight link texVarioRefZone texRefZone
 endif
 
-" Add support for listings package
+" Add support for listings package {{{2
 syntax region texZone
   \ start="\\begin{lstlisting}"rs=s
   \ end="\\end{lstlisting}\|%stopzone\>"re=e
@@ -310,7 +299,7 @@ syntax match texInputFile
   \ contains=texStatement,texInputCurlies,texInputFileOpt
 syntax match texZone "\\lstinline\s*\(\[.*\]\)\={.\{-}}"
 
-" Add support for moreverb package
+" Add support for moreverb package {{{2
 if exists('g:tex_verbspell')
   syntax region texZone start="\\begin{verbatimtab}" end="\\end{verbatimtab}\|%stopzone\>" contains=@Spell
   syntax region texZone start="\\begin{verbatimwrite}" end="\\end{verbatimwrite}\|%stopzone\>" contains=@Spell
@@ -321,7 +310,7 @@ else
   syntax region texZone start="\\begin{boxedverbatim}" end="\\end{boxedverbatim}\|%stopzone\>"
 endif
 
-" Add support for beamer package
+" Add support for beamer package {{{2
 syntax match texBeamerDelimiter '<\|>' contained
 syntax match texBeamerOpt '<[^>]*>' contained contains=texBeamerDelimiter
 syntax match texStatementBeamer '\\only\(<[^>]*>\)\?' contains=texBeamerOpt
@@ -334,7 +323,7 @@ highlight link texStatementBeamer texStatement
 highlight link texBeamerOpt Identifier
 highlight link texBeamerDelimiter Delimiter
 
-" Add support for amsmath package
+" Add support for amsmath package {{{2
 " This is based on Charles E. Campbell's amsmath.vba file dated 2017-10-12
 call TexNewMathZone('Z', 'align', 1)
 call TexNewMathZone('Y', 'alignat', 1)
@@ -356,7 +345,10 @@ for s:texmath in [
     \ . s:texmath[0] . "' contained conceal cchar=" . s:texmath[1]
 endfor
 
-" Nested syntax highlighting for dot
+"-----------------------------------------------------------------------------" {{{1
+" Nested syntax support
+"-----------------------------------------------------------------------------"
+" Nested syntax highlighting for dot {{{2
 unlet b:current_syntax
 syntax include @DOT syntax/dot.vim
 syntax cluster texDocGroup add=texZoneDot
@@ -368,7 +360,7 @@ syntax region texZoneDot
   \ contains=texBeginEnd,@DOT
 let b:current_syntax = 'tex'
 
-" Nested syntax highlighting for lualatex
+" Nested syntax highlighting for lualatex {{{2
 unlet b:current_syntax
 syntax include @LUA syntax/lua.vim
 syntax cluster texDocGroup add=texZoneLua
@@ -386,7 +378,7 @@ syntax region texZoneLuaArg matchgroup=Delimiter
   \ contains=@LUA
 let b:current_syntax = 'tex'
 
-" Nested syntax highlighting for gnuplottex
+" Nested syntax highlighting for gnuplottex {{{2
 unlet b:current_syntax
 syntax include @GNUPLOT syntax/gnuplot.vim
 syntax cluster texDocGroup add=texZoneGnuplot
@@ -398,7 +390,7 @@ syntax region texZoneGnuplot
   \ contains=texBeginEnd,texBeginEndModifier,@GNUPLOT
 let b:current_syntax = 'tex'
 
-" Nested syntax highlighting for asymptote
+" Nested syntax highlighting for asymptote {{{2
 let s:asypath = globpath(&runtimepath, 'syntax/asy.vim')
 if !empty(s:asypath)
   unlet b:current_syntax
@@ -419,8 +411,8 @@ if !empty(s:asypath)
   let b:current_syntax = 'tex'
 endif
 
-" Nested syntax highlighting for minted
-" First set all minted environments to listings
+" Nested syntax highlighting for minted {{{2
+" Set all minted environments to listings
 syntax cluster texFoldGroup add=texZoneMinted
 syntax region texZoneMinted
   \ start="\\begin{minted}\_[^}]\{-}{\w\+}"rs=s
@@ -428,7 +420,7 @@ syntax region texZoneMinted
   \ keepend
   \ contains=texMinted
 
-" Next add nested syntax support for desired languages
+" Add minted syntax support for desired languages
 for s:entry in get(g:, 'vimtex_syntax_minted', [])
   " Support for languages
   let s:lang = s:entry.lang
@@ -468,7 +460,7 @@ for s:entry in get(g:, 'vimtex_syntax_minted', [])
   endfor
 endfor
 
-" Finish
+" Finish minted syntax support
 let b:current_syntax = 'tex'
 syntax match texMinted '\\begin{minted}\_[^}]\{-}{\w\+}'
   \ contains=texBeginEnd,texMintedName

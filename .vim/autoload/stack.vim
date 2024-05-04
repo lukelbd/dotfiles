@@ -157,7 +157,7 @@ function! stack#push_stack(head, func, ...) abort
     else  " show stack message instead
       silent let result = call(a:func, args)
     endif
-    return result
+    if result != 0 | return result | endif
   endif
   let [stack, idx] = s:get_stack(a:head)  " in case triggered
   call stack#update_stack(a:head, scroll, jdx, level)

@@ -82,7 +82,7 @@ endfunction
 function! s:clean_stack() abort
   let items = []  " outdated pseudo-tags
   let [_, size] = stack#get_loc('tag')
-  for idx in range(size - 2)  " skip final tag
+  for idx in size > 1 ? range(size - 2) : []  " skip final tag
     let item = stack#get_item('tag', idx)
     let name = get(item, 2, '')
     if name ==# '<top>' | call add(items, item) | endif
@@ -92,6 +92,7 @@ function! s:clean_stack() abort
   endfor
 endfunction
 function! tag#next_stack(...) abort
+  exe "normal! m'"
   call s:clean_stack()
   let icnt = a:0 ? a:1 : v:count1
   let item = stack#get_item('tag')
