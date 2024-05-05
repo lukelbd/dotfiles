@@ -112,23 +112,26 @@ endfunction
 " buffer. Functions should return non-zero on failure (either manually or through
 " vim error triggered on function with abort-label, which returns -1 by default).
 function! stack#pop_stack(head, ...) abort
-  let warn = a:0 > 1 ? a:2 : 0
+  let level = a:0 > 1 ? a:2 : 0
   let name = a:0 > 0 ? a:1 : stack#get_name(a:head)
   let isnum = type(name) == 1 && name =~# '^\d\+$'
   let isfile = type(name) == 1 && filereadable(resolve(name))
   let name = isnum ? str2nr(name) : isfile ? fnamemodify(name, ':p') : name
-  let [num, nmax] = [0, 100]
-  while num < nmax
+  let [cnt, nmax] = [0, 100]
+  while cnt < nmax
     let [stack, idx, name, kdx] = s:get_index(a:head, name, -1)
     if kdx == -1 | break | endif  " remove current item, generally
-    let num += 1 | call remove(stack, kdx)
+    let cnt += 1 | call remove(stack, kdx)
     let idx = idx > kdx ? idx - 1 : idx  " if idx == jdx float to next entry
     call s:set_stack(a:head, stack, idx)
   endwhile
-  if warn && empty(num)
-    redraw | echohl WarningMsg
-    echom 'Warning: Failed to pop name ' . string(name) . ' from ' . a:head . ' stack'
-    echohl None
+  if !level | return | endif
+  if cnt
+    let msg = cnt > 1 ? 'entries' : 'entry'
+    redraw | echom 'Popped ' . cnt . ' matching ' . string(a:head) . ' ' . msg
+  else
+    let msg = 'Warning: Failed to pop name ' . string(name) . ' from ' . a:head . ' stack'
+    redraw | echohl WarningMsg | echom msg | echohl None
   endif
 endfunction
 function! stack#push_stack(head, func, ...) abort

@@ -248,9 +248,9 @@ function! syntax#update_highlights() abort
   call s:highlight_group('ColorColumn', has('gui_running') ? 'LightGray' : 'Gray', 0, '')
   call s:highlight_group('Folded', '', 'White', 'bold')
   call s:highlight_group('DiffAdd', 'Black', '', 'bold')
-  call s:highlight_group('DiffChange', 'Black', '', '')
-  call s:highlight_group('DiffDelete', '', 'Black', 'bold')
-  call s:highlight_group('DiffText', 0, 0, 'inverse', '')
+  call s:highlight_group('DiffChange', '', '', '')
+  call s:highlight_group('DiffDelete', 'Black', 'Black', '')
+  call s:highlight_group('DiffText', 'Black', '', 'bold')
   call s:highlight_group('StrikeThrough', 0, 0, 'strikethrough')
   for group in ['Conceal', 'Pmenu', 'Terminal']
     call add(pairs, [group, 'Normal'])

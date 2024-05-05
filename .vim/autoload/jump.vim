@@ -5,9 +5,9 @@
 " Note: Similar to how stack.vim 'floats' recent tab stack entries to the top of the
 " stack of the current tab is in the most recent five, this filters jump and change
 " list entries to ensure identical line numbers are at least 10 indices apart.
-function! s:get_list(changes, ...) abort  " return location list with unique lines
+function! s:get_list(mode, ...) abort  " return location list with unique lines
   let [tnr, wnr, bnr] = a:0 ? a:000 : [tabpagenr(), winnr(), bufnr()]
-  if a:changes
+  if a:mode
     let [opts, loc_or_len] = getchangelist(bnr)
   else
     let [opts, loc_or_len] = getjumplist(wnr, tnr)
@@ -20,7 +20,7 @@ function! s:get_list(changes, ...) abort  " return location list with unique lin
     let opts[idx]['loc'] = iloc  " e.g. base = 0, idx = n - 1, -> loc = -1
   endfor
   let opts = filter(opts,
-    \ {idx, val -> val.loc == zero || !a:changes && val.bufnr != bnr || !empty(join(getbufline(bnr, val.lnum), ''))})
+    \ {idx, val -> val.loc == zero || !a:mode && val.bufnr != bnr || !empty(join(getbufline(bnr, val.lnum), ''))})
   let opts = filter(copy(opts),
     \ {idx, val -> val.loc == zero || empty(filter(opts[idx + 1:idx + 20], 'v:val.lnum == ' . val.lnum))})
   let iloc = index(map(copy(opts), 'v:val.loc'), 0)
@@ -36,9 +36,9 @@ endfunction
 " instead of the current position for external windows, so when switching from
 " current window, jump to top of the list before the requested user position. Also
 " scroll additionally by minus 1 if 'current' position is beyond end of the list.
-function! s:feed_list(changes, iloc, ...) abort
+function! s:feed_list(mode, iloc, ...) abort
   " vint: -ProhibitUnnecessaryDoubleQuote
-  let [key1, key2] = a:changes ? ["g;", "g,"] : ["\<C-o>", "\<C-i>"]
+  let [key1, key2] = a:mode ? ["g;", "g,"] : ["\<C-o>", "\<C-i>"]
   let [tnr, wnr; rest] = a:0 ? a:000 : [tabpagenr(), winnr(), 0]
   silent exe tnr . 'tabnext' | silent exe wnr . 'wincmd w'
   let keys = tnr == tabpagenr() && wnr == winnr() ? '' : '1000' . key2  " initial
@@ -47,18 +47,18 @@ function! s:feed_list(changes, iloc, ...) abort
   let keys .= &l:foldopen =~# '\<jump\>' ? 'zv' : ''
   call feedkeys(keys . 'zzze', 'n')
 endfunction
-function! s:next_list(changes, count) abort  " navigate to nth location in list
-  let [opts, idx] = s:get_list(a:changes)
+function! s:next_list(mode, count) abort  " navigate to nth location in list
+  let [opts, idx] = s:get_list(a:mode)
   let lnum = get(get(opts, -1, {}), 'lnum', 0)
   let cnum = get(get(opts, -1, {}), 'col', 0)
   let bnum = get(get(opts, -1, {}), 'bufnr', bufnr())
   let iend = bnum == bufnr() && lnum == line('.') && cnum + 1 == col('.')
   let idel = iend && idx == len(opts) && a:count < 0 ? -1 : 0
   let jdx = idx + a:count + idel  " jump from e.g. '11'/10 to 9/10
-  let name = a:changes ? 'change' : 'jump'
+  let name = a:mode ? 'change' : 'jump'
   let head = toupper(name[0]) . name[1:] . ' location: '
   if jdx >= 0 && jdx < len(opts)  " jump to location
-    call s:feed_list(a:changes, opts[jdx]['loc'], tabpagenr(), winnr())
+    call s:feed_list(a:mode, opts[jdx]['loc'], tabpagenr(), winnr())
     call feedkeys("\<Cmd>redraw | echom '" . head . (jdx + 1) . '/' . len(opts) . "'\<CR>", 'n')
   elseif !iend && a:count == 1 && jdx == len(opts)  " silently restore position
     if bnum != bufnr() | exe bnum . 'buffer' | endif | call cursor(lnum, cnum + 1)
@@ -90,7 +90,7 @@ function! s:fmt_list(snr, tnr, wnr, bnr, item) abort
   let line = substitute(line, '[0-9]\+', '\=' . a:snr . 'yellow(submatch(0), "Number")', '')
   return line
 endfunction
-function! s:list_sink(changes, line) abort
+function! s:list_sink(mode, line) abort
   if a:line =~# '^\s*>\s*$' | return | endif
   let regex = '^\s*\([+-]\?\d\+\)\s\+\(\d\+\):\(\d\+\)'  " -1 2:1 -> loc 1 tab 2 win 1
   let regex .= '\s\+\(\d\+\)\s\+\(\d\+\)\s\+\(.*\)$'  " lnum cnum <text_or_file>
@@ -102,12 +102,12 @@ function! s:list_sink(changes, line) abort
     echohl None | return
   endif
   let [iloc, tnr, wnr, _, _, item; rest] = map(parts[1:], 'str2nr(v:val)')
-  return s:feed_list(a:changes, -iloc, tnr, wnr)
+  return s:feed_list(a:mode, -iloc, tnr, wnr)
 endfunction
-function! s:list_source(changes) abort
+function! s:list_source(mode) abort
   let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
-  let name = printf('%6s', a:changes ? 'change' : 'jump')
+  let name = printf('%6s', a:mode ? 'change' : 'jump')
   let paths = map(tags#get_paths(), 'resolve(v:val)')  " sorted by recent use
   if paths[0] != expand('%:p') | call insert(paths, expand('%:p')) | endif
   let table = [name . '  tab:w  line col  text/file']
@@ -116,7 +116,7 @@ function! s:list_source(changes) abort
     if bnr == -1 | continue | endif
     let wid = bnr == bufnr() ? win_getid() : get(win_findbuf(bnr), 0, 0)
     let [tnr, wnr] = win_id2tabwin(wid)  " tab and window number
-    let [opts, iloc] = s:get_list(a:changes, tnr, wnr, bnr)
+    let [opts, iloc] = s:get_list(a:mode, tnr, wnr, bnr)
     let items = map(opts, {idx, val -> s:fmt_list(snr, tnr, wnr, bnr, val)})
     let items = slice(items, -min([&l:history - len(table), len(items)]))
     call extend(table, bnr == bufnr() && iloc == len(opts) ? [' >'] : [])

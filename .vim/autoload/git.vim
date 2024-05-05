@@ -67,7 +67,7 @@ function! git#setup_panel() abort  " also used for general diff filetypes
   for val in s:map_remove | silent! exe 'unmap <buffer> ' . val | endfor
   let &l:foldexpr = 'git#fold_expr(v:lnum)'
   let &l:foldmethod = &l:filetype ==# 'fugitive' ? 'syntax' : 'expr'
-  call matchadd('Conceal', '^[+-]', 0, -1, {'conceal': ''})
+  call matchadd('Conceal', '^[ +-]', 0, -1, {'conceal': ''})
   call call('utils#map_from', &l:filetype ==# 'diff' ? [] : s:map_from)
   call fold#update_folds(0, 0)  " re-apply defaults after setting foldexpr
 endfunction

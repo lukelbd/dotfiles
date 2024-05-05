@@ -323,12 +323,12 @@ function! fold#update_folds(force, ...) abort
     call fold#add_markers()
     let b:fastfold_queued = 0
   endif
-  let ftype = get(b:, 'fugitive_type', '')
-  let marker = get(b:, 'fastfold_markers', '')
-  let method = &l:foldmethod ==# 'marker'
+  let plugin = !empty(get(b:, 'fugitive_type', ''))  " e.g. one-file diffs and commits
+  let marker = &l:foldmethod ==# 'manual' && !empty(get(b:, 'fastfold_markers', ''))
+  let native = &l:foldmethod ==# 'marker' && search('{{{2', 'wn')
   if a:0  " initialize
     if a:1 > 0  " apply defaults
-      let &l:foldlevel = !empty(ftype) || !empty(marker) || method
+      let &l:foldlevel = plugin || marker || native
     endif
     for lnum in fold#get_ignores()
       exe lnum . 'foldopen'
@@ -352,7 +352,6 @@ function! s:toggle_state(line1, line2, ...) abort range
       return 1
     endif
   endfor
-  return 0
 endfunction
 function! s:toggle_inner(line1, line2, level, ...) abort
   let [outer, inner] = [[], []]

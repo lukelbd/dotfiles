@@ -3,7 +3,7 @@
 "------------------------------------------------------------------------------
 " General settings
 " Note: Without this $VIMRUNTIME will fold every nested 'if' 'case' etc. block
-setlocal foldnestmax=1
+setlocal foldnestmax=3
 setlocal tabstop=2
 setlocal shiftwidth=2
 setlocal softtabstop=2

@@ -46,8 +46,9 @@ function! window#close_tab(...) abort
 endfunction
 
 " Perform action conditional on insert-mode popup or cmdline wild-menu state
-" Note: This supports hiding complete-mode options or insert-mode popup menu
-" before proceeding with other actions. See vimrc for details
+" Note: This supports hiding complete-mode wild menu nad insert-mode popup menu
+" before proceeding with other actions. Use right-arrow from end-of-line to accept
+" completion option and possibly continue with further expansion. See vimrc for details
 function! window#close_popup(map, ...) abort
   let s = a:0 > 1 && a:2 ? '' : a:map
   if a:0 && a:1 > 1  " select item or perform action
@@ -66,9 +67,10 @@ function! window#close_wild(map, ...) abort
     let [keys1, keys2] = ['', a:map]
     let b:complete_state = state
   else  " e.g. cursor motions
-    let [pos, line] = [getcmdpos(), getcmdline()]  " pos 1 is string index 0
-    let keys1 = "\<C-c>\<Cmd>redraw\<CR>:" . line . a:map
-    let keys2 = pos >= len(line) && a:map ==# "\<Right>" ? "\<Tab>" : ''
+    let [pos, text] = [getcmdpos(), getcmdline()]  " pos 1 is string index 0
+    let input = substitute(text, a:map . '$', '', '')
+    let keys1 = "\<C-c>\<Cmd>redraw\<CR>:" . input
+    let keys2 = pos >= len(text) && a:map ==# "\<Right>" ? "\<Tab>" : a:map
     let b:complete_state = 0  " manually disabled
   endif
   call feedkeys(keys1, 'n') | call feedkeys(keys2, 'tn') | return ''

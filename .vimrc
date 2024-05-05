@@ -50,7 +50,7 @@ set completeopt-=preview  " use custom denops-popup-preview plugin
 set confirm  " require confirmation if you try to quit
 set cpoptions=aABceFs  " vim compatibility options
 set cursorline  " highlight cursor line
-set diffopt=filler,context:5,foldcolumn:0,vertical  " vim-difference display options
+set diffopt=filler,context:2,foldcolumn:0,vertical  " vim-difference display options
 set display=lastline  " displays as much of wrapped lastline as possible;
 set esckeys  " allow keycodes passed with escape
 set fillchars=eob:~,vert:\|,lastline:@,fold:\ ,foldopen:\>,foldclose:<
@@ -406,7 +406,7 @@ command! -nargs=? -complete=shellcmd Man call stack#push_stack('man', 'shell#man
 command! -nargs=0 ClearMan call stack#clear_stack('man')
 command! -nargs=0 ListHelp call stack#print_stack('help')
 command! -nargs=0 ListMan call stack#print_stack('man')
-command! -nargs=? PopMan call stack#pop_stack('man', 1, <f-args>)
+command! -nargs=? PopMan call stack#pop_stack('man', <q-args>, 1)
 nnoremap <Leader>n <Cmd>call stack#push_stack('help', 'shell#help_page')<CR>
 nnoremap <Leader>m <Cmd>call stack#push_stack('man', 'shell#man_page')<CR>
 nnoremap <Leader>N <Cmd>call shell#fzf_help()<CR>
@@ -473,7 +473,7 @@ augroup tabs_setup
 augroup END
 command! -nargs=0 ClearTabs call stack#clear_stack('tab') | call window#update_stack(0)
 command! -nargs=0 ListTabs call stack#print_stack('tab')
-command! -nargs=? PopTabs call stack#pop_stack('tab', <f-args>)
+command! -nargs=? PopTabs call stack#pop_stack('tab', <q-args>, 1)
 nnoremap <Tab><CR> <Cmd>call window#update_stack(0, -1, 2)<CR>
 nnoremap <F1> <Cmd>call window#scroll_stack(-v:count1)<CR>
 nnoremap <F2> <Cmd>call window#scroll_stack(v:count1)<CR>
@@ -537,7 +537,7 @@ noremap G G
 " presses, then convert to no-op in normal mode and deletions for insert/command mode.
 " Note: iTerm remaps Ctrl+Arrow presses to shell scrolling so cannot be used, and
 " remaps Cmd+Left/Right to Home/End which are natively understood by vim.
-for s:arrow in ['Left', 'Right', 'Up', 'Down']
+for s:arrow in ['Up', 'Down', 'Left', 'Right']
   exe 'noremap <S-' . s:arrow . '> <Nop>'
 endfor
 for s:mode in ['', 'i', 'c']  " native motions by word
@@ -545,12 +545,12 @@ for s:mode in ['', 'i', 'c']  " native motions by word
   exe s:mode . 'noremap <M-Right> <S-Right>'
 endfor
 for s:mode in ['i', 'c']  " native backwards delete mappings
-  exe s:mode . 'noremap <S-Down> <C-w>'
+  exe s:mode . 'noremap <S-Up> <C-w>'
   exe s:mode . 'noremap <S-Left> <C-u>'
 endfor
-inoremap <expr> <S-Up> repeat('<Del>', matchend(getline('.')[col('.') - 1:], '\>'))
+inoremap <expr> <S-Down> repeat('<Del>', matchend(getline('.')[col('.') - 1:], '\>'))
 inoremap <expr> <S-Right> repeat('<Del>', len(getline('.')) - col('.') + 1)
-cnoremap <expr> <S-Up> repeat('<Del>', matchend(getcmdline()[getcmdpos() - 1:], '\>'))
+cnoremap <expr> <S-Down> repeat('<Del>', matchend(getcmdline()[getcmdpos() - 1:], '\>'))
 cnoremap <expr> <S-Right> repeat('<Del>', len(getcmdline()) - getcmdpos() + 1)
 
 " General and popup/preview window scrolling
@@ -616,6 +616,7 @@ cnoremap <silent> <expr> <Right> window#close_wild("\<Right>")
 cnoremap <silent> <expr> <Left> window#close_wild("\<Left>")
 cnoremap <silent> <expr> <Delete> window#close_wild("\<Delete>")
 cnoremap <silent> <expr> <BS> window#close_wild("\<BS>")
+cnoremap <silent> <expr> / window#close_wild('/')
 
 " Reset folds and levels {{{2
 " Note: Also call fold#update_folds() in common.vim but with 0 to avoid resetting level
@@ -701,31 +702,31 @@ augroup jumps_setup
 augroup END
 command! -bang -nargs=0 Jumps call jump#fzf_jumps(<bang>0)
 nnoremap zn <Cmd>call jump#fzf_jumps()<CR>
-noremap <C-j> <Cmd>call jump#next_jump(-v:count1)<CR>
-noremap <C-k> <Cmd>call jump#next_jump(v:count1)<CR>
-noremap <Down> <Cmd>call jump#next_jump(-v:count1)<CR>
-noremap <Up> <Cmd>call jump#next_jump(v:count1)<CR>
+noremap <C-j> <Esc><Cmd>call jump#next_jump(-v:count1)<CR>
+noremap <C-k> <Esc><Cmd>call jump#next_jump(v:count1)<CR>
+noremap <Down> <Esc><Cmd>call jump#next_jump(-v:count1)<CR>
+noremap <Up> <Esc><Cmd>call jump#next_jump(v:count1)<CR>
 
 " Navigate buffer changelist with up/down arrows
 " Note: This accounts for iterm function-key maps and karabiner arrow-key maps
 " change entries removed. Here <F5>/<F6> are <Ctrl-/>/<Ctrl-\> in iterm
 command! -bang -nargs=0 Changes call jump#fzf_changes(<bang>0)
 nnoremap zN <Cmd>call jump#fzf_changes()<CR>
-noremap <C-h> <Cmd>call jump#next_change(-v:count1)<CR>
-noremap <C-l> <Cmd>call jump#next_change(v:count1)<CR>
-noremap <Left> <Cmd>call jump#next_change(-v:count1)<CR>
-noremap <Right> <Cmd>call jump#next_change(v:count1)<CR>
+noremap <C-h> <Esc><Cmd>call jump#next_change(-v:count1)<CR>
+noremap <C-l> <Esc><Cmd>call jump#next_change(v:count1)<CR>
+noremap <Left> <Esc><Cmd>call jump#next_change(-v:count1)<CR>
+noremap <Right> <Esc><Cmd>call jump#next_change(v:count1)<CR>
 
 " Navigate across recent tag jumps
 " Note: Apply in vimrc to avoid overwriting. This works by overriding both fzf and
 " internal tag jumping utils. Ignores tags resulting from direct :tag or <C-]>
 command! -nargs=0 ClearTags call stack#clear_stack('tag')
 command! -nargs=0 ListTags call stack#print_stack('tag')
-command! -nargs=* PopTags call stack#pop_stack('tag', <f-args>)
+command! -nargs=? PopTags call stack#pop_stack('tag', <q-args>, 1)
 command! -nargs=* -complete=file ShowIgnores
   \ echom 'Tag ignores: ' . join(parse#get_ignores(0, 0, 0, <f-args>), ' ')
-noremap <F3> <Cmd>call tag#next_stack(-v:count1)<CR>
-noremap <F4> <Cmd>call tag#next_stack(v:count1)<CR>
+noremap <F3> <Esc>m'<Cmd>call tag#next_stack(-v:count1)<CR>
+noremap <F4> <Esc>m'<Cmd>call tag#next_stack(v:count1)<CR>
 
 " Jump to marks and declare alphabetic marks using counts (navigate with ]` and [`)
 " Note: :Marks does not handle file switching and :Jumps has an fzf error so override.
@@ -735,12 +736,12 @@ noremap <F4> <Cmd>call tag#next_stack(v:count1)<CR>
 command! -bang -nargs=0 Marks call mark#fzf_marks(<bang>0)
 command! -nargs=* SetMarks call mark#set_marks(<f-args>)
 command! -nargs=* DelMarks call mark#del_marks(<f-args>)
-noremap <expr> g_ v:count ? '`' . parse#get_register('`') : '<Cmd>call mark#fzf_marks()<CR>'
-noremap <Leader>- <Cmd>call mark#del_marks()<CR>
-noremap <Leader>_ <Cmd>call mark#del_marks(get(g:, 'mark_name', 'A'))<CR>
-noremap z_ <Cmd>call mark#set_marks(parse#get_register('m'))<CR>
-noremap <C-n> <Cmd>call mark#next_mark(-v:count1)<CR>
-noremap <F8> <Cmd>call mark#next_mark(v:count1)<CR>
+nnoremap z_ <Cmd>call mark#set_marks(parse#get_register('m'))<CR>
+nnoremap <expr> g_ v:count ? '`' . parse#get_register('`') : '<Cmd>call mark#fzf_marks()<CR>'
+nnoremap <Leader>_ <Cmd>call mark#del_marks(get(g:, 'mark_name', 'A'))<CR>
+nnoremap <Leader>- <Cmd>call mark#del_marks()<CR>
+noremap <C-n> <Esc><Cmd>call mark#next_mark(-v:count1)<CR>
+noremap <F8> <Esc><Cmd>call mark#next_mark(v:count1)<CR>
 
 " Navigate tag stack, location list, and quickfix list
 " Note: In general location list and quickfix list filled by ale, but quickfix also
@@ -1377,7 +1378,7 @@ call s:plug('junegunn/fzf.vim')  " pin to version supporting :Drop
 call s:plug('roosta/fzf-folds.vim')  " jump to folds
 let g:fzf_action = {'ctrl-m': 'Drop', 'ctrl-e': 'split', 'ctrl-r': 'vsplit' }  " have file search and grep open to existing window if possible
 let g:fzf_buffers_jump = 1  " jump to existing window if already open
-let g:fzf_history_dir = expand('~/.vim_fzf_hist')  " navigate searches with ctrl-n, ctrl-p
+let g:fzf_history_dir = expand('~/.fzf-hist')  " navigate searches with ctrl-n, ctrl-p
 let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
 let g:fzf_require_dir = 0  " see lukelbd/fzf.vim completion-edits branch
 let g:fzf_tags_command = 'ctags -R -f .vimtags ' . join(parse#get_ignores(0, 0, 1), ' ')
@@ -2020,7 +2021,7 @@ if s:has_plug('vim-lsp')  " {{{
   command! -nargs=? LspToggle call switch#lsp(<args>)
   command! -nargs=? ClearDoc call stack#clear_stack('doc')
   command! -nargs=? ListDoc call stack#print_stack('doc')
-  command! -nargs=? PopDoc call stack#pop_stack('doc', <f-args>)
+  command! -nargs=? PopDoc call stack#pop_stack('doc', <q-args>, 1)
   command! -nargs=? Doc call stack#push_stack('doc', 'python#doc_page', <f-args>)
   noremap [r <Cmd>LspPreviousReference<CR>
   noremap ]r <Cmd>LspNextReference<CR>
@@ -2298,8 +2299,8 @@ endif  " }}}
 if s:has_plug('conflict-marker.vim')  " {{{
   augroup conflict_marker_setup
     au!
-    au BufWinEnter * if conflict_marker#detect#markers()
-      \ | syntax clear ConflictMarkerOurs ConflictMarkerTheirs | endif
+    au BufWinEnter * if conflict_marker#detect#markers() | syntax clear
+      \ ConflictMarkerOurs ConflictMarkerTheirs ConflictMarkerCommonAncestorsHunk | endif
   augroup END
   command! -count=1 Cprev call git#next_conflict(<count>, 1)
   command! -count=1 Cnext call git#next_conflict(<count>, 0)

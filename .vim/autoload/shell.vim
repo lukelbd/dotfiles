@@ -8,15 +8,18 @@
 " to preserve colors shown in 'command --help' pages but now simply redirect git
 " commands that include ANSI colors to their correponsding (identical) man pages.
 function! shell#help_page(...) abort
+  let opt1 = expand('<cword>')
+  let opt2 = get(s:, 'help_prev', '')
+  let default = executable(opt1) || empty(opt2) ? opt1 : opt2
   if a:0  " input help
     let page = a:1
   else  " default help
-    let page = utils#input_default('Help info', expand('<cword>'), 'shellcmd')
+    let page = utils#input_default('Help info', default, 'shellcmd')
   endif
   if empty(page) | return 1 | endif
-  let args = split(page, '\s\+')
-  if args[0] ==# 'git' && len(filter(args[1:], "v:val[:0] !=# '-'"))
-    return shell#man_page(join(args, '-'))  " identical result
+  let [name; args] = split(page, '\s\+', 1)
+  if name ==# 'git' && len(filter(args, "v:val[:0] !=# '-'"))
+    return shell#man_page('git-' . join(args, ' '))  " identical result
   endif
   if args[0] ==# 'cdo'
     call insert(args, '--help', 1)
@@ -36,7 +39,8 @@ function! shell#help_page(...) abort
     let result = split(system(cmd . ' 2>&1'), "\n") | call append(0, result) | goto
   endif
   if line('$') > 3
-    silent exe 'file ' . fnameescape(cmd) | return 0
+    silent exe 'file ' . fnameescape(cmd)
+    let s:help_prev = page
   else
     if type !=# 'stdout'  " see above
       silent quit! | silent call file#drop_file(bufname(bnr))
@@ -59,19 +63,22 @@ endfunction
 " Note: See also .bashrc man(). These utils are expanded from vim-superman.
 " Note: Apple will have empty line then BUILTIN(1) on second line, but linux
 " will show as first line BASH_BUILTINS(1), so we search the first two lines.
-function! s:get_page(...) abort
+function! s:load_page(...) abort
   silent call call('dist#man#GetPage', a:000)  " native utility
   call stack#pop_stack('tab', bufnr())  " avoid premature addition to stack
 endfunction
 function! shell#man_page(...) abort
   let bnr = bufnr()
+  let opt1 = expand('<cword>')
+  let opt2 = get(s:, 'man_prev', '')
+  let default = executable(opt1) || empty(opt2) ? opt1 : opt2
   if a:0 && empty(a:1)  " input man
     let page = matchstr(expand('<cWORD>'), '\f\+')  " from man syntax
     let pnum = matchstr(expand('<cWORD>'), '(\@<=[1-9][a-z]\=)\@=')  " from man syntax
   elseif a:0  " input page and/or number
     let [page, pnum] = type(a:1) == 1 ? [a:1, 0] : a:000
   else  " default man
-    let [page, pnum] = [utils#input_default('Man page', expand('<cword>'), 'shellcmd'), 0]
+    let [page, pnum] = [utils#input_default('Man page', default, 'shellcmd'), 0]
   endif
   if empty(page) | return 1 | endif
   let type = &l:filetype
@@ -83,20 +90,21 @@ function! shell#man_page(...) abort
   if bufexists(name)
     exe bufnr(name) . 'buffer'
   else  " load new man page
-    call call('s:get_page', [''] + args)
+    call call('s:load_page', [''] + args)
   endif
-  if line('$') > 1
+  if line('$') > 1  " jump to relevant file
     if getline(1) =~# 'BUILTIN' || getline(2) =~# 'BUILTIN'
-      if has('macunix') && page !=# 'builtin' | call s:get_page('', 'bash') | endif
+      if has('macunix') && page !=# 'builtin' | call s:load_page('', 'bash') | endif
       goto | call search('^ \{7}' . page . ' [.*$', '')
     endif
-    silent exe 'file ' . name | return 0
+    silent exe 'file ' . name
+    let s:man_prev = page
   else
     if type !=# 'man'
       silent quit! | silent call file#drop_file(bufname(bnr))
     endif
-    echohl ErrorMsg
-    echom "Error: Man page '" . page . "' not found"
+    redraw | echohl ErrorMsg
+    echom 'Error: Man page ' . string(page) . ' not found'
     echohl None | return 1
   endif
 endfunction
