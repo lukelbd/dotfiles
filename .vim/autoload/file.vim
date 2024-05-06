@@ -97,9 +97,10 @@ endfunction
 " Note: Using <expr> instead of this tiny helper function causes <C-c> to
 " display annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
 function! file#fzf_input(cmd, default, ...) abort
-  let input = utils#input_default(a:cmd, '', a:default)
+  let default = file#format_dir(a:default, 1)
+  let input = utils#input_default(a:cmd, default, 'file#glob_paths')
   if empty(input) | return | endif
-  return file#fzf_init(a:cmd, input)
+  return call('file#fzf_init', [0, 0, 0, a:cmd, input])
 endfunction
 function! file#fzf_init(bang, global, level, cmd, ...) abort
   let paths = []  " paths to open

@@ -1989,7 +1989,7 @@ if &g:foldenable || s:has_plug('FastFold')  " {{{
   let g:rst_fold_enabled = 1
   let g:ruby_fold = 1
   let g:rust_fold = 1
-  let g:sh_fold_enabled = 7
+  let g:sh_fold_enabled = 3
   let g:tex_fold_enabled = 1
   let g:vimsyn_folding = 'af'
   let g:xml_syntax_folding = 1

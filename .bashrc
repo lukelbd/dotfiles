@@ -139,25 +139,14 @@ _setup_shell() {         # apply shell options (list available with shopt -p)
   shopt -u nocasematch   # match case in ase/esac and [[ =~ ]] instances
   shopt -u nullglob      # turn off nullglob so e.g. no null-expansion of string with ?, * if no matches
   shopt -u no_empty_cmd_completion  # enble empty command completion
+  set +o histexpand      # disable history expand, allow '!' in strings
+  set -o ignoreeof       # set ignoreeof to default 10, never close terminal with ctrl-d
+  bind -f ~/.inputrc     # apply default bindings
   export HISTSIZE=5000  # enable huge hitory
   export HISTFILESIZE=5000  # enable hug history
   export HISTIGNORE='&:bg:fg:exit:clear' # don't record some commands
   export HISTCONTROL=''  # note ignoreboh = ignoredups + ignorespace
   export PROMPT_DIRTRIM=2  # trim long pths in prompt
-  set +o histexpand      # disable history expand, allow '!' in strings
-  set -o ignoreeof       # set ignoreeof to default 10, never close terminal with ctrl-d
-  bind -i -f ~/.inputrc  # apply inputrc overrides
-  bind '"\e[1;3D": backward-word'  # alt arrow overrides
-  bind '"\e[1;3C": forward-word'
-  bind '"\e[1;3A": shell-backward-word'
-  bind '"\e[1;3B": shell-forward-word'
-  bind '"\e[1;2A": backward-kill-word'  # shift arrow overrides
-  bind '"\e[1;2B": kill-word'
-  bind '"\e[1;2D": unix-line-discard'
-  bind '"\e[1;2C": kill-line'
-  bind '"\C-f": "\C-b\C-k \C-u`__fzf_cd__`\e\C-e\er\C-m\C-y\C-h\e \C-y\ey\C-x\C-x\C-d"'
-  bind '"\C-f": "\C-z\C-f\C-z"'
-  bind '"\C-f": "\C-z\C-f\C-z"'
 }
 _setup_shell 2>/dev/null  # ignore if opton unavailable
 unalias -a  # critical (also use declare -F for definitions)
@@ -1847,13 +1836,15 @@ echo 'done'
 #----------------------------------------------------------------------------- {{{1
 # FZF fuzzy file completion tool
 #-----------------------------------------------------------------------------
-# Configure fzf bindings and flags {{{2
+# Configure bindings and flags {{{2
+# NOTE: Only apply universal 'ignore' file to default command used by vim fzf file
+# searching utility. Exclude common external packages for e.g. :Files.
 # NOTE: General idea is <F1> and <F2> i.e. <Ctrl-,> and <Ctrl-.> should be tab-like
 # for command mode cycling. See top of .vimrc for details.
 # NOTE: Install with 'git clone https://github.com/lukelbd/fzf.git .fzf && pushd .fzf
 # && git switch config-edits'. Includes minor vim plugin fixes.
 # NOTE: Install with 'git clone https://github.com/lukelbd/fzf-marks.git .fzf-marks
-# && push .fzf-marks && git switch config-edits'. Includes a couple config edits.
+# && push .fzf-marks && git switch config-edits'. Changes default mark storage dir
 # NOTE: Inline info puts the number line on same line as text. Bind slash to accept
 # so behavior matches shell completion behavior. Enforce terminal background default
 # color using -1 below. ANSI codes: https://stackoverflow.com/a/33206814/4970632
@@ -1862,47 +1853,14 @@ echo 'done'
 [ "${FZF_SKIP:-0}" == 0 ] && _setup_message 'Enabling fzf'
 _fzf_hist="$HOME/.fzf-hist"  # history files used by fzf.vim and shell
 _fzf_marks="$HOME/.fzf-marks/fzf-marks.plugin.bash"
-_fzf_options="\
---ansi --color=bg:-1,bg+:-1 --layout=default --exit-0 --inline-info --height=6 \
---bind ctrl-g:jump,ctrl-k:up,ctrl-j:down,f3:preview-page-up,f4:preview-page-down,\
-ctrl-u:half-page-up,ctrl-d:half-page-down,ctrl-b:page-up,ctrl-f:page-down,\
-f1:prev-history,f2:next-history,btab:clear-query,tab:accept,ctrl-t:toggle,\
-ctrl-s:select,ctrl-a:select-all,ctrl-q:cancel,ctrl-w:cancel\
-"
-
-# Configure fzf and fzf mark options {{{2
-# NOTE: To make completion trigger after single tab press, must set to literal empty
-# string rather than leaving the variable unset (or else it uses default).
-# NOTE: The default .fzf-marks storage file conflicts with the repo name we use
-# so have changed this on branch. See https://github.com/urbainvaes/fzf-marks
-# shellcheck disable=2034
-# shellcheck disable=2034
-{
-  export FZF_DEFAULT_OPTS=$_fzf_options  # critical for fzf.vim
-  FZF_ALT_C_OPTS="--history='$_fzf_hist/ctrl-f'"  # also uses default opts
-  FZF_CTRL_T_OPTS="--history='$_fzf_hist/ctrl-t'"  # also uses default opts
-  FZF_COMPLETION_OPTS="--history='$_fzf_hist/ctrl-i'"  # also uses default opts
-  FZF_COMPLETION_TRIGGER=''    # ensure ${-default} expands to nothing
-  FZF_COMPLETION_PATH_COMMANDS=''  # ensure ${-default} expands to nothing
-  FZF_COMPLETION_DIR_COMMANDS=''  # ensure ${-default} expands to nothing
-  FZF_COMPLETION_VAR_COMMANDS=''  # ensure ${-default} expands to nothing
-  FZF_MARKS_FILE=${HOME}/.fzf.marks  # source directory
-  FZF_MARKS_COMMAND='fzf --height 40% --reverse'  # default command
-  FZF_MARKS_JUMP="\C-g"  # jump binding
-  FZF_MARKS_COLOR_LHS=39  # ansi color
-  FZF_MARKS_COLOR_RHS=36  # ansi color
-  FZF_MARKS_COLOR_COLON=33  # ansi color
-  FZF_MARKS_NO_COLORS=0  # disable no colors
-  FZF_MARKS_KEEP_ORDER=0  # disable keep order
-}
-
-# Configure fzf binding find commands {{{2
-# NOTE: The compgen ones were addd by fork, others are native. Adapted defaults
-# from defaultCommand in .fzf/src/constants.go and key-bindings.bash
-# NOTE: Only apply universal 'ignore' file to default command used by vim fzf file
-# searching utility. Exclude common external packages for e.g. :Files.
 _fzf_args_prune=' \( -fstype devfs -o -fstype devtmpfs -o -fstype proc -o -fstype sysfs \) -prune -o '
 _fzf_args_ignore=$(ignores 1 plugged packages | sed 's/(/\\(/g;s/)/\\)/g')
+_fzf_bindings=( \
+  ctrl-g:jump ctrl-k:up ctrl-j:down f3:preview-page-up f4:preview-page-down \
+  ctrl-u:half-page-up ctrl-d:half-page-down ctrl-b:page-up ctrl-f:page-down \
+  f1:prev-history f2:next-history btab:clear-query tab:accept /:accept \
+  ctrl-t:toggle ctrl-s:select ctrl-a:select-all ctrl-q:cancel ctrl-w:cancel \
+)
 # shellcheck disable=2034
 {
   export FZF_DEFAULT_COMMAND=" \
@@ -1917,17 +1875,33 @@ _fzf_args_ignore=$(ignores 1 plugged packages | sed 's/(/\\(/g;s/)/\\)/g')
     command find -L . -mindepth 1 $_fzf_args_prune \
     -type d -print 2>/dev/null | cut -b3- \
   "  # recursively search directories and cd into them
+  export FZF_DEFAULT_OPTS=" \
+    --ansi --color=bg:-1,bg+:-1 --layout=default --exit-0 --inline-info --height=~20% \
+    --bind='$(IFS=,; echo "${_fzf_bindings[*]}")'
+  "
+  FZF_ALT_C_OPTS="--history='$_fzf_hist/ctrl-f'"  # also uses default opts
+  FZF_CTRL_T_OPTS="--history='$_fzf_hist/ctrl-t'"  # also uses default opts
+  FZF_COMPLETION_OPTS="--history='$_fzf_hist/ctrl-i'"  # also uses default opts
+  FZF_COMPLETION_TRIGGER=''    # ensure ${-default} expands to nothing
+  FZF_COMPLETION_PATH_COMMANDS=''  # ensure ${-default} expands to nothing
+  FZF_COMPLETION_DIR_COMMANDS=''  # ensure ${-default} expands to nothing
+  FZF_COMPLETION_VAR_COMMANDS=''  # ensure ${-default} expands to nothing
+  FZF_MARKS_FILE=${HOME}/.fzf.marks  # source directory
+  FZF_MARKS_COMMAND='fzf --height=40% --reverse'  # default command
+  FZF_MARKS_JUMP="\C-g"  # jump binding
+  FZF_MARKS_COLOR_LHS=39  # ansi color
+  FZF_MARKS_COLOR_RHS=36  # ansi color
+  FZF_MARKS_COLOR_COLON=33  # ansi color
+  FZF_MARKS_NO_COLORS=0  # disable no colors
+  FZF_MARKS_KEEP_ORDER=0  # disable keep order
 }
 
-# Override fzf completion functions {{{2
+# Add general completion functions {{{2
 # This previously required overriding internals but now perform here
 # See: https://github.com/junegunn/fzf/blob/7b98c2c/shell/completion.bash#L17
 # NOTE: Goal is to set completion trigger to '' (always on), bind tab key to 'cancel',
 # and use the completion option 'maxdepth 1', which lets us toggle completion on and
 # off with tab, and fuzzy search the depth-1 directory contents.
-_fzf_compgen_var() {
-  declare -p | cut -d' ' -f3 | cut -d= -f1
-}
 _fzf_compgen_dir() {
   command find -L "$1" -maxdepth 1 -mindepth 1 ${_fzf_args_prune//\\/} \
     -type d -print 2>/dev/null | sed 's@^\./@@;s@^'"$HOME"'@~@'
@@ -1952,7 +1926,7 @@ _fzf_define_complete() {
   done
 }
 
-# Add general fzf completion functions {{{2
+# Override fzf path completion {{{2
 # NOTE: This overrides default find command by appending slashes to directories, then
 # overrides default '%q' quoted printing by replacing escaped tildes with unexpanded.
 # NOTE: This supports command completion for empty lines, first word in the line, and
@@ -1982,7 +1956,7 @@ _fzf_general_completion() {
   COMPREPLY=( "${COMPREPLY[@]/\\~/\~}" )
 }
 
-# Define custom fzf completion functions {{{2
+# Add command-specific completion functions {{{2
 # NOTE: Used to use -a for alias and -v for var but this caused weird bug where builtin
 # options are printed after selection (and with -D -E, complete fails entirely).
 # NOTE: This supports subcommand completion for `git` and `cdo` and displays help next

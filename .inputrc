@@ -40,12 +40,14 @@
 "\e[1;2A": backward-kill-word
 # <Shift-Up> key from sed -n -l <Shift-Right>
 "\e[1;2B": kill-word
+# fzf-file search binding
+"\C-f": "\C-b\C-k \C-u`__fzf_cd__`\e\C-e\er\C-m\C-y\C-h\e \C-y\ey\C-x\C-x\C-d"
 
 # Terminal settings
 # Key sequence timeout: https://unix.stackexchange.com/a/318497/112647
 set keyseq-timeout 50
 # Exclude mode from prompt
-set show-mode-in-prompt on
+set show-mode-in-prompt off
 # Disable completion (use fzf instead)
 set disable-completion off
 # Enable ignorecase 
