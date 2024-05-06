@@ -12,14 +12,14 @@
 # Normal mode as block cursor
 # bind 'set vi-cmd-mode-string "\1\e[2 q\2"'
 
-# Complete forward without changing scroll history
-"\C-i": menu-complete
 # Complete backward without changing scroll history
 "\e[Z": menu-complete-backward
-# Tab-like complete forward with F2 = ctrl-. (see .vimrc)
-"\eOQ": menu-complete
+# Complete forward without changing scroll history
+"\C-i": menu-complete
 # Tab-like complete backward with F1 = ctrl-, (see .vimrc)
 "\eOP": menu-complete-backward
+# Tab-like complete forward with F2 = ctrl-. (see .vimrc)
+"\eOQ": menu-complete
 # <Home> key from sed -n l <Ctrl-Left> i.e. 0x1b 0x5b 0x48
 "\e[H": beginning-of-line
 # <End> key from sed -n l <Ctrl-Right> i.e. 0x1b 0x5b 0x46
@@ -37,15 +37,11 @@
 # <Shift-Right> key from sed -n -l <Shift-Right>
 "\e[1;2C": kill-line
 # <Shift-Down> key from sed -n l <Shift-Left>
-"\e[1;2B": backward-kill-word
+"\e[1;2A": backward-kill-word
 # <Shift-Up> key from sed -n -l <Shift-Right>
-"\e[1;2A": kill-word
+"\e[1;2B": kill-word
 
 # Terminal settings
-# Turn off history expand so cn have '!' in strings: https://unix.stackexchange.com/a/33341/112647
-set +H
-# Never close terminal with ctrl-d
-set -o ignoreeof
 # Key sequence timeout: https://unix.stackexchange.com/a/318497/112647
 set keyseq-timeout 50
 # Exclude mode from prompt

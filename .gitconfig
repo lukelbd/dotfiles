@@ -188,8 +188,12 @@
 	required = true
 [interactive]
 	singleKey = true
+[merge]
+	conflictstyle = diff3
+	tool = vimdiff
 [mergetool]
 	prompt = false
+	keepBackup = false
 [pager]
 	branch = false
 	latest = false

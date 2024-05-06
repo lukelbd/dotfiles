@@ -112,7 +112,8 @@ _prompt_tail() {  # prompt string "<push dir N>:...:<push dir 1>:<work dir> <use
   || PS1='$(_prompt_head)\[\033[1;37m\]\h[\j]:$(_prompt_tail)\$ \[\033[0m\]'
 
 # Apply general shell settings
-# Ensure interactive mode present and remove aliases
+# Remove aliases and history expand, setup bindings and other options
+# See: https://unix.stackexchange.com/a/33341/112647
 # See: https://stackoverflow.com/a/28938235/4970632
 # See: https://unix.stackexchange.com/a/88605/112647
 _setup_message() { printf '%s' "${1}$(seq -s '.' $((30 - ${#1})) | tr -d 0-9)"; }
@@ -132,7 +133,7 @@ _setup_shell() {         # apply shell options (list available with shopt -p)
   shopt -s globstar      # **/ matches all sbdirectories, searches recursively
   shopt -s histappend    # append to the hstory file, don't overwrite it
   shopt -u dotglob       # include dot patters in glob matches
-  shopt -u extglob       # extended globbing;allows use of ?(), *(), +(), +(), @(), and !() with separation "|" for OR options
+  shopt -u extglob       # extended globbing with ?(), *(), +(), @(), !(), and or |
   shopt -u failglob      # no error message f expansion is empty
   shopt -u nocaseglob    # match case in gob expressions
   shopt -u nocasematch   # match case in ase/esac and [[ =~ ]] instances
@@ -143,15 +144,20 @@ _setup_shell() {         # apply shell options (list available with shopt -p)
   export HISTIGNORE='&:bg:fg:exit:clear' # don't record some commands
   export HISTCONTROL=''  # note ignoreboh = ignoredups + ignorespace
   export PROMPT_DIRTRIM=2  # trim long pths in prompt
+  set +o histexpand      # disable history expand, allow '!' in strings
+  set -o ignoreeof       # set ignoreeof to default 10, never close terminal with ctrl-d
   bind -i -f ~/.inputrc  # apply inputrc overrides
-  bind '"\e[1;2D": unix-line-discard'  # shift arrow overrides
-  bind '"\e[1;2C": kill-line'
-  bind '"\e[1;2B": backward-kill-word'
-  bind '"\e[1;2A": kill-word'
-  bind '"\e[1;3A": shell-backward-word'  # alt arrow overrides
-  bind '"\e[1;3B": shell-forward-word'
+  bind '"\e[1;3D": backward-word'  # alt arrow overrides
   bind '"\e[1;3C": forward-word'
-  bind '"\e[1;3D": backward-word'
+  bind '"\e[1;3A": shell-backward-word'
+  bind '"\e[1;3B": shell-forward-word'
+  bind '"\e[1;2A": backward-kill-word'  # shift arrow overrides
+  bind '"\e[1;2B": kill-word'
+  bind '"\e[1;2D": unix-line-discard'
+  bind '"\e[1;2C": kill-line'
+  bind '"\C-f": "\C-b\C-k \C-u`__fzf_cd__`\e\C-e\er\C-m\C-y\C-h\e \C-y\ey\C-x\C-x\C-d"'
+  bind '"\C-f": "\C-z\C-f\C-z"'
+  bind '"\C-f": "\C-z\C-f\C-z"'
 }
 _setup_shell 2>/dev/null  # ignore if opton unavailable
 unalias -a  # critical (also use declare -F for definitions)
@@ -607,7 +613,7 @@ isempty() {
 # Page and help displays {{{2
 # Either pipe the output of the remaining commands into the less pager
 # or open the files. Use the latter only for executables on $PATH
-function less() {
+less() {
   local cmd
   cmd=$(command -v "$1" 2>/dev/null)
   if [ -x "$cmd" ]; then
@@ -619,9 +625,9 @@ function less() {
 
 # Help page display
 # To avoid recursion see: http://blog.jpalardy.com/posts/wrapping-command-line-tools/
-# Note some commands (e.g. latexdiff) return bad exit code when using --help so instead
+# NOTE: Some commands (e.g. latexdiff) return bad exit code when using --help so instead
 # test line length to guess if it is an error message stub or contains desired info.
-function help() {
+help() {
   local result
   [ $# -eq 0 ] && echo "Requires argument." && return 1
   if builtin help "$@" &>/dev/null; then
@@ -636,25 +642,25 @@ function help() {
   fi
 }
 
-# Man page display with auto jumping to relevant info. On macOS man may direct to
-# 'builtin' page when 'bash' page actually has relevent docs whiole on linux 'builtin'
-# has the docs. Also note man command should print nice error message if nothing found.
-# See this answer and comments: https://unix.stackexchange.com/a/18092/112647
-function man() {
-  local search arg="$*"
-  [[ "$arg" =~ " " ]] && arg=${arg//-/ }
+# Man page override
+# Enable case insensitive less pager searching and auto-jump to relevant line
+# NOTE: For some reason search pattern cannot be escaped or enclosed in string. Also
+# on macos man may direct to 'builtin' page when 'bash' page actually has docs.
+# See: https://unix.stackexchange.com/a/18092/112647
+man() {
+  local args
   [ $# -eq 0 ] && echo "Requires one argument." && return 1
-  if command man "$arg" 2>/dev/null | head -2 | grep "BUILTIN" &>/dev/null; then
-    $_macos && [ "$arg" != "builtin" ] && search=bash || search=$arg
-    LESS=-p"^ *$arg.*\[.*$" command man "$search" 2>/dev/null
-  else
-    command man "$arg"  # could display error message
+  if command man "$1" 2>/dev/null | head -2 | grep "BUILTIN" &>/dev/null; then
+    $_macos && [ "$1" != "builtin" ] && args=(bash "${@:2}") || args=("$@")
+    LESS="$LESS -i -p ^ *$1.*\\[.*$" command man "${args[@]}" 2>/dev/null
+  else  # original (rely on native error message)
+    LESS="$LESS -i" command man "$@"
   fi
 }
 
 # Git and vim overrides {{{2
 # Prevent git stash from running without 'git stash push' and test message length.
-# Note 'git stash --staged push' will stash only staged changes. Should use more often.
+# NOTE: 'git stash --staged push' will stash only staged changes. Should use more often.
 # https://stackoverflow.com/q/48751491/4970632
 git() {
   local idx arg1 arg2
@@ -675,8 +681,9 @@ git() {
   command git "$@"
 }
 
-# Open one tab per file. Previously cleared screen and deleted scrollback
-# history but now just use &restorescreen=1 and &t_ti and &t_te escape codes.
+# Open one tab per file
+# NOTE: Previously cleared screen and deleted scrollback history but now
+# just use &restorescreen=1 and &t_ti and &t_te escape codes.
 # See: https://vi.stackexchange.com/a/6114
 vi() {
   HOME=/dev/null command vim -i NONE -u NONE "$@"
@@ -1840,101 +1847,197 @@ echo 'done'
 #----------------------------------------------------------------------------- {{{1
 # FZF fuzzy file completion tool
 #-----------------------------------------------------------------------------
-# Overrall settings {{{2
-# Default fzf flags (see man page for more info, e.g. --bind and --select-1)
-# Inline info puts the number line thing on same line as text. Bind slash to accept
-# so behavior matches shell completion behavior. Enforce terminal background default
-# color using -1 below. ANSI codes: https://stackoverflow.com/a/33206814/4970632
+# Configure fzf bindings and flags {{{2
 # NOTE: General idea is <F1> and <F2> i.e. <Ctrl-,> and <Ctrl-.> should be tab-like
 # for command mode cycling. See top of .vimrc for details.
-_fzf_options=" \
+# NOTE: Install with 'git clone https://github.com/lukelbd/fzf.git .fzf && pushd .fzf
+# && git switch config-edits'. Includes minor vim plugin fixes.
+# NOTE: Install with 'git clone https://github.com/lukelbd/fzf-marks.git .fzf-marks
+# && push .fzf-marks && git switch config-edits'. Includes a couple config edits.
+# NOTE: Inline info puts the number line on same line as text. Bind slash to accept
+# so behavior matches shell completion behavior. Enforce terminal background default
+# color using -1 below. ANSI codes: https://stackoverflow.com/a/33206814/4970632
+# 'start:execute(let _fzf_pos=0)','left:execute(echo foo > .fzf_tmp)+left',\
+# 'right:execute(echo bar > .fzf_tmp)+right',\
+[ "${FZF_SKIP:-0}" == 0 ] && _setup_message 'Enabling fzf'
+_fzf_hist="$HOME/.fzf-hist"  # history files used by fzf.vim and shell
+_fzf_marks="$HOME/.fzf-marks/fzf-marks.plugin.bash"
+_fzf_options="\
 --ansi --color=bg:-1,bg+:-1 --layout=default --exit-0 --inline-info --height=6 \
---bind=ctrl-k:up,ctrl-j:down,btab:clear-query,tab:accept,f1:clear-query,f2:accept,\
-f3:preview-page-up,f4:preview-page-down,ctrl-t:toggle,ctrl-s:select,ctrl-a:select-all,\
-ctrl-g:jump,ctrl-u:half-page-up,ctrl-d:half-page-down,ctrl-b:page-up,ctrl-f:page-down,\
-ctrl-q:cancel,ctrl-w:cancel\
-"  # critical to export so used by vim
-
-# Defualt fzf find commands. The compgen ones were addd by fork, others are native.
-# Adapted defaults from defaultCommand in .fzf/src/constants.go and key-bindings.bash
-# NOTE: Only apply universal 'ignore' file to default command used by vim fzf file
-# searching utility. Exclude common external packages for e.g. :Files.
-_fzf_prune_names=$(ignores 1 plugged packages | sed 's/(/\\(/g;s/)/\\)/g')
-_fzf_prune_bases=" \
-\\( -fstype devfs -o -fstype devtmpfs -o -fstype proc -o -fstype sysfs \\) -prune -o \
+--bind ctrl-g:jump,ctrl-k:up,ctrl-j:down,f3:preview-page-up,f4:preview-page-down,\
+ctrl-u:half-page-up,ctrl-d:half-page-down,ctrl-b:page-up,ctrl-f:page-down,\
+f1:prev-history,f2:next-history,btab:clear-query,tab:accept,ctrl-t:toggle,\
+ctrl-s:select,ctrl-a:select-all,ctrl-q:cancel,ctrl-w:cancel\
 "
 
-# Run installation script {{{2
-# if [ -f ~/.fzf.bash ] && ! [[ "$PATH" =~ fzf ]]; then
-if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
-  # Apply default fzf marks options
-  # Download repo with 'git clone https://github.com/lukelbd/fzf-marks.git .fzf-marks'
-  # then run 'push .fzf-marks && git switch config-edits' fur custom configuration.
-  # NOTE: The default .fzf-marks storage file conflicts with the repo name we use
-  # so have changed this on branch. See https://github.com/urbainvaes/fzf-marks
-  _setup_message 'Enabling fzf'
-  # shellcheck disable=2034
-  {
-    FZF_MARKS_FILE=${HOME}/.fzf.marks
-    FZF_MARKS_COMMAND='fzf --height 40% --reverse'
-    FZF_MARKS_JUMP="\C-g"
-    FZF_MARKS_COLOR_LHS=39
-    FZF_MARKS_COLOR_RHS=36
-    FZF_MARKS_COLOR_COLON=33
-    FZF_MARKS_NO_COLORS=0
-    FZF_MARKS_KEEP_ORDER=0
-  }
+# Configure fzf and fzf mark options {{{2
+# NOTE: To make completion trigger after single tab press, must set to literal empty
+# string rather than leaving the variable unset (or else it uses default).
+# NOTE: The default .fzf-marks storage file conflicts with the repo name we use
+# so have changed this on branch. See https://github.com/urbainvaes/fzf-marks
+# shellcheck disable=2034
+# shellcheck disable=2034
+{
+  export FZF_DEFAULT_OPTS=$_fzf_options  # critical for fzf.vim
+  FZF_ALT_C_OPTS="--history='$_fzf_hist/ctrl-f'"  # also uses default opts
+  FZF_CTRL_T_OPTS="--history='$_fzf_hist/ctrl-t'"  # also uses default opts
+  FZF_COMPLETION_OPTS="--history='$_fzf_hist/ctrl-i'"  # also uses default opts
+  FZF_COMPLETION_TRIGGER=''    # ensure ${-default} expands to nothing
+  FZF_COMPLETION_PATH_COMMANDS=''  # ensure ${-default} expands to nothing
+  FZF_COMPLETION_DIR_COMMANDS=''  # ensure ${-default} expands to nothing
+  FZF_COMPLETION_VAR_COMMANDS=''  # ensure ${-default} expands to nothing
+  FZF_MARKS_FILE=${HOME}/.fzf.marks  # source directory
+  FZF_MARKS_COMMAND='fzf --height 40% --reverse'  # default command
+  FZF_MARKS_JUMP="\C-g"  # jump binding
+  FZF_MARKS_COLOR_LHS=39  # ansi color
+  FZF_MARKS_COLOR_RHS=36  # ansi color
+  FZF_MARKS_COLOR_COLON=33  # ansi color
+  FZF_MARKS_NO_COLORS=0  # disable no colors
+  FZF_MARKS_KEEP_ORDER=0  # disable keep order
+}
 
-  # Apply default fzf options
-  # Download repo with 'git clone https://github.com/lukelbd/fzf-marks.git .fzf'
-  # then run 'pushd .fzf && git switch completion-edits' for custom completion behavior
-  # NOTE: To make completion trigger after single tab press, must set to literal empty
-  # string rather than leaving the variable unset (or else it uses default).
-  # shellcheck disable=2034
-  {  # first option requires export
-    export FZF_DEFAULT_OPTS=$_fzf_options
-    FZF_ALT_C_OPTS=$_fzf_options
-    FZF_CTRL_T_OPTS=$_fzf_options
-    FZF_COMPLETION_OPTS=$_fzf_options
-    FZF_COMPLETION_TRIGGER=''
-  }
+# Configure fzf binding find commands {{{2
+# NOTE: The compgen ones were addd by fork, others are native. Adapted defaults
+# from defaultCommand in .fzf/src/constants.go and key-bindings.bash
+# NOTE: Only apply universal 'ignore' file to default command used by vim fzf file
+# searching utility. Exclude common external packages for e.g. :Files.
+_fzf_args_prune=' \( -fstype devfs -o -fstype devtmpfs -o -fstype proc -o -fstype sysfs \) -prune -o '
+_fzf_args_ignore=$(ignores 1 plugged packages | sed 's/(/\\(/g;s/)/\\)/g')
+# shellcheck disable=2034
+{
+  export FZF_DEFAULT_COMMAND=" \
+    set -o pipefail; command find . -mindepth 1 $_fzf_args_prune $_fzf_args_ignore \
+    -type f -print -o -type l -print 2>/dev/null | cut -b3- \
+  "  # default search for e.g. fzf.vim
+  FZF_CTRL_T_COMMAND=" \
+    command find -L . -mindepth 1 $_fzf_args_prune \
+    \\( -type d -o -type f -o -type l \\) -print 2>/dev/null | cut -b3- \
+  "  # recursively search files
+  FZF_ALT_C_COMMAND=" \
+    command find -L . -mindepth 1 $_fzf_args_prune \
+    -type d -print 2>/dev/null | cut -b3- \
+  "  # recursively search directories and cd into them
+}
 
-  # Apply default fzf commands
-  # NOTE: The compgen commands were added in completion-edits fzf branch
-  # shellcheck disable=2034
-  {  # first option requires export
-    export FZF_DEFAULT_COMMAND=" \
-      set -o pipefail; command find . -mindepth 1 $_fzf_prune_bases $_fzf_prune_names \
-      -type f -print -o -type l -print 2>/dev/null | cut -b3- \
-    "
-    FZF_ALT_C_COMMAND=" \
-      command find -L . -mindepth 1 $_fzf_prune_bases \
-      -type d -print 2>/dev/null | cut -b3- \
-    "  # recursively search directories and cd into them
-    FZF_CTRL_T_COMMAND=" \
-      command find -L . -mindepth 1 $_fzf_prune_bases \
-      \\( -type d -o -type f -o -type l \\) -print 2>/dev/null | cut -b3- \
-    "  # recursively search files
-    FZF_COMPGEN_DIR_COMMAND=" \
-      command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_fzf_prune_bases \
-      -type d -print 2>/dev/null | sed 's@^.*/@@' \
-    "  # complete directories with tab
-    FZF_COMPGEN_PATH_COMMAND=" \
-      command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_fzf_prune_bases \
-      \\( -type d -o -type f -o -type l \\) -print 2>/dev/null | sed 's@^.*/@@' \
-    "  # complete paths with tab
-  }
+# Override fzf completion functions {{{2
+# This previously required overriding internals but now perform here
+# See: https://github.com/junegunn/fzf/blob/7b98c2c/shell/completion.bash#L17
+# NOTE: Goal is to set completion trigger to '' (always on), bind tab key to 'cancel',
+# and use the completion option 'maxdepth 1', which lets us toggle completion on and
+# off with tab, and fuzzy search the depth-1 directory contents.
+_fzf_compgen_var() {
+  declare -p | cut -d' ' -f3 | cut -d= -f1
+}
+_fzf_compgen_dir() {
+  command find -L "$1" -maxdepth 1 -mindepth 1 ${_fzf_args_prune//\\/} \
+    -type d -print 2>/dev/null | sed 's@^\./@@;s@^'"$HOME"'@~@'
+}
+_fzf_compgen_path() {
+  command find -L "$1" -maxdepth 1 -mindepth 1 ${_fzf_args_prune//\\/} \
+    \( -type d -printf "%p/\n" , ! -type d -print \) 2>/dev/null | sed 's@^\./@@;s@^'"$HOME"'@~@'
+}
+_fzf_define_complete() {
+  local kind func cmd
+  kind=$1 func=_fzf_${1}_completion
+  [[ $# -ge 2 ]] && type -t "$func" &>/dev/null || { echo "Error: Invalid completion $*"; return 1; }
+  shift; __fzf_orig_completion < <(complete -p "$@" 2> /dev/null)
+  for cmd in "$@"; do
+    case "$kind" in
+      alias) __fzf_defc "$cmd" "$func" "" ;;
+      opts)  __fzf_defc "$cmd" "$func" "-o default" ;;
+      dir)   __fzf_defc "$cmd" "$func" "-o nospace -o dirnames" ;;
+      var)   __fzf_defc "$cmd" "$func" "-o nospace -o default" ;;
+      *)     __fzf_defc "$cmd" "$func" "-o default -o bashdefault" ;;
+    esac
+  done
+}
 
-  # Source bash file
-  # NOTE: Previously also tried to override completion here but no longer.
-  # See: https://stackoverflow.com/a/42085887/4970632
-  # See: https://unix.stackexchange.com/a/217916/112647
-  complete -r  # reset first
-  source ~/.fzf.bash
-  alias drop=dmark  # 'delete' mark (for consistency with 'jump')
-  alias marks=pmark  # 'paste' or 'print' mark (for consistency with 'marks')
-  _fzf_marks=~/.fzf-marks/fzf-marks.plugin.bash
-  [ -f "$_fzf_marks" ] && source "$_fzf_marks"
+# Add general fzf completion functions {{{2
+# NOTE: This overrides default find command by appending slashes to directories, then
+# overrides default '%q' quoted printing by replacing escaped tildes with unexpanded.
+# NOTE: This supports command completion for empty lines, first word in the line, and
+# `man`, `help`, `type`, and `which`. Caches commands in .fzf.commands to save time
+_fzf_default_completion() {
+  local mode args
+  mode=$1; shift;
+  [ "$mode" -ge 1 ] && args=" -type d -printf %P/\n , " || args=''
+  test "$(find $HOME/.fzf.commands -mmin -10080 2>/dev/null)" || echo 'FZF: Generating commands...' \
+    && compgen -c | grep -v '[!.:{}]' | sort | uniq >$HOME/.fzf.commands
+  COMP_CWORD=0 _fzf_complete '+m' -- "$@" < <(cat \
+    <(find -L . -mindepth 1 -maxdepth 1 \( $args -type f -executable -printf "%P\n" \)) \
+    <(compgen -A function) <(tac $HOME/.fzf.commands | sed 's/$/ /') \
+  )
+}
+_fzf_general_completion() {
+  local cur mode
+  mode=$1; shift;
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  if [[ "$cur" =~ \$[^/]*$ ]]; then  # subsequent e.g. $HOME/<Tab> expands variables
+    _fzf_complete '-m' -- "$@" < <(compgen -v | sed 's@^@'"${cur%\$*}"'\$@')
+  elif [ "$mode" -ge 1 ]; then  # directories only
+    __fzf_generic_path_completion _fzf_compgen_dir "+m" "/" "$@"
+  else  # general paths
+    __fzf_generic_path_completion _fzf_compgen_path "-m" "" "$@"
+  fi
+  COMPREPLY=( "${COMPREPLY[@]/\\~/\~}" )
+}
+
+# Define custom fzf completion functions {{{2
+# NOTE: Used to use -a for alias and -v for var but this caused weird bug where builtin
+# options are printed after selection (and with -D -E, complete fails entirely).
+# NOTE: This supports subcommand completion for `git` and `cdo` and displays help next
+# to each option. Should add `port`, `brew`, `pip`, and `conda` subcommands to this.
+_fzf_bind_completion() {
+  _fzf_complete '+m' "$@" < <(bind -l)
+}
+_fzf_shopt_completion() {
+  _fzf_complete '+m' "$@" < <(shopt | cut -d' ' -f1 | cut -d$'\t' -f1)
+}
+_fzf_cdo_completion() {
+  _fzf_complete '+m' "$@" < <(cat <(_fzf_compgen_path .) <(cdo --operators \
+    | sed 's/[ ]*[^ ]*$//g' | sed 's/^\([^ ]*[ ]*\)\(.*\)$/\1(\2) /g' | tr '[:upper:]' '[:lower:]'))
+}
+_fzf_git_completion() {
+  _fzf_complete '+m' "$@" < <(cat <(_fzf_compgen_path .) <(git help -a \
+    | grep '^   ' | sed 's/^   //g' | sed 's/^\([^ ]*[ ]*\)\(.*\)$/\1(\2) /g' | tr '[:upper:]' '[:lower:]'))
+}
+
+# Run fzf scripts and complete overrides {{{2
+# NOTE: This supports relevant completion for the `alias`, `unalias`, `function`,
+# `unset`, `export`, `bind`, and `shopt` commands.
+# See: https://stackoverflow.com/a/42085887/4970632
+# See: https://unix.stackexchange.com/a/217916/112647
+if [ "${FZF_SKIP:-0}" == 0 ]; then
+  if [ -f "$_fzf_marks" ]; then
+    source "$_fzf_marks"
+    alias drop=dmark marks=pmark  # 'delete' and 'print' marks (vim consistency)
+  fi
+  if [ -f ~/.fzf.bash ]; then
+    complete -r  # reset completion
+    source ~/.fzf.bash
+    _fzf_post() { COMPREPLY=( "${COMPREPLY[@]/\\~/\~}" ); }  # unexpand home directory
+    _fzf_dir_completion() { _fzf_general_completion 1 "$@"; }
+    _fzf_path_completion() { _fzf_general_completion 0 "$@"; }
+    _fzf_exe_completion() { _fzf_default_completion 0 "$@"; }
+    _fzf_empty_completion() { _fzf_default_completion 1 "$@"; }
+    _fzf_cdo_completion_post() { cat | sed 's/(.*) *$//g' | sed 's/ *$//g'; }
+    _fzf_git_completion_post() { cat | sed 's/(.*) *$//g' | sed 's/ *$//g'; }
+    complete -D -F _fzf_path_completion -o nospace -o default -o bashdefault
+    complete -E -F _fzf_empty_completion -o nospace -o default -o bashdefault
+    complete -I -F _fzf_empty_completion -o nospace -o default -o bashdefault
+    bind '"\C-f": "\C-b\C-k \C-u`__fzf_cd__`\e\C-e\er\C-m\C-y\C-h\e \C-y\ey\C-x\C-x\C-d"'
+    _fzf_define_complete 'dir' cd pushd rmdir
+    _fzf_define_complete 'opts' fzf
+    _fzf_define_complete 'var' '$' export unset printenv
+    _fzf_define_complete 'alias' alias unalias
+    _fzf_define_complete 'host' ssh telnet
+    _fzf_define_complete 'proc' kill
+    _fzf_define_complete 'git' git
+    _fzf_define_complete 'cdo' cdo
+    _fzf_define_complete 'bind' bind
+    _fzf_define_complete 'shopt' shopt
+    _fzf_define_complete 'exe' help man type which
+  fi
   echo 'done'
 fi
 
@@ -2029,12 +2132,10 @@ if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda|mamb
   __conda_setup=$("$_conda/bin/conda" 'shell.bash' 'hook' 2>/dev/null)
   if [ $? -eq 0 ]; then
     eval "$__conda_setup"
+  elif [ -f "$_conda/etc/profile.d/conda.sh" ]; then
+    source "$_conda/etc/profile.d/conda.sh"
   else
-    if [ -f "$_conda/etc/profile.d/conda.sh" ]; then
-      source "$_conda/etc/profile.d/conda.sh"
-    else
-      export PATH="$_conda/bin:$PATH"
-    fi
+    export PATH="$_conda/bin:$PATH"
   fi
   unset __conda_setup
   if [ -f "$_conda/etc/profile.d/mamba.sh" ]; then
@@ -2044,7 +2145,7 @@ if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda|mamb
     export PATH=$_conda/condabin:$PATH
   fi
   mamba activate base  # calls '__conda_activate activate' which runs the
-  echo 'done' # commands returned by '__conda_exe shell.posix activate'
+  echo 'done'  # commands returned by '__conda_exe shell.posix activate'
 fi
 
 #----------------------------------------------------------------------------- {{{1
