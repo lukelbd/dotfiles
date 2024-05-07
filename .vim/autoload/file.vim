@@ -103,10 +103,10 @@ function! file#fzf_input(cmd, default, ...) abort
   return call('file#fzf_init', [0, 0, 0, a:cmd, input])
 endfunction
 function! file#fzf_init(bang, global, level, cmd, ...) abort
-  let paths = []  " paths to open
-  call map(copy(a:000), 'extend(paths, expand(trim(v:val), 0, 1))')
-  let paths = call('parse#get_paths', [2, a:global, 1 + a:level] + reverse(paths))
-  let paths = reverse(paths)  " important paths at top instead of bottom
+  let input = []  " user-input input paths (may not exist)
+  call map(copy(a:000), 'extend(input, expand(trim(v:val), 0, 1))')
+  let paths = call('parse#get_paths', [2, a:global, 1 + a:level] + reverse(input))
+  let paths = empty(paths) ? input : reverse(paths)  " important paths at top instead of bottom
   let func = a:cmd ==# 'Files' ? 'file#fzf_files' : 'file#fzf_open'
   let args = a:cmd ==# 'Files' ? [a:bang, paths] : [a:bang, a:cmd, paths]
   return call(func, args)

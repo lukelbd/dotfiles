@@ -52,7 +52,9 @@ function! grep#call_ag(global, level, pattern, ...) abort
   let args = [a:global, a:level, a:pattern] + a:000
   let [regex, paths, extra] = call('s:parse_grep', args)
   let opts = fzf#vim#with_preview()
-  call fzf#vim#ag_raw(join([flags, extra, '--', regex, paths], ' '), opts, 0)  " 0 is no fullscreen
+  let source = join([flags, extra, '--', regex, paths], ' ')
+  let filter = ' | sed "s@$HOME@~@"'  " post-process
+  call fzf#vim#ag_raw(source . filter, opts, 0)  " 0 is no fullscreen
   redraw | echom 'Ag ' . regex . ' (level ' . a:level . ')'
 endfunction
 function! grep#call_rg(global, level, pattern, ...) abort
@@ -63,7 +65,9 @@ function! grep#call_rg(global, level, pattern, ...) abort
   let [regex, paths, extra] = call('s:parse_grep', args)
   let opts = fzf#vim#with_preview()
   let head = 'rg --column --line-number --no-heading --color=always'
-  call fzf#vim#grep(join([head, flags, '--', regex, paths], ' '), opts, 0)  " 0 is no fullscreen
+  let source = join([head, flags, '--', regex, paths], ' ')
+  let filter = ' | sed "s@$HOME@~@"'  " post-process
+  call fzf#vim#grep(source . filter, opts, 0)  " 0 is no fullscreen
   redraw | echom 'Rg ' . regex . ' (level ' . a:level . ')'
 endfunction
 
