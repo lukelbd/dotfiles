@@ -1,8 +1,8 @@
--o -
+--excmd=number
 --fields=+k
 --fields=+t
---excmd=number
 --langmap=sh:+.bashrc
 --langmap=vim:+.vimrc
 --langmap=json:+.jupyterlab-settings
+--regex-yaml=/^[ \t]*-?[ \t]*([^ \t]*):/\1/v,values/
 --tex-kinds=-g

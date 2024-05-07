@@ -1587,6 +1587,7 @@ let g:splitjoin_python_brackets_on_separate_lines = 1
 " call s:plug('nathanaelkane/vim-indent-guides')  " alternative indent guide
 " call s:plug('Jorengarenar/vim-syntaxMarkerFold')  " markers in syntax (now use fastfold method)
 call s:plug('tweekmonster/braceless.vim')  " partial overlap with vim-textobj-indent, but these include header
+call s:plug('pedrohdz/vim-yaml-folds')  " yaml folds
 call s:plug('tmhedberg/SimpylFold')  " python folding
 call s:plug('Konfekt/FastFold')  " speedup folding
 let g:braceless_block_key = 'm'  " captures if, for, def, etc.

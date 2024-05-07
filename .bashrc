@@ -345,8 +345,9 @@ alias cd='cd -P'                    # don't want this on my mac temporarily
 alias ls='ls --color=always -AF'    # ls with dirs differentiate from files
 alias ld='ls --color=always -AFd'   # ls with details and file sizes
 alias ll='ls --color=always -AFhl'  # ls with details and file sizes
-alias curl='curl -O'                # always download associated file
 alias dirs='dirs -p | tac | xargs'  # show dir stack matching prompt order
+alias curl='curl -O'                # always download associated file
+alias ctags='ctags -o -'            # print tags to stdout by default
 alias ctime='date +%s'              # current time in seconds since epoch
 alias mtime='date +%s -r'           # modification time of input file
 mv() { git mv "$@" 2>/dev/null || command mv "$@"; }    # prefer git mv to standard
