@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # shellcheck disable=2076
-usage="latexmk [OPTIONS] FILE [DIFF_FILE]"
+usage="latexmk [OPTIONS] FILE [DIFF_FILE]"  # {{{
 doc="
 Auto-typeset LaTeX documents. This is similar to the famous PERL latexmk program, but
 with some unique features. Opens the resulting typeset file in a macOS PDF viewer then
@@ -50,17 +50,10 @@ Additional features
 See also
 
   https://mg.readthedocs.io/latexmk.html
-"
-# Function for raising error message
-echoerr() {
-  echo "$*" 1>&2
-}
-raise() {
-  echoerr "Usage: $usage"
-  echoerr "Error: $*"
-  exit 1
-}
+"  # }}}
 # Exit trap function to delete everything except .tex .aux .bbl
+raise() { echoerr "Usage: $usage"; echoerr "Error: $*"; exit 1; }
+echoerr() { echo "$*" 1>&2; }
 cleanup() {
   local files_rm files_new
   [ -n "$files_old" ] || return 0
@@ -76,13 +69,12 @@ cleanup() {
 }
 
 # Commands
-# TODO: Remove this since now simply remap GNU sed to first one in path.
+# Todo: Remove this since now simply remap GNU sed to first one in path.
 [[ "$OSTYPE" =~ darwin* ]] && macos=true || macos=false
 which gsed &>/dev/null && sedcmd=gsed || sedcmd=sed
 $macos && [ "$sedcmd" == sed ] && \
   raise "GNU sed needed when running this script on OSX. Can be installed from Homebrew with 'brew install gnu-sed'."
 
-# Parse args
 trap cleanup EXIT  # remove files on exit or interruption!
 shopt -s nullglob  # glob-expand into zero entries
 latex=pdflatex  # default typesetting command
@@ -95,7 +87,7 @@ pdfonly=false   # only update PDF file?
 texdiff=false   # get difference pdf?
 texdocx=false   # convert with pandoc?
 while [ $# -gt 0 ]; do
-  case $1 in
+  case $1 in  # {{{
     -h|--help)     echoerr "$doc" && exit 0 ;;
     -r|--raw)      raw=true ;;
     -a|--aux)      auxonly=true nobbl=true ;;
@@ -107,7 +99,7 @@ while [ $# -gt 0 ]; do
     -p=*|--prev=*) prevname=${1#*=} texdiff=true ;;
     [^-]*) [ -n "$filename" ] && raise "File name already passed." || filename=$1 ;;
     *) raise "Unknown latexmk flag $1." ;;
-  esac
+  esac  # }}}
   shift
 done
 [ -n "$filename" ] || raise "Must pass filename."
@@ -134,8 +126,8 @@ filestem=${filename%.tex}  # simple
 diffname=${filename%.tex}_changes.tex
 
 # Other updates
-# TODO: Remove this after finishing figcp implementation
-# NOTE: This is useful e.g. for pulling remote figure changes
+# Todo: Remove this after finishing figcp implementation
+# Note: This is useful e.g. for pulling remote figure changes
 git pull 2>/dev/null
 if $auxonly && [ "$filename" -nt "$filestem.pdf" ]; then
   echo "Warning: TeX file is newer than PDF. SyncTeX may not work properly."
@@ -211,11 +203,11 @@ texfind() {  # find files with kpsewhich and copy from folders it not present
 }
 
 # Find class files, package files, bibliography names
-# NOTE: This also iterates over subfiles for e.g. thesis composition
+# Note: This also iterates over subfiles for e.g. thesis composition
 filenames=("$filename")
 filenames+=($(nocomments "$filename" | grep -E '\\import\b|\\include\b|\\input\b' | inbraces))
 echoerr "Checking files: ${filenames[*]}"
-for file in "${filenames[@]}"; do
+for file in "${filenames[@]}"; do  # {{{
   nocomments=$(nocomments "$file")
   bibs+=($(echo "$nocomments" | grep -E '\\bibliography\b|\\nobibliography\b|\\addbibresource\b' | inbraces))
   iclasses+=($(echo "$nocomments" | grep '\\documentclass\b' | inbraces))
@@ -227,10 +219,10 @@ for file in "${filenames[@]}"; do
   jpackages+=($(packages "${localfiles[@]}" | sort | uniq))  # second level deep
   packages+=("${jpackages[@]}")
   texfind "${jpackages[@]}";
-done
+done  # }}}
 
 # Set compiler and viewer options
-# WARNING: lualatex is mostly a superset of xelatex and detection must be
+# Warning: lualatex is mostly a superset of xelatex and detection must be
 # prioritized for beamer or else get weird errors e.g. missing tex gyre fonts.
 echo "${packages[*]}" | grep -E '\bfontspec\b|\bxltxtra\b' &>/dev/null && latex=xelatex
 echo "${classes[*]}" | grep '\bbeamer\b' &>/dev/null && latex=lualatex
@@ -274,7 +266,7 @@ run() {
 
 # Open the file(s) on specific page if possible
 # See: https://sourceforge.net/p/skim-app/wiki/TeX_and_PDF_Synchronization/#setting-up-vim
-# See also: https://stackoverflow.com/a/2058251/4970632
+# See: https://stackoverflow.com/a/2058251/4970632
 open() {
   ! $macos && echoerr 'Warning: Can only automatically open PDF files on macOS.' && return 1
   local appname pdfname texname
@@ -291,12 +283,11 @@ open() {
 }
 
 # Set the flags for compiling
-# * Setting synctex=1 is *required* for skim displayline to work.
-#   See: https://atom.io/packages/skim-displayline
-# * Nonstop mode means no interaction, but will keep trying to compile if
-#   encounter errors. This is default.
-# * The shellescape option helps use figures that aren't in actual .tex directory.
-#   See: https://www.scivision.co/pdflatex-error-epstopdf-output-filename-not-allowed-in-restricted-mode/
+# Note: Setting synctex=1 is *required* for skim displayline to work.
+# Note: Nonstop mode means no interaction, but keeps trying to compile through errors
+# Note: The shellescape option helps use figures that aren't in actual .tex directory.
+# See: https://atom.io/packages/skim-displayline
+# See: https://www.scivision.co/pdflatex-error-epstopdf-output-filename-not-allowed-in-restricted-mode/
 flags=(-interaction=nonstopmode -shell-escape -synctex=1)
 flags_tex=(${flags[@]})  # flags for pre-compilation steps
 flags_pdf=(${flags[@]})  # flags for compilation step
@@ -313,15 +304,11 @@ else
   flags_pdf+=(-synctex=1)  # synctex on last run
 fi
 
-# Standard run
-# TODO: Support synctex for difference files by determining difference
-# file line number corresponding to current file line number.
-# WARNING: XeLaTeX does not have a draft mode so compilation will be
+# Get tex output using given command
+# Note XeLaTeX does not have a draft mode so compilation will be
 # generally slower: https://tex.stackexchange.com/q/219811/73149
-# WARNING: To keep exit code from pdflatex, pipe later on
-# run 0 $latex $flags "$filestem"
 echoerr "Running with ${stylized}..."
-if ! $texdiff && ! $texdocx; then
+if ! $texdiff && ! $texdocx; then  # {{{
   if ! $pdfonly; then
     echoerr 'Generating aux file...'  # maybe just need to generate glossary!
     run 0 "$latex" "${flags_tex[@]}" "$filestem"
@@ -337,10 +324,12 @@ if ! $texdiff && ! $texdocx; then
     run 1 "$latex" "${flags_pdf[@]}" "$filestem"
     [ -r "$filestem.pdf" ] || raise "PDF not produced."
   fi
-fi
+fi  # }}}
 
-# Difference-LaTeX file, with track changes
-if $texdiff; then
+# Get tex difference file with track changes
+# Todo: Support synctex for difference files by determining difference
+# file line number corresponding to current file line number.
+if $texdiff; then  # {{{
   # Find files that come *before* current one in alphanumeric sorting
   if [ -z "$prevname" ]; then
     version='[_-]([0-9]{4}-)?([0-9]{2}-)?[0-9]{2}'
@@ -386,14 +375,14 @@ if $texdiff; then
     $latex "${flags_pdf[@]}" "$diffstem" | errcat 1>&2
     [ -r "$diffstem.pdf" ] || raise "Difference PDF not produced."
   fi
-fi
+fi  # }}}
 
 # Convert to docx with pandoc; keeps figures and formats sections with Word styling
 # Use natbib flag for bst support (works): https://github.com/jgm/pandoc/issues/5405
 # Use xnos is for auto numbering (does not work): https://github.com/tomduck/pandoc-xnos
 # Use crossref for auto numbering (works): https://github.com/lierdakil/pandoc-crossref
 # Use citeproc to handle crossref-output csl (works): https://github.com/jgm/citeproc
-if $texdocx; then
+if $texdocx; then  # {{{
   type pandoc &>/dev/null || raise "Cannot convert to docx because pandoc is not installed. Try brew install pandoc."
   # flags=(--citeproc --filter=pandoc-crossref)
   # flags=(-M cref=true --citeproc --filter=pandoc-crossref)
@@ -412,7 +401,7 @@ if $texdocx; then
   echoerr "Running pandoc to convert tex --> docx with flags ${flags[*]}"
   pandoc --output="$filestem.docx" "${flags[@]}" "$filename"
   [ -r "$filestem.docx" ] || raise "Docx file not produced."
-fi
+fi  # }}}
 
 # Open the relevant file
 ! $texdiff && ! $texdocx && open "$viewer" "$filestem.pdf"  # too jumpy if open everything!

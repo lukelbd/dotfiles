@@ -321,8 +321,8 @@ function! fold#update_folds(force, ...) abort
     let b:fastfold_queued = 0
   endif
   let fugitive = !empty(get(b:, 'fugitive_type', ''))  " e.g. one-file diffs and commits
-  let marker = &l:foldmethod ==# 'manual' && !empty(get(b:, 'fastfold_markers', ''))
-  let native = &l:foldmethod ==# 'marker' && search('{{{2', 'wn')
+  let marker = &l:foldmethod ==# 'manual' && search('{{{1\s*$', 'wn')  " manual markers
+  let native = &l:foldmethod ==# 'marker' && search('{{{2\s*$', 'wn')
   if a:0  " initialize
     if a:1 > 0  " apply defaults
       let &l:foldlevel = fugitive || marker || native

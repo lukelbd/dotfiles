@@ -192,7 +192,7 @@ function! syntax#update_groups() abort
     \ /^\%1l#!.*$/
     \ contains=@NoSpell
   syntax match CommonHeader
-    \ /\C\%(WARNINGS\?\|ERRORS\?\|FIXMES\?\|TODOS\?\|NOTES\?\|XXX\)\ze:\?/
+    \ /\C\%(W\carnings\?\|E\crrors\?\|F\cixmes\?\|T\codos\?\|N\cotes\?\|S\cee\|XXX\):/
     \ containedin=.*Comment.*
   syntax match CommonLink
     \ =\v<(((https?|ftp|gopher)://|(mailto|file|news):)[^' 	<>"]+|(www|web|w3)[a-z0-9_-]*\.[a-z0-9._-]+\.[^'  <>"]+)[a-zA-Z0-9/]=
@@ -270,7 +270,7 @@ function! syntax#update_highlights() abort
   for group in getcompletion('GitGutter', 'highlight')  " see above
     call add(pairs, [group, 'Folded'])
   endfor
-  for [tail, dest] in [['Link', 'Underlined'], ['Header', 'Todo'], ['Shebang', 'Special']]
+  for [tail, dest] in [['Link', 'Underlined'], ['Header', 'PreProc'], ['Shebang', 'Special']]
     call add(pairs, ['Common' . tail, dest])
   endfor
   for tail in ['Map', 'NotFunc', 'FuncKey', 'Command']
