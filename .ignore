@@ -12,6 +12,7 @@ plugged/
 *conda*/
 *mamba*/
 servers/
+Library/
 site-packages/
 
 # Trash folders

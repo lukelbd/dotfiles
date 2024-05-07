@@ -11,12 +11,12 @@ function! calc#codi_preprocess(line) abort
   return substitute(a:line, '�[?2004l', '', '')
 endfunction
 function! calc#codi_rephrase(text) abort
-  let pat = '\s*' . comment#get_char() . '[^\n]*\(\n\|$\)'  " remove comments
-  let text = substitute(a:text, pat, '\1', 'g')
-  let pat = '\s\+\([+-=*^|&%;:]\+\)\s\+'  " remove whitespace
-  let text = substitute(text, pat, '\1', 'g')
-  let pat = '\(\_s\+\)\(\k\+\)=\([^\n]*\)'  " append variable defs
-  let text = substitute(text, pat, '\1\2=\3;_r("\2")', 'g')
+  let regex = '\s*' . comment#get_regex() . '[^\n]*\(\n\|$\)'  " remove comments
+  let text = substitute(a:text, regex, '\1', 'g')
+  let regex = '\s\+\([+-=*^|&%;:]\+\)\s\+'  " remove whitespace
+  let text = substitute(text, regex, '\1', 'g')
+  let regex = '\(\_s\+\)\(\k\+\)=\([^\n]*\)'  " append variable defs
+  let text = substitute(text, regex, '\1\2=\3;_r("\2")', 'g')
   if &filetype ==# 'julia'  " prepend repr functions
     let text = '_r=s->print(s*" = "*string(eval(s)));' . text
   else

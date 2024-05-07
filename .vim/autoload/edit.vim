@@ -41,17 +41,11 @@ endfunction
 " with e.g. 'd2k', so instead use count to denote indentation level.
 " Note: Native vim join uses count to join n lines including parent line, so e.g.
 " 1J and 2J have the same effect. This adds to count to make join more intuitive
-function! edit#conjoin_lines(before, spaces, ...) abort
-  let njoin = a:0 ? a:1 : v:count1 + (v:count > 1)
-  let nmove = a:0 ? a:1 : v:count1
-  let key = a:spaces ? 'gJ' : 'J'
-  let head = mode() =~? '^n' ? a:before ? nmove . 'k' . njoin : njoin : ''
-  let name = mode() =~? '^n' ? 'Normal' : 'Visual'
-  let conjoin = 'call conjoin#join' . name . '(' . string(key) . ')'
-  let cursor = "call cursor('.', " . col('.') . ')'
-  let range = mode() =~# 'v\|V\|' ? ':' : "\<Cmd>"
-  call feedkeys(head . range . conjoin . "\<CR>", 'n')
-  " call feedkeys("\<Cmd>" . cursor . "\<CR>", 'n')
+function! edit#join_lines(key, back) range abort
+  let [line1, line2, cnum] = [a:firstline, a:lastline, col('.')]
+  let cmd = exists(':Join') ? 'Join' : 'join'
+  let line2 += line2 > line1 ? v:count : v:count1
+  exe line1 . ',' . line2 . cmd | call cursor('.', cnum)
 endfunction
 " Indent input lines
 function! edit#indent_lines(dedent, count) range abort
@@ -60,6 +54,10 @@ endfunction
 " For <expr> map accepting motion
 function! edit#indent_lines_expr(...) abort
   return utils#motion_func('edit#indent_lines', a:000)
+endfunction
+" For <expr> map accepting motion
+function! edit#join_lines_expr(...) abort
+  return utils#motion_func('edit#join_lines', a:000)
 endfunction
 
 " Insert mode delete and undo
@@ -220,86 +218,44 @@ function! edit#search_replace_expr(...) abort
   return utils#motion_func('edit#search_replace', a:000)
 endfunction
 
-" Wrap the lines to 'count' columns rather than 'text width'
-" Note: Need feedkeys() because normal mode commands fail inside expression maps.
-" Note: Need 'exe keepjumps' instead of 'keepjumps exe' or else keepjumps fails (tried)
-function! edit#wrap_lines(...) range abort
-  let prevwidth = &l:textwidth
-  let textwidth = a:0 ? a:1 ? a:1 : prevwidth : prevwidth
-  let &l:textwidth = textwidth
-  let cmd = a:lastline . 'gggq' . a:firstline . 'gg'
-  let cmd .= "\<Cmd>silent setlocal textwidth=" . prevwidth . "\<CR>"
-  let cmd .= "\<Cmd>echom 'Wrapped lines to " . textwidth . " characters.'\<CR>"
-  call feedkeys(cmd, 'n')
-endfunction
-" Return regexes for the search
-function! s:search_item(optional)
-  let head = '^\(\s*\%(' . comment#get_char() . '\s*\)\?\)'  " leading spaces or comment
-  let indicator = '\(\%([*-]\|\<\d\.\|\<\a\.\)\s\+\)'  " item indicator plus space
-  let tail = '\(.*\)$'  " remainder of line
-  if a:optional
-    let indicator = indicator . '\?'
-  endif
-  return head . indicator . tail
-endfunction
-" Remove the item indicator
-function! s:remove_item(line, first, last) abort
-  let pattern = s:search_item(0)
-  let pattern_optional = s:search_item(1)
-  let match_head = substitute(a:line, pattern, '\1', '')
-  let match_item = substitute(a:line, pattern, '\2', '')
-  exe 'keepjumps ' . a:first . ',' . a:last
-    \ . 's@' . pattern_optional
-    \ . '@' . match_head . repeat(' ', len(match_item)) . '\3'
-    \ . '@ge' | call histdel('/', -1)
-endfunction
-" For <expr> map accepting motion
-function! edit#wrap_lines_expr(...) abort
-  return utils#motion_func('edit#wrap_lines', a:000)
-endfunction
-
-" Fix all lines that are too long, with special consideration for bullet style lists and
-" asterisks (does not insert new bullets and adds spaces for asterisks).
-" Note: This is good example of incorporating motion support in custom functions!
-" Note: Optional arg values is vim 8.1+ feature; see :help optional-function-argument
+" Format using &formatoptions,
+" Note: This implements line wrapping and joining settings, and accounts for comment
+" continuation and automatic indentation based on shiftwidth or formatlistpat.
+" Note: This wraps to optional input count column rather than text width, and
+" disables vim-markdown hack that enforces bullet continuations via &comments entries
 " See: https://vi.stackexchange.com/a/7712/8084 and :help g@
-" Put lines on single bullet
-function! edit#wrap_items(...) range abort
-  let textwidth = &l:textwidth
-  let &l:textwidth = a:0 ? a:1 ? a:1 : textwidth : textwidth
-  let prevhist = @/
-  let winview = winsaveview()
-  let pattern = s:search_item(0)
-  let linecount = 0
-  let lastline = a:lastline
-  for linenum in range(a:lastline, a:firstline, -1)
-    let line = getline(linenum)
-    let linecount += 1
-    if line =~# pattern
-      let upper = '^\s*\(<[^>]\+>\|[*_]*\)*[A-Z]'
-      let tail = substitute(line, pattern, '\3', '')
-      if tail !~# upper  " remove item indicator if starts with lowercase
-        call s:remove_item(line, linenum, linenum)
-      else  " otherwise join count lines and adjust lastline
-        exe linenum . 'join ' . linecount
-        let lastline -= linecount - 1
-        let linecount = 0
-      endif
-    endif
+function! edit#format_lines(...) range abort
+  let regex = substitute(&l:formatlistpat, '^\^', '', '')  " include comments
+  let regex = '^\(' . comment#get_regex(0) . '\)\?' . regex
+  let width1 = &l:textwidth  " previous text wdith
+  let width2 = a:0 && a:1 ? a:1 : width1
+  let comments1 = split(&l:comments, '\\\@<!,')
+  let comments2 = filter(copy(comments1), {_, val -> val !~# ':[*>+-]$'})
+  exe a:firstline | let lnums = [a:firstline]
+  while v:true
+    let lnum = search(regex, 'W', a:lastline)
+    if lnum <= 0 | break | endif
+    if lnum == a:firstline | continue | endif
+    call add(lnums, lnum)
+  endwhile
+  for idx in reverse(range(len(lnums)))
+    let line1 = lnums[idx]
+    let line2 = get(lnums, idx + 1, a:lastline + 1) - 1
+    let cnt = line2 - line1 + 1
+    try
+      let &l:textwidth = width2
+      let &l:comments = join(comments2, ',')
+      exe line1 | exe 'normal! ' . cnt . 'gqq'
+    finally
+      let &l:textwidth = width1
+      let &l:comments = join(comments1, ',')
+    endtry
   endfor
-  for linenum in range(lastline, a:firstline, -1)  " wrap accounting for bullet indent
-    exe linenum
-    let line = getline('.')
-    normal! gqgq
-    if line =~# pattern && line('.') > linenum  " cursor is at end of wrapping
-      call s:remove_item(line, linenum + 1, line('.'))  " remove auto-inserted item indicators
-    endif
-  endfor
-  let @/ = prevhist
-  call winrestview(winview)
-  let &l:textwidth = textwidth
+  let cnt = a:lastline - a:firstline + 1
+  let range = cnt > 1 ? cnt . ' lines' : cnt . ' line'
+  redraw | echom 'Wrapped ' . range . ' to ' . width2 . ' characters'
 endfunction
 " For <expr> map accepting motion
-function! edit#wrap_items_expr(...) abort
-  return utils#motion_func('edit#wrap_items', a:000)
+function! edit#format_lines_expr(...) abort
+  return utils#motion_func('edit#format_lines', a:000)
 endfunction

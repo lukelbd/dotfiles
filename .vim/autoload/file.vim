@@ -128,6 +128,13 @@ endfunction
 " symlinks, e.g. ~/.vimrc pointing to dotfiles, but keeps RelativePath() 'icloud'.
 " Note: This is modeled after fzf :Files command. Used to search arbitrary files
 " while respecting '.ignore' patterns used for e.g. f0/f1 commands.
+function! file#fzf_find(base) abort
+  let bases = type(a:base) > 1 ? join(a:base, ' ') : a:base
+  let flags = '-type d \( -name .git -o -name .svn -o -name .hg \) -prune -o '
+  let flags .= join(parse#get_ignores(1, 1, 2), ' ')  " skip .gitignore, skip folders
+  let flags .= ' -type f -print | sed "s@^./@@;s@^$HOME@~@"'  " remove leading dot
+  return 'find ' . bases . ' ' . flags
+endfunction
 function! file#fzf_files(bang, ...) abort
   " Parse input arguments
   let [bases, warns] = [[], []]
@@ -151,10 +158,7 @@ function! file#fzf_files(bang, ...) abort
     echom 'Warning: Ignoring invalid directory path(s): ' . msg
     echohl None
   endif
-  let flags = '-type d \( -name .git -o -name .svn -o -name .hg \) -prune -o '
-  let flags .= join(parse#get_ignores(1, 1, 2), ' ')  " skip .gitignore, skip folders
-  let flags .= ' -type f -print | sed "s@^./@@;s@^$HOME@~@"'  " remove leading dot
-  let source = 'find . ' . join(bases[1:], ' ') . ' ' . flags
+  let source = file#fzf_find(['.'] + bases[1:])
   let opts = fzf#vim#with_preview()
   let opts = join(map(get(opts, 'options', []), 'fzf#shellescape(v:val)'), ' ')
   let prompt = string('Files> ' . file#format_dir(bases[0], 1))

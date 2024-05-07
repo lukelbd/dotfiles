@@ -193,13 +193,13 @@ endfunction
 " Return default fold label
 " Note: This filters trailing comments, removes git-diff chunk text following stats,
 " and adds following line if the fold line is a single open delimiter (e.g. json).
-function! s:fix_delims(line) abort
-  let label1 = fold#get_label(a:line, 1)
+function! s:fix_empty(label, line) abort
+  let label1 = substitute(a:label, '^\s*', '', '')
   let [delim1, outer] = s:get_delims(label1)
-  if label1 !=# delim1 | return '' | endif
-  let label2 = fold#get_label(a:line + 1, 1)  " after naked delimiter
+  if label1 !=# delim1 | return '' | endif  " not naked delimiter
+  let label2 = fold#get_label(a:line, 1)
   let [delim2, _] = s:get_delims(label2)
-  if label2 ==# delim2 | return '' | endif  " only open and close
+  if label2 ==# delim2 | return '' | endif  " no additional info
   let inner = substitute(label2, '\s*\([[({<]*\)\s*$', '', 'g')
   return ' ' . inner . ' ··· ' . outer  " e.g. json folds
 endfunction
@@ -214,23 +214,20 @@ function! s:get_delims(label, ...) abort
   endif | return [join(delim1, ''), join(delim2, '')]
 endfunction
 function! fold#get_label(line, ...) abort
-  let recursed = a:0 && a:1  " whether already recursed
-  let regex = comment#get_regex()
-  let char = comment#get_char()
-  let head = '^\s*' . regex . '\s*[-=]\{3,}' . regex . '\?\(\s\|$\)'
-  let text = getline(a:line)
-  let text = text =~# head ? getline(a:line + 1) : text
-  let text = substitute(text, split(&l:foldmarker, ',')[0] . '\d*\s*$', '', '')
-  let trim = a:0 && a:1 ? '\(^\s*\|' : '\('  " strip leading space
-  let trim .= '\S\@<=\s*' . regex
-  let trim .= strwidth(char) == 1 ? '[^' . char . ']*$' : '.*$'
-  let trim .= '\|\s*$\)'  " delimiter trim
-  let label = substitute(text, trim, '', 'g')
-  if !empty(get(b:, 'fugitive_type', '')) || &l:filetype =~# '^git$\|^fugitive$'
+  let regex = comment#get_regex(0)
+  let divider = '^\(' . regex . '\)\?\s*[-=]\{3,}\(' . regex . '\)\?\(\s\|$\)'
+  let initial = getline(a:line) =~# divider ? getline(a:line + 1) : getline(a:line)
+  let fugitive = !empty(get(b:, 'fugitive_type', '')) || &l:filetype =~# '^git$\|^diff$'
+  let marker = split(&l:foldmarker, ',')[0] . '\d*\s*$'
+  let strip = '\(\S\@<=\s\+' . regex . '.*\)\?\s*$'
+  let strip = a:0 && a:1 ? '\(^\s*\|' . strip . '\)' : strip
+  let label = substitute(initial, marker, '', '')
+  let label = substitute(label, strip, '', 'g')
+  if fugitive  " remove context information following delta
     let label = substitute(label, '^\(@@.\{-}@@\).*$', '\1', '')
   endif
-  if !recursed && &l:foldmethod !=# 'marker'
-    let label .= s:fix_delims(a:line)
+  if !a:0 || !a:1  " append next line for naked open delimiters
+    let label .= s:fix_empty(label, a:line + 1)
   endif
   return label
 endfunction
@@ -323,12 +320,12 @@ function! fold#update_folds(force, ...) abort
     call fold#add_markers()
     let b:fastfold_queued = 0
   endif
-  let plugin = !empty(get(b:, 'fugitive_type', ''))  " e.g. one-file diffs and commits
+  let fugitive = !empty(get(b:, 'fugitive_type', ''))  " e.g. one-file diffs and commits
   let marker = &l:foldmethod ==# 'manual' && !empty(get(b:, 'fastfold_markers', ''))
   let native = &l:foldmethod ==# 'marker' && search('{{{2', 'wn')
   if a:0  " initialize
     if a:1 > 0  " apply defaults
-      let &l:foldlevel = plugin || marker || native
+      let &l:foldlevel = fugitive || marker || native
     endif
     for lnum in fold#get_ignores()
       exe lnum . 'foldopen'
