@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Horizontally scroll the cursor. Used with fzf by adding default --bind options
+# start:transform(fzf-cursor 0),left:transform(fzf-cursor 1),right:transform(fzf-cursor 1)
+# NOTE: This supports confirming fzf prompts by pressing right arrow from end of
+# line, consistent with vim command-mode wild menu map and insert mode popup map.
+if [ -z "$FZF_POSITION" ]; then
+  echo 'Error: FZF horizontal position is unset.'
+fi
+touch ~/.fzf.cursor
+offset=${1:-0}
+cursor=$(cat ~/.fzf.cursor)
+cursor=${cursor:-0}
+cursor=$((cursor + offset))
+if [ "$offset" -eq 0 ]; then
+  cursor=0
+  action=
+elif [ "$offset" -lt 0 ]; then
+  action=backward-char
+  cursor=$((cursor + offset))
+elif [ "$cursor" -lt 0 ]; then
+  action=forward-char
+  cursor=$((cursor + offset))
+else
+  action=accept
+  cursor=0
+fi
+echo "$cursor" > ~/.fzf.cursor
+echo "$action"

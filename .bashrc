@@ -1848,8 +1848,6 @@ echo 'done'
 # NOTE: Inline info puts the number line on same line as text. Bind slash to accept
 # so behavior matches shell completion behavior. Enforce terminal background default
 # color using -1 below. ANSI codes: https://stackoverflow.com/a/33206814/4970632
-# 'start:execute(let _fzf_pos=0)','left:execute(echo foo > .fzf_tmp)+left',\
-# 'right:execute(echo bar > .fzf_tmp)+right',\
 [ "${FZF_SKIP:-0}" == 0 ] && _setup_message 'Enabling fzf'
 _fzf_hist="$HOME/.fzf-hist"  # history files used by fzf.vim and shell
 _fzf_marks="$HOME/.fzf-marks/fzf-marks.plugin.bash"
@@ -1860,6 +1858,7 @@ _fzf_bindings=( \
   ctrl-u:half-page-up ctrl-d:half-page-down ctrl-b:page-up ctrl-f:page-down \
   f1:prev-history f2:next-history btab:clear-query tab:accept /:accept \
   ctrl-t:toggle ctrl-s:select ctrl-a:select-all ctrl-q:cancel ctrl-w:cancel \
+  'start:transform(fzf-cursor)' 'left:transform(fzf-cursor -1)' 'right:transform(fzf-cursor +1)' \
 )
 # shellcheck disable=2034
 {
