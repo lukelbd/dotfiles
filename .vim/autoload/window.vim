@@ -392,7 +392,10 @@ endfunction
 " Setup or show specific panel windows
 " Note: These are for managing plugins and viewing directory contents
 function! window#show_health() abort
-  exe 'CheckHealth' | setlocal foldlevel=1 syntax=checkhealth.markdown | doautocmd BufRead
+  exe 'CheckHealth'
+  setlocal foldlevel=1
+  setlocal syntax=checkhealth.markdown
+  doautocmd BufRead
 endfunction
 function! window#show_manager() abort
   silent tabnew | if bufexists('lsp-manager')
@@ -401,4 +404,15 @@ function! window#show_manager() abort
     silent exe 'LspManage' | call window#setup_panel(0) | silent file lsp-manage
   endif
   redraw | echom 'Type i to install, or x to uninstall, b to open browser, ? to show description'
+endfunction
+function! window#show_list(...) abort
+  lclose | cclose
+  let size = window#get_height(0)
+  if a:0 && a:1  " quick-fix list
+    let items = getqflist() | exe 'copen ' . size
+    if empty(items) | exe 'ALEPopulateQuickfix' | endif
+  else  " location list
+    let items = getloclist(winnr()) | exe 'lopen ' . size
+    if empty(items) | exe 'ALEPopulateLocList' | endif
+  endif
 endfunction

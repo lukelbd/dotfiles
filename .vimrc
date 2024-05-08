@@ -100,7 +100,7 @@ set pumwidth=10  " minimum popup menu width
 set redrawtime=5000  " sometimes takes a long time, let it happen
 set restorescreen  " restore screen after exiting vim
 set selectmode=  " disable 'select mode' slm, allow only visual mode for that stuff
-set sessionoptions=tabpages,terminal,winsize  " restrict session options for speed
+set sessionoptions=sesdir,tabpages,terminal,winsize  " restrict session options for speed
 set shell=/usr/bin/env\ bash  " first bash found on $PATH
 set shiftround  " round to multiple of shift width
 set showcmd  " show operator pending command
@@ -128,7 +128,7 @@ set undolevels=1000  " maximum undo level
 set undoreload=10000  " save whole buffer in undo history before deleting
 set updatetime=1500  " used for CursorHold autocmds and default is 4000ms
 set verbose=0  " increment for debugging, e.g. verbose=2 prints sourced files, extremely useful
-set viminfo='500,s50  " remember marks for 500 files (e.g. jumps), exclude registers >10kB of text
+set viminfo='500,s50  " remember marks for 500 files (e.g. jumps), exclude registers >50kB of text
 set virtualedit=block  " allow cursor to go past line endings in visual block mode
 set visualbell  " prefer visual bell to beeps (see also 'noerrorbells')
 set whichwrap=[,],<,>,h,l  " <> = left/right insert, [] = left/right normal mode
@@ -761,14 +761,14 @@ command! -count=1 Qprev call jump#next_list(<count>, 'qf', 1)
 command! -count=1 Qnext call jump#next_list(<count>, 'qf', 0)
 nnoremap [{ <Cmd>exe v:count1 . 'Qprev'<CR>
 nnoremap ]} <Cmd>exe v:count1 . 'Qnext'<CR>
-nnoremap [x <Cmd>exe v:count1 . 'Lprev'<CR>
-nnoremap ]x <Cmd>exe v:count1 . 'Lnext'<CR>
 nnoremap [X <Cmd>exe v:count1 . 'Qprev'<CR>
 nnoremap ]X <Cmd>exe v:count1 . 'Qnext'<CR>
+nnoremap [x <Cmd>exe v:count1 . 'Lprev'<CR>
+nnoremap ]x <Cmd>exe v:count1 . 'Lnext'<CR>
+nnoremap [Y <Cmd>exe v:count1 . 'tag!'<CR>
+nnoremap ]Y <Cmd>exe v:count1 . 'pop!'<CR>
 nnoremap [y <Cmd>exe v:count1 . 'tag'<CR>
 nnoremap ]y <Cmd>exe v:count1 . 'pop'<CR>
-nnoremap [Y <Cmd>exe v:count1 . 'tag'<CR>
-nnoremap ]Y <Cmd>exe v:count1 . 'pop'<CR>
 
 " Line searching and grepping {{{2
 " Note: This is only useful when 'search' excluded from &foldopen. Use to quickly
@@ -1999,7 +1999,7 @@ if &g:foldenable || s:has_plug('FastFold')  " {{{
   let g:rust_fold = 1
   let g:sh_fold_enabled = 3
   let g:tex_fold_enabled = 1
-  let g:vimsyn_folding = 'af'
+  let g:vimsyn_folding = 'aflpP'
   let g:xml_syntax_folding = 1
   let g:zsh_fold_enable = 1
 endif  " }}}
@@ -2111,8 +2111,8 @@ endif  " }}}
 if s:has_plug('ddc.vim')  " {{{
   augroup ddc_setup
     au!
-    au InsertEnter * if &l:iskeyword ==# 'vim' | setlocal iskeyword+=: | endif
-    au InsertLeave * if &l:iskeyword ==# 'vim' | setlocal iskeyword-=: | endif
+    au InsertEnter * if &l:filetype ==# 'vim' | setlocal iskeyword+=: | endif
+    au InsertLeave * if &l:filetype ==# 'vim' | setlocal iskeyword-=: | endif
   augroup END
   command! -nargs=? DdcToggle call switch#ddc(<args>)
   nnoremap <Leader>* <Cmd>call switch#ddc()<CR>
@@ -2195,8 +2195,8 @@ if s:has_plug('ale')  " {{{
     au BufRead ipython_*config.py,jupyter_*config.py let b:ale_enabled = 0
   augroup END
   command! -nargs=? AleToggle call switch#ale(<args>)
-  nnoremap <Leader>x <Cmd>cclose<CR><Cmd>exe 'lopen ' . float2nr(0.15 * &lines)<CR>
-  nnoremap <Leader>X <Cmd>lclose<CR><Cmd>ALEPopulateQuickfix<CR><Cmd>exe 'copen ' . float2nr(0.15 * &lines)<CR>
+  nnoremap <Leader>x <Cmd>call window#show_list(0)<CR>
+  nnoremap <Leader>X <Cmd>call window#show_list(1)<CR>
   nnoremap <Leader>@ <Cmd>call switch#ale()<CR>
   nnoremap <Leader># <Cmd>ALEInfo<CR>
   let g:ale_linters = {
@@ -2233,7 +2233,7 @@ if s:has_plug('ale')  " {{{
   let g:ale_sign_warning = 'W>'
   let g:ale_sign_info = 'I>'
   let g:ale_set_loclist = 1  " keep default
-  let g:ale_set_quickfix = 0  " use manual command
+  let g:ale_set_quickfix = 0  " require manual population
   let g:ale_echo_msg_error_str = 'Err'
   let g:ale_echo_msg_info_str = 'Info'
   let g:ale_echo_msg_warning_str = 'Warn'

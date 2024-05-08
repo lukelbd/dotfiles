@@ -1,11 +1,7 @@
 "------------------------------------------------------------------------------
 " Fortran settings
 "------------------------------------------------------------------------------
-" General settings
-" Note: This is set to 'manual' by default. Unsure why.
-setlocal foldmethod=syntax
-
-" These mostly make automatic indentation better
+" Syntax and indentation settings
 " See: https://stackoverflow.com/a/17619568/4970632
 " See: $VIMRUNTIME/indent/fortran.vim for relevant global variables
 let g:fortran_do_enddo = 1  " otherwise do/enddo loops aren't indented!
