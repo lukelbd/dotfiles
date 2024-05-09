@@ -298,9 +298,10 @@ function! fold#fold_text(...) abort
     let label = fold#get_label(line1)
   endif
   let [delim1, delim2] = s:get_delims(label)
+  let indent = matchstr(label, '^\s*')
   let width = maxlen - strwidth(stats) - 1
   let label = empty(delim2) ? label : label . '···' . delim2
-  let label = empty(hunk) ? label : hunk . '·' . strpart(label, len(hunk) + 1)
+  let label = empty(hunk) ? label : indent . hunk . ' ' . strpart(label, len(indent))
   if strwidth(label) >= width  " truncate fold text
     let dcheck = strpart(label, width - 4 - strwidth(delim2), 1)
     let delim2 = dcheck ==# delim1 ? '' : delim2
