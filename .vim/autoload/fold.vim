@@ -157,6 +157,45 @@ function! fold#get_ignores(...) abort range
   return ignores
 endfunction
 
+" Return text object ranges
+" Note: Similar to how 'vaw' on last word on line includes preceding spaces and
+" elsewhere includes following spaces, here include space below folds of same
+" level or the space above if not available.
+function! s:get_range(outer, ...) abort
+  let [line1, line2, level] = a:0 && a:1 ? fold#get_parent() : fold#get_fold()
+  if line1 == line2  " invalid range
+    return ['V', [0, 0, 0, 0], [0, 0, 0, 0]]
+  endif
+  if a:outer  " include lines below or above
+    let winview = winsaveview()
+    exe line2 | exe 'keepjumps normal! zj'
+    if line('.') > line2  " top of next fold
+      if foldlevel('.') == level
+        let line2 = line('.') - 1
+      endif
+    else  " bottom of previous fold
+      exe line1 | exe 'keepjumps normal! zk'
+      if line('.') < line1 && foldlevel('.') == level
+        let line1 = line('.') + 1
+      endif
+    endif
+    call winrestview(winview)
+  endif
+  return ['V', [0, line1, 1, 0], [0, line2, col([line2, '$']), 0]]
+endfunction
+function! fold#get_fold_i() abort
+  return s:get_range(0, 0)
+endfunction
+function! fold#get_fold_a() abort
+  return s:get_range(1, 0)
+endfunction
+function! fold#get_parent_i() abort
+  return s:get_range(0, 1)
+endfunction
+function! fold#get_parent_i() abort
+  return s:get_range(1, 1)
+endfunction
+
 " Return folds and properties across line range
 " Note: This ignores folds defined in s:folds_ignore, e.g. python classes and
 " tex documents. Used to close-open smaller fold blocks ignoring huge blocks.

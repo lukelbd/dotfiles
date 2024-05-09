@@ -759,8 +759,8 @@ command! -count=1 Lprev call jump#next_list(<count>, 'loc', 1)
 command! -count=1 Lnext call jump#next_list(<count>, 'loc', 0)
 command! -count=1 Qprev call jump#next_list(<count>, 'qf', 1)
 command! -count=1 Qnext call jump#next_list(<count>, 'qf', 0)
-nnoremap [{ <Cmd>exe v:count1 . 'Qprev'<CR>
-nnoremap ]} <Cmd>exe v:count1 . 'Qnext'<CR>
+nnoremap [{ <Cmd>exe v:count1 . 'Qprev'<CR><Cmd>call window#show_list(1)<CR><Cmd>wincmd p<CR>
+nnoremap ]} <Cmd>exe v:count1 . 'Qnext'<CR><Cmd>call window#show_list(1)<CR><Cmd>wincmd p<CR>
 nnoremap [X <Cmd>exe v:count1 . 'Qprev'<CR>
 nnoremap ]X <Cmd>exe v:count1 . 'Qnext'<CR>
 nnoremap [x <Cmd>exe v:count1 . 'Lprev'<CR>
@@ -1519,17 +1519,17 @@ call s:plug('raimondi/delimitmate')
 " Text object definitions
 " Note: Also use vim-succinct to auto-convert every vim-surround delimiter
 " definition to 'inner'/'outer' delimiter inclusive/exclusive objects.
+" call s:plug('machakann/vim-textobj-functioncall')  " use custom object instead
+" call s:plug('vim-scripts/argtextobj.vim')  " use parameter instead
+" call s:plug('kana/vim-textobj-fold')  " use custom oject insead
 " call s:plug('bps/vim-textobj-python')  " use braceless 'm' instead
-" call s:plug('machakann/vim-textobj-functioncall')  " does not work
-" call s:plug('vim-scripts/argtextobj.vim')  " issues with this too
 " call s:plug('beloglazov/vim-textobj-quotes')  " multi-line string, but not docstrings
 " call s:plug('thalesmello/vim-textobj-multiline-str')  " multi-line string, adapted in python.vim
-call s:plug('kana/vim-textobj-user')  " base requirement
+call s:plug('kana/vim-textobj-user')  " general requirement
 call s:plug('kana/vim-textobj-line')  " entire line, object is 'l'
 call s:plug('kana/vim-textobj-entire')  " entire file, object is 'e'
-call s:plug('kana/vim-textobj-fold')  " select current fold, object is 'z'
 call s:plug('kana/vim-textobj-indent')  " indentation, object is 'i' or 'I' and 'a' includes empty lines
-call s:plug('sgur/vim-textobj-parameter')  " function parameter, object is '='
+call s:plug('sgur/vim-textobj-parameter')  " argument, object is '='
 call s:plug('glts/vim-textobj-comment')  " comment blocks, object is 'C' (see below)
 call s:plug('tkhren/vim-textobj-numeral')  " numerals, e.g. 1.1234e-10
 call s:plug('preservim/vim-textobj-sentence')  " sentence objects
@@ -1819,9 +1819,19 @@ if s:has_plug('vim-textobj-user')  " {{{
     \ 'select-i': 'iC', 'select-i-function': 'textobj#comment#select_i',
     \ 'select-a': 'aC', 'select-a-function': 'textobj#comment#select_a',
   \ }
+  let s:textobj_fold = {
+    \ 'select-i': 'iz', 'select-i-function': 'fold#get_fold_i',
+    \ 'select-a': 'az', 'select-a-function': 'fold#get_fold_a',
+  \ }
+  let s:textobj_parent = {
+    \ 'select-i': 'iZ', 'select-i-function': 'fold#get_parent_i',
+    \ 'select-a': 'aZ', 'select-a-function': 'fold#get_parent_a',
+  \ }
   call succinct#add_objects('alpha', s:textobj_alpha, 0, 1)  " do not escape
-  call textobj#user#plugin('comment', {'-': s:textobj_comment})  " do not add <Plug> suffix
-  call textobj#user#plugin('entire', {'-': s:textobj_entire})  " do not add <Plug> suffix
+  call textobj#user#plugin('comment', {'-': s:textobj_comment})  " no <Plug> suffix
+  call textobj#user#plugin('entire', {'-': s:textobj_entire})  " no <Plug> suffix
+  call textobj#user#plugin('fold', {'-': s:textobj_fold})  " no <Plug> suffix
+  call textobj#user#plugin('parent', {'-': s:textobj_fold})  " no <Plug> suffix
 endif  " }}}
 
 " Easy-align settings. Support case/esac block parentheses and seimcolons, chained
