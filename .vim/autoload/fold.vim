@@ -168,9 +168,17 @@ endfunction
 " elsewhere includes following spaces, here include space below folds of same
 " level or the space above if not available.
 function! s:get_range(outer, ...) abort
-  let [line1, line2, level] = a:0 && a:1 ? fold#get_parent() : fold#get_fold()
-  if line1 == line2  " invalid range
-    return ['V', [0, 0, 0, 0], [0, 0, 0, 0]]
+  let result = a:0 && a:1 ? fold#get_parent() : fold#get_fold()
+  let result = empty(result) ? [line('.'), line('.'), 0] : result
+  let [line1, line2, level] = result
+  if line2 > line1 && level > 0
+    let range = 'lines ' . line1 . ' to ' . line2
+    let paren = '(level ' . level . ')'
+    redraw | echom 'Selected ' . range . ' ' . paren
+  else
+    redraw | echohl ErrorMsg
+    echom 'E490: No fold found'
+    echohl None | return ['v', getpos('.'), getpos('.')]
   endif
   if a:outer  " include lines below or above
     let winview = winsaveview()
@@ -187,7 +195,9 @@ function! s:get_range(outer, ...) abort
     endif
     call winrestview(winview)
   endif
-  return ['V', [0, line1, 1, 0], [0, line2, col([line2, '$']), 0]]
+  let pos1 = [0, line1, 1, 0]
+  let pos2 = [0, line2, col([line2, '$']), 0]
+  return ['V', pos1, pos2]
 endfunction
 function! fold#get_fold_i() abort
   return s:get_range(0, 0)
