@@ -7,19 +7,6 @@
 " Note: This uses cursor line as default header value, e.g. turning header into comment,
 " and searches non-printable dummy characters 1-32 from &isprint. Note character
 " zero is null i.e. string termination so matches empty string. See :help /\]
-function! s:get_indent() abort  " match current indent level
-  let regex = '^\s*\S\zs'  " location of first non-whitespace char
-  let indent = match(getline('.'), regex)
-  let indent = indent == -1 ? 0 : indent - 1
-  return repeat(' ', indent)
-endfunction
-function! s:get_header() abort
-  let regex = '^\s*\(' . comment#get_regex() . '\s*\)\?'
-  let default = substitute(getline('.'), regex, '', '')
-  let result = utils#input_default('Header text', default, '')
-  if result ==# default | call feedkeys('"_dd', 'n') | endif
-  return result
-endfunction
 function! comment#get_string(...) abort
   let space = repeat(' ', a:0 ? a:1 : 0)  " include spaces
   let string = substitute(&commentstring, '^$', '%s', '')  " copied from tpope/commentary
@@ -37,8 +24,14 @@ endfunction
 
 " Add general comment matching current indentation (used for author date) or add dashes
 " up to current line length (ignoring leading comments, used for python and markdown)
+function! s:get_header() abort
+  let regex = '^\s*\(' . comment#get_regex() . '\s*\)\?'
+  let cursor = substitute(getline('.'), regex, '', '')
+  let header = utils#input_default('Header text', cursor, '')
+  call feedkeys(header ==# cursor ? '"_dd' : '', 'n') | return header
+endfunction
 function! comment#append_note(note) abort
-  let indent = s:get_indent()
+  let indent = matchstr(getline('.'), '^\s*')
   let string = comment#get_string(1)
   let append = printf(string, a:note)
   call append(line('.') - 1, indent . append)
@@ -47,15 +40,15 @@ function! comment#append_line(fill, ...) abort
   let [col2, col1; double] = a:0 > 1 ? reverse(copy(a:000)) : [0, 0] + a:000
   let [col1, col2] = [type(col1) ? col(col1) : col1, type(col2) ? col(col2) : col2]
   let double = !empty(double) && double[0]
-  let regex = '\(' . comment#get_regex(1) . '.*\)\?\s*$'
+  let regex = '^\s*\zs.\{-}\ze\(' . comment#get_regex(1) . '.*\)\?\s*$'
   if col1 && col2  " columns start at one
     let indent = repeat(' ', col1 - 1)
-    let nfill = 1 + abs(col2 - col1)
+    let cnt = 1 + abs(col2 - col1)
   else  " default divider
-    let indent = s:get_indent()
-    let nfill = match(getline('.'), regex) - len(indent)  " last non-whitespace loc
+    let indent = matchstr(getline('.'), '^\s*')
+    let cnt = strchars(matchstr(getline('.'), regex))
   endif
-  let append = indent . repeat(a:fill, nfill)
+  let append = indent . repeat(a:fill, cnt)
   call append(line('.'), append)  " always append line
   if double | call append(line('.') - 1, append) | endif
 endfunction
@@ -63,9 +56,9 @@ endfunction
 " Add character or inline headers '# Hello world! #' and '# ---- Hello world! ---- #'
 " or add line headers of arbitrary width given input fill charaacters.
 function! comment#header_inchar() abort
-  let indent = s:get_indent()
   let header = s:get_header()
   if empty(header) | return | endif
+  let indent = matchstr(getline('.'), '^\s*')
   let string = comment#get_string(1)
   let leader = substitute(string, '%s.*', '', '')
   let string .= string =~# '%s$' ? join(reverse(split(leader, '\zs')), '') : ''
@@ -73,9 +66,9 @@ function! comment#header_inchar() abort
   call append(line('.') - 1, append)
 endfunction
 function! comment#header_inline(ndash) abort
-  let indent = s:get_indent()
   let header = s:get_header()
   if empty(header) | return | endif
+  let indent = matchstr(getline('.'), '^\s*')
   let string = comment#get_string(1)
   let leader = substitute(string, '%s.*', '', '')
   let string .= string =~# '%s$' ? join(reverse(split(leader, '\zs')), '') : ''
@@ -83,13 +76,13 @@ function! comment#header_inline(ndash) abort
   let append = indent . printf(string, header)
   call append(line('.') - 1, append)
 endfunction
-function! comment#header_line(fill, nfill, ...) abort  " inserts above by default
+function! comment#header_line(fill, count, ...) abort  " inserts above by default
   let double = a:0 && a:1
-  let indent = s:get_indent()
+  let indent = matchstr(getline('.'), '^\s*')
   let string = comment#get_string(0)
   let leader = substitute(string, '%s.*', '', '')
   let string .= string =~# '%s$' ? join(reverse(split(leader, '\zs')), '') : ''
-  let repeat = (a:nfill - strchars(indent)) / strchars(a:fill)  " divide by width
+  let repeat = (a:count - strchars(indent)) / strchars(a:fill)  " divide by width
   let append = indent . printf(string, repeat(a:fill, repeat))
   if double
     let string = comment#get_string(1)
@@ -103,8 +96,9 @@ endfunction
 " Navigate between comment blocks and headers
 " Note: The '$' is required for lookbehind for some reason
 function! comment#next_comment(count, ...) abort
+  let comment = comment#get_regex()
   let head = a:0 && a:1 ? '' : '\s*'  " include indented
-  let tail = comment#get_regex() . '.\+$\n'
+  let tail = comment . '.\+$\n'
   let back = '^\(' . head . tail . '\)\@<!'
   let regex = back . head . '\zs' . tail . '\(' . head . tail . '\)*'
   let flags = a:count >= 0 ? 'w' : 'bw'
@@ -114,9 +108,10 @@ function! comment#next_comment(count, ...) abort
   if &foldopen =~# 'block' | exe 'normal! zv' | endif
 endfunction
 function! comment#next_header(count, ...) abort
+  let comment = comment#get_regex()
   let head = a:0 && a:1 ? '' : '\s*'  " include indented
-  let back = '^\(' . head . comment#get_regex() . '.\+$\n\)\@<!'
-  let tail = comment#get_regex() . '\s*[-=]\{3,}' . comment#get_regex() . '\?'
+  let back = '^\(' . head . comment . '.\+$\n\)\@<!'
+  let tail = comment . '\s*[-=]\{3,}' . comment . '\?'
   let regex = back . head . '\zs' . tail .'\(\s\|$\)'
   let flags = a:count >= 0 ? 'w' : 'bw'
   for _ in range(abs(a:count))
@@ -126,7 +121,8 @@ function! comment#next_header(count, ...) abort
 endfunction
 function! comment#next_label(count, ...) abort
   let [flag, opts] = a:0 && !type(a:1) ? [a:1, a:000[1:]] : [0, a:000]
-  let head = (flag ? '^\s*' : '') . comment#get_regex() . '\s*'
+  let comment = comment#get_regex()
+  let head = (flag ? '^\s*' : '') .comment . '\s*'
   let tail = '\c\zs\(' . join(opts, '\|') . '\).*$'
   let regex = head . '\zs' . tail
   let flags = a:count >= 0 ? 'w' : 'bw'

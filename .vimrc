@@ -1,5 +1,5 @@
-"-----------------------------------------------------------------------------" {{{1
-" A giant vim configuration that does all sorts of magical things.
+"-----------------------------------------------------------------------------"
+" A giant vim configuration that does all sorts of magical things. {{{1
 "-----------------------------------------------------------------------------"
 " Critical stuff {{{2
 " Note: See .vim/after/common.vim and .vim/after/filetype.vim for overrides of
@@ -305,8 +305,8 @@ for s:pair in [['\', 'nv'], ['<Tab>', 'n'], ['<Leader>', 'nv']]
   endfor
 endfor
 
-"-----------------------------------------------------------------------------" {{{1
-" Files and buffers
+"-----------------------------------------------------------------------------"
+" Files and buffers {{{1
 "-----------------------------------------------------------------------------"
 " Handle buffers and windows {{{2
 " Note: To avoid accidentally closing vim do not use mapped shortcuts. Instead
@@ -443,8 +443,8 @@ command! -complete=dir -nargs=? Terminal call shell#show_terminal(<f-args>)
 silent! tnoremap <expr> <C-c> "\<C-c>"
 nnoremap <Leader>! <Cmd>call shell#show_terminal()<CR>
 
-"-----------------------------------------------------------------------------" {{{1
-" Windows and folds
+"-----------------------------------------------------------------------------"
+" Windows and folds {{{1
 "-----------------------------------------------------------------------------"
 " Window and tab management {{{2
 " Note: Also tried 'FugitiveIndex' and 'FugitivePager' but kept getting confusing
@@ -632,10 +632,10 @@ command! -bang -nargs=? Refold call fold#update_folds(<bang>0, <f-args>)
 for s:key in ['z', 'f', 'F', 'n', 'N'] | silent! exe 'unmap! z' . s:key | endfor
 nnoremap zv zvzzze
 vnoremap zv zvzzze
-nnoremap zx <Cmd>call fold#update_folds(0, 1)<CR>
+nnoremap zx <Cmd>call fold#update_folds(0, 0)<CR>
 nnoremap zX <Cmd>call fold#update_folds(1, 2)<CR><Cmd>echom 'Updated folds'<CR>
 nnoremap zV <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>zvzzze
-vnoremap zx <Cmd>call fold#update_folds(0, 1)<CR>
+vnoremap zx <Cmd>call fold#update_folds(0, 0)<CR>
 vnoremap zX <Cmd>call fold#update_folds(1, 2)<CR><Cmd>echom 'Updated folds'<CR>
 vnoremap zV <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>zvzzze
 
@@ -697,8 +697,8 @@ vnoremap z] <Cmd>call fold#update_level('r')<CR>
 vnoremap z{ <Cmd>call fold#update_level('M')<CR>
 vnoremap z} <Cmd>call fold#update_level('R')<CR>
 
-"-----------------------------------------------------------------------------" {{{1
-" Searching and jumping
+"-----------------------------------------------------------------------------"
+" Searching and jumping {{{1
 "-----------------------------------------------------------------------------"
 " Navigate jumplist {{{2
 " Note: This accounts for iterm function-key maps and karabiner arrow-key maps
@@ -928,8 +928,8 @@ noremap ]a <Cmd>call comment#next_label(v:count1, 0, 'note', 'warning', 'error')
 noremap [A <Cmd>call comment#next_label(-v:count1, 1, 'note', 'warning', 'error')<CR>
 noremap ]A <Cmd>call comment#next_label(v:count1, 1, 'note', 'warning', 'error')<CR>
 
-"-----------------------------------------------------------------------------" {{{1
-" Normal and insert mode
+"-----------------------------------------------------------------------------"
+" Normal and insert mode {{{1
 "-----------------------------------------------------------------------------"
 " Override repeat and register {{{2
 " Note: Here edit#insert_undo() returns undo-resetting <C-g>u and resets b:insert_mode
@@ -1279,8 +1279,8 @@ vnoremap <expr> \' call('edit#search_replace_expr', g:sub_dsingle)
 nnoremap <expr> \" call('edit#search_replace_expr', g:sub_ddouble)
 vnoremap <expr> \" call('edit#search_replace_expr', g:sub_ddouble)
 
-"-----------------------------------------------------------------------------" {{{1
-" External plugins
+"-----------------------------------------------------------------------------"
+" External plugins {{{1
 "-----------------------------------------------------------------------------"
 " Initialize plugin manager {{{2
 " Note: Ad hoc enable LSP below for debugging. Can also use switch#lsp()
@@ -1734,8 +1734,8 @@ call plug#end()
 silent! delcommand SplitjoinJoin
 silent! delcommand SplitjoinSplit
 
-"-----------------------------------------------------------------------------" {{{1
-" Plugin settings
+"-----------------------------------------------------------------------------"
+" Plugin settings {{{1
 "-----------------------------------------------------------------------------"
 " Matches and delimiters {{{2
 " Note: Here vim-tags searching integrates with indexed-search and vim-succinct
@@ -2536,8 +2536,8 @@ if s:has_plug('undotree')  " {{{
   let g:undotree_WindowLayout = 1  " see :help undotree_WindowLayout
 endif  " }}}
 
-"-----------------------------------------------------------------------------" {{{1
-" Syntax settings
+"-----------------------------------------------------------------------------"
+" Syntax settings {{{1
 "-----------------------------------------------------------------------------"
 " Highlighting and colors {{{2
 " Apply and list schemes from flazz/vim-colorschemes

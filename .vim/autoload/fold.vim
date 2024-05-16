@@ -7,6 +7,11 @@
 " Note: Previously tried using regions with 'vim-syntaxMarkerFold' but causes major
 " issues since either disables highlighting or messes up inner highlight items when
 " trying to use e.g. contains=ALL since several use naked 'contained' property.
+function! s:is_divider(...) abort
+  let regex = '\(' . comment#get_regex(0) . '\)\?'
+  let regex = '^' . regex . '\s*[-=]\{3,}' . regex . '\(\s\|$\)'
+  return getline(a:0 ? a:1 : '.') =~# regex
+endfunction
 function! fold#add_markers() abort
   if &l:foldmethod !=# 'manual' | return | endif
   let winview = winsaveview()
@@ -26,8 +31,8 @@ function! fold#add_markers() abort
       echom 'Warning: Failed to setup mark folds.'
       echohl None | break
     endif
-    let mark = parts[1]
-    let level = parts[2]
+    let lnum -= s:is_divider(lnum - 1) && s:is_divider(lnum + 1)
+    let [mark, level] = parts[1:2]
     if parts[1] =~# mark2  " close previously defined fold
       let level = empty(level) ? max(keys(heads)) : str2nr(level)
       if has_key(heads, string(level))
@@ -112,7 +117,8 @@ endfunction
 " enforce universal standard default of foldlevel=0 without hiding everything.
 " Return fold under cursor above a given level
 scriptencoding utf-8
-let s:folds_ignore = [['python', '^class\>', '', 1],
+let s:folds_ignore = [
+  \ ['python', '^class\>', '', 1],
   \ ['fortran', '^\s*\(module\|program\)\>', '', 1],
   \ ['javascript', '^\s*\(export\s\+\|default\s\+\)*class\>', '', 1],
   \ ['typescript', '^\s*\(export\s\+\|default\s\+\)*class\>', '', 1],
@@ -254,8 +260,7 @@ function! s:get_delims(label, ...) abort
 endfunction
 function! fold#get_label(line, ...) abort
   let regex = comment#get_regex(0)
-  let divider = '^\(' . regex . '\)\?\s*[-=]\{3,}\(' . regex . '\)\?\(\s\|$\)'
-  let initial = getline(a:line) =~# divider ? getline(a:line + 1) : getline(a:line)
+  let initial = getline(a:line + s:is_divider(a:line))
   let fugitive = !empty(get(b:, 'fugitive_type', '')) || &l:filetype =~# '^git$\|^diff$'
   let marker = split(&l:foldmarker, ',')[0] . '\d*\s*$'
   let strip = '\(\S\@<=\s\+' . regex . '.*\)\?\s*$'
@@ -362,12 +367,16 @@ function! fold#update_folds(force, ...) abort
   endif
   let filetypes = {'json': 2}  " filetype-specific initial levels
   let fugitive = !empty(get(b:, 'fugitive_type', ''))  " e.g. one-file diffs and commits
-  let marker = &l:foldmethod ==# 'manual' && search('{{{1\s*$', 'wn')  " manual markers
-  let native = &l:foldmethod ==# 'marker' && search('{{{2\s*$', 'wn')  " modeline markers
-  let default = fugitive || marker || native  " default fold level
+  let marker1 = search('{{{1\s*$', 'wn') > 0
+  let marker2 = search('{{{2\s*$', 'wn')
+  let imarker = &l:foldmethod ==# 'manual' && marker1 && marker2  " manual markers
+  let jmarker = &l:foldmethod ==# 'marker' && marker2  " modeline markers
+  let default = fugitive || imarker || jmarker  " default fold level
   if a:0  " initialize
     if a:1 > 0  " apply defaults
       let &l:foldlevel = get(filetypes, &filetype, default)
+    else  " re-apply
+      let &l:foldlevel = &l:foldlevel
     endif
     for lnum in fold#get_ignores()
       exe lnum . 'foldopen'

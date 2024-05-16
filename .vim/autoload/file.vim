@@ -377,14 +377,12 @@ function! file#rename(name, bang)
   let path1 = expand('%:p')
   let path2 = fnamemodify(path1, ':h') . '/' . a:name
   let v:errmsg = ''  " reset message
-  if exists('*FugitiveGitDir') && !empty(FugitiveGitDir())
-    silent! exe 'GMove' . a:bang . ' ' . path2
-  else  " eunuch move
+  try
+    exe 'GMove' . a:bang . ' ' . path2
+  catch /.*fugitive.*/
     silent! exe 'Move' . a:bang . ' ' . path2
-  endif
-  if v:errmsg !~# '^$\|^E329\|^E108'
-    throw v:errmsg
-  endif
+    if v:errmsg !~# '^$\|^E329\|^E108' | throw v:errmsg | endif
+  endtry
   let path = expand('%:p')  " resulting location
   if path !=# path1 && filewritable(path) && filewritable(path1)
     silent exe 'bwipe! ' . path1

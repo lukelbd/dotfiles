@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-#-----------------------------------------------------------------------------# {{{1
-# Typeset latex documents
+#-----------------------------------------------------------------------------#
+# Typeset latex documents {{{1
 #-----------------------------------------------------------------------------#
 usage="latexmk [OPTIONS] FILE [DIFF_FILE]"  # {{{2
 doc="
@@ -124,8 +124,8 @@ if $auxonly && [ "$filename" -nt "$filestem.pdf" ]; then
   echo "Warning: TeX file is newer than PDF. SyncTeX may not work properly."
 fi
 
-#-----------------------------------------------------------------------------# {{{1
-# Get compile flags and packages
+#-----------------------------------------------------------------------------#
+# Get compile flags and packages {{{1
 #-----------------------------------------------------------------------------#
 # Helper functions {{{2
 inbraces() {  # get content inside braces
@@ -228,8 +228,8 @@ if ! $nobbl && $bibliography; then
   echoerr "Bib files: ${bibfiles[*]}"
 fi
 
-#------------------------------------------------------------------------------#  {{{1
-# Compile and display the document(s)
+#------------------------------------------------------------------------------#
+# Compile and display the document(s)  {{{1
 #------------------------------------------------------------------------------#
 # Helper functions {{{2
 # First argument indicates whether to print message

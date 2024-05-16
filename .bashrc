@@ -1,6 +1,6 @@
 #!/bin/bash
-#----------------------------------------------------------------------------- {{{1
-# General shell defaults
+#-----------------------------------------------------------------------------
+# General shell defaults {{{1
 #-----------------------------------------------------------------------------
 # Installation and configuration notes {{{2
 # shellcheck disable=1090,2181,2120,2076
@@ -333,8 +333,8 @@ export CFLAGS=-stdlib=libc++
 export GOOGLE_APPLICATION_CREDENTIALS=$HOME/pypi-downloads.json  # for pypinfo
 echo 'done'
 
-#----------------------------------------------------------------------------- {{{1
-# General aliases and functions
+#-----------------------------------------------------------------------------
+# General aliases and functions {{{1
 #-----------------------------------------------------------------------------
 # Inspecting and listing {{{2
 # Standardize colors and configure ls and cd commands
@@ -516,8 +516,8 @@ pskill() {  # jobs by ps name
   done
 }
 
-#----------------------------------------------------------------------------- {{{1
-# Editing and scripting utilities
+#-----------------------------------------------------------------------------
+# Editing and scripting utilities {{{1
 #-----------------------------------------------------------------------------
 # Helper utilities {{{2
 # Environment variables
@@ -773,8 +773,8 @@ open() {
   done
 }
 
-#----------------------------------------------------------------------------- {{{1
-# Searching utilities
+#-----------------------------------------------------------------------------
+# Searching utilities {{{1
 #-----------------------------------------------------------------------------
 # Parse ignores {{{2
 # See also vim tags#ignores()
@@ -985,8 +985,8 @@ refactor() {
   fi
 }
 
-#----------------------------------------------------------------------------- {{{1
-# Remote session utilities
+#-----------------------------------------------------------------------------
+# Remote session utilities {{{1
 #-----------------------------------------------------------------------------
 # General stuff {{{2
 # Supercomputer queue utilities
@@ -1272,8 +1272,8 @@ figcp() {
   _scp_bulk "${flags[@]}" "$forward" $@ "$path" "$path"  # address may expand to nothing
 }
 
-#----------------------------------------------------------------------------- {{{1
-# REPLs and interactive servers
+#-----------------------------------------------------------------------------
+# REPLs and interactive servers {{{1
 #-----------------------------------------------------------------------------
 # General aliases {{{2
 # Add jupyter kernels with custom profiles. Goal is to have all kernels managed
@@ -1475,8 +1475,8 @@ _jekyll_flags="--incremental --watch --config '_config.yml,_config.dev.yml'"
 alias server="python -m http.server"
 alias jekyll="bundle exec jekyll serve $_jekyll_flags 2>/dev/null"  # ignore deprecations
 
-#----------------------------------------------------------------------------- {{{1
-# Dataset utilities
+#-----------------------------------------------------------------------------
+# Dataset utilities {{{1
 #-----------------------------------------------------------------------------
 # Parsing stuff {{{2
 # Code parsing tools
@@ -1696,8 +1696,8 @@ ncvardetails() {
     done
 }
 
-#----------------------------------------------------------------------------- {{{1
-# PDF and image utilities
+#-----------------------------------------------------------------------------
+# PDF and image utilities {{{1
 #-----------------------------------------------------------------------------
 # Converting between things {{{2
 # Flatten gets rid of transparency/renders it against white background, and
@@ -1834,8 +1834,8 @@ wctex() {
 # This is *the end* of all function and alias declarations
 echo 'done'
 
-#----------------------------------------------------------------------------- {{{1
-# FZF fuzzy file completion tool
+#-----------------------------------------------------------------------------
+# FZF fuzzy file completion tool {{{1
 #-----------------------------------------------------------------------------
 # Configure bindings and flags {{{2
 # NOTE: Only apply universal 'ignore' file to default command used by vim fzf file
@@ -2015,8 +2015,8 @@ if [ "${FZF_SKIP:-0}" == 0 ]; then
   echo 'done'
 fi
 
-#----------------------------------------------------------------------------- {{{1
-# Conda stuff
+#-----------------------------------------------------------------------------
+# Conda stuff {{{1
 #-----------------------------------------------------------------------------
 # General utilities {{{2
 # NOTE: Must save brew path before setup (conflicts with conda; try 'brew doctor')
@@ -2122,8 +2122,8 @@ if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda|mamb
   echo 'done'  # commands returned by '__conda_exe shell.posix activate'
 fi
 
-#----------------------------------------------------------------------------- {{{1
-# Shell integration and session management
+#-----------------------------------------------------------------------------
+# Shell integration and session management {{{1
 #-----------------------------------------------------------------------------
 # Enable shell integration {{{2
 # Show inline figures with fixed 300dpi
