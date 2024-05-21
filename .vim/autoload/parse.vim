@@ -23,10 +23,9 @@ function! s:dist_root(head, tails, ...) abort
   let head = a:head  " general distributions
   let tail = fnamemodify(head, ':t')
   let idx = index(a:tails, tail)
-  if idx >= 0  " avoid e.g. ~/software/.vimtags
-    let default = expand('~/dotfiles')
-    let tail = get(a:000, idx, '')
-    return empty(tail) ? default : head . '/' . tail
+  if idx >= 0  " avoid distribution tags e.g. ~/research/.vimtags
+    let [head, tail] = a:0 ? [head, a:1] : [expand('~'), 'dotfiles']
+    return head . '/' . tail
   endif
   while v:true  " see also tags#tag_files()
     let ihead = fnamemodify(head, ':h')
@@ -35,16 +34,15 @@ function! s:dist_root(head, tails, ...) abort
     if idx >= 0 | break | endif  " preceding head e.g. share/vim
     let head = ihead  " tag file candidate
   endwhile
-  let tail = fnamemodify(head, ':t')  " e.g. /.../share/vim -> vim
-  let suff = strpart(a:head, len(head))  " e.g. /.../share/vim/vim91 -> vim91
-  let suff = matchstr(suff, '^[\/]\+' . tail . '[0-9]*[\/]\@=')
-  return head . suff  " optional version subfolder
+  let regex = '^[\/]\+' . fnamemodify(head, ':t') . '[0-9]*[\/]\@='  " e.g. share/vim -> vim
+  let suffix = matchstr(strpart(a:head, len(head)), regex)  " share/vim/vim91 -> vim91
+  return head . suffix  " optional version subfolder
 endfunction
 function! parse#get_root(...) abort
   let path = resolve(expand(a:0 ? a:1 : '%'))
   let head = fnamemodify(path, ':p:h')  " no trailing slash
-  let tails = ['servers', 'user-settings']  " e.g. @jupyterlab, .vim_lsp_settings
-  let root = s:dist_root(head, tails)
+  let tails = ['servers', 'user-settings']
+  let root = s:dist_root(head, tails)  " e.g. @jupyterlab, .vim_lsp_settings
   if !empty(root) | return root | endif
   let globs = ['.git', '.hg', '.svn', '.bzr', '_darcs', '_darcs', '_FOSSIL_', '.fslckout']
   let root = s:proj_root(head, globs, 0)  " highest-level control system indicator
@@ -52,12 +50,14 @@ function! parse#get_root(...) abort
   let globs = ['__init__.py', 'setup.py', 'setup.cfg']
   let root = s:proj_root(head, globs, 1)  " lowest-level python distribution indicator
   if !empty(root) | return root | endif
-  let projs = ['builds', 'local', 'share', 'bin']
-  let homes = ['com~apple~CloudDocs', 'icloud', 'software', 'research', 'data', '']
-  let defaults = ['Mackup', 'Mackup', '', '', '', 'dotfiles']
-  let root = s:dist_root(head, homes + projs, defaults)
+  let tails = ['research', 'software', 'builds', 'clones', 'forks', 'data', 'tmp', 'local', 'share', 'bin']
+  let root = s:dist_root(head, tails)  " subfolders within meta-folders
   if !empty(root) | return root | endif
-  return head
+  let tails = ['icloud', 'com~apple~CloudDocs']
+  let root = s:dist_root(head, tails, 'Mackup')  " subfolders within cloud docs
+  if !empty(root) | return root | endif
+  let root = s:dist_root(head, [''])
+  return empty(root) ? head : root  " prefer default fallback to head
 endfunction
 
 " Get paths from the open files and projects

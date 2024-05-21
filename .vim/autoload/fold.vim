@@ -116,7 +116,7 @@ endfunction
 " e.g. for python classes or tex environments occupying entire document and to
 " enforce universal standard default of foldlevel=0 without hiding everything.
 " Return fold under cursor above a given level
-scriptencoding utf-8
+scriptencoding utf-8  " {{{
 let s:folds_ignore = [
   \ ['python', '^class\>', '', 1],
   \ ['fortran', '^\s*\(module\|program\)\>', '', 1],
@@ -125,7 +125,7 @@ let s:folds_ignore = [
   \ ['tex', '^\s*\\begin{document}', '', 1],
   \ ['tex', '^\s*\\begin{frame}', '^\s*\\begin{block}', 2],
   \ ['tex', '^\s*\\\(sub\)*section\>', '^\s*\\begin{frame}', 2],
-\ ]
+\ ]  " }}}
 function! fold#get_parent(...) abort
   let toplevel = a:0 ? a:1 : &l:foldlevelstart
   let toplevel = max([toplevel, 0])
