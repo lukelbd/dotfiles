@@ -40,7 +40,7 @@ function! s:dist_root(head, tails, ...) abort
 endfunction
 function! parse#get_root(...) abort
   let path = resolve(expand(a:0 ? a:1 : '%'))
-  let head = fnamemodify(path, ':p:h')  " no trailing slash
+  let head = fnamemodify(path, ':p:h')  " remove file or trailing slash
   let tails = ['servers', 'user-settings']
   let root = s:dist_root(head, tails)  " e.g. @jupyterlab, .vim_lsp_settings
   if !empty(root) | return root | endif
@@ -50,14 +50,15 @@ function! parse#get_root(...) abort
   let globs = ['__init__.py', 'setup.py', 'setup.cfg']
   let root = s:proj_root(head, globs, 1)  " lowest-level python distribution indicator
   if !empty(root) | return root | endif
-  let tails = ['research', 'software', 'builds', 'clones', 'forks', 'data', 'tmp', 'local', 'share', 'bin']
+  let tails = ['research', 'shared', 'school', 'software', 'builds', 'clones', 'forks', 'data', 'tmp', 'local', 'share', 'bin']
   let root = s:dist_root(head, tails)  " subfolders within meta-folders
   if !empty(root) | return root | endif
   let tails = ['icloud', 'com~apple~CloudDocs']
   let root = s:dist_root(head, tails, 'Mackup')  " subfolders within cloud docs
   if !empty(root) | return root | endif
-  let root = s:dist_root(head, [''])
-  return empty(root) ? head : root  " prefer default fallback to head
+  let tails = map(globpath(fnamemodify(expand('~'), ':h'), '*', 1, 1), {_, val -> fnamemodify(val, ':t')})
+  let root = s:dist_root(head, tails)  " subfolders within user folders
+  return empty(root) ? head : root
 endfunction
 
 " Get paths from the open files and projects

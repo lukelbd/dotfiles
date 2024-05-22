@@ -10,6 +10,14 @@ interactively or in *bulk* as follows:
 find . -name '*.ext' -exec vi -u NONE -c '%s/regex/replacement/ge | wq' {} \;
 ```
 
+General
+-------
+
+Convert capitalized annotations to title-case for vim consistency.
+```vim
+%s/\C\<\([TNWE]\)\(ODO\|OTE\|ARNING\|RROR\):/\U\1\L\2:/ge
+```
+
 Fortran
 -------
 
