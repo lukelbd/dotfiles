@@ -2166,12 +2166,13 @@ _title_cwd() {
   title=$(_title_get)
   $_macos && [ -n "$title" ] || return 1
   for sub in '' research shared school software; do
+    [ -d "$HOME/$sub" ] || continue
     while read -r -d '' _ dir; do  # 'seconds.fraction' 'path'
       cd "$dir" && break
-    done < <(find "$HOME/$sub" \
-      -maxdepth 1 -name "*${title%%-*}*" \
-      -type d -printf "%T@ %p\0" \
-      | sort -z -k1,1gr)  # reverse floating
+    done < <( \
+      find "$HOME/$sub" -maxdepth 1 -name "*${title%%-*}*" \
+      -type d -printf "%T@ %p\0" | sort -z -k1,1gr \
+    )  # reverse floating point sort
   done
 }
 
