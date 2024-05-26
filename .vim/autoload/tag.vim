@@ -43,9 +43,9 @@ function! s:goto_stack(item, count, ...) abort  " see also mark.vim
   let [ibnr, tbnr] = [bufnr(), bufnr(path)]
   let icnt = a:count  " input count
   let ipos = [ibnr] + slice(getpos('.'), 1)
-  let itag = [ibnr] + tags#find_tag(line('.'))  " cursor [buf name line kind]
+  let itag = [ibnr] + tags#get_tag(line('.'))  " cursor [buf name line kind]
   let tpos = [tbnr] + map(type(tpos) > 1 ? tpos : [tpos], 'str2nr(v:val)')
-  let ttag = [tbnr] + tags#find_tag(tpos[:1])  " tag [buf name line kind]
+  let ttag = [tbnr] + tags#get_tag(tpos[:1])  " tag [buf name line kind]
   let fpos = s:get_from(path, name, iloc == 0)  " always allow returning to bottom
   let noop = itag == ttag || !empty(fpos) && ipos[:1] == fpos[:1]
   if icnt && size && !noop && iloc >= size - 1  " add <top> pseudo-tag

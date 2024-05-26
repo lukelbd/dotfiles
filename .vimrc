@@ -1772,6 +1772,10 @@ if s:has_plug('vim-succinct') || s:has_plug('vim-sneak')  " {{{
   vmap S <Plug>Sneak_S
   inoremap <F3> <Plug>PrevDelim
   inoremap <F4> <Plug>NextDelim
+  let g:delimitMate_expand_cr = 2  " expand even if non empty
+  let g:delimitMate_expand_space = 1
+  let g:delimitMate_jump_expansion = 1
+  let g:delimitMate_excluded_regions = 'String'  " disabled inside by default
   let g:sneak#label = 1  " show labels on matches for quicker jumping
   let g:sneak#s_next = 1  " press s/f/t repeatedly to jump matches until next motion
   let g:sneak#f_reset = 0  " keep f search separate from s
@@ -1780,10 +1784,11 @@ if s:has_plug('vim-succinct') || s:has_plug('vim-sneak')  " {{{
   let g:sneak#use_ic_scs = 0  " search always case-sensitive, similar to '*' or popup
   let g:succinct_surround_map = '<C-s>'
   let g:succinct_snippet_map = '<C-e>'
-  let g:delimitMate_expand_cr = 2  " expand even if non empty
-  let g:delimitMate_expand_space = 1
-  let g:delimitMate_jump_expansion = 1
-  let g:delimitMate_excluded_regions = 'String'  " disabled inside by default
+  let g:succinct_delims = {
+    \ 'e': '\n\r\n',
+    \ 'f': '\1function: \1(\r)',
+    \ 'A': '\1array: \1[\r]',
+  \ }  " additional definitions
 endif  " }}}
 
 " Text object settings
@@ -2070,22 +2075,20 @@ if s:has_plug('vim-lsp')  " {{{
   " See: https://github.com/python-lsp/python-lsp-server/issues/477
   " Note: See 'jupyterlab-lsp/plugin.jupyterlab-settings' for examples. Results are
   " shown in :CheckHelath. Try below when debugging (should disable :LspHover)
-  " let s:pylsp_settings = {'plugins': {'jedi_hover': {'enabled': v:false} } }
-  let s:pylsp_settings = {
+  " let s:python_settings = {'plugins': {'jedi_hover': {'enabled': v:false} } }
+  let s:tex_settings = {}
+  let s:bash_settings = {}
+  let s:julia_settings = {}
+  let s:python_settings = {
     \ 'configurationSources': ['flake8'],
     \ 'plugins': {'jedi': {'auto_import_modules': ['numpy', 'pandas', 'matplotlib', 'proplot']}},
   \ }
-  let s:texlab_settings = {}
-  let s:julia_settings = {}
-  let s:bash_settings = {}
   let g:lsp_settings = {
-    \ 'pylsp': {'workspace_config': {'pylsp': s:pylsp_settings}},
-    \ 'texlab': {'workspace_config': {'texlab': s:texlab_settings}},
+    \ 'pylsp': {'workspace_config': {'pylsp': s:python_settings}},
+    \ 'texlab': {'workspace_config': {'texlab': s:tex_settings}},
     \ 'julia-language-server': {'workspace_config': {'julia-language-server': s:julia_settings}},
     \ 'bash-language-server': {'workspace_config': {'bash-language-server': s:bash_settings}},
   \ }
-  let g:lsp_settings_servers_dir = '~/.vim_lsp_settings/servers'
-  let g:lsp_settings_global_settings_dir = '~/.vim_lsp_settings'  " move here next?
   let g:lsp_ale_auto_enable_linter = v:false  " default is true
   let g:lsp_diagnostics_enabled = 0  " use ale instead
   let g:lsp_diagnostics_highlights_insert_mode_enabled = 0  " annoying
@@ -2093,14 +2096,17 @@ if s:has_plug('vim-lsp')  " {{{
   let g:lsp_document_highlight_delay = 3000  " increased delay time
   let g:lsp_document_highlight_enabled = 0  " monitor, still really sucks
   let g:lsp_fold_enabled = 0  " not yet tested, requires 'foldlevel', 'foldlevelstart'
-  let g:lsp_hover_ui = 'preview'  " either 'float' or 'preview'
   let g:lsp_hover_conceal = 1  " enable markdown conceale
+  let g:lsp_hover_ui = 'preview'  " either 'float' or 'preview'
   let g:lsp_inlay_hints_enabled = 0  " use inline hints
   let g:lsp_max_buffer_size = 2000000  " decrease from 5000000
-  let g:lsp_preview_float = 1  " floating window
   let g:lsp_preview_fixup_conceal = -1  " fix window size in terminal vim
-  let g:lsp_signature_help_enabled = 1  " sigature help
+  let g:lsp_preview_float = 1  " floating window
+  let g:lsp_settings_global_settings_dir = '~/.vim_lsp_settings'  " move here next?
+  let g:lsp_settings_servers_dir = '~/.vim_lsp_settings/servers'
   let g:lsp_signature_help_delay = 100  " milliseconds
+  let g:lsp_signature_help_enabled = 1  " signature help
+  let g:lsp_use_native_client = 1  " improve speed, use c for communicaiton
 endif  " }}}
 
 " Lsp completion settings (see :help ddc-options). Note underscore seems to

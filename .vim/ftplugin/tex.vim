@@ -74,7 +74,7 @@ noremap <buffer> <Plug>ExecuteFile2 <Cmd>call <sid>latexmk('--pdf')<CR>
 " \ 'k': tex#ensure_math_ref("^{\1Superscript: \1}"),
 " \ 'j': tex#ensure_math_ref("_{\1Subscript: \1}"),
 " \ 'E': tex#ensure_math_ref("\times 10^{\1Exponent: \1}"),
-let s:snippets = {
+let b:succinct_snippets = {
   \ "\<CR>": ' \textCR\r',
   \ "'": tex#ensure_math_ref('\mathrm{d}'),
   \ '"': tex#ensure_math_ref('\mathrm{D}'),
@@ -149,7 +149,6 @@ let s:snippets = {
   \ 'z': tex#ensure_math_ref('\zeta'),
   \ '~': tex#ensure_math_ref('\sim'),
 \ }
-call succinct#add_snippets(s:snippets, 1, 1)  " escape regex characters
 
 " Add delimiters. Currently only overwrite 'r' and 'a' global bracket surrounds, the
 " 'f' and 'A' succinct surrounds, and the '(', '[', '{', and '<' native surrounds.
@@ -167,7 +166,7 @@ call succinct#add_snippets(s:snippets, 1, 1)  " escape regex characters
 " \ '.': '\1\1{\r}',
 " \ 'Y': '\begin{python}\r\end{python}',
 " \ 'y': '\pyth$\r$',
-let s:delims = {
+let b:succinct_delims = {
   \ '.': '\1Command: \\r..*\r\\&{\1\r\1\r..*\r}\1',
   \ ',': '\1Environment: \begin{\r..*\r\\begin{&}\1\r\1\r..*\r\\end{&}\1',
   \ '0': '\cref{\r}',
@@ -249,4 +248,3 @@ let s:delims = {
   \ 'y': '\verb$\r$',
   \ 'z': '\begin{column}{0.5\textwidth}\r\end{column}',
 \ }
-call succinct#add_delims(s:delims, 1)

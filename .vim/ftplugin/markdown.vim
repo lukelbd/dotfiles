@@ -26,7 +26,7 @@ nnoremap <buffer> <Plug>ExecuteFile0 <Cmd>call <sid>open_markdown_file()<CR>
 " Add delimiters. Note we generally use multi-markdown instead of github for tex math.
 " See: https://github.com/fletcher/MultiMarkdown-4/issues/130
 " See: http://fletcher.github.io/MultiMarkdown-4/criticmarkup.html
-let s:delims = {
+let b:succinct_delims = {
   \ 't': '<\1<\1>\r</\1\1>',
   \ 'i': '*\r*',
   \ 'o': '**\r**',
@@ -35,4 +35,3 @@ let s:delims = {
   \ 'd': '{--\r--}',
   \ '$': '$$\r$$',
 \ }
-call succinct#add_delims(s:delims, 1)

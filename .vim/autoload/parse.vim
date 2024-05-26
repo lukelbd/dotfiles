@@ -53,8 +53,8 @@ function! parse#get_root(...) abort
   let tails = ['research', 'shared', 'school', 'software', 'builds', 'clones', 'forks', 'data', 'tmp', 'local', 'share', 'bin']
   let root = s:dist_root(head, tails)  " subfolders within meta-folders
   if !empty(root) | return root | endif
-  let tails = ['icloud', 'com~apple~CloudDocs']
-  let root = s:dist_root(head, tails, 'Mackup')  " subfolders within cloud docs
+  let tails = ['mackup', 'Mackup', 'icloud', 'com~apple~CloudDocs']
+  let root = s:dist_root(head, tails)  " subfolders within cloud docs
   if !empty(root) | return root | endif
   let tails = map(globpath(fnamemodify(expand('~'), ':h'), '*', 1, 1), {_, val -> fnamemodify(val, ':t')})
   let root = s:dist_root(head, tails)  " subfolders within user folders

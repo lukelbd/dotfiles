@@ -43,9 +43,14 @@ endfunction
 " 1J and 2J have the same effect. This adds to count to make join more intuitive
 function! edit#join_lines(key, back) range abort
   let [line1, line2, cnum] = [a:firstline, a:lastline, col('.')]
-  let cmd = exists(':Join') ? 'Join' : 'join'
   let line2 += line2 > line1 ? v:count : v:count1
-  exe line1 . ',' . line2 . cmd | call cursor('.', cnum)
+  let regex = '\S\zs\s\(' . comment#get_regex() . '\)'
+  let args = [regex, 'cnW', line1, 0, "!tags#get_skip(0, 'Comment')"]
+  call cursor(line1, 1) | let [_, col1] = call('searchpos', args)
+  exe line1 . ',' . line2 . (exists(':Join') ? 'Join' : 'join')
+  call cursor(line1, 1) | let [_, col2] = call('searchpos', args)
+  exe !col1 && col2 ?  line1 . 'substitute/' . regex . '/  \1/e' : ''
+  call cursor(line1, cnum)
 endfunction
 " Indent input lines
 function! edit#indent_lines(dedent, count) range abort
@@ -191,27 +196,27 @@ endfunction
 " Note: Substitute 'n' would give exact count but then have to repeat twice, too slow
 " Note: Critical to replace reverse line-by-line in case substitution has newlines
 function! edit#search_replace(msg, ...) range abort
-  let nlines = 0  " pattern count
-  let search = @/  " hlsearch pattern
   let winview = winsaveview()
-  let group = a:0 % 2 ? a:1 : ''
   let pairs = copy(a:000[a:0 % 2:])
+  let skip = a:0 % 2 ? a:1 : ''
+  let cnt = 0  " pattern count
+  let pattern = @/  " previous pattern
   for line in range(a:lastline, a:firstline, -1)
     exe line | for idx in range(0, a:0 - 2, 2)
       let jdx = idx + 1  " replacement index
       let regex = type(pairs[idx]) == 2 ? pairs[idx]() : pairs[idx]
       let replace = jdx >= a:0 ? '' : type(pairs[jdx]) == 2 ? pairs[jdx]() : pairs[jdx]
-      if !empty(group) && !search(regex, 'cnW', line, 0, 'tags#get_skip("$", group)')
+      if !empty(skip) && !search(regex, 'cnW', line, 0, "tags#get_skip('$', skip)")
         continue  " e.g. not inside comment
       endif
       let cmd = 's@' . regex . '@' . replace . '@gel'
-      let nlines += !empty(execute('keepjumps ' . cmd))  " or exact with 'n'?
+      let cnt += !empty(execute('keepjumps ' . cmd))  " or exact with 'n'?
       call histdel('/', -1)  " preserve history
     endfor
   endfor
-  let @/ = search
+  let @/ = pattern
   call winrestview(winview)
-  call edit#echo_range(a:msg, nlines)
+  call edit#echo_range(a:msg, cnt)
 endfunction
 " For <expr> map accepting motion
 function! edit#search_replace_expr(...) abort

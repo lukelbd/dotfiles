@@ -34,12 +34,11 @@ if exists(':BracelessEnable')
 endif
 
 " Add multiline docstring 'd' delimiters
-" Note: This will add match for e.g. 'r' prefixes.
-" but vim-textobj pattern matches
-let s:delims = {
+" Note: This will include matches e.g. 'r' prefixes. Also re-apply single quote
+" mappings for consistency but should work in python files anyway.
+let b:succinct_delims = {
   \ "'": '''\r''',
   \ '"': '"\r"',
   \ 'd': '"""\r"""',
   \ 'D': '''''''\r''''''',
 \ }
-call succinct#add_delims(s:delims, 1)
