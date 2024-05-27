@@ -2,7 +2,7 @@
 " Builtin TeX settings
 "-----------------------------------------------------------------------------
 " Configure syntax highlighting
-" Note: g:tex_fast indicates highlight regions to *enable* (so setting to empty string
+" NOTE: g:tex_fast indicates highlight regions to *enable* (so setting to empty string
 " speeds things up). Here omit comment regions 'c' to prevent them from getting folded.
 let g:tex_fast = 'bmMprsSvV'  " exclude 'c'
 
@@ -29,7 +29,7 @@ let s:cache_dir = expand('~/Library/Caches/bibtex')
 if isdirectory(s:cache_dir) | let $FZF_BIBTEX_CACHEDIR = s:cache_dir | endif
 
 " Running custom or default latexmk command in background
-" Note: When 'PREVIOUS_VERSION: file.tex' or 'PERVIOUS_VERSION=file.tex' is on first
+" NOTE: When 'PREVIOUS_VERSION: file.tex' or 'PERVIOUS_VERSION=file.tex' is on first
 " line, '--diff' flags passed to :Latexmk are replaced with '--prev=file.tex'.
 function! s:latexmk(...) abort
   let opts = {}  " job options, empty by default
@@ -46,7 +46,7 @@ function! s:latexmk(...) abort
 endfunction
 
 " Latexmk command and shortcuts
-" Note: These maps overwrite testing maps but no harm for tex files
+" NOTE: These maps overwrite testing maps but no harm for tex files
 command! -buffer -nargs=* Latexmk call s:latexmk(<q-args>)
 noremap <buffer> <Leader>{ <Cmd>call <sid>latexmk('--diff')<CR>
 noremap <buffer> <Leader>} <Cmd>call <sid>latexmk('--word')<CR>
@@ -62,7 +62,7 @@ noremap <buffer> <Plug>ExecuteFile2 <Cmd>call <sid>latexmk('--pdf')<CR>
 " appending the strings with single quotes. This lets us make input() dependent
 " snippets as shown for the 'j', 'k', and 'E' mappings. Note \xi looks like
 " squiggle (pronounced 'zai') and \chi looks like an x (pronounced 'kai').
-" Note: Internal utility translates \r[^a-z]\@! and \1..\7 to literals. Recall that
+" NOTE: Internal utility translates \r[^a-z]\@! and \1..\7 to literals. Recall that
 " vim-surround interprets '\r' as separator and '\1[prompt]\r[match]\r[replace]\1' for
 " requesting user-input and optionally formatting the input with regex (often using &).
 " \ '''': tex#make_snippet(tex#fzf_graphics_ref(), '\includegraphics{', '}'),
@@ -152,8 +152,8 @@ let b:succinct_snippets = {
 
 " Add delimiters. Currently only overwrite 'r' and 'a' global bracket surrounds, the
 " 'f' and 'A' succinct surrounds, and the '(', '[', '{', and '<' native surrounds.
-" Note: Internal utility translates \r\> and \1..\7 to literals before processing
-" Note: For ametsoc suffix is specified with \citep[suffix]{cite1,cite2} and prefix with
+" NOTE: Internal utility translates \r\> and \1..\7 to literals before processing
+" NOTE: For ametsoc suffix is specified with \citep[suffix]{cite1,cite2} and prefix with
 " e.g. \citep[prefix][]{cite1,cite2}. In ams this is \cite[suffix]{cite1,cite2} and
 " \cite<prefix>{cite1,cite2} and commands are \cite and \citeA instead of \citep and
 " \citep. Solution is to add \renewcommand to preamble and do not auto-insert empty

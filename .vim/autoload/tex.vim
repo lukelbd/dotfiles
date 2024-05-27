@@ -2,7 +2,7 @@
 " Utilities for tex files
 "-----------------------------------------------------------------------------"
 " Source for tex labels
-" Note: To get multiple items hit <Shift><Tab>
+" NOTE: To get multiple items hit <Shift><Tab>
 function! s:label_source() abort
   let tags = get(b:, 'tags_by_name', [])
   let tags = filter(copy(tags), 'v:val[2] ==# "l"')
@@ -16,7 +16,7 @@ function! s:label_source() abort
 endfunction
 
 " Fuzzy select tex labels
-" Warning: See notes in succinct/autoload/utils.vim for why fzf#wrap not allowed
+" WARNING: See notes in succinct/autoload/utils.vim for why fzf#wrap not allowed
 function! s:label_sink(items) abort
   let items = map(copy(a:items), 'substitute(v:val, " (.*)$", "", "")')
   if mode() =~# 'i'
@@ -39,7 +39,7 @@ function! tex#fzf_labels_ref(...) abort
 endfunction
 
 " Return filetype specific fold label
-" Note: This concatenates python docstring lines and uses frametitle from
+" NOTE: This concatenates python docstring lines and uses frametitle from
 " beamer presentations or labels from tex figures. Should add to this.
 let s:maxlines = 100  " maxumimum lines to search
 function! tex#fold_text(lnum, ...) abort
@@ -74,7 +74,7 @@ endfunction
 " Selecting citations from bibtex files
 "-----------------------------------------------------------------------------"
 " Return biligraphies using grep (copied from latexmk)
-" Note: To get multiple items hit <Shift><Tab>
+" NOTE: To get multiple items hit <Shift><Tab>
 " See: https://github.com/msprev/fzf-bibtex
 function! s:cite_source() abort
   let gsed = has('macunix') ? '/usr/local/bin/gsed' : '/usr/bin/sed'
@@ -113,7 +113,7 @@ function! s:cite_source() abort
 endfunction
 
 " Fuzzy select citation
-" Warning: See notes in succinct/autoload/utils.vim for why fzf#wrap not allowed.
+" WARNING: See notes in succinct/autoload/utils.vim for why fzf#wrap not allowed.
 function! s:cite_sink(items) abort
   if !executable('bibtex-cite')  " see https://github.com/msprev/fzf-bibtex
     throw 'Command bibtex-cite not found.'
@@ -179,7 +179,7 @@ function! s:graphic_source() abort
 endfunction
 
 " Fuzzy select graphics
-" Warning: See notes in succinct/autoload/utils.vim for why fzf#wrap not allowed.
+" WARNING: See notes in succinct/autoload/utils.vim for why fzf#wrap not allowed.
 function! s:graphic_sink(items) abort
   let items = map(copy(a:items), 'fnamemodify(v:val, ":t")')
   if mode() =~# 'i'
@@ -206,7 +206,7 @@ endfunction
 " Check math mode and contruct units
 "-----------------------------------------------------------------------------"
 " Wrap in math environment only if cursor is not already inside one
-" Note: Check syntax to *left* of cursor because we add text to that environment
+" NOTE: Check syntax to *left* of cursor because we add text to that environment
 function! tex#ensure_math(value) abort
   let output = succinct#process_value(a:value)
   if empty(output)
@@ -224,7 +224,7 @@ function! tex#ensure_math_ref(...) abort
 endfunction
 
 " Format unit string for LaTeX
-" Note: This includes standard \, spacing and \mathrm{} encasing. See also climopy
+" NOTE: This includes standard \, spacing and \mathrm{} encasing. See also climopy
 function! tex#format_units(value) abort
   let input = succinct#process_value(a:value)
   if empty(input)

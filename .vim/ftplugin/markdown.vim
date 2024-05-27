@@ -8,7 +8,7 @@ setlocal shiftwidth=4
 setlocal softtabstop=4
 
 " Open markdown file in viewer
-" Note: This is designed for side-by-side terminal/viewer workflow. See also tex.vim
+" NOTE: This is designed for side-by-side terminal/viewer workflow. See also tex.vim
 function! s:open_markdown_file() abort
   update
   if $TERM_PROGRAM ==? ''

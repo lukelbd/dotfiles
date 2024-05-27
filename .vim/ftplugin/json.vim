@@ -2,5 +2,5 @@
 " Json settings
 "-----------------------------------------------------------------------------
 " General settings
-" Note: $VIMRUNTIME/syntax/json.vim has no global foldmethod option
+" NOTE: $VIMRUNTIME/syntax/json.vim has no global foldmethod option
 setlocal tabstop=4 softtabstop=4 shiftwidth=4

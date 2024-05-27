@@ -17,9 +17,9 @@ endfunction
 nnoremap <buffer> <Plug>ExecuteFile0 <Cmd>call <sid>open_html_file()
 
 " Define HTML vim-surround macros
-" Note: div is generally used just to add a class or id to sections of
+" NOTE: div is generally used just to add a class or id to sections of
 " a document for styling with e.g. a CSS file.
-" Note: div delim adapted from :help surround to only insert the tag
+" NOTE: div delim adapted from :help surround to only insert the tag
 " if a class is provided (see tex.vim).
 let s:delims = {
   \ 't': "<\1<\1>\r</\1\1>",

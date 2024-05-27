@@ -8,7 +8,7 @@ setlocal shiftwidth=4
 setlocal softtabstop=4
 
 " Open rest file in viewer (install with 'pip install restview')
-" Warning: Use ! call so we can close the server when done, otherwise freezes window
+" WARNING: Use ! call so we can close the server when done, otherwise freezes window
 function! s:open_rst_file() abort
   update
   let cmd = '~/miniconda3/bin/restview -b -l 40000 ' . shellescape(@%)

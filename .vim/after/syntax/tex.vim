@@ -14,7 +14,7 @@ syntax spell toplevel
 
 " Disable spellcheck within commands {{{2
 " Avoid disabling spellcheck within environments like textbf and naked braces {}.
-" Note: Here just copied the $VIMRUNTIME/syntax/tex.vim line and removed the
+" NOTE: Here just copied the $VIMRUNTIME/syntax/tex.vim line and removed the
 " 'transparent' flag. Could revisit and consider improving but so far so good.
 syntax region texMatcherNM matchgroup=Delimiter
   \ start='{' skip='\\\|\[{}]' end="}"
@@ -23,9 +23,9 @@ syntax region texMatcherNM matchgroup=Delimiter
 " Support comment block folding {{{2
 " Ignores empty and comment-character-only lines when defining beginning and ends of
 " folding regions. This is useful for revisions and templates with instruction blocks
-" Note: Critical to use contains=texComment since contains=@texFoldGroup creates nested
+" NOTE: Critical to use contains=texComment since contains=@texFoldGroup creates nested
 " comment zones that require extra lookbehind 'start' regex. Not sure why this works.
-" Note: Have to wrap 'start' in zero-length atom so end can be found on same line,
+" NOTE: Have to wrap 'start' in zero-length atom so end can be found on same line,
 " and crazy 'end' was created through trial-and-error (not sure why \S\@= needed).
 syntax region texCommentZone transparent
   \ start='\(^\s*%\([^ \t%-]\|\s\+\S\)\)\@='
@@ -36,7 +36,7 @@ syntax cluster texPreambleMatchGroup add=texCommentZone
 
 " Support figure and table folding {{{2
 " Math regions are folded by default (see TexNewMathZone, $VIMRUNTIME/syntax/tex.vim)
-" Note: The 'keepend' is critical or else zone can persist beyond figures. Not sure
+" NOTE: The 'keepend' is critical or else zone can persist beyond figures. Not sure
 " why... supposedly just ends nested environments when parent environment is found.
 syntax region texAlertZone transparent
   \ start='\\begin\s*{\s*alertblock\s*}' end='\\end\s*{\s*alertblock\s*}'
@@ -73,9 +73,9 @@ syntax cluster texFoldGroup add=texTabular
 
 " Support abstract author and caption folding {{{2
 " Only begin..end texAbstract environment outside preamble is folded by default
-" Note: Adapted from texTitle and texAbstract in $VIMRUNTIME/syntax/tex.vim. Here
+" NOTE: Adapted from texTitle and texAbstract in $VIMRUNTIME/syntax/tex.vim. Here
 " 'matchgroup' highlights the 'start' and 'end' patterns differently from region.
-" Note: Caption texStatement is consistent with existing \label{} and \ref{} assignment
+" NOTE: Caption texStatement is consistent with existing \label{} and \ref{} assignment
 " to texStatement. Also without this folds end on \end{figure} (unsure why).
 syntax region texAuthors matchgroup=texSection
   \ start='\\authors\s*{' end='}'

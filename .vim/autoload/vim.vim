@@ -2,8 +2,8 @@
 " Utilities for vimscript files
 "-----------------------------------------------------------------------------"
 " Refresh recently modified configuration files
-" Note: Here 'filetype detect' also triggers 'FileType' autocommands (tested).
-" Note: Previously tried to update and track per-filetype refreshes but was way
+" NOTE: Here 'filetype detect' also triggers 'FileType' autocommands (tested).
+" NOTE: Previously tried to update and track per-filetype refreshes but was way
 " overkill and need ':filetype detect' anyway to both detect changes and to trigger
 " e.g. markdown or python folding overrides. Note (after testing) this will also
 " apply the updates because all ':filetype' command does is trigger script sourcing.
@@ -43,7 +43,7 @@ function! vim#config_refresh(bang, ...) abort
 endfunction
 
 " Create session file or load existing one
-" Note: Sets string for use with MacVim windows and possibly other GUIs
+" NOTE: Sets string for use with MacVim windows and possibly other GUIs
 " See: https://vi.stackexchange.com/a/34669/8084
 function! s:session_loaded() abort
   let regex = glob2regpat($HOME)
@@ -86,8 +86,8 @@ function! vim#init_session(...)
 endfunction
 
 " Show and setup vim help page
-" Warning: Use feedkeys() in case e.g. run these from 'git' panel.
-" Note: All vim tag utilities including <C-]>, :pop, :tag work by searching 'tags' files
+" WARNING: Use feedkeys() in case e.g. run these from 'git' panel.
+" NOTE: All vim tag utilities including <C-]>, :pop, :tag work by searching 'tags' files
 " and updating the tag 'stack' (effectively a cache). Seems that $VIMRUNTIME/docs/tags
 " is included with vim by default, and this is always used no matter the value of &tags
 " (try ':echo tagfiles()' when inside help page, shows various doc/tags files).
@@ -119,7 +119,7 @@ function! vim#setup_cmdwin() abort
 endfunction
 
 " Source current file or lines
-" Note: This fails when calling from current script so use expr mapping
+" NOTE: This fails when calling from current script so use expr mapping
 function! vim#source_general() abort
   let name = 'g:loaded_' . expand('%:t:r')
   if exists(name) | exe 'unlet! ' . name | endif
@@ -138,7 +138,7 @@ function! vim#source_general_expr() abort
 endfunction
 
 " Source input motion or selection
-" Todo: Add generalization for running chunks of arbitrary filetypes?
+" TODO: Add generalization for running chunks of arbitrary filetypes?
 function! vim#source_motion() range abort
   update | let range = a:firstline . ',' . a:lastline
   exe range . 'source'

@@ -2,7 +2,7 @@
 " Vim settings
 "-----------------------------------------------------------------------------
 " General settings
-" Note: Exclude ':' except for insert mode popup completion
+" NOTE: Exclude ':' except for insert mode popup completion
 setlocal iskeyword=@,48-57,_,#,192-255
 
 " Delimiter settings

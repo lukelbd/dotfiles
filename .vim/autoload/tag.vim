@@ -2,8 +2,8 @@
 " Utilities for ctags management
 "-----------------------------------------------------------------------------"
 " Return the 'from' position for the given path and tag
-" Note: Encountered bug when naming this same as vim-tags (plural).
-" Note: This only jumps if the destination 'from' line contains the tag (i.e. not
+" NOTE: Encountered bug when naming this same as vim-tags (plural).
+" NOTE: This only jumps if the destination 'from' line contains the tag (i.e. not
 " jumping to an outdated position or from a random fzf call) or when at the bottom.
 scriptencoding utf-8
 function! s:goto_pos(...) abort
@@ -33,7 +33,7 @@ function! s:get_from(arg, name, ...) abort
 endfunction
 
 " Go to the current tag location and adjust the count
-" Note: This adds a pseudo-tag <top> at the top of the stack so we can return to
+" NOTE: This adds a pseudo-tag <top> at the top of the stack so we can return to
 " where we started when scrolling backwards, and pushes <top> if cursor is outside
 " both 'from' and 'tag' buffers or inside the 'tag' buffer but outside its bounds.
 function! s:goto_stack(item, count, ...) abort  " see also mark.vim
@@ -74,10 +74,10 @@ function! s:goto_stack(item, count, ...) abort  " see also mark.vim
 endfunction
 
 " Iterate over tags (see also mark#next_mark)
-" Note: Here pass '-1' verbosity to disable both function messages and stack message.
-" Note: Tag jumps with <Enter> or fzf selection may float selections above <top> entry,
+" NOTE: Here pass '-1' verbosity to disable both function messages and stack message.
+" NOTE: Tag jumps with <Enter> or fzf selection may float selections above <top> entry,
 " so here remove any <top> entries not already on the top before iterating stack.
-" Note: This implicitly adds 'current' location to top of stack before navigation,
+" NOTE: This implicitly adds 'current' location to top of stack before navigation,
 " and additionally jumps to the tag stack 'from' position when navigating backwards.
 function! s:clean_stack() abort
   let items = []  " outdated pseudo-tags
@@ -114,7 +114,7 @@ function! tag#next_stack(...) abort
 endfunction
 
 " Select from tags in the current stack
-" Note: This finds tag kinds using taglist() and ignores missing files.
+" NOTE: This finds tag kinds using taglist() and ignores missing files.
 " See: https://github.com/junegunn/fzf.vim/issues/240
 function! tag#fzf_stack() abort
   let items = []
@@ -145,7 +145,7 @@ function! tag#fzf_stack() abort
 endfunction
 
 " Select from buffer tags
-" Note: This is similar to fzf except uses custom sink that adds results to window
+" NOTE: This is similar to fzf except uses custom sink that adds results to window
 " tag stack for navigation with ctrl-bracket maps and tag/pop commands.
 function! s:raise() abort
   redraw | echohl ErrorMsg
@@ -186,9 +186,9 @@ function! tag#fzf_btags(bang, query, ...) abort
 endfunction
 
 " Select from the current tag files
-" Note: Tried 'readtags -t - -e -E -Q (#/.py/ $input) -l' but fails since parses
+" NOTE: Tried 'readtags -t - -e -E -Q (#/.py/ $input) -l' but fails since parses
 " the tag file path appended by tags.pl to each line. Instead simply use awk.
-" Note: Formatting with more complex regex can cause slowdown. Avoid complex
+" NOTE: Formatting with more complex regex can cause slowdown. Avoid complex
 " regex patterns e.g. extra globs and non-greedy globs.
 function! s:get_files(...) abort
   let tags = [] |
@@ -239,12 +239,12 @@ function! tag#fzf_tags(type, bang, ...) abort
 endfunction
 
 " Update tags variable (requires g:gutentags_ctags_auto_set_tags = 0)
-" Note: Using :setlocal tags requires e.g. '.vim\\,tags' and '.vim\\\ tags' for literal
+" NOTE: Using :setlocal tags requires e.g. '.vim\\,tags' and '.vim\\\ tags' for literal
 " commas and spaces (see :help option-backslash). Setting with &l:tags requires only
 " single backslashes, and paths appear with single backslash when retrieving after set.
-" Note: This is hooked up to GutenTagsUpdated autocommand, makes fzf :Tags function
+" NOTE: This is hooked up to GutenTagsUpdated autocommand, makes fzf :Tags function
 " and native :tags features use all projects but prioritize the file project.
-" Note: Vim resolves all symlinks so unfortunately cannot just commit to using
+" NOTE: Vim resolves all symlinks so unfortunately cannot just commit to using
 " the symlinked $HOME version in other projects. Resolve below for safety.
 function! tag#setup_taglist() abort
   for char in 'ud' | silent! exe 'nunmap <buffer> ' . char | endfor

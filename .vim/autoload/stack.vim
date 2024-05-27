@@ -2,7 +2,7 @@
 " Utilities for navigating stacks of locations
 "-----------------------------------------------------------------------------"
 " Helper functions
-" Warning: Below returns name index optionally filtered to the last nmax entries
+" WARNING: Below returns name index optionally filtered to the last nmax entries
 " of the stack. Note e.g. [1, 2, 3][-5:] is empty list, careful with this.
 function! stack#get_loc(head, ...) abort
   let [stack, idx] = s:get_stack(a:head)
@@ -36,7 +36,7 @@ function! s:get_index(head, ...) abort  " remove in future
 endfunction
 
 " Stack printing operations
-" Note: Use e.g. ShowTabs ClearTabs commands in vimrc with these. All other
+" NOTE: Use e.g. ShowTabs ClearTabs commands in vimrc with these. All other
 " functions are for autocommands or normal mode mappings
 function! stack#print_item(head, ...) abort
   let [stack, idx] = s:get_stack(a:head)
@@ -74,7 +74,7 @@ function! s:get_label(arg) abort
 endfunction
 
 " Update the requested buffer stack
-" Note: This is used for man/pydoc in shell.vim and window jumps in vimrc
+" NOTE: This is used for man/pydoc in shell.vim and window jumps in vimrc
 function! stack#clear_stack(head) abort
   try
     call remove(g:, a:head . '_stack')
@@ -108,7 +108,7 @@ function! stack#update_stack(head, scroll, ...) abort
 endfunction
 
 " Move across a custom-built buffer stack using the input buffer-changing function
-" Note: Here 1 (0) goes backward (forward) in history, else goes to a default next
+" NOTE: Here 1 (0) goes backward (forward) in history, else goes to a default next
 " buffer. Functions should return non-zero on failure (either manually or through
 " vim error triggered on function with abort-label, which returns -1 by default).
 function! stack#pop_stack(head, ...) abort

@@ -2,9 +2,9 @@
 " Utilities for vim folds
 "-----------------------------------------------------------------------------"
 " Add fastfold-managed manual folds with marks
-" Warning: Critical to re-open folds after defining or subsequent fold definitions
+" WARNING: Critical to re-open folds after defining or subsequent fold definitions
 " fail. Still want to initialize with closed folds though so do that afterwards.
-" Note: Previously tried using regions with 'vim-syntaxMarkerFold' but causes major
+" NOTE: Previously tried using regions with 'vim-syntaxMarkerFold' but causes major
 " issues since either disables highlighting or messes up inner highlight items when
 " trying to use e.g. contains=ALL since several use naked 'contained' property.
 function! s:is_divider(...) abort
@@ -64,10 +64,10 @@ function! fold#add_markers() abort
 endfunction
 
 " Return bounds and level for any closed fold or open fold of requested level
-" Note: No native way to get bounds if fold is open so use normal-mode algorithm.
+" NOTE: No native way to get bounds if fold is open so use normal-mode algorithm.
 " Also [z never raises error, but does update jumplist even though not documented
 " in :help jump-motions. See: https://stackoverflow.com/a/4776436/4970632 
-" Note: This helps supports following toggles: non-recursive (highest level in range),
+" NOTE: This helps supports following toggles: non-recursive (highest level in range),
 " inner inner (folds within highest-level fold under cursor that hs children), outer
 " inner (folds within current 'main' parent fold), outer recursirve (parent fold and
 " all its children), and outer force (as with outer but ignoring regexes).
@@ -111,7 +111,7 @@ function! fold#get_fold(...) abort
 endfunction
 
 " Return ignored auto-opened folds matching given regex
-" Note: This provides 'pseudo-levels' that auto-open when level is at or above
+" NOTE: This provides 'pseudo-levels' that auto-open when level is at or above
 " the first regex and when that regex is not preceded by the second regex. Useful
 " e.g. for python classes or tex environments occupying entire document and to
 " enforce universal standard default of foldlevel=0 without hiding everything.
@@ -164,7 +164,7 @@ function! fold#get_ignores(...) abort range
 endfunction
 
 " Return text object ranges
-" Note: Similar to how 'vaw' on last word on line includes preceding spaces and
+" NOTE: Similar to how 'vaw' on last word on line includes preceding spaces and
 " elsewhere includes following spaces, here include space below folds of same
 " level or the space above if not available.
 function! s:get_range(outer, ...) abort
@@ -213,7 +213,7 @@ function! fold#get_parent_i() abort
 endfunction
 
 " Return folds and properties across line range
-" Note: This ignores folds defined in s:folds_ignore, e.g. python classes and
+" NOTE: This ignores folds defined in s:folds_ignore, e.g. python classes and
 " tex documents. Used to close-open smaller fold blocks ignoring huge blocks.
 function! s:get_folds(func, ...) abort
   let [lmin, lmax] = a:0 ? a:000[:1] : [1, line('$')]
@@ -246,7 +246,7 @@ function! fold#get_parents(...) abort
 endfunction
 
 " Return default fold label
-" Note: This filters trailing comments, removes git-diff chunk text following stats,
+" NOTE: This filters trailing comments, removes git-diff chunk text following stats,
 " and adds following line if the fold line is a single open delimiter (e.g. json).
 function! s:fix_empty(label, line) abort
   let label1 = substitute(a:label, '^\s*', '', '')
@@ -287,7 +287,7 @@ function! fold#get_label(line, ...) abort
 endfunction
 
 " Generate truncated fold text. In future should include error cound information.
-" Note: Since gitgutter signs are not shown over closed folds include summary of
+" NOTE: Since gitgutter signs are not shown over closed folds include summary of
 " changes in fold text. See https://github.com/airblade/vim-gitgutter/issues/655
 function! fold#fold_text(...) abort
   let winview = winsaveview()  " translate byte column index to character index
@@ -329,11 +329,11 @@ function! fold#fold_text(...) abort
 endfunction
 
 " Update the fold bounds, level, and open-close status
-" Note: Could use e.g. &foldlevel = v:vount but want to keep foldlevel truncated
+" NOTE: Could use e.g. &foldlevel = v:vount but want to keep foldlevel truncated
 " to maximum number found in file as native 'zr' does. So use the below instead
-" Note: Sometimes run into issue where opening new files or reading updates
+" NOTE: Sometimes run into issue where opening new files or reading updates
 " permanently disables 'expr' folds. Account for this by re-applying fold method.
-" Warning: Regenerating b:SimPylFold_cache with manual SimpylFold#FoldExpr() call
+" WARNING: Regenerating b:SimPylFold_cache with manual SimpylFold#FoldExpr() call
 " can produce strange internal bug. Instead rely on FastFoldUpdate to fill the cache.
 function! fold#update_level(...) abort
   let level = &l:foldlevel
@@ -400,7 +400,7 @@ function! fold#update_folds(force, ...) abort
 endfunction
 
 " Toggle inner folds within requested range
-" Note: Necessary to temporarily open outer folds before toggling inner folds. No way
+" NOTE: Necessary to temporarily open outer folds before toggling inner folds. No way
 " to target them with :fold commands or distinguish adjacent children with same level
 function! s:toggle_state(line1, line2, ...) abort range
   let level = a:0 ? a:1 : 0
@@ -448,7 +448,7 @@ function! s:toggle_inner(line1, line2, level, ...) abort
 endfunction
 
 " Open or close parent fold under cursor and its children
-" Note: If called on already-toggled 'current' folds the explicit 'foldclose/foldopen'
+" NOTE: If called on already-toggled 'current' folds the explicit 'foldclose/foldopen'
 " toggles the parent. So e.g. 'zCzC' first closes python methods then the class.
 function! s:toggle_finish(toggle, count) abort
   exe a:toggle ? '' : 'normal! zzze'
@@ -480,7 +480,7 @@ function! fold#toggle_parents_expr(...) abort
 endfunction
 
 " Open or close current children under cursor
-" Note: This is required because recursive :foldclose! also closes parent
+" NOTE: This is required because recursive :foldclose! also closes parent
 " and :[range]foldclose does not close children. Have to go one-by-one.
 function! fold#toggle_children(top, ...) abort range
   let [lmin, lmax] = sort([a:firstline, a:lastline], 'n')
@@ -512,8 +512,8 @@ function! fold#toggle_children_expr(...) abort
 endfunction
 
 " Open or close inner folds within range (i.e. maximum fold level)
-" Note: Here 'toggle' closes folds when 1 and opens when 0 (follows convention)
-" Note: This permits using e.g. 'zck' and 'zok' even when outside fold and without
+" NOTE: Here 'toggle' closes folds when 1 and opens when 0 (follows convention)
+" NOTE: This permits using e.g. 'zck' and 'zok' even when outside fold and without
 " fear of accideif ntally closing huge block e.g. class or document under cursor.
 function! fold#toggle_folds(...) range abort
   let [lmin, lmax] = sort([a:firstline, a:lastline], 'n')

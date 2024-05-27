@@ -9,7 +9,7 @@ let [s:sign_id, s:sign_marks] = [1, 1]
 let s:sign_colors = ['DarkYellow', 'DarkCyan', 'DarkMagenta', 'DarkBlue', 'DarkRed', 'DarkGreen']
 
 " Override fzf :Marks to implement :Drop switching
-" Note: Normally the fzf function calls `A-Z, and while vim permits multi-file marks,
+" NOTE: Normally the fzf function calls `A-Z, and while vim permits multi-file marks,
 " it does not have an option to open in existing tabs like 'showbufs' for loclist,
 function! mark#goto_mark(...) abort
   if !a:0 || empty(a:1) | return | endif
@@ -43,7 +43,7 @@ function! mark#fzf_marks(...) abort
 endfunction
 
 " Iterate over marks (see also tag#next_tag)
-" Note: This skips over marks with non-existent buffers and does an initial jump
+" NOTE: This skips over marks with non-existent buffers and does an initial jump
 " to the 'current' mark if cursor is not on the same line.
 function! mark#next_mark(...) abort
   let stack = get(g:, 'mark_stack', [])
@@ -70,7 +70,7 @@ function! mark#next_mark(...) abort
 endfunction
 
 " Remove marks and highlighting
-" Note: Here g:mark_name is not managed by stack utilities
+" NOTE: Here g:mark_name is not managed by stack utilities
 function! s:match_delete(id)
   if s:sign_marks
     exe 'sign unplace ' . a:id
@@ -103,7 +103,7 @@ function! mark#del_marks(...) abort
 endfunction
 
 " Add marks and sign column highlighting
-" Note: This also runs on vim startup using marks saved to viminfo
+" NOTE: This also runs on vim startup using marks saved to viminfo
 function! mark#init_marks() abort
   let highlights = get(g:, 'mark_highlights', {})
   for imark in getmarklist()
@@ -112,7 +112,7 @@ function! mark#init_marks() abort
     if iname =~# '\u' && !has_key(highlights, iname)
       call mark#set_marks(iname, ipos)
     endif
-  endfor  " Warning: following lines must be last
+  endfor  " WARNING: following lines must be last
   let default = get(get(g:, 'mark_stack', []), -1, 'A')
   let g:mark_name = get(g:, 'mark_name', default)
 endfunction

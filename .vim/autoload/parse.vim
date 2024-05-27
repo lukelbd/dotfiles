@@ -2,8 +2,8 @@
 " Utilities for parsing input
 "-----------------------------------------------------------------------------"
 " Get the project 'root' from input directory
-" Note: Root detectors are copied from g:gutentags_add_default_root_markers.
-" Note: Previously tried just '__init__.py' for e.g. conda-managed packages and
+" NOTE: Root detectors are copied from g:gutentags_add_default_root_markers.
+" NOTE: Previously tried just '__init__.py' for e.g. conda-managed packages and
 " placing '.tagproject' in vim-plug folder but this caused tons of nested .vimtags
 " file creations including *duplicate* tags when invoking :Tags function.
 function! s:proj_root(head, globs, ...) abort
@@ -62,7 +62,7 @@ function! parse#get_root(...) abort
 endfunction
 
 " Get paths from the open files and projects
-" Note: If input directory is getcwd() then fnamemodify(getcwd(), ':~:.') returns only
+" NOTE: If input directory is getcwd() then fnamemodify(getcwd(), ':~:.') returns only
 " home directory shortened path (not dot or empty string). Convert to empty string
 function! parse#get_paths(mode, global, level, ...)
   let args = filter(copy(a:000), '!empty(v:val)')  " ignore e.g. command entry
@@ -100,8 +100,8 @@ function! parse#get_paths(mode, global, level, ...)
 endfunction
 
 " Get .ignore excludes for find and ctags (compare to bash ignores())
-" Note: Critical to remove trailing slash for ctags recursive searching.
-" Note: For some reason parsing '--exclude-exception' rules for g:fzf_tags_command
+" NOTE: Critical to remove trailing slash for ctags recursive searching.
+" NOTE: For some reason parsing '--exclude-exception' rules for g:fzf_tags_command
 " does not work, ignores all other exclude flags, and vim-gutentags can only
 " handle excludes anyway, so just bypass all patterns starting with '!'.
 function! parse#get_ignores(level, skip, mode, ...) abort
@@ -161,10 +161,10 @@ function! parse#get_ignores(level, skip, mode, ...) abort
 endfunction
 
 " Get the register or name from count
-" Note: Here default mark is top of stack (plus one if recording), default macro
+" NOTE: Here default mark is top of stack (plus one if recording), default macro
 " recording register is zero (move to one if non-empty), default macro execution
 " register is one (recent successful recording), and default register is unnamed.
-" Note: This translates counts passed to yanks/change/delete/paste to first
+" NOTE: This translates counts passed to yanks/change/delete/paste to first
 " 20 letters of alphabet, counts passed to macro records/plays to next 6 letters of
 " alphabet, and counts passed to mark sets/jumps to first 24 letters of alphabet.
 function! s:get_mark(mode) abort
@@ -203,7 +203,7 @@ function! s:get_props(mode, count) abort
 endfunction
 
 " Get the register or name translated from input arguments
-" Note: This supports e.g. pasting macro keys with e.g. 1"p then quickly editing them
+" NOTE: This supports e.g. pasting macro keys with e.g. 1"p then quickly editing them
 " and copying back into macro register with e.g. 1"dil. Also rotates yanks, changes,
 " and deletions across a-z registers and macros across 1-9 registers (see above)
 function! s:get_input(mode, default) abort
@@ -260,9 +260,9 @@ function! parse#get_register(mode, ...) abort
 endfunction
 
 " Set the register and rotate other entries forward
-" Note: This auto-cycles previous register contents if input count was empty, either
+" NOTE: This auto-cycles previous register contents if input count was empty, either
 " immediately for macros or delaying until TextYankPost i.e. delete or yank finished.
-" Note: This radically overrides native register system by using numbered registers
+" NOTE: This radically overrides native register system by using numbered registers
 " 1 through 9 for macros (0 while recording, assigned conditionally if non-empty) and
 " letter registers for deletes and yanks. Also tried using -/+ for most recent v/V
 " deletions but + is locked to * on mac and - cannot be assigned regtype V so ignore.

@@ -10,7 +10,7 @@ function! s:echo_state(prefix, toggle, ...)
 endfunction
 
 " Toggle ALE syntax checking
-" Note: Previously also toggled 'vim-lsp' diagnostics sent to ale by 'vim-lsp-ale' but
+" NOTE: Previously also toggled 'vim-lsp' diagnostics sent to ale by 'vim-lsp-ale' but
 " this is unnecessary since source code indicates the bridge is only triggered when
 " autocmd User ALEWantResults event is raised (i.e. disabling ALE is sufficient).
 " call lsp#ale#enable() | call lsp#ale#disable()  " vim-lsp-ale toggles
@@ -31,7 +31,7 @@ endfunction
 
 " Autosave toggle (autocommands are local to buffer as with codi)
 " We use augroups with buffer-specific names to prevent conflict
-" Note: There are also 'autowrite' and 'autowriteall' settings that will automatically
+" NOTE: There are also 'autowrite' and 'autowriteall' settings that will automatically
 " write before built-in file jumping (e.g. :next, :last, :rewind, ...) and tag jumping
 " (e.g. :tag, <C-]>, ...) but they are global, and the below effectively enables
 " these settings. So do not bother with them.
@@ -72,7 +72,7 @@ function! switch#caps(...) abort
 endfunction
 
 " Toggle conceal characters on and off
-" Note: Hide message because result is obvious and for consistency with copy mode
+" NOTE: Hide message because result is obvious and for consistency with copy mode
 function! switch#conceal(...) abort
   let state = &conceallevel > 0
   let toggle = a:0 > 0 ? a:1 : 1 - state
@@ -86,8 +86,8 @@ function! switch#conceal(...) abort
 endfunction
 
 " Tgogle special characters and columns on-off
-" Note: Enforce settings even if state == toggle for consistency across filetypes
-" Warning: Had issues setting scrolloff automatically so trigger with argument instead
+" NOTE: Enforce settings even if state == toggle for consistency across filetypes
+" WARNING: Had issues setting scrolloff automatically so trigger with argument instead
 function! switch#copy(scroll, ...) abort
   let keys = ['list', 'number', 'relativenumber', 'signcolumn', 'foldcolumn']
   let opts = {} | for key in keys | let opts[key] = eval('&l:' . key) | endfor
@@ -108,7 +108,7 @@ function! switch#copy(scroll, ...) abort
 endfunction
 
 " Toggle ddc on and off
-" Note: The ddc docs says ddc#disable() is permanent so just remove sources
+" NOTE: The ddc docs says ddc#disable() is permanent so just remove sources
 function! switch#ddc(...) abort
   let running = []  " 'allowed' means servers applied to this filetype
   let state = denops#server#status() ==? 'running'  " check denops server status
@@ -142,7 +142,7 @@ function! switch#gitgutter(...) abort
 endfunction
 
 " Toggle highlighting
-" Note: hlsearch reset when reurning from function. See :help function-search-undo
+" NOTE: hlsearch reset when reurning from function. See :help function-search-undo
 function! switch#hlsearch(...) abort
   let state = v:hlsearch
   let toggle = a:0 > 0 ? a:1 : 1 - state
@@ -159,7 +159,7 @@ function! switch#hlsearch(...) abort
 endfunction
 
 " Toggle local directory navigation
-" Note: This can be useful for browsing files
+" NOTE: This can be useful for browsing files
 function! switch#localdir(...) abort
   let state = haslocaldir()
   let toggle = a:0 > 0 ? a:1 : 1 - state
@@ -181,7 +181,7 @@ function! switch#localdir(...) abort
 endfunction
 
 " Toggle revealing matches in folds
-" Note: Auto disable whenever set nohlsearch is restore
+" NOTE: Auto disable whenever set nohlsearch is restore
 function! switch#opensearch(...) abort
   let state = get(b:, 'open_search', 0)
   let toggle = a:0 > 0 ? a:1 : 1 - state
@@ -200,7 +200,7 @@ function! switch#opensearch(...) abort
 endfunction
 
 " Enable and disable LSP engines
-" Note: The server status can lag because takes a while for async server stop
+" NOTE: The server status can lag because takes a while for async server stop
 " let servers = lsp#get_server_names()  " servers applied to any filetype
 function! switch#lsp(...) abort
   let running = []  " 'allowed' means servers applied to this filetype
@@ -237,7 +237,7 @@ function! switch#lang(...) abort
 endfunction
 
 " Toggle temporary paste mode
-" Note: Removed automatically when insert mode finishes
+" NOTE: Removed automatically when insert mode finishes
 function! s:paste_restore() abort
   if exists('s:paste_options')
     echom 'Paste mode disabled.'
@@ -256,7 +256,7 @@ function! switch#paste() abort
 endfunction
 
 " Toggle temporary conceal reveal
-" Note: This is similar to switch#conceal() but auto-restores
+" NOTE: This is similar to switch#conceal() but auto-restores
 function! s:reveal_restore() abort
   if exists('s:reveal_option')
     let &l:conceallevel = s:reveal_option
@@ -294,7 +294,7 @@ function! switch#spell(...) abort
 endfunction
 
 " Toggle literal tab characters on and off
-" Note: Also enforces initial default width for files with literal tabs
+" NOTE: Also enforces initial default width for files with literal tabs
 function! switch#tabs(...) abort
   let state = &l:expandtab
   let toggle = a:0 > 0 ? 1 - a:1 : 1 - state  " 'on' means literal tabs i.e. no expandtab

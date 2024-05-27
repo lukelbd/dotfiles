@@ -2,9 +2,9 @@
 " Utilities for shell commands and processes
 "-----------------------------------------------------------------------------"
 " Popup tab with command --help
-" Note: 'getcompletion()' seems to cache results by default so no need to use internal
+" NOTE: 'getcompletion()' seems to cache results by default so no need to use internal
 " '~/.fzf.commands' file from .fzf 'completion-edits' branch. This is fast enough.
-" Note: See also .bashrc help(). Note we previously used 'powerman/vim-plugin-AnsiEsc'
+" NOTE: See also .bashrc help(). Note we previously used 'powerman/vim-plugin-AnsiEsc'
 " to preserve colors shown in 'command --help' pages but now simply redirect git
 " commands that include ANSI colors to their correponsding (identical) man pages.
 function! shell#help_page(...) abort
@@ -60,8 +60,8 @@ function! shell#fzf_help() abort
 endfunction
 
 " Popup tab with man page and navigation tools
-" Note: See also .bashrc man(). These utils are expanded from vim-superman.
-" Note: Apple will have empty line then BUILTIN(1) on second line, but linux
+" NOTE: See also .bashrc man(). These utils are expanded from vim-superman.
+" NOTE: Apple will have empty line then BUILTIN(1) on second line, but linux
 " will show as first line BASH_BUILTINS(1), so we search the first two lines.
 function! s:load_page(...) abort
   silent call call('dist#man#GetPage', a:000)  " native utility
@@ -118,11 +118,11 @@ function! shell#fzf_man() abort
 endfunction
 
 " Run job and feed standard output to preview window
-" Note: Add 'set -x' to display commands and no-op ':' to signal completion. The
+" NOTE: Add 'set -x' to display commands and no-op ':' to signal completion. The
 " '/bin/sh' is needed to permit command chains with e.g. && or || otherwise fails.
-" Note: Use 'pty' intead of pipe to prevent output buffering and delayed
+" NOTE: Use 'pty' intead of pipe to prevent output buffering and delayed
 " printing as a result. See https://vi.stackexchange.com/a/20639/8084
-" Note: Job has to be non-local variable or else can terminate
+" NOTE: Job has to be non-local variable or else can terminate
 " early when references gone. See https://vi.stackexchange.com/a/22597/8084
 let s:vim8 = has('patch-8.0.0039') && exists('*job_start')  " copied from autoreload/plug.vim
 function! shell#job_win(cmd, ...) abort
@@ -161,7 +161,7 @@ function! shell#job_win(cmd, ...) abort
 endfunction
 
 " Man page and pydoc page utilities
-" Warning: Order of assignment of variables below is critical, since use buffer
+" WARNING: Order of assignment of variables below is critical, since use buffer
 " variables specific to each page then allow :Man to change the buffer in stack.
 function! s:setup_syntax() abort  " man-style pydoc syntax
   let indent = '^\(\s\{4}\)*'
@@ -204,7 +204,7 @@ function! shell#setup_man(...) abort
 endfunction
 
 " Show directory network and terminal
-" Warning: Critical to load vim-vinegar plugin/vinegar.vim before
+" WARNING: Critical to load vim-vinegar plugin/vinegar.vim before
 " setup_netrw() or else mappings are overwritten (see vimrc).
 function! shell#setup_netrw() abort
   let maps = [['n', '<CR>', 't'], ['n', '.', 'gn'], ['n', ',', '-'], ['nx', ';', '.']]

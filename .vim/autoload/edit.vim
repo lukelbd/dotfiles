@@ -2,7 +2,7 @@
 " Utilities for formatting text
 "-----------------------------------------------------------------------------"
 " Helper function
-" Note: Native delimitMate#ExpandReturn() issues <Esc> then fails to split brackets due
+" NOTE: Native delimitMate#ExpandReturn() issues <Esc> then fails to split brackets due
 " to InsertLeave autocommand that repositions cursor. Use <C-c> to avoid InsertLeave.
 function! edit#echo_range(msg, num, ...) range abort
   let head = a:msg =~# '\s' ? ' on ' : ' '
@@ -12,7 +12,7 @@ function! edit#echo_range(msg, num, ...) range abort
 endfunction
 
 " Auto formatting utilities
-" Note: Not all servers support auto formtting. Seems 'pylsp' uses autopep8 consistent
+" NOTE: Not all servers support auto formtting. Seems 'pylsp' uses autopep8 consistent
 " with flake8 warnings. Use below function to print active servers.
 function! edit#get_servers() abort
   let servers = lsp#get_allowed_servers()
@@ -37,9 +37,9 @@ function! edit#auto_format(...) abort
 endfunction
 
 " Indent or join lines by count
-" Note: Native vim indent uses count to move over number of lines, but redundant
+" NOTE: Native vim indent uses count to move over number of lines, but redundant
 " with e.g. 'd2k', so instead use count to denote indentation level.
-" Note: Native vim join uses count to join n lines including parent line, so e.g.
+" NOTE: Native vim join uses count to join n lines including parent line, so e.g.
 " 1J and 2J have the same effect. This adds to count to make join more intuitive
 function! edit#join_lines(key, back) range abort
   let [line1, line2, cnum] = [a:firstline, a:lastline, col('.')]
@@ -66,9 +66,9 @@ function! edit#join_lines_expr(...) abort
 endfunction
 
 " Insert mode delete and undo
-" Note: This restores cursor position after insert-mode undo. First queue translation
+" NOTE: This restores cursor position after insert-mode undo. First queue translation
 " with edit#insert_mode() then run edit#insert_undo() on InsertLeave (e.g. after 'ciw')
-" Note: Remove single tab or up to &tabstop spaces to the right of cursor. This
+" NOTE: Remove single tab or up to &tabstop spaces to the right of cursor. This
 " enforces consistency with 'softtab' backspace-by-tabs behavior.
 let s:insert_keys = {'s': 'ExpandSpace', 'r': 'ExpandReturn', 'b': 'BS'}
 function! edit#insert_mode(...) abort
@@ -103,7 +103,7 @@ function! edit#insert_undo(...) abort
 endfunction
 
 " Switch adjacent characters or lines
-" Note: This keeps existing registers and folds. If calling on line with closed fold
+" NOTE: This keeps existing registers and folds. If calling on line with closed fold
 " will transfer entire fold contents and define new FastFold-managed manual folds.
 function! edit#move_chars(...) abort
   let [cnum, line] = [col('.'), getline('.')]
@@ -136,7 +136,7 @@ function! edit#move_lines(...) abort
 endfunction
 
 " Search sort or reverse the input lines
-" Note: Adaptation of hard-to-remember :g command shortcut. Adapted
+" NOTE: Adaptation of hard-to-remember :g command shortcut. Adapted
 " from super old post: https://vim.fandom.com/wiki/Reverse_order_of_lines
 function! edit#sel_lines(...) range abort
   let range = printf('\%%>%dl\%%<%dl', a:firstline - 1, a:lastline + 1)
@@ -165,8 +165,8 @@ function! edit#reverse_lines_expr() abort
 endfunction
 
 " Spell check under cursor
-" Note: This improves '1z=' to return nothing when called on valid words.
-" Note: If nothing passed and no manual count then skip otherwise continue.
+" NOTE: This improves '1z=' to return nothing when called on valid words.
+" NOTE: If nothing passed and no manual count then skip otherwise continue.
 function! s:spell_check(...) abort
   let word = a:0 ? a:1 : expand('<cword>')
   let [fixed, which] = spellbadword(word)
@@ -193,8 +193,8 @@ function! edit#spell_check(...) abort
 endfunction
 
 " Search replace without history
-" Note: Substitute 'n' would give exact count but then have to repeat twice, too slow
-" Note: Critical to replace reverse line-by-line in case substitution has newlines
+" NOTE: Substitute 'n' would give exact count but then have to repeat twice, too slow
+" NOTE: Critical to replace reverse line-by-line in case substitution has newlines
 function! edit#search_replace(msg, ...) range abort
   let winview = winsaveview()
   let pairs = copy(a:000[a:0 % 2:])
@@ -224,9 +224,9 @@ function! edit#search_replace_expr(...) abort
 endfunction
 
 " Format using &formatoptions,
-" Note: This implements line wrapping and joining settings, and accounts for comment
+" NOTE: This implements line wrapping and joining settings, and accounts for comment
 " continuation and automatic indentation based on shiftwidth or formatlistpat.
-" Note: This wraps to optional input count column rather than text width, and
+" NOTE: This wraps to optional input count column rather than text width, and
 " disables vim-markdown hack that enforces bullet continuations via &comments entries
 " See: https://vi.stackexchange.com/a/7712/8084 and :help g@
 function! edit#format_lines(...) range abort

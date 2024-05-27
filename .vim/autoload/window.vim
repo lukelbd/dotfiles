@@ -2,9 +2,9 @@
 " Utilities for vim windows and sessions
 "-----------------------------------------------------------------------------"
 " Close general windows and tabs
-" Note: Currently codi emits annoying error messages when turning on/off but
+" NOTE: Currently codi emits annoying error messages when turning on/off but
 " still works so suppress messages here.
-" Note: Calling quit inside codi buffer triggers 'attempt to close buffer
+" NOTE: Calling quit inside codi buffer triggers 'attempt to close buffer
 " that is in use' error so instead return to main window and toggle codi.
 scriptencoding utf-8
 function! s:close_codi() abort
@@ -46,7 +46,7 @@ function! window#close_tab(...) abort
 endfunction
 
 " Perform action conditional on insert-mode popup or cmdline wild-menu state
-" Note: This supports hiding complete-mode wild menu nad insert-mode popup menu
+" NOTE: This supports hiding complete-mode wild menu nad insert-mode popup menu
 " before proceeding with other actions. Use right-arrow from end-of-line to accept
 " completion option and possibly continue with further expansion. See vimrc for details
 function! window#close_popup(map, ...) abort
@@ -77,7 +77,7 @@ function! window#close_wild(map, ...) abort
 endfunction
 
 " Change window size in given direction
-" Note: Vim :resize and :vertical resize expand the bottom side and right side of the
+" NOTE: Vim :resize and :vertical resize expand the bottom side and right side of the
 " panel by default (respectively) unless we are on the rightmost or bottommost panel.
 " This counts the panels in each direction to figure out the correct sign for mappings
 function! window#count_panes(...) abort
@@ -110,7 +110,7 @@ function! window#change_height(count) abort
 endfunction
 
 " Return standard window width and height
-" Note: Numbers passed to :resize exclude tab and cmd lines but numbers passed to
+" NOTE: Numbers passed to :resize exclude tab and cmd lines but numbers passed to
 " :vertical resize include entire window (i.e. ignoring sign and number columns).
 function! window#get_width(...) abort
   return call('s:get_size', [1] + a:000)
@@ -158,7 +158,7 @@ function! s:get_size(width, ...) abort
 endfunction
 
 " Generate table of tabs and paths
-" Note: This sorts by recent access to help replace :Buffers
+" NOTE: This sorts by recent access to help replace :Buffers
 function! s:tab_source(...) abort
   let nprocess = 20  " maximum tablines to process
   let ndigits = len(string(tabpagenr('$')))
@@ -196,7 +196,7 @@ function! s:tab_source(...) abort
 endfunction
 
 " Helper functions for selecting tabs
-" Note: This handles fzf output lines
+" NOTE: This handles fzf output lines
 function! window#goto_tab(item) abort
   if empty(a:item) | return | endif
   let [tnr, wnr] = s:tab_sink(a:item)
@@ -225,7 +225,7 @@ function! s:tab_sink(item) abort
 endfunction
 
 " Go to or move to selected tab
-" Note: This displays a list with the tab number file and git status, then positions
+" NOTE: This displays a list with the tab number file and git status, then positions
 " preview window on cursor line.
 function! window#fzf_goto(...) abort
   let bang = a:0 ? a:1 : 0
@@ -253,9 +253,9 @@ function! window#fzf_move(...) abort
 endfunction
 
 " Scroll recent files
-" Note: Previously used complicated 'scroll state' method but now just float current
+" NOTE: Previously used complicated 'scroll state' method but now just float current
 " location to top of stack on CursorHold but always scroll with explicit commands.
-" Note: This only triggers after spending time on window instead of e.g. browsing
+" NOTE: This only triggers after spending time on window instead of e.g. browsing
 " across tabs with maps, similar to jumplist. Then can access jumps in each window.
 function! window#scroll_stack(count) abort
   let [iloc, _] = stack#get_loc('tab')  " do not auto-detect index
@@ -285,7 +285,7 @@ function! window#update_stack(scroll, ...) abort  " set current buffer
 endfunction
 
 " Insert complete menu items and scroll complete or preview windows (whichever open).
-" Note: Used 'verb function! lsp#scroll' to figure out how to detect preview windows
+" NOTE: Used 'verb function! lsp#scroll' to figure out how to detect preview windows
 " (also verified lsp#scroll l:window.find does not return popup completion windows)
 function! s:scroll_popup(scroll, ...) abort
   let size = a:0 ? a:1 : get(pum_getpos(), 'size', 1)
@@ -320,7 +320,7 @@ function! s:scroll_preview(scroll, ...) abort
 endfunction
 
 " Scroll complete menu or preview popup windows
-" Note: This prevents vim's baked-in circular complete menu scrolling.
+" NOTE: This prevents vim's baked-in circular complete menu scrolling.
 " Scroll normal mode lines
 function! window#scroll_normal(scroll, ...) abort
   let height = a:0 ? a:1 : winheight(0)
@@ -345,7 +345,7 @@ function! window#scroll_infer(scroll, ...) abort
 endfunction
 
 " Setup preview windows
-" Note: Here use a border for small popup windows and no border by default for
+" NOTE: Here use a border for small popup windows and no border by default for
 " autocomplete. See: https://github.com/prabirshrestha/vim-lsp/issues/594
 function! window#setup_preview(...) abort
   for winid in popup_list()
@@ -365,7 +365,7 @@ function! window#setup_preview(...) abort
 endfunction
 
 " Setup panel windows
-" Note: Tried setting 'nomodifiable' but causes errors for e.g. shell#job_win()
+" NOTE: Tried setting 'nomodifiable' but causes errors for e.g. shell#job_win()
 " logs. Handle switch#copy(1) from vimrc (but set nolist required for e.g. man)
 function! window#setup_panel(...) abort
   setlocal nolist nocursorline colorcolumn=
@@ -390,7 +390,7 @@ function! window#setup_panel(...) abort
 endfunction
 
 " Setup or show specific panel windows
-" Note: These are for managing plugins and viewing directory contents
+" NOTE: These are for managing plugins and viewing directory contents
 function! window#show_health() abort
   exe 'CheckHealth'
   setlocal foldlevel=1

@@ -2,9 +2,9 @@
 " Utilities for fugitive windows
 "-----------------------------------------------------------------------------"
 " Global settings
-" Note: Fugitive maps get re-applied when re-opening existing fugitive buffers due to
+" NOTE: Fugitive maps get re-applied when re-opening existing fugitive buffers due to
 " its FileType autocommands, so should not have issues modifying already-modified maps.
-" Note: Many mappings call script-local functions with strings like 'tabedit', and
+" NOTE: Many mappings call script-local functions with strings like 'tabedit', and
 " initially tried replacing with 'Drop', but turns out these all call fugitive
 " internal commands like :Gtabedit and :Gedit (and there is no :Gdrop). So now
 " overwrite :Gtabedit in .vimrc. Also considered replacing 'tabedit' with 'drop' in
@@ -47,8 +47,8 @@ let s:map_from = [
 
 " Helper setup functions for commands
 " See: https://github.com/sgeb/vim-diff-fold/
-" Note: Renamed files additionally have file name next to the commit number.
-" Note: Supports normal, context, unified, rcs, ed, subversion and git diffs. For rcs
+" NOTE: Renamed files additionally have file name next to the commit number.
+" NOTE: Supports normal, context, unified, rcs, ed, subversion and git diffs. For rcs
 " diffs folds only files (rcs has no hunks in the common sense). Uses foldlevel=1 ==>
 " file foldlevel=2 ==> hunk. Note context diffs need special treatment, as hunks are
 " defined via context (after '***'), and checking for '*** ' or ('--- ') only does
@@ -83,7 +83,7 @@ function! git#fold_expr(lnum) abort
 endfunction
 
 " Override native fugitive commands
-" Note: Native fugitive command is declared with :command! Git -nargs=? -range=-1
+" NOTE: Native fugitive command is declared with :command! Git -nargs=? -range=-1
 " fugitive#Command(<line1>, <count>, +'<range>', <bang>0, '<mods>', <q-args>)
 " where <line1> is cursor line, <count> is -1 if no range supplied and <line2>
 " if any range supplied (see :help command-range), and confusingly <range> is the
@@ -110,8 +110,8 @@ function! git#setup_commands() abort
 endfunction
 
 " Run and process results of fugitive operation
-" Todo: Use bufhidden=delete more frequently, avoid tons of useless buffers
-" Note: Here use 'Git' to open standard status pane and 'Git status' to open
+" TODO: Use bufhidden=delete more frequently, avoid tons of useless buffers
+" NOTE: Here use 'Git' to open standard status pane and 'Git status' to open
 " pane with diff hunks expanded with '=' and folded with 'zc'.
 function! s:run_cmd(bnum, lnum, cmd, ...) abort
   let input = join(a:000, '')
@@ -150,7 +150,7 @@ function! s:run_cmd(bnum, lnum, cmd, ...) abort
 endfunction
 
 " Run fugitive command or mapping
-" Note: Fugitive does not currently use &previewwindow and does not respect <mods>
+" NOTE: Fugitive does not currently use &previewwindow and does not respect <mods>
 " so set window explicitly below. See: https://stackoverflow.com/a/8356605/4970632
 " Run from command line
 function! git#run_command(msg, line1, count, range, bang, mods, cmd, ...) range abort
@@ -197,9 +197,9 @@ function! git#run_map_expr(...) abort
 endfunction
 
 " Run git commit with or without editor
-" Note: Git commit is asynchronous unlike others so resize must be reapplied here. In
+" NOTE: Git commit is asynchronous unlike others so resize must be reapplied here. In
 " general do not apply resize to setup functions since could be panel or full-screen.
-" Note: This prevents annoying <press enter to continue> message showing up when
+" NOTE: This prevents annoying <press enter to continue> message showing up when
 " committing with no staged changes, issues a warning instead of showing the message.
 function! git#complete_commit(lead, line, cursor, ...) abort
   let cnt = a:0 ? a:1 : 50  " default count
@@ -246,7 +246,7 @@ function! git#run_commit(editor, ...) abort
 endfunction
 
 " Navigate git merge conflicts
-" Note: This is adapted from conflict-marker.vim/autoload/conflict_marker.vim. Only
+" NOTE: This is adapted from conflict-marker.vim/autoload/conflict_marker.vim. Only
 " searches for complete blocks, ignores false-positive matches e.g. markdown ===
 function! git#next_conflict(count, ...) abort
   let winview = winsaveview()
@@ -272,9 +272,9 @@ function! git#next_conflict(count, ...) abort
 endfunction
 
 " Navigate and preview git gutter hunks
-" Note: Git gutter works by triggering on &updatetime after CursorHold only if
+" NOTE: Git gutter works by triggering on &updatetime after CursorHold only if
 " text was changed and starts async process. Here temporarily make synchronous.
-" Note: Always ensure gitgutter on and up-to-date before actions. Note CursorHold
+" NOTE: Always ensure gitgutter on and up-to-date before actions. Note CursorHold
 " triggers conservative update gitgutter#process_buffer('.', 0) that only runs if
 " text was changed while GitGutter and staging commands trigger forced update.
 function! s:update_hunks(...) abort
@@ -306,7 +306,7 @@ function! git#show_hunk() abort
 endfunction
 
 " Git gutter statistics over input lines
-" Note: Here g:gitgutter['hunks'] are [from_start, from_count, to_start, to_count]
+" NOTE: Here g:gitgutter['hunks'] are [from_start, from_count, to_start, to_count]
 " lists i.e. starting line and counts before and after changes. Adapated s:isadded()
 " s:isremoved() etc. methods from autoload/gitgutter/diff.vim for partitioning into
 " simple added/changed/removed groups (or just 'changed') as shown below.
@@ -347,10 +347,10 @@ function! git#stat_hunks_expr() abort
 endfunction
 
 " Git gutter staging and unstaging over input lines
-" Note: Currently GitGutterStageHunk only supports partial staging of additions
+" NOTE: Currently GitGutterStageHunk only supports partial staging of additions
 " specified by visual selection, not different hunks. This supports both, iterates in
 " reverse in case lines change. See: https://github.com/airblade/vim-gitgutter/issues/279
-" Note: Created below by studying s:update_hunks() and gitgutter#diff#process_hunks().
+" NOTE: Created below by studying s:update_hunks() and gitgutter#diff#process_hunks().
 " in autoload/gitgutter/diff.vim. Addition-only hunks have from_count '0' and to_count
 " non-zero since no text was present before the change. Also note gitgutter#hunk#stage()
 " requires cursor inside lines and fails when specifying lines outside of addition hunk

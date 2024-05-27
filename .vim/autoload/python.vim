@@ -2,7 +2,7 @@
 " Utilities for python files
 "-----------------------------------------------------------------------------"
 " Helper functions for SimPylFold
-" Note: Cache is generated only on autocommands and with fold#update_folds(). Then
+" NOTE: Cache is generated only on autocommands and with fold#update_folds(). Then
 " modify with python#fold_expr to impose e.g. docstring and multi-line lsit folds.
 scriptencoding utf-8
 function! s:get_isdef(lnum) abort
@@ -34,7 +34,7 @@ function! s:get_level(lnum) abort
 endfunction
 
 " Convert between key=value pairs and 'key': value dictionaries
-" Warning: Use kludge where lastcol is always at the end of line. Accounts for weird
+" WARNING: Use kludge where lastcol is always at the end of line. Accounts for weird
 " bug where if opening bracket is immediately followed by newline, then 'inner'
 " bracket range incorrectly sets the closing bracket column position to '1'.
 function! python#dict_to_kw(invert, ...) range abort
@@ -84,7 +84,7 @@ function! python#dict_to_kw_expr(invert) abort
 endfunction
 
 " Return SimpylFold expressions for decorators, docstrings, constants
-" Warning: Only call this when SimpylFold updates to improve performance. Might
+" WARNING: Only call this when SimpylFold updates to improve performance. Might
 " break if SimpylFold renames internal cache variable (monitor).
 function! s:get_decorator(lnum) abort
   if getline(a:lnum) !~# '^\s*@\k\+' | return [] | endif
@@ -121,7 +121,7 @@ function! s:get_constant(lnum) abort  " e.g. VARIABLE = [... or if condition:...
 endfunction
 
 " Return fold expression and text accounting for global constants and docstrings
-" Note: This includes text following try-except blocks and docstring openers, but
+" NOTE: This includes text following try-except blocks and docstring openers, but
 " skips numpydoc and rest-style dash separators. Should add to this.
 let s:maxlines = 100  " maxumimum lines to search
 function! python#fold_expr(lnum) abort
@@ -177,9 +177,9 @@ function! python#fold_text(lnum, ...) abort
 endfunction
 
 " Initiate jupyter-vim connection using the file matching this directory or a parent
-" Note: This relies on automatic connection file naming in jupyter_[qt|]console.py.
+" NOTE: This relies on automatic connection file naming in jupyter_[qt|]console.py.
 " Also depends on private variable _jupyter_session. Should monitor for changes.
-" Note: The jupyter-vim plugin offloads connection file searching to jupyter_client's
+" NOTE: The jupyter-vim plugin offloads connection file searching to jupyter_client's
 " find_connection_file(), which selects the most recently accessed file from the glob
 " pattern. Therefore pass the entire pattern to jupyter#Connect() rather than the file.
 function! python#has_jupyter() abort
@@ -204,7 +204,7 @@ function! python#init_jupyter() abort
 endfunction
 
 " Run current file with conda python (important for macvim)
-" Todo: More robust checking for conda python in other places
+" TODO: More robust checking for conda python in other places
 function! python#run_file() abort
   if !exists('$CONDA_PREFIX')
     redraw | echohl WarningMsg
@@ -218,7 +218,7 @@ function! python#run_file() abort
 endfunction
 
 " Run current file or lines using either popup window or jupyter session
-" Note: Running 'cell' in file without cells still works
+" NOTE: Running 'cell' in file without cells still works
 function! python#run_general() abort
   update | redraw
   if v:count  " see also vim.vim
@@ -237,7 +237,7 @@ function! python#run_general() abort
 endfunction
 
 " Run input motion using jupyter session (issue warning if no connection)
-" Todo: Add generalization for running chunks of arbitrary filetypes?
+" TODO: Add generalization for running chunks of arbitrary filetypes?
 function! python#run_motion() range abort
   update | redraw
   if python#has_jupyter()
@@ -255,7 +255,7 @@ function! python#run_motion_expr(...) abort
 endfunction
 
 " Parse python module abbreviations
-" Todo: Use below regexes to generate suggestion lists based on file text. Should
+" TODO: Use below regexes to generate suggestion lists based on file text. Should
 " iterate over file lines then suggest any <import>.method matches found for all
 " imports names. Could also combine <variable>.method with every possible prefix.
 function! python#doc_translate(item) abort
@@ -297,7 +297,7 @@ function! python#doc_options(...) abort
 endfunction
 
 " Browse documentation with man-style pydoc pages
-" Note: This is still useful over Lsp e.g. for generalized help page browsing. And
+" NOTE: This is still useful over Lsp e.g. for generalized help page browsing. And
 " everything is standardized to man-format so has consistency with man utilities.
 function! python#doc_page(...) abort
   let opts = python#doc_options()  " item under cursor
@@ -310,7 +310,7 @@ function! python#doc_page(...) abort
   let page = python#doc_translate(page)
   let opts = python#doc_options(page)
   let result = []  " default result
-  if !bufexists(page)   " Warning: only matches exact string
+  if !bufexists(page)   " WARNING: only matches exact string
     for iopt in opts
       let result = systemlist('pydoc ' . shellescape(iopt))
       let result = map(result, {idx, val -> substitute(val, '^\( \{4}\)* |  ', '\1', 'ge')})
@@ -324,7 +324,7 @@ function! python#doc_page(...) abort
   endif
   let exists = bufexists(page)
   let s:doc_prev = page  " previously browsed
-  let [bnr, pnr] = [bufnr(), bufnr(page)]  " Warning: only matches start of string
+  let [bnr, pnr] = [bufnr(), bufnr(page)]  " WARNING: only matches start of string
   if !empty(get(b:, 'doc_name', ''))  " existing path shell.vim
     silent exe exists ? pnr . 'buffer' : 'enew | file ' . page
   else
@@ -348,7 +348,7 @@ function! python#fzf_doc() abort
 endfunction
 
 " Insert pydocstring 'doq' docstrings and convert from single-line to multi-line
-" Note: This ensures correct indentation after line break. Could also use doq templates
+" NOTE: This ensures correct indentation after line break. Could also use doq templates
 " or below alternative using 'gnd' and auto-indent by adding newline to @" match via
 " @= then indent-preserving ]p paste. See https://stackoverflow.com/a/2783670/4970632
 " exe 'global/' . regex . '/normal! gnd"="\n" . @"' . '\<CR>' . ']p'

@@ -2,7 +2,7 @@
 " Utilities for scrolling and iterating
 "-----------------------------------------------------------------------------"
 " Generate jump and change lists
-" Note: Similar to how stack.vim 'floats' recent tab stack entries to the top of the
+" NOTE: Similar to how stack.vim 'floats' recent tab stack entries to the top of the
 " stack of the current tab is in the most recent five, this filters jump and change
 " list entries to ensure identical line numbers are at least 10 indices apart.
 function! s:get_list(mode, ...) abort  " return location list with unique lines
@@ -29,10 +29,10 @@ function! s:get_list(mode, ...) abort  " return location list with unique lines
 endfunction
 
 " Navigate jump and change lists
-" Note: This improves on native bug where e.g. going backwards in jumplist (changelist)
+" NOTE: This improves on native bug where e.g. going backwards in jumplist (changelist)
 " from top of changelist (jumplist) keeps the 'current position' at top of stack so
 " cannot return with forward press. Note 'col' stored in lists is relative to zero.
-" Note: The getjumplist (getchangelist) functions return the length of the list
+" NOTE: The getjumplist (getchangelist) functions return the length of the list
 " instead of the current position for external windows, so when switching from
 " current window, jump to top of the list before the requested user position. Also
 " scroll additionally by minus 1 if 'current' position is beyond end of the list.
@@ -70,7 +70,7 @@ function! s:next_list(mode, count) abort  " navigate to nth location in list
 endfunction
 
 " Generate location list
-" Note: Here 'loc' indicates the negative <C-o> (g;) or positive <C-i> (g,) presses
+" NOTE: Here 'loc' indicates the negative <C-o> (g;) or positive <C-i> (g,) presses
 " required to arrive at a given position in the location list (change list). If the
 " list is from another buffer then getjumplist (getchangelist) only returns the length
 " of the list not the position, so will always start at the top of the list after
@@ -127,11 +127,11 @@ function! s:list_source(mode) abort
 endfunction
 
 " Override fzf :Jumps and :Changes
-" Note: This implements :Lines navigation across existing open windows and tabs. Native
+" NOTE: This implements :Lines navigation across existing open windows and tabs. Native
 " version handles buffer switching separately from s:action_for() invocation.
-" Note: This fixes :Jumps issue where getbufline() output can be empty (filter assumes
+" NOTE: This fixes :Jumps issue where getbufline() output can be empty (filter assumes
 " this is non-empty) and because default flag --bind start:post:etc caused error.
-" Note: Changelist is managed from the top-down by filtering out double and empty-line
+" NOTE: Changelist is managed from the top-down by filtering out double and empty-line
 " entries or entries with invalid lines, then navigating using using drop_file and
 " setpos('.', ...) instead of the native g,/g; keys. Compare with jumplist above.
 function! s:jump_sink(arg) abort  " first item is key binding
@@ -180,12 +180,12 @@ function! jump#fzf_lines(query, ...) abort
 endfunction
 
 " Push current location to top of jumplist
-" Warning: The zk/zj/[z/]z motions update jumplist, found out via trial and error
+" WARNING: The zk/zj/[z/]z motions update jumplist, found out via trial and error
 " even though not in :help jump-motions. And note setpos() does not change jumplist
-" Note: This prevents resetting when navigating backwards and forwards through
+" NOTE: This prevents resetting when navigating backwards and forwards through
 " jumplist or when navigating within paragraph of most recently set jump. Also remap
 " 'jumping' motions n/N/{/}/(/)/`/[[/]] by prepending :keepjumps to reduce entries.
-" Note: Jumplist is managed from the bottom-up by remapping normal-mode 'jumping'
+" NOTE: Jumplist is managed from the bottom-up by remapping normal-mode 'jumping'
 " motions and conditionally updating jumplist on CursorHold. Still navigate the
 " actual jumplist using <C-o>/<C-i> navigation keys. Compare to changelist below.
 function! s:range_keepjumps() abort  " used to update jumplist on CursorHold
@@ -221,7 +221,7 @@ function! jump#push_jump() abort
 endfunction
 
 " Navigate words with restricted &iskeyword
-" Note: This implements 'g' and 'h' text object motions using word jump mappings.
+" NOTE: This implements 'g' and 'h' text object motions using word jump mappings.
 " Use gw/ge/gb/gm for snake_case and zw/ze/zb/zm for CapitalCaseFooBar or camelCase.
 function! jump#next_alpha(motion, mode, ...) abort
   let cmd = 'setlocal iskeyword=' . &l:iskeyword  " vint: next-line -ProhibitUnnecessaryDoubleQuote
@@ -256,7 +256,7 @@ function! s:adjust_count(motion) abort
 endfunction
 
 " Navigate matches and lists without editing jumplist
-" Note: This implements indexed-search directional consistency
+" NOTE: This implements indexed-search directional consistency
 " and avoids adding to the jumplist to prevent overpopulation
 function! jump#next_jump(...) abort
   return call('s:next_list', [0] + a:000)

@@ -19,7 +19,7 @@ function! utils#none_pending() abort
 endfunction
 
 " Catch errors while running tests or events while calling peekaboo
-" Note: This prevents 'press enter to continue' error messages e.g. when
+" NOTE: This prevents 'press enter to continue' error messages e.g. when
 " accidentally hitting test maps in filetypes without utilities installed.
 function! utils#catch_errors(...) abort
   try
@@ -43,7 +43,7 @@ endfunction
 
 " Get the fzf.vim/autoload/fzf/vim.vim script id for overriding.
 " See: https://stackoverflow.com/a/49447600/4970632
-" Note: This is used to override fzf marks commands and support jumping to existing
+" NOTE: This is used to override fzf marks commands and support jumping to existing
 " tabs, and to overide jumplist and changelist command for various new settings.
 function! utils#get_scripts(arg, ...) abort
   let opts = type(a:arg) ? {'name': a:arg} : {'sid': a:arg}
@@ -69,11 +69,11 @@ function! utils#get_snr(regex, ...) abort
 endfunction
 
 " Get user input with requested default
-" Warning: For some reason [''] required instead of [''] after pressing backspace
+" WARNING: For some reason [''] required instead of [''] after pressing backspace
 " or else subsequent tab-completion requests do nothing. Not sure why.
-" Note: Force option forces return after single key press (used for registers). Try
+" NOTE: Force option forces return after single key press (used for registers). Try
 " to feed the result with feedkeys() instead of adding to opts to reduce screen flash.
-" Note: This is currently used with grep and file mappings. Specifies a default value
+" NOTE: This is currently used with grep and file mappings. Specifies a default value
 " in parentheses that can be tab expanded, selects it when user presses enter, or
 " replaces it when user starts typing text or backspace. This is a bit nicer than
 " filling input prompt with default value, simply start typing to drop the default
@@ -127,7 +127,7 @@ function! utils#input_complete(lead, line, cursor) abort
 endfunction
 
 " Add mappings from other buffer-local mappings
-" Note: Vim help recommends capturing full map settings using maparg(lhs, 'n', 0, 1)
+" NOTE: Vim help recommends capturing full map settings using maparg(lhs, 'n', 0, 1)
 " then re-adding using mapset(). This is a little easier than working with strings
 " returned by maparg(lhs, 'n') which requires using escape(map, '"<') then evaluating
 " the resulting string with eval('"' . map . '"'). However in the dictionary case, the
@@ -172,7 +172,7 @@ function! utils#map_from(...) abort
 endfunction
 
 " Call over the visual line range or user motion line range (see e.g. python.vim)
-" Note: :call call(function, args) with range seems to execute line-by-line instead of
+" NOTE: :call call(function, args) with range seems to execute line-by-line instead of
 " entire block which causes issues with some functions. So use below clunky method.
 " Also ensure functions accept :[range]call function(args) for consistency with vim
 " standard paradigm and so they can be called with e.g. V<motion>:call func().
@@ -194,7 +194,7 @@ endfunction
 
 " Execute the function name and call signature passed to utils#motion_func.
 " This is generally invoked inside an <expr> mapping (see e.g. python.vim) .
-" Note: Only motions can cause backwards firstline to lastline order. Manual calls
+" NOTE: Only motions can cause backwards firstline to lastline order. Manual calls
 " to the function will have sorted lines. This sorts the range for safety.
 function! utils#operator_func(type, ...) range abort
   if empty(a:type) " default behavior
@@ -213,9 +213,9 @@ function! utils#operator_func(type, ...) range abort
 endfunction
 
 " Generate repeatable mappings for arbitrary modes
-" Note: This supports arbitrary operator-pending modifications, e.g. text changes
+" NOTE: This supports arbitrary operator-pending modifications, e.g. text changes
 " that prompt for user input, like vim-tags utility. Should try more ideas
-" Note: GUI vim raises error when combining <Plug> maps with <Cmd> so have to disable
+" NOTE: GUI vim raises error when combining <Plug> maps with <Cmd> so have to disable
 " repeat for operator-pending maps e.g. 'cgw' in case they trigger insert mode.
 function! utils#repeat_op(name, ...) abort
   let feed = '"\<Esc>\<Cmd>let g:repeat_tick = b:changedtick\<CR>"'

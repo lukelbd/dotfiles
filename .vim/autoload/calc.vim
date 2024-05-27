@@ -2,7 +2,7 @@
 " Utilities for codi windows
 "-----------------------------------------------------------------------------"
 " Helper functions
-" Note: Pre-processor fixes escapes returned by interpreters. For the
+" NOTE: Pre-processor fixes escapes returned by interpreters. For the
 " escape issue see: https://github.com/metakirby5/codi.vim/issues/120
 " Rephraser to remove comment characters before passing to interpreter. For the
 " 1000 char limit issue see: https://github.com/metakirby5/codi.vim/issues/88
@@ -36,7 +36,7 @@ function! calc#codi_rephrase(text) abort
 endfunction
 
 " Initialize codi window
-" Note: Vim substitute() function '.' matches newlines and codi silently fails
+" NOTE: Vim substitute() function '.' matches newlines and codi silently fails
 " if the rephrased input lines don't match original line count so be careful.
 function! calc#init_codi(...) abort
   let prompt = 'Calculator path'
@@ -56,7 +56,7 @@ endfunction
 
 " Set up codi window autocommands
 " See: https://github.com/metakirby5/codi.vim/issues/90
-" Note: This sets up the calculator window not the display window
+" NOTE: This sets up the calculator window not the display window
 function! calc#setup_codi(toggle) abort
   let name = 'codi_' . bufnr()
   silent! exe 'autocmd! ' . name

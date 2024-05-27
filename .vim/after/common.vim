@@ -3,9 +3,9 @@
 " See: https://stackoverflow.com/a/4301809/4970632
 "-----------------------------------------------------------------------------"
 " Update general settings
-" Note: Peekaboo mappings are local so have to override here. Also in future should
+" NOTE: Peekaboo mappings are local so have to override here. Also in future should
 " consider setting b:surround_indent for filetypes but for now have this for safety.
-" Note: This overrides native vim filetype-specific double-bracket maps (e.g. :map [[
+" NOTE: This overrides native vim filetype-specific double-bracket maps (e.g. :map [[
 " in vim files for jumping to functions) but skips mapping in presence of buffer-local
 " single-bracket maps (e.g. help file tag navigation) and buffer-local indent maps
 " (e.g. fugitive indent toggling). Should remove unmap lines after restarting vim.
@@ -36,7 +36,7 @@ if !s:indent1 && !s:indent2 | exe 'nnoremap <buffer> == <Esc>=='
 endif
 
 " Update folds and syntax
-" Note: Here overwrite native foldtext function so that vim-markdown autocommands
+" NOTE: Here overwrite native foldtext function so that vim-markdown autocommands
 " re-apply it along with other settings. Critical to prevent e.g. javascript.vim
 " from overwriting fold settings: https://github.com/tpope/vim-markdown/pull/173
 " and note this requires g:vim_markdown_override_foldtext = 1 in .vimrc (default).

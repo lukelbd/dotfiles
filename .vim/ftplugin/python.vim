@@ -34,7 +34,7 @@ if exists(':BracelessEnable')
 endif
 
 " Add multiline docstring 'd' delimiters
-" Note: This will include matches e.g. 'r' prefixes. Also re-apply single quote
+" NOTE: This will include matches e.g. 'r' prefixes. Also re-apply single quote
 " mappings for consistency but should work in python files anyway.
 let b:succinct_delims = {
   \ "'": '''\r''',

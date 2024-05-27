@@ -3,7 +3,7 @@
 "-----------------------------------------------------------------------------"
 " Move to next conceal character
 " See: https://stackoverflow.com/a/24224578/4970632
-" Note: This detects both columns concealed with matchadd(..., {'conceal': ''}) and
+" NOTE: This detects both columns concealed with matchadd(..., {'conceal': ''}) and
 " syntax 'conceal' or 'concealends'. In the former case leverage fact that matchadd
 " method is only used to make tex and markdown characters invisible, so no need to
 " compare replacement characters or check groups -- simply skip those columns.
@@ -68,10 +68,10 @@ endfunction
 
 " Switch to next or previous colorschemes and print the name
 " See: https://stackoverflow.com/a/2419692/4970632
-" Note: Here getcompletion(..., 'color') will follow &wildignorecase which follows
+" NOTE: Here getcompletion(..., 'color') will follow &wildignorecase which follows
 " &fileignorecase and filters out 'duplicate' color schemes with same case. This can
 " cause errors where we land on unknown schemes so add set nofileignorecase to vimrc.
-" Note: Have to trigger 'InsertLeave' so status line updates (for some reason only
+" NOTE: Have to trigger 'InsertLeave' so status line updates (for some reason only
 " works after timer when :colorscheme triggers ColorScheme autocommand). Also note
 " g:colors_name is convention shared by most color schemes, no official vim setting.
 function! syntax#next_scheme(arg) abort
@@ -98,7 +98,7 @@ function! syntax#next_scheme(arg) abort
 endfunction
 
 " Show syntax or filetype info
-" Note: This adds header in same format as built-in command and opens files in
+" NOTE: This adds header in same format as built-in command and opens files in
 " separate tabs instead of panels for consistency with others tools.
 function! syntax#show_stack(...) abort
   let sids = a:0 ? map(copy(a:000), 'hlID(v:val)') : synstack(line('.'), col('.'))
@@ -122,7 +122,7 @@ function! syntax#show_stack(...) abort
 endfunction
 
 " Update syntax colors
-" Note: This gets the closest tag to the first line in the window, all tags
+" NOTE: This gets the closest tag to the first line in the window, all tags
 " rather than top-level only, searching backward, and without circular wrapping.
 function! syntax#sync_lines(count, ...) abort
   if a:0 && a:1
@@ -141,10 +141,10 @@ function! syntax#sync_lines(count, ...) abort
 endfunction
 
 " Update on-the-fly matchadd() matches.
-" Note: Unlike typical syntax highlighting these are window-local and do not
+" NOTE: Unlike typical syntax highlighting these are window-local and do not
 " require explicit names (assigned automatic ids). They are managed separately
 " from :highlight and :syntax commands with getmatches() and setmatches()
-" Note: Critical to make 'priority' (third argument, default 10) same as :hlsearch
+" NOTE: Critical to make 'priority' (third argument, default 10) same as :hlsearch
 " priority (0) or matches are weird. Note :syntax match fails since concealed backslash
 " overwrites any existing matches. See: https://vi.stackexchange.com/q/5696/8084
 function! syntax#update_matches() abort
@@ -162,11 +162,11 @@ function! syntax#update_matches() abort
 endfunction
 
 " Update syntax match groups. Could move to after/syntax but annoying
-" Warning: Critical to include 'comment' in group names or else pep8 indent expression
+" WARNING: Critical to include 'comment' in group names or else pep8 indent expression
 " incorrectly auto-indents. See: https://github.com/Vimjas/vim-python-pep8-indent
-" Note: This tries to fix docstring highlighting issues but inconsistent, so also
+" NOTE: This tries to fix docstring highlighting issues but inconsistent, so also
 " have vimrc 'syntax sync' mappings. See: https://github.com/vim/vim/issues/2790
-" Note: The URL regex is from .tmux.conf and https://vi.stackexchange.com/a/11547/8084
+" NOTE: The URL regex is from .tmux.conf and https://vi.stackexchange.com/a/11547/8084
 " and the containedin line just tries to *guess* what particular comment and string
 " group names are for given filetype syntax schemes (use :Group for testing).
 function! syntax#update_groups() abort
@@ -197,7 +197,7 @@ function! syntax#update_groups() abort
 endfunction
 
 " Highlight group with gui or cterm codes
-" Note: Cannot use e.g. aliases 'bg' or 'fg' in terminal since often unset, and cannot
+" NOTE: Cannot use e.g. aliases 'bg' or 'fg' in terminal since often unset, and cannot
 " use transparent 'NONE' in gui vim since undefined, so swap them here.
 function! s:highlight_group(group, back, front, ...) abort
   let defaults = {'Black': '#000000', 'White': '#ffffff', 'Gray': '#444444'}
@@ -230,11 +230,11 @@ function! s:highlight_group(group, back, front, ...) abort
 endfunction
 
 " Update syntax highlight groups
-" Note: This enforces core grayscale-style defaults, with dark comments against
+" NOTE: This enforces core grayscale-style defaults, with dark comments against
 " darker background and sign and number columns that blend into the main window.
-" Note: ALE highlights point to nothing when scrolling color schemes, but are still
+" NOTE: ALE highlights point to nothing when scrolling color schemes, but are still
 " used for sign definitions, so manually enable here (note getcompletion() will fail)
-" Note: Plugins vim-tabline and vim-statusline use custom auto-calculated colors
+" NOTE: Plugins vim-tabline and vim-statusline use custom auto-calculated colors
 " based on colorscheme. Leverage that instead of reproducing here. Also need special
 " workaround to apply bold gui syntax. See https://stackoverflow.com/a/73783079/4970632
 function! syntax#update_highlights() abort

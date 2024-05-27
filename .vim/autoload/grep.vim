@@ -2,7 +2,7 @@
 " Utilities for grepping
 "-----------------------------------------------------------------------------"
 " Helper functions for parsing grep input
-" Warning: Strange bug seems to cause :Ag and :Rg to only work on individual files
+" WARNING: Strange bug seems to cause :Ag and :Rg to only work on individual files
 " if more than one file is passed. Otherwise preview window shows 'file is not found'
 " error and selecting from menu fails. So always pass extra dummy name.
 function! s:parse_grep(global, level, pattern, ...) abort
@@ -34,13 +34,13 @@ function! s:parse_pattern(pattern)
 endfunction
 
 " Call Ag or Rg from command
-" Note: If commands called manually then always enable recursive search and disable
+" NOTE: If commands called manually then always enable recursive search and disable
 " custom '~/.ignore' file (e.g. in case searching .vim/plugged folder).
-" Note: Rg and Ag read '.gitignore' and '.ignore' from search directories. Disable
+" NOTE: Rg and Ag read '.gitignore' and '.ignore' from search directories. Disable
 " first with -skip-vcs-ignores (ag) and -no-ignore-vcs (rg) or all with below flags.
-" Note: Unlike Rg --no-ignore --ignore-file, Ag -unrestricted --ignore-file disables
+" NOTE: Unlike Rg --no-ignore --ignore-file, Ag -unrestricted --ignore-file disables
 " unrestricted flag and may load .ignore. Workaround is to use -t text-file-only filter
-" Note: Native commands include final !a:bang argument toggling fullscreen but we
+" NOTE: Native commands include final !a:bang argument toggling fullscreen but we
 " use a:bang to indicate whether to search current buffer or global open buffers.
 " Fzf matches paths: https://github.com/junegunn/fzf.vim/issues/346
 " Ag ripgrep flags: https://github.com/junegunn/fzf.vim/issues/921#issuecomment-1577879849
@@ -72,7 +72,7 @@ function! grep#call_rg(global, level, pattern, ...) abort
 endfunction
 
 " Call Rg or Ag from mapping (see also file.vim)
-" Note: Using <expr> instead of this tiny helper function causes <C-c> to
+" NOTE: Using <expr> instead of this tiny helper function causes <C-c> to
 " display annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
 " let prompt = a:level > 1 ? 'Current file' : a:level > 0 ? 'File directory' : 'Working directory'
 function! grep#complete_search(lead, line, cursor)

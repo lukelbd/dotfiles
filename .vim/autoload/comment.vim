@@ -2,9 +2,9 @@
 " Utilities for inserting comments
 "-----------------------------------------------------------------------------"
 " Helper functions
-" Todo: Also use &comments or tcomment supporting functions that parse &comments
+" TODO: Also use &comments or tcomment supporting functions that parse &comments
 " to optionally choose between block comments and inline comments when inserting.
-" Note: This uses cursor line as default header value, e.g. turning header into comment,
+" NOTE: This uses cursor line as default header value, e.g. turning header into comment,
 " and searches non-printable dummy characters 1-32 from &isprint. Note character
 " zero is null i.e. string termination so matches empty string. See :help /\]
 function! comment#get_string(...) abort
@@ -94,7 +94,7 @@ function! comment#header_line(fill, count, ...) abort  " inserts above by defaul
 endfunction
 
 " Navigate between comment blocks and headers
-" Note: The '$' is required for lookbehind for some reason
+" NOTE: The '$' is required for lookbehind for some reason
 function! comment#next_comment(count, ...) abort
   let comment = comment#get_regex()
   let head = a:0 && a:1 ? '' : '\s*'  " include indented
@@ -133,7 +133,7 @@ function! comment#next_label(count, ...) abort
 endfunction
 
 " Toggle comment under cursor accounting for folds
-" Note: Required since default 'gcc' maps to g@$ operator function call
+" NOTE: Required since default 'gcc' maps to g@$ operator function call
 function! comment#toggle_comment(...) abort
   call tcomment#ResetOption()
   if v:count > 0 | call tcomment#SetOption('count', v:count) | endif

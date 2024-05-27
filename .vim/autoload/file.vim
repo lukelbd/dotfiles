@@ -2,7 +2,7 @@
 " Utilities for managing files
 "-----------------------------------------------------------------------------"
 " Helper functions
-" Warning: For some reason including 'down' in fzf#run prevents fzf from returning
+" WARNING: For some reason including 'down' in fzf#run prevents fzf from returning
 " a list (version 0.29). However exluding it produces weird behavior that blacks
 " out rest of screen. Workaround is to factor out an unnecessary source function.
 let s:new_dir = ''  " path completion base folder
@@ -31,7 +31,7 @@ function! file#expand_cfile(...) abort
 endfunction
 
 " Generate list of files in directory
-" Warning: Critical that the list options match the prompt lead or else
+" WARNING: Critical that the list options match the prompt lead or else
 " when a single path is returned <Tab> during input() does not complete it.
 function! file#glob_complete(base, ...) abort
 endfunction
@@ -61,7 +61,7 @@ function! file#glob_paths(lead, ...) abort
 endfunction
 
 " Open recently edited file
-" Note: This is companion to :History with nicer behavior. Files tracked
+" NOTE: This is companion to :History with nicer behavior. Files tracked
 " in ~/.vim_mru_files across different open vim sessions.
 function! file#fzf_history(arg, ...)
   let bang = a:0 && a:1 || a:arg[len(a:arg) - 1] ==# '!'
@@ -93,8 +93,8 @@ function! file#fzf_recent(...) abort
 endfunction
 
 " Open input files
-" Note: Must use expand() not glob() or new file names are not completed.
-" Note: Using <expr> instead of this tiny helper function causes <C-c> to
+" NOTE: Must use expand() not glob() or new file names are not completed.
+" NOTE: Using <expr> instead of this tiny helper function causes <C-c> to
 " display annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
 function! file#fzf_input(cmd, default, ...) abort
   let default = file#format_dir(a:default, 1)
@@ -124,9 +124,9 @@ function! file#input_path(prompt, default, ...) abort
 endfunction
 
 " Open arbitrary files recursively
-" Note: Try to preserve relative paths constructed by parse#get_paths(). Follows all
+" NOTE: Try to preserve relative paths constructed by parse#get_paths(). Follows all
 " symlinks, e.g. ~/.vimrc pointing to dotfiles, but keeps RelativePath() 'icloud'.
-" Note: This is modeled after fzf :Files command. Used to search arbitrary files
+" NOTE: This is modeled after fzf :Files command. Used to search arbitrary files
 " while respecting '.ignore' patterns used for e.g. f0/f1 commands.
 function! file#fzf_find(base) abort
   let bases = type(a:base) > 1 ? join(a:base, ' ') : a:base
@@ -172,7 +172,7 @@ function! file#fzf_files(bang, ...) abort
 endfunction
 
 " Check if user selection is directory, descend until user selects a file.
-" Note: Since fzf executes asynchronously cannot do loop recursion inside the driver
+" NOTE: Since fzf executes asynchronously cannot do loop recursion inside the driver
 " function. See https://github.com/junegunn/fzf/issues/1577#issuecomment-492107554
 function! file#open_sink(cmd, ...) abort
   for path in a:000
@@ -206,7 +206,7 @@ function! file#fzf_open(bang, cmd, ...) abort
   for item in items  " expand tilde
     let item = expand(item)
     if item ==# s:new_file  " should be recursed at least one level
-      let args = ['.']  " Warning: fzf sets 'base' to current working directory
+      let args = ['.']  " WARNING: fzf sets 'base' to current working directory
       let file = expand('<cfile>')
       try
         let item = utils#input_default('File', file, function('file#glob_files', args))
@@ -222,7 +222,7 @@ function! file#fzf_open(bang, cmd, ...) abort
     endif
   endfor
   " Possibly activate or re-activate fzf
-  " Note: Use feedkeys() if only one selected or else new file template loading fails
+  " NOTE: Use feedkeys() if only one selected or else new file template loading fails
   let ipath = get(paths, 0, '')
   let recurse = isdirectory(ipath) || fnamemodify(ipath, ':t') ==# '..'
   if empty(paths) && a:0 == 1 || len(paths) == 1 && recurse
@@ -246,8 +246,8 @@ function! file#fzf_open(bang, cmd, ...) abort
 endfunction
 
 " Open file or jump to tab. From tab drop plugin: https://github.com/ohjames/tabdrop
-" Warning: Using :edit without feedkeys causes issues navigating fugitive panels.
-" Warning: The default ':tab drop' seems to jump to the last tab on failure and
+" WARNING: Using :edit without feedkeys causes issues navigating fugitive panels.
+" WARNING: The default ':tab drop' seems to jump to the last tab on failure and
 " also takes forever. Also have run into problems with it on some vim versions.
 function! file#goto_file(...) abort
   try
@@ -313,7 +313,7 @@ function! file#show_paths(...) abort
 endfunction
 
 " Manage file buffers
-" Note: This is alternative to bufwipeout plugin.
+" NOTE: This is alternative to bufwipeout plugin.
 " See: https://stackoverflow.com/a/7321131/4970632
 " See: https://github.com/Asheq/close-buffers.vim
 function! file#show_bufs() abort
@@ -346,9 +346,9 @@ function! file#wipe_bufs()
 endfunction
 
 " Save, refresh, or rename the file
-" Note: Here :Gedit returns to head after viewing a blob. Can also use e.g. :Mru
+" NOTE: Here :Gedit returns to head after viewing a blob. Can also use e.g. :Mru
 " to return but this is faster. See https://github.com/tpope/vim-fugitive/issues/543
-" Note: Here file#rename adapated from Rename.vim. Avoids bug where cancelling the save
+" NOTE: Here file#rename adapated from Rename.vim. Avoids bug where cancelling the save
 " in the confirmation prompt still triggers BufWritePost and b:tabline_filechanged, and
 " prevents integration bug that triggers undefined b:gitgutter_was_enabled errors.
 function! file#update() abort
