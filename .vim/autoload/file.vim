@@ -206,7 +206,7 @@ function! file#fzf_open(bang, cmd, ...) abort
   for item in items  " expand tilde
     let item = expand(item)
     if item ==# s:new_file  " should be recursed at least one level
-      let args = ['.']  " WARNING: fzf sets 'base' to current working directory
+      let args = ['.']  " Warning: fzf sets 'base' to current working directory
       let file = expand('<cfile>')
       try
         let item = utils#input_default('File', file, function('file#glob_files', args))

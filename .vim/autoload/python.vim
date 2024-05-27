@@ -310,7 +310,7 @@ function! python#doc_page(...) abort
   let page = python#doc_translate(page)
   let opts = python#doc_options(page)
   let result = []  " default result
-  if !bufexists(page)   " WARNING: only matches exact string
+  if !bufexists(page)   " Warning: only matches exact string
     for iopt in opts
       let result = systemlist('pydoc ' . shellescape(iopt))
       let result = map(result, {idx, val -> substitute(val, '^\( \{4}\)* |  ', '\1', 'ge')})
@@ -324,7 +324,7 @@ function! python#doc_page(...) abort
   endif
   let exists = bufexists(page)
   let s:doc_prev = page  " previously browsed
-  let [bnr, pnr] = [bufnr(), bufnr(page)]  " WARNING: only matches start of string
+  let [bnr, pnr] = [bufnr(), bufnr(page)]  " Warning: only matches start of string
   if !empty(get(b:, 'doc_name', ''))  " existing path shell.vim
     silent exe exists ? pnr . 'buffer' : 'enew | file ' . page
   else

@@ -1632,6 +1632,7 @@ let g:riv_python_rst_hl = 0  " highlight rest in python docstrings
 let g:vim_markdown_conceal = 1  " conceal stuff
 let g:vim_markdown_conceal_code_blocks = 0  " show code fences
 let g:vim_markdown_fenced_languages = ['html', 'python']
+let g:vim_markdown_folding_disabled = 1  " apply manually instead of with autocommands
 let g:vim_markdown_folding_level = 1  " pythonic folding level
 let g:vim_markdown_folding_style_pythonic = 1  " repair fold close issue
 let g:vim_markdown_override_foldtext = 0  " also overwrite function (see common.vim)
@@ -2586,7 +2587,7 @@ augroup scheme_setup
 augroup END
 if !has('gui_running') && get(g:, 'colors_name', 'default') ==? 'default'  " {{{
   noautocmd set background=dark  " standardize colors
-  highlight Todo ctermbg=NONE ctermfg=Yellow cterm=Underline
+  highlight Todo ctermbg=NONE ctermfg=DarkRed cterm=Underline
   highlight MatchParen ctermbg=Blue ctermfg=NONE
   highlight Sneak ctermbg=DarkMagenta ctermfg=NONE
   highlight Search ctermbg=Magenta ctermfg=NONE

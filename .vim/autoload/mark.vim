@@ -112,7 +112,7 @@ function! mark#init_marks() abort
     if iname =~# '\u' && !has_key(highlights, iname)
       call mark#set_marks(iname, ipos)
     endif
-  endfor  " WARNING: following lines must be last
+  endfor  " Warning: following lines must be last
   let default = get(get(g:, 'mark_stack', []), -1, 'A')
   let g:mark_name = get(g:, 'mark_name', default)
 endfunction

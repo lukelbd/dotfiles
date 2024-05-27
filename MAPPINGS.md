@@ -7,15 +7,7 @@ features like non-greedy searches unavailable in sed and awk. They can be applie
 interactively or in *bulk* as follows:
 
 ```sh
-find . -name '*.ext' -exec vi -u NONE -c '%s/regex/replacement/ge | wq' {} \;
-```
-
-General
--------
-
-Convert capitalized annotations to title-case for vim consistency.
-```vim
-%s/\C\<\([TNWE]\)\(ODO\|OTE\|ARNING\|RROR\):/\U\1\L\2:/ge
+find . $(ignores 1) -type f -name '*.vim' -exec vi -u NONE -c '%s | wq' {} \;
 ```
 
 Fortran
@@ -34,6 +26,19 @@ Add a space between markdown headers indicators and the header text.
 %s/#\([a-zA-Z0-9]\)/# \1/ge
 ```
 
+Headers
+-------
+
+Convert capitalized annotations to title-case for vim consistency.
+```vim
+%s/\C\%("\s\+\)\@<=\([TNWE]\)\(ODO\|OTE\|ARNING\|RROR\):\@=/\U\1\L\2/ge
+```
+
+Convert title-case annotations to capitalized for external consistency.
+```vim
+%s/\C\%("\s\+\)\@<=\(Todo\|Note\|Warning\|Error\):\@=/\U\1/ge
+```
+
 Vimscript
 ---------
 
@@ -48,7 +53,6 @@ Prepend a space to vi comments. The comment character is so small that I used to
 ```
 
 Surround comparison operators with spaces, accounting for `<Tab>` style keystroke indicators in vim script.
-
 ```vim
 %s/\_s[^ ,\-<>@!&=\\]\+\zs\(<=\|>=\|==\|^C|>\)\ze[^ ,!\-<>&=\\]\+\_s/ \1 /ge
 ```
