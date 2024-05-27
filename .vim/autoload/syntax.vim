@@ -98,8 +98,8 @@ function! syntax#next_scheme(arg) abort
 endfunction
 
 " Show syntax or filetype info
-" Note: This adds header in same format as built-in command
-" Note: This opens files in separate tabs for consistency with others tools
+" Note: This adds header in same format as built-in command and opens files in
+" separate tabs instead of panels for consistency with others tools.
 function! syntax#show_stack(...) abort
   let sids = a:0 ? map(copy(a:000), 'hlID(v:val)') : synstack(line('.'), col('.'))
   let [names, labels] = [[], []]
@@ -162,41 +162,38 @@ function! syntax#update_matches() abort
 endfunction
 
 " Update syntax match groups. Could move to after/syntax but annoying
+" Warning: Critical to include 'comment' in group names or else pep8 indent expression
+" incorrectly auto-indents. See: https://github.com/Vimjas/vim-python-pep8-indent
 " Note: This tries to fix docstring highlighting issues but inconsistent, so also
 " have vimrc 'syntax sync' mappings. See: https://github.com/vim/vim/issues/2790
 " Note: The URL regex is from .tmux.conf and https://vi.stackexchange.com/a/11547/8084
 " and the containedin line just tries to *guess* what particular comment and string
 " group names are for given filetype syntax schemes (use :Group for testing).
 function! syntax#update_groups() abort
-  if &filetype ==# 'vim'  " repair comments: https://github.com/vim/vim/issues/11307
-    syntax match vimQuoteComment '^[ \t:]*".*$' contains=vimComment.*,@Spell
-    highlight link vimQuoteComment Comment
-  endif
   if &filetype ==# 'html'  " no spell comments (here overwrite original group name)
     syntax region htmlComment start='<!--' end='--\s*>' contains=@NoSpell
     highlight link htmlComment Comment
-  endif
-  if &filetype ==# 'json'  " json comments: https://stackoverflow.com/a/68403085/4970632
+  elseif &filetype ==# 'json'  " json comments: https://stackoverflow.com/a/68403085/4970632
     syntax match jsonComment '^\s*\/\/.*$'
     highlight link jsonComment Comment
-  endif
-  if &filetype ==# 'fortran'  " repair comments (ensure space and skip c = value)
+  elseif &filetype ==# 'vim'  " repair comments: https://github.com/vim/vim/issues/11307
+    syntax match vimQuoteComment '^[ \t:]*".*$' contains=vimComment.*,@Spell
+    highlight link vimQuoteComment Comment | exe 'syntax clear vimCommentTitle'
+  elseif &filetype ==# 'fortran'  " repair comments (ensure space and skip c = value)
     syntax match fortranComment excludenl '^\s*[cC]\s\+=\@!.*$' contains=@spell,@fortranCommentGroup
     highlight link fortranComment Comment
-  endif
-  if &filetype ==# 'python'  " fix syntax: https://stackoverflow.com/a/28114709/4970632
+  elseif &filetype ==# 'python'  " fix syntax: https://stackoverflow.com/a/28114709/4970632
     highlight BracelessIndent ctermfg=NONE ctermbg=NONE cterm=inverse
-    if exists('*SetCellHighlighting') | call SetCellHighlighting() | endif | syntax sync minlines=100
+    exe 'syntax sync minlines=100' | exe exists('*SetCellHighlighting') ? 'call SetCellHighlighting()' : ''
   endif
-  syntax match CommonShebang
-    \ /^\%1l#!.*$/
-    \ contains=@NoSpell
-  syntax match CommonHeader
-    \ /\C\%(W\carnings\?\|E\crrors\?\|F\cixmes\?\|T\codos\?\|N\cotes\?\|S\cee\|XXX\):/
-    \ containedin=.*Comment.*
-  syntax match CommonLink
+  syntax match commentBang /^\%1l#!.*$/ contains=@NoSpell
+  syntax match commentLink
     \ =\v<(((https?|ftp|gopher)://|(mailto|file|news):)[^' 	<>"]+|(www|web|w3)[a-z0-9_-]*\.[a-z0-9._-]+\.[^'  <>"]+)[a-zA-Z0-9/]=
     \ containedin=.*\(Comment\|String\).*
+  syntax match commentColon /:/ contained
+  syntax match commentHeader
+    \ /\C\%([a-z.]\s\+\)\@<!\%(W\carnings\?\|E\crrors\?\|F\cixmes\?\|T\codos\?\|N\cotes\?\|XXX\):\@=/
+    \ containedin=.*Comment.* contains=pytonTodo nextgroup=CommentColon
 endfunction
 
 " Highlight group with gui or cterm codes
@@ -270,8 +267,8 @@ function! syntax#update_highlights() abort
   for group in getcompletion('GitGutter', 'highlight')  " see above
     call add(pairs, [group, 'Folded'])
   endfor
-  for [tail, dest] in [['Link', 'Underlined'], ['Header', 'PreProc'], ['Shebang', 'Special']]
-    call add(pairs, ['Common' . tail, dest])
+  for [tail, dest] in [['Link', 'Underlined'], ['Header', 'Todo'], ['Colon', 'Comment'], ['Bang', 'Special']]
+    call add(pairs, ['comment' . tail, dest])
   endfor
   for tail in ['Map', 'NotFunc', 'FuncKey', 'Command']
     call add(pairs, ['vim' . tail, 'Statement'])

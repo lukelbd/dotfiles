@@ -135,9 +135,11 @@ set whichwrap=[,],<,>,h,l  " <> = left/right insert, [] = left/right normal mode
 set wildmenu  " command line completion
 set wildmode=longest:list,full  " command line completion
 let &g:breakat = '  !*-+;:,./?'  " break lines following punctuation
+let &g:cindent = 0  " disable c-style current line indentation
 let &g:expandtab = 1  " global expand tab (respect tab toggling)
 let &g:foldenable = 1  " global fold enable (respect 'zn' toggling)
 let &g:formatlistpat = '^\s*\([*>+-]\|\d\+[)>:.]\)\s\+'  " filetype agnostic bullets
+let &g:indentkeys = '0{,0},0),0],0#,!^F,o,O'  " default indentation triggers
 let &g:iskeyword = '@,48-57,_,192-255'  " default keywords
 let &g:iminsert = 0  " disable language maps (used for caps lock)
 let &g:list = 1  " show characters by default
@@ -1042,6 +1044,7 @@ call utils#repeat_map('n', 'cL', 'MoveSplit', 'myi<CR><Esc><Cmd>keepjumps normal
 " Join and wrap lines with user formatting
 " Uses :Join command added by conjoin plugin
 " Note: Here e.g. '2J' joins 'next two lines' instead of 'current plus one'
+" Note: Use insert-mode <C-F> to format line if '!^F' present in &indentkeys
 command! -range -nargs=? Format <line1>,<line2>call edit#format_lines(<args>)
 nnoremap gqq <Cmd>call edit#format_lines(v:count)<CR>
 nnoremap <expr> gq edit#format_lines_expr(v:count)
@@ -2583,7 +2586,7 @@ augroup scheme_setup
 augroup END
 if !has('gui_running') && get(g:, 'colors_name', 'default') ==? 'default'  " {{{
   noautocmd set background=dark  " standardize colors
-  highlight Todo ctermbg=Red ctermfg=NONE
+  highlight Todo ctermbg=NONE ctermfg=Yellow cterm=Underline
   highlight MatchParen ctermbg=Blue ctermfg=NONE
   highlight Sneak ctermbg=DarkMagenta ctermfg=NONE
   highlight Search ctermbg=Magenta ctermfg=NONE
