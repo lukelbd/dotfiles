@@ -192,7 +192,7 @@ function! syntax#update_groups() abort
     \ containedin=.*\(Comment\|String\).*
   syntax match commentColon /:/ contained
   syntax match commentHeader
-    \ /\C\%([a-z.]\s\+\)\@<!\%(W\carnings\?\|E\crrors\?\|F\cixmes\?\|T\codos\?\|N\cotes\?\|XXX\):\@=/
+    \ /\C\%([a-z.]\s\+\)\@<!\%(Warning\|WARNING\|Error\|ERROR\|Fixme\|FIXME\|Todo\|TODO\|Note\|NOTE\|XXX\)[sS]\?:\@=/
     \ containedin=.*Comment.* contains=pytonTodo nextgroup=CommentColon
 endfunction
 
@@ -209,7 +209,7 @@ function! s:highlight_group(group, back, front, ...) abort
     if empty(a:back)  " background
       let code = has('gui_running') ? 'bg' : 'NONE'
     elseif has('gui_running')  " hex color
-      let code = get(g:, 'statusline_' . a:back, get(defaults, a:back, '#808080'))
+      let code = get(g:, 'statusline_' . a:back, get(defaults, a:back, a:back))
     else  " color name
       let code = a:back
     endif
@@ -219,7 +219,7 @@ function! s:highlight_group(group, back, front, ...) abort
     if empty(a:front)
       let code = has('gui_running') ? 'fg' : 'NONE'
     elseif has('gui_running')  " hex color
-      let code = get(g:, 'statusline_' . a:front, get(defaults, a:front, '#808080'))
+      let code = get(g:, 'statusline_' . a:front, get(defaults, a:front, a:front))
     else  " color name
       let code = a:front
     endif
@@ -240,6 +240,7 @@ endfunction
 function! syntax#update_highlights() abort
   let pairs = []  " highlight links
   call s:highlight_group('Normal', '', '', '')
+  call s:highlight_group('Todo', '', has('gui_running') ? 'LightGray' : 'Gray', 'bold')
   call s:highlight_group('LineNR', '', has('gui_running') ? 'Gray' : 'Black', '')
   call s:highlight_group('CursorLine', has('gui_running') ? 'DarkGray' : 'Black', 0, '')
   call s:highlight_group('ColorColumn', has('gui_running') ? 'LightGray' : 'Gray', 0, '')
@@ -248,6 +249,11 @@ function! syntax#update_highlights() abort
   call s:highlight_group('DiffChange', '', '', '')
   call s:highlight_group('DiffDelete', 'Black', 'Black', '')
   call s:highlight_group('DiffText', 'Black', '', 'bold')
+  call s:highlight_group('Search', 'DarkYellow', 0, '')
+  call s:highlight_group('ErrorMsg', 'DarkRed', 'White', '')
+  call s:highlight_group('WarningMsg', 'LightRed', 'Black', '')
+  call s:highlight_group('InfoMsg', 'LightYellow', 'Black', '')
+  call s:highlight_group('ModeMsg', 0, 'White', 'bold')
   call s:highlight_group('StrikeThrough', 0, 0, 'strikethrough')
   for group in ['Conceal', 'Pmenu', 'Terminal']
     call add(pairs, [group, 'Normal'])
@@ -258,14 +264,17 @@ function! syntax#update_highlights() abort
   for group in ['ALEErrorLine', 'ALEWarningLine', 'ALEInfoLine']  " see above
     call add(pairs, [group, 'Conceal'])
   endfor
-  for group in ['ALEErrorSign', 'ALEStyleErrorSign', 'ALESignColumnWithErrors']  " see above
-    call add(pairs, [group, 'Error'])
+  for group in ['Folded'] + getcompletion('GitGutter', 'highlight')  " see above
+    call add(pairs, [group, 'ModeMsg'])
   endfor
-  for group in ['ALEWarningSign', 'ALEStyleWarningSign', 'ALEInfoSign']  " see above
-    call add(pairs, [group, 'Todo'])
+  for group in ['ALEError', 'ALEErrorSign', 'ALEStyleError', 'ALEStyleErrorSign']  " see above
+    call add(pairs, [group, 'ErrorMsg'])
   endfor
-  for group in getcompletion('GitGutter', 'highlight')  " see above
-    call add(pairs, [group, 'Folded'])
+  for group in ['ALEWarning', 'ALEWarningSign', 'ALEStyleWarning', 'ALEStyleWarningSign']  " see above
+    call add(pairs, [group, 'WarningMsg'])
+  endfor
+  for group in ['ALEInfo', 'ALEInfoSign']  " see above
+    call add(pairs, [group, 'InfoMsg'])
   endfor
   for [tail, dest] in [['Link', 'Underlined'], ['Header', 'Todo'], ['Colon', 'Comment'], ['Bang', 'Special']]
     call add(pairs, ['comment' . tail, dest])

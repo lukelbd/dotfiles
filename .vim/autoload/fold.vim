@@ -302,7 +302,8 @@ function! fold#fold_text(...) abort
   let lines = string(line2 - line1 + 1)  " number of lines
   let leftidx = charidx(getline(winview.lnum), winview.leftcol)
   let maxlen = get(g:, 'linelength', 88) - 1  " default maximum
-  let hunk = git#stat_hunks(line1, line2, 0, 1)  " abbreviate with '1'
+  let flags = edit#get_errors(line1, line2)  " lintint messages
+  let flags .= git#stat_hunks(line1, line2, 0, 1)  " abbreviate with '1'
   let dots = repeat('·', len(string(line('$'))) - len(lines))
   let stats = level . dots . lines  " default statistics
   if &l:diff  " fill with maximum width
@@ -316,7 +317,7 @@ function! fold#fold_text(...) abort
   let indent = matchstr(label, '^\s*')
   let width = maxlen - strwidth(stats) - 1
   let label = empty(delim2) ? label : label . '···' . delim2
-  let label = empty(hunk) ? label : indent . hunk . ' ' . strpart(label, len(indent))
+  let label = empty(flags) ? label : indent . flags . ' ' . strpart(label, len(indent))
   if strwidth(label) >= width  " truncate fold text
     let dcheck = strpart(label, width - 4 - strwidth(delim2), 1)
     let delim2 = dcheck ==# delim1 ? '' : delim2

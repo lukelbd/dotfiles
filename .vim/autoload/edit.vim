@@ -11,9 +11,9 @@ function! edit#echo_range(msg, num, ...) range abort
   redraw | echom a:msg . head  . a:num . ' line(s)' . tail
 endfunction
 
-" Auto formatting utilities
-" NOTE: Not all servers support auto formtting. Seems 'pylsp' uses autopep8 consistent
-" with flake8 warnings. Use below function to print active servers.
+" Return linting and server information
+" NOTE: This is used to show error messages on closed folds similar
+" to method used to show git-gutter hunk summaries on closed folds.
 function! edit#get_servers() abort
   let servers = lsp#get_allowed_servers()
   let table = split(lsp#get_server_status(), "\n")
@@ -21,6 +21,20 @@ function! edit#get_servers() abort
   let names = map(filter(table, 'v:val[1] ==# ''running'''), 'v:val[0]')
   return filter(servers, 'index(names, v:val) >= 0')
 endfunction
+function! edit#get_errors(...) range abort
+  let [line1, line2] = a:0 ? a:000 : [a:firstline, a:lastline]
+  let [info, cnts, flags] = ['', {}, {'E': '!', 'W': '@', 'I': '#'}]
+  for item in get(b:, 'ale_highlight_items', {})
+    if item.bufnr == bufnr() && item.lnum >= line1 && item.lnum <= line2
+      let flag = get(flags, item.type, '?')
+      let cnts[flag] = get(cnts, flag, 0) + 1
+    endif
+  endfor | return join(map(items(cnts), 'v:val[0] . v:val[1]'), '')
+endfunction
+
+" Auto formatting utilities
+" NOTE: Not all servers support auto formtting. Seems 'pylsp' uses autopep8 consistent
+" with flake8 warnings. Use below function to print active servers.
 function! edit#auto_format(...) abort
   let formatters = get(g:, 'formatters_' . &l:filetype, [])
   let servers = edit#get_servers()

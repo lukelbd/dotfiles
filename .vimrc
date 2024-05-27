@@ -739,7 +739,7 @@ noremap <F3> <Esc>m'<Cmd>call tag#next_stack(-v:count1)<CR>
 noremap <F4> <Esc>m'<Cmd>call tag#next_stack(v:count1)<CR>
 
 " Jump to marks and declare alphabetic marks using counts (navigate with ]` and [`)
-" NOTE: :Marks does not handle file switching and :Jumps has an fzf error so override.
+" NOTE: Marks does not handle file switching and :Jumps has an fzf error so override.
 " NOTE: Uppercase marks unlike lowercase marks work between files and are saved in
 " viminfo, so use them. Also numbered marks are mostly internal, can be configured
 " to restore cursor position after restarting, also used in viminfo.
@@ -2234,6 +2234,7 @@ if s:has_plug('ale')  " {{{
     \ 'typescript': ['quick-lint-js'],
     \ 'vim': ['vint'],
   \ }
+  let g:ale_change_sign_column_color = 0  " do not change entire column
   let g:ale_completion_enabled = 0
   let g:ale_completion_autoimport = 0
   let g:ale_cursor_detail = 0
@@ -2587,7 +2588,6 @@ augroup scheme_setup
 augroup END
 if !has('gui_running') && get(g:, 'colors_name', 'default') ==? 'default'  " {{{
   noautocmd set background=dark  " standardize colors
-  highlight Todo ctermbg=NONE ctermfg=DarkRed cterm=Underline
   highlight MatchParen ctermbg=Blue ctermfg=NONE
   highlight Sneak ctermbg=DarkMagenta ctermfg=NONE
   highlight Search ctermbg=Magenta ctermfg=NONE
