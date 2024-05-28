@@ -18,63 +18,63 @@
 %------------------------------------------------------------------------------
 %% Must be changed OFTEN for different classes (e.g. publisher-supplied classes/templates
 %% or Bibliography interpreters [AGU doesnt require natbib or biblatex], slides vs. article)
-\usepackage[utf8]{inputenc} % disallows weird characters for unexpected behavior
-\usepackage[T1]{fontenc} % ?
-\usepackage{url} % package for formatting urls.
-%\usepackage[backend=bibtex,style=alphabetic,citestyle=authoryear]{biblatex} % more "recent", and works for beamer (natbib  NOT work with slides)
-%\usepackage{natbib} % allows citet, etc. and can use with custom .bst files; use for publications, and declare style with \bibliographystyle{<style>}
-%\usepackage{biblatex} % basic, for beamer, etc.
-\usepackage{lmodern} % this and ^^ declare font for whole article.
-%\usepackage[margin=1in]{geometry} % geometry allows easy margin-formatting
-\usepackage[labelfont=bf]{caption} % for better/more legible caption labels; very simple
-\usepackage{subcaption} % for things like subfigure, etc.
-%\usepackage{float} % special H location specifier is strong
-\usepackage{graphicx} % embedded bitmap, vector graphics
-\usepackage{epstopdf} % converts EPS to PDF files
-\usepackage{url} % package for formatting urls.
+\usepackage[utf8]{inputenc}  % disallows weird characters for unexpected behavior
+\usepackage[T1]{fontenc}  % ?
+\usepackage{url}  % package for formatting urls.
+%\usepackage[backend=bibtex,style=alphabetic,citestyle=authoryear]{biblatex}  % more "recent", and works for beamer (natbib  NOT work with slides)
+%\usepackage{natbib}  % allows citet, etc. and can use with custom .bst files; use for publications, and declare style with \bibliographystyle{<style>}
+%\usepackage{biblatex}  % basic, for beamer, etc.
+\usepackage{lmodern}  % this and ^^ declare font for whole article.
+%\usepackage[margin=1in]{geometry}  % geometry allows easy margin-formatting
+\usepackage[labelfont=bf]{caption}  % for better/more legible caption labels; very simple
+\usepackage{subcaption}  % for things like subfigure, etc.
+%\usepackage{float}  % special H location specifier is strong
+\usepackage{graphicx}  % embedded bitmap, vector graphics
+\usepackage{epstopdf}  % converts EPS to PDF files
+\usepackage{url}  % package for formatting urls.
 %------------------------------------------------------------------------------
 % PACKAGES
 %------------------------------------------------------------------------------
 %% Important Packages
 % For math, etc.
 \usepackage{amsmath}
-\usepackage{mathtools} % fixes some amsmath quirks
+\usepackage{mathtools}  % fixes some amsmath quirks
 \usepackage{amsthm}
 \usepackage{amsopn}
 \usepackage{amssymb}
 \usepackage{amsfonts}
-\usepackage{booktabs} % for lines between equations, use \midrule within; also
+\usepackage{booktabs}  % for lines between equations, use \midrule within; also
   % required for Pandas DataFrame.to_latex() method
 %% Optional packages, for smaller/less relavant things
-\usepackage{multirow} % for arrays; look this up
-% \usepackage{enumerate} % enumitem options, and \begin{enumerate}[I.] e.g.
-\usepackage{enumitem} % more complex enumeration (e.g. step 1, step 2, ...)
-\usepackage{cancel} % special "cancel" operator
-\usepackage{nth} % nth{1} is 1^st, etc.
-\usepackage{pdflscape} % lets you switch particular pages to landscape with \begin{landscape} / \end{landscape}. also sets pdf's "rotate" attribute to rotate the landscape'd page{\tiny }
+\usepackage{multirow}  % for arrays; look this up
+% \usepackage{enumerate}  % enumitem options, and \begin{enumerate}[I.] e.g.
+\usepackage{enumitem}  % more complex enumeration (e.g. step 1, step 2, ...)
+\usepackage{cancel}  % special "cancel" operator
+\usepackage{nth}  % nth{1} is 1^st, etc.
+\usepackage{pdflscape}  % lets you switch particular pages to landscape with \begin{landscape} / \end{landscape}. also sets pdf's "rotate" attribute to rotate the landscape'd page{\tiny }
 %% Some more specialized packages; need to look these up again
 %\usepackage{blkarray}
 %\usepackage{relsize}
-%\usepackage{pgffor} % iteration of procedures
-%\usepackage{setspace} % enables setstretch amont other things
+%\usepackage{pgffor}  % iteration of procedures
+%\usepackage{setspace}  % enables setstretch amont other things
 %\usepackage{xhfill}% http://ctan.org/pkg/xhfill
-%\usepackage{titling} % title options
+%\usepackage{titling}  % title options
 %\usepackage[retainorgcmds]{IEEEtrantools}
-%\usepackage{doc} % special logo commands? or... glossary? what the heck is this one?
+%\usepackage{doc}  % special logo commands? or... glossary? what the heck is this one?
 
 %------------------------------------------------------------------------------
 % REMAINING SHORTHANDS THAT MAY BE USEFUL
 %------------------------------------------------------------------------------
 %% Simple math operators (determines proper formatting AND spacing)
-% \DeclareMathOperator{\Lagr}{\mathcal{L}} % cursive L
+% \DeclareMathOperator{\Lagr}{\mathcal{L}}  % cursive L
 \DeclareMathOperator{\Tr}{trace}
-\DeclareMathOperator{\id}{id} % identity function? not sure
-\DeclareMathOperator{\eff}{eff} % effective? not sure
+\DeclareMathOperator{\id}{id}  % identity function? not sure
+\DeclareMathOperator{\eff}{eff}  % effective? not sure
 \DeclareMathOperator{\range}{range}
 \DeclareMathOperator{\nulls}{null}  % nullspace
 \DeclareMathOperator{\rank}{rank} 
-\DeclareMathOperator{\sign}{sign} % sign function
-\DeclareMathOperator{\Span}{span} % span
+\DeclareMathOperator{\sign}{sign}  % sign function
+\DeclareMathOperator{\Span}{span}  % span
 \DeclareMathOperator{\im}{Im}
 % \DeclareMathOperator{\d}{d}
 \DeclareMathOperator{\Char}{char}
@@ -82,9 +82,9 @@
 \DeclareMathOperator{\argmin}{argmin}
 \DeclareMathOperator{\sinc}{sinc}
 %% Equation formatting
-\newcommand{\numberthis}{\addtocounter{equation}{1}\tag{\theequation}} % add to end of line
+\newcommand{\numberthis}{\addtocounter{equation}{1}\tag{\theequation}}  % add to end of line
 %% Options for assignments header standard format. capitalized start new lines and "Solution" prefix
-% \newcommand{\sectionline}{\begin{center}\noindent\rule{\paperwidth/2}{0.4pt}\end{center}} % better section line
+% \newcommand{\sectionline}{\begin{center}\noindent\rule{\paperwidth/2}{0.4pt}\end{center}}  % better section line
 \newcommand{\prob}[2]{\subsection*{Question #1}\textit{#2}\noindent}
 \newcommand{\subprob}[2]{\subsubsection*{Part #1)}\textit{#2}\noindent}
 \newcommand{\Prob}[2]{\subsection*{Question #1}\textit{#2}\\\\\textbf{Solution}: }
@@ -102,9 +102,9 @@
 \newcommand{\speryr}{3.15576\E{7}s\,yr^{-1}}
 \newcommand{\Pa}{kg\,m^{-1}\,s^{-2}}
 \newcommand{\J}{kg\,m^2\,s^{-2}}
-\newcommand{\rate}{cm^3\,molec^{-1}\,s^{-1}} % rate constant
-\newcommand{\nd}{molec\,cm^{-3}} % number density
-\newcommand{\pH}{\text{pH}} % pH, without italics
+\newcommand{\rate}{cm^3\,molec^{-1}\,s^{-1}}  % rate constant
+\newcommand{\nd}{molec\,cm^{-3}}  % number density
+\newcommand{\pH}{\text{pH}}  % pH, without italics
 %% Figures
 \newcommand{\fig}[3]{%
   \begin{figure}[H]
@@ -112,21 +112,21 @@
   \includegraphics[width=#1]{#2}
   \caption{#3}
   \end{figure}%
-  } % for papers; also, float package conflicts with AGUTeX sometimes
+  }  % papers, and not float package conflicts with AGUTeX
 \newcommand{\Fig}[3]{%
   \begin{figure}[H]
   \centering 
   \makebox[\textwidth][c]{\includegraphics[width=#1]{#2}}
   \caption{#3}
   \end{figure}%
-  } % enforces centering always, even if runs into margins
+  }  % enforce centering always, even if runs into margins
 \newcommand{\FIG}[3]{%
   \begin{minipage}{\linewidth}
   \centering 
   \makebox[\textwidth][c]{\includegraphics[width=#1]{#2}}
-  \captionof{figure}{#3} % can't just do figure
+  \captionof{figure}{#3}  % can't just do figure
   \end{minipage}
-  } % enforces centering and disallows floating
+  }  % enforce centering and disallows floating
 \newcommand{\hFig}[3]{%
 \begin{figure}
   \centering
@@ -139,7 +139,7 @@
     \includegraphics[width=\linewidth]{#2}
   \end{subfigure}
   \caption{#3}
-\end{figure} % multiple Fig-style figures
+\end{figure}  % multiple Fig-style figures
 }
 \newcommand{\hFIG}[3]{%
   \begin{minipage}{\linewidth}
@@ -153,7 +153,7 @@
     \includegraphics[width=\linewidth]{#2}
   \end{subfigure}
     \captionof{figure}{#3}
-\end{minipage} % multiple FIG-style figures
+\end{minipage}  % multiple FIG-style figures
 }
 \newcommand{\vFig}[3]{%
 \begin{figure}
@@ -167,7 +167,7 @@
     \includegraphics[width=\linewidth]{#2}
   \end{subfigure}
   \caption{#3}
-\end{figure} % multiple Fig-style figures
+\end{figure}  % multiple Fig-style figures
 }
 \newcommand{\vFIG}[3]{%
   \begin{minipage}{\linewidth}
@@ -181,10 +181,8 @@
     \includegraphics[width=\linewidth]{#2}
   \end{subfigure}
     \captionof{figure}{#3}
-\end{minipage} % multiple FIG-style figures
+\end{minipage}  % multiple FIG-style figures
 }
-
-
 
 %------------------------------------------------------------------------------
 % EVERYTHING ELSE PROBABLY USELESS
@@ -194,8 +192,8 @@
 %------------------------------------------------------------------------------
 %% Derivatives
 \newcommand{\DD}[1][]{\,\text{D}#1}
-\newcommand{\dd}[1][]{\,\text{d}#1} % for dx, dy, etc.; it is an "operator" now
-\newcommand{\Deriv}[3][]{\frac{\text{D}^{#1}#3}{\text{D} {#2}^{#1}}} %capital D
+\newcommand{\dd}[1][]{\,\text{d}#1}  % for dx, dy, etc.; it is an "operator" now
+\newcommand{\Deriv}[3][]{\frac{\text{D}^{#1}#3}{\text{D} {#2}^{#1}}}  %capital D
 \newcommand{\pderiv}[3][]{\frac{\partial^{#1}#3}{\partial {#2}^{#1}}}
 \newcommand{\deriv}[3][]{\frac{\text{d}^{#1}#3}{\text{d} {#2}^{#1}}}
 \newcommand{\px}{\frac{\partial}{\partial x}}
@@ -211,56 +209,54 @@
 \newcommand{\Dz}{\frac{\text{D}}{\text{D} z}}
 \newcommand{\Dt}{\frac{\text{D}}{\text{D} t}}
 % Complex operators
-\newcommand{\tnorm}[1]{\left\|#1\right\|_2} % 2-norm (Euclidian norm)
-\newcommand{\onorm}[1]{\left\|#1\right\|_1} % 1-norm (sum of absolute values)
-\newcommand{\inorm}[1]{\left\|#1\right\|_\infty} % infinity norm
-\newcommand{\limit}[2][\infty]{\lim_{#2\to#1} } % limit, with default (symbol) goes to Inf
+\newcommand{\tnorm}[1]{\left\|#1\right\|_2}  % 2-norm (Euclidian norm)
+\newcommand{\onorm}[1]{\left\|#1\right\|_1}  % 1-norm (sum of absolute values)
+\newcommand{\inorm}[1]{\left\|#1\right\|_\infty}  % infinity norm
+\newcommand{\limit}[2][\infty]{\lim_{#2\to#1} }  % limit, with default (symbol) goes to Inf
 % Misc shorthands
 \newcommand{\E}[1]{{\times}10^{#1}}
 \newcommand{\Sum}{\sum_{i=1}^n}
 \newcommand{\overbar}[1]{\overline{#1}}
-\renewcommand{\tilde}[1]{\widetilde{#1}} % tilde is too narrow
-\renewcommand{\inf}{\infty} % don't even know what \inf is; just redefine it
+\renewcommand{\tilde}[1]{\widetilde{#1}}  % tilde is too narrow
+\renewcommand{\inf}{\infty}  % don't even know what \inf is; just redefine it
 \newcommand{\ditto}[1][.4pt]{\text{\xrfill{#1}~\textquotedbl~\xrfill{#1}}}
-\newcommand{\ubar}{\bar{u}} % mean x wind
-\newcommand{\vbar}{\bar{v}} % mean y wind
+\newcommand{\ubar}{\bar{u}}  % mean x wind
+\newcommand{\vbar}{\bar{v}}  % mean y wind
 \newcommand{\xbar}{\bar{x}}
 \newcommand{\ybar}{\bar{y}}
 \newcommand{\zbar}{\bar{z}}
 \newcommand{\ihat}{\hat{i}}
 \newcommand{\jhat}{\hat{j}}
 \newcommand{\khat}{\hat{k}}
-\newcommand{\uhat}{\hat{u}} % unit x wind
-\newcommand{\vhat}{\hat{v}} % unit y wind
-\newcommand{\xhat}{\hat{x}} % unit x
-\newcommand{\yhat}{\hat{y}} % unit y
-\newcommand{\that}{\hat{t}} % unit
-\newcommand{\fhat}{\hat{f}} % unit Coriolis
-\newcommand{\nhat}{\hat{n}} % normal unit vector
-\newcommand{\F }{{}^\circ F} % degrees Fahrenheit
-\newcommand{\C }{{}^\circ C} % degrees Celcius
-\newcommand{\Tau}{\mathrm{T}} % greek tau
+\newcommand{\uhat}{\hat{u}}  % unit x wind
+\newcommand{\vhat}{\hat{v}}  % unit y wind
+\newcommand{\xhat}{\hat{x}}  % unit x
+\newcommand{\yhat}{\hat{y}}  % unit y
+\newcommand{\that}{\hat{t}}  % unit
+\newcommand{\fhat}{\hat{f}}  % unit Coriolis
+\newcommand{\nhat}{\hat{n}}  % normal unit vector
+\newcommand{\F }{{}^\circ F}  % degrees Fahrenheit
+\newcommand{\C }{{}^\circ C}  % degrees Celcius
+\newcommand{\Tau}{\mathrm{T}}  % greek tau
 \newcommand{\given}{~|~}
 \newcommand{\comma}{,~}
 \newcommand{\fa}{~\forall~}
 \newcommand{\ex}{~\exists~}
 
 %------------------------------------------------------------------------------
-% ENVIRONMENTS, STYLES, FORMATTING
+% Environments, styles, formatting
 %------------------------------------------------------------------------------
 % Make arrays more spread out
-\renewcommand{\arraystretch}{1.75}
-% New title option, more compact
+\renewcommand{\arraystretch}{1.75}  % stretch arrays
 \newcommand{\mytitle}[1]{\setstretch{.65}\maketitle}
 \renewcommand{\label}[1]{\label{#1}\tag{#1}}
-% Environments
-\def\[#1\]{\begin{align*}#1\end{align*}} % turns \[ \] from \begin/end equation, to align
+\def\[#1\]{\begin{align*}#1\end{align*}}  % turns \[ \] from \begin/end equation, to align
 \renewcommand{\cases}[1]{\left\{\begin{array}{ll}#1\end{array}\right.}
 \newcommand{\case}[1]{\left\{\begin{array}{ll}#1\end{array}\right.}
-\newcommand{\pfrac}[2]{\left(\frac{#1}{#2}\right)} % fraction with parentheses
-\renewcommand{\frac}[2]{\dfrac{#1}{#2}} % will always want display-fraction
-\newcommand{\mat}[1]{\begin{pmatrix}#1\end{pmatrix}} % quick parentheses matrix
-\newcommand{\Mat}[1]{\begin{bmatrix}#1\end{bmatrix}} % quick bracket matrix
+\newcommand{\pfrac}[2]{\left(\frac{#1}{#2}\right)}  % fraction with parentheses
+\renewcommand{\frac}[2]{\dfrac{#1}{#2}}  % will always want display-fraction
+\newcommand{\mat}[1]{\begin{pmatrix}#1\end{pmatrix}}  % quick parentheses matrix
+\newcommand{\Mat}[1]{\begin{bmatrix}#1\end{bmatrix}}  % quick bracket matrix
 \newcommand{\bullets}[1]{\begin{itemize}#1\end{itemize}}
 % \newcommand{\numbers}[1]{\begin{enumerate}[1)]#1\end{enumerate}}
 \newcommand{\numbers}[1]{\begin{enumerate}#1\end{enumerate}}
@@ -269,44 +265,44 @@
 \renewcommand{\roman}[1]{\begin{enumerate}[I.]#1\end{enumerate}}
 \newcommand{\terms}[1]{\begin{description}#1\end{description}}
 % Styling shortcuts (math-mode and regular-mode)
-\newcommand{\un}[1]{\underline{\smash{#1}}} % underline without making line wider
-\renewcommand{\it}[1]{\textit{#1}} % italics
-\renewcommand{\bf}[1]{\textbf{#1}} % bold
-\newcommand{\tit}[1]{\textit{#1}} % italics
-\newcommand{\tbf}[1]{\textbf{#1}} % bold
-\newcommand{\mb}[1]{\mathbf{#1}} % math bold
-\newcommand{\mcal}[1]{\mathcal{#1}} % math calligraphy
-\renewcommand{\t}[1]{\text{#1}} % for quick text in math-mode
-\newcommand{\tx}[1]{\text{#1}} % for quick text in math-mode
-\newcommand{\red}{\color{red}} % enclose text in red color
+\newcommand{\un}[1]{\underline{\smash{#1}}}  % underline without making line wider
+\renewcommand{\it}[1]{\textit{#1}}  % italics
+\renewcommand{\bf}[1]{\textbf{#1}}  % bold
+\newcommand{\tit}[1]{\textit{#1}}  % italics
+\newcommand{\tbf}[1]{\textbf{#1}}  % bold
+\newcommand{\mb}[1]{\mathbf{#1}}  % math bold
+\newcommand{\mcal}[1]{\mathcal{#1}}  % math calligraphy
+\renewcommand{\t}[1]{\text{#1}}  % for quick text in math-mode
+\newcommand{\tx}[1]{\text{#1}}  % for quick text in math-mode
+\newcommand{\red}{\color{red}}  % enclose text in red color
 
 %------------------------------------------------------------------------------
-% SPECIAL
+% Special
 %------------------------------------------------------------------------------
 % Field labels
-\newcommand{\II}{\mathbb{I}} % Imaginary
-\newcommand{\RR}{\mathbb{R}} % for Real numbers
-\newcommand{\ZZ}{\mathbb{Z}} % for Integers
-\newcommand{\NN}{\mathbb{N}} % et. cetera
+\newcommand{\II}{\mathbb{I}}  % Imaginary
+\newcommand{\RR}{\mathbb{R}}  % for Real numbers
+\newcommand{\ZZ}{\mathbb{Z}}  % for Integers
+\newcommand{\NN}{\mathbb{N}}  % et. cetera
 \newcommand{\QQ}{\mathbb{Q}}
 \newcommand{\CC}{\mathbb{C}}
 \newcommand{\FF}{\mathbb{F}}
 % Chemical constituents
 \newcommand{\tF}{\text{F}}
-\newcommand{\tX}{\text{X}} % species "X"
+\newcommand{\tX}{\text{X}}  % species "X"
 \newcommand{\tCl}{\text{Cl}}
-\newcommand{\tO}{\text{O}} % oxygens
-\newcommand{\tC}{\text{C}} % carbon
-\newcommand{\tN}{\text{N}} % nitrogen
-\newcommand{\tH}{\text{H}} % hydrogen
-\newcommand{\tS}{\text{S}} % sulfur
-\newcommand{\tM}{\text{M}} % "third body"
-\newcommand{\tR}{\text{R}} % "hydrocarbon chain"
+\newcommand{\tO}{\text{O}}  % oxygens
+\newcommand{\tC}{\text{C}}  % carbon
+\newcommand{\tN}{\text{N}}  % nitrogen
+\newcommand{\tH}{\text{H}}  % hydrogen
+\newcommand{\tS}{\text{S}}  % sulfur
+\newcommand{\tM}{\text{M}}  % "third body"
+\newcommand{\tR}{\text{R}}  % "hydrocarbon chain"
 % Atmosphere common abbreviations
 \newcommand{\TOA}{\text{TOA}}
 \newcommand{\LW}{\text{LW}}
 \newcommand{\SW}{\text{SW}}
-\newcommand{\delt}{\partial_t} % common partial derivatives
+\newcommand{\delt}{\partial_t}  % common partial derivatives
 \newcommand{\deltt}{\partial_{tt}}
 \newcommand{\delx}{\partial_x}
 \newcommand{\dely}{\partial_y}
@@ -321,5 +317,4 @@
 \newcommand{\deltx}{\partial_{tx}}
 \newcommand{\delty}{\partial_{ty}}
 \newcommand{\deltz}{\partial_{tz}}
-\newcommand{\iter}[2]{#1^{(#2)}} % iteration (for algorithm notation)
-
+\newcommand{\iter}[2]{#1^{(#2)}}  % iteration (for algorithm notation)
