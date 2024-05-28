@@ -818,16 +818,17 @@ nnoremap z" <Cmd>call grep#call_grep('rg', 1, 3)<CR>
 " NOTE: Currently do not use :Fixme :Error or :Xxx but these are also highlighted
 let s:conflicts = '^' . repeat('[<>=|]', 7) . '\($\|\s\)'
 command! -bang -nargs=* -complete=file Debugs call grep#call_rg(<bang>0, 2, '^\s*ic(', <f-args>)
+command! -bang -nargs=* -complete=file Prints call grep#call_rg(<bang>0, 2, '^\s*print(', <f-args>)
 command! -bang -nargs=* -complete=file Notes call grep#call_rg(<bang>0, 2, '\<\(Note\|NOTE\):', <f-args>)
 command! -bang -nargs=* -complete=file Todos call grep#call_rg(<bang>0, 2, '\<\(Todo\|TODO\|Fixme\|FIXME\):', <f-args>)
 command! -bang -nargs=* -complete=file Warnings call grep#call_rg(<bang>0, 2, '\<\(Warning\|WARNING\|Error\|ERROR\):', <f-args>)
 command! -bang -nargs=* -complete=file Conflicts call grep#call_rg(<bang>0, 2, s:conflicts, <f-args>)
 nnoremap gG <Cmd>Conflicts<CR>
-nnoremap gB <Cmd>Debugs<CR>
+nnoremap gB <Cmd>Debugs!<CR>
 nnoremap gE <Cmd>Todos<CR>
 nnoremap gM <Cmd>Notes<CR>
 nnoremap gW <Cmd>Warnings<CR>
-nnoremap zB <Cmd>Debugs!<CR>
+nnoremap zB <Cmd>Prints!<CR>
 nnoremap zE <Cmd>Todos!<CR>
 nnoremap zM <Cmd>Notes!<CR>
 nnoremap zW <Cmd>Warnings!<CR>
