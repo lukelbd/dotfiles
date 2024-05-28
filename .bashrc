@@ -2195,12 +2195,11 @@ _title_cwd() {
 _title_get() {
   local idx name
   # shellcheck disable=SC2153
-  idx=${ITERM_SESSION_ID%%t*}
-  idx=${idx#w}
+  idx=${ITERM_SESSION_ID%%t*} && idx=${idx#w}
   if [ -n "$TMUX" ]; then  # iterm integration
     name=$(tmux display-message -p '#W')
   elif $_macos && [ -r "$_title_path" ]; then
-    name=$(grep "^$idx:.*$" "$_title_path" 2>/dev/null | cut -d: -f2-)
+    name=$(grep "^${idx:--1}:.*$" "$_title_path" 2>/dev/null | cut -d: -f2-)
   else  # do not change title
     return 1
   fi
@@ -2210,8 +2209,7 @@ _title_get() {
 # Set session title from user input or prompt
 _title_set() {
   local idx name default
-  idx=${ITERM_SESSION_ID%%t*}
-  idx=${idx#w}
+  idx=${ITERM_SESSION_ID%%t*} && idx=${idx#w}
   if [ -n "$TMUX" ]; then
     default=$(tmux display-message -p '#W')
   elif $_macos && [ -n "$ITERM_SESSION_ID" ]; then
