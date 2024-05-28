@@ -2193,39 +2193,46 @@ _title_cwd() {
 
 # Get session title from path
 _title_get() {
-  local idx title
-  idx=${TERM_SESSION_ID%%t*}
-  idx=${idx#w}; idx=${idx:-0}
+  local idx name
+  # shellcheck disable=SC2153
+  idx=${ITERM_SESSION_ID%%t*}
+  idx=${idx#w}
   if [ -n "$TMUX" ]; then  # iterm integration
-    title=$(tmux display-message -p '#W')
-  elif ! [ -r "$_title_path" ]; then
-    return 1  # unknown title
-  elif $_macos; then
-    title=$(grep "^$idx:.*$" "$_title_path" 2>/dev/null | cut -d: -f2-)
-  else
-    title=$(cat "$_title_path")  # only text in file, is this current session's title
+    name=$(tmux display-message -p '#W')
+  elif $_macos && [ -r "$_title_path" ]; then
+    name=$(grep "^$idx:.*$" "$_title_path" 2>/dev/null | cut -d: -f2-)
+  else  # do not change title
+    return 1
   fi
-  echo "$title" | sed $'s/^[ \t]*//;s/[ \t]*$//'
+  echo "$name" | sed $'s/^[ \t]*//;s/[ \t]*$//'
 }
 
 # Set session title from user input or prompt
 _title_set() {
-  local idx title
-  $_macos && [ -n "$TERM_SESSION_ID" ] || return 1
-  idx=${TERM_SESSION_ID%%t*}
-  idx=${idx#w}; idx=${idx:-0}
-  if [ $# -gt 0 ]; then
-    title="$*"
-  else  # user-input title
-    read -r -p "Title (window $idx):" title
-  fi
-  title=${title:-window $idx}
+  local idx name default
+  idx=${ITERM_SESSION_ID%%t*}
+  idx=${idx#w}
   if [ -n "$TMUX" ]; then
-    tmux rename-window "$title"
+    default=$(tmux display-message -p '#W')
+  elif $_macos && [ -n "$ITERM_SESSION_ID" ]; then
+    default="window ${idx:-0}"
+  elif $_macos; then
+    default=$(basename "$(pwd)")
+  else
+    return 1
+  fi
+  if [ $# -gt 0 ]; then
+    name="$*"
+  else  # user-input title
+    read -r -p "Title ($default): " name
+  fi
+  name=${name:-$default}
+  if [ -n "$TMUX" ]; then
+    tmux rename-window "$name"
   else
     [ -e "$_title_path" ] || touch "$_title_path"
-    sed -i '/^'"$idx"':.*$/d' "$_title_path"  # remove existing title from file
-    echo "$idx: $title" >> "$_title_path"  # add to file
+    sed -i '/^'"${idx:--1}"':.*$/d' "$_title_path"  # remove previous
+    echo "${idx:--1}: $name" >> "$_title_path"  # add to file
   fi
 }
 alias title='_title_set'  # easier for user
@@ -2244,7 +2251,7 @@ if $_macos; then
   _title_path=$HOME/.title
   PROMPT_COMMAND=${PROMPT_COMMAND/_title_get/_prompt_title}
   [[ "$PROMPT_COMMAND" =~ _prompt_title ]] || _prompt_append _prompt_title
-  [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && _prompt_title
+  [[ "$ITERM_SESSION_ID" =~ w?t?p0: ]] && _prompt_title
 fi
 
 # Source other commands and print message
