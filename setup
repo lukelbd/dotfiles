@@ -71,11 +71,11 @@ for pair in \
   "$pyroot"/site-packages:site-packages \
   "$texroot"/texmf-dist/tex:texmf-dist \
   "$itermroot"/Scripts:scripts \
-  "$libroot"/Services:workflows \
   "$pdfroot"/Documents:pdfs \
   "$googleroot"/My\ Drive:google \
   "$cloudroot":icloud \
   "$cloudroot"/Mackup:mackup \
+  "$cloudroot"/Mackup/Services:workflows \
   "$cloudroot"/Mackup/.mackup.cfg:.mackup.cfg
   do
   src=${pair%:*}
