@@ -380,6 +380,8 @@ alias commands='compgen -c'  # bash commands
 alias keywords='compgen -k'  # bash commands
 alias modules='module avail 2>&1 | cat '
 alias bindings_stty='stty -a'  # show bindings (linux and coreutils)
+alias windows='tmux list-windows'  # show tmux windows
+alias panes='tmux list-panes'  # show tmux panes
 kinds() { ctags --list-kinds="$*"; }  # list language shortcuts
 kinds-all() { ctags --list-kinds-full="$*"; }  # list language shortcuts
 # alias bindings_stty='stty -e'  # show bindings (native mac)
@@ -2194,12 +2196,14 @@ _title_get() {
   local idx title
   idx=${TERM_SESSION_ID%%t*}
   idx=${idx#w}; idx=${idx:-0}
-  if [ -r "$_title_path" ]; then
-    if $_macos; then
-      title=$(grep "^$idx:.*$" "$_title_path" 2>/dev/null | cut -d: -f2-)
-    else
-      title=$(cat "$_title_path")  # only text in file, is this current session's title
-    fi
+  if [ -n "$TMUX" ]; then  # iterm integration
+    title=$(tmux display-message -p '#W')
+  elif ! [ -r "$_title_path" ]; then
+    return 1  # unknown title
+  elif $_macos; then
+    title=$(grep "^$idx:.*$" "$_title_path" 2>/dev/null | cut -d: -f2-)
+  else
+    title=$(cat "$_title_path")  # only text in file, is this current session's title
   fi
   echo "$title" | sed $'s/^[ \t]*//;s/[ \t]*$//'
 }
@@ -2210,11 +2214,19 @@ _title_set() {
   $_macos && [ -n "$TERM_SESSION_ID" ] || return 1
   idx=${TERM_SESSION_ID%%t*}
   idx=${idx#w}; idx=${idx:-0}
-  [ $# -gt 0 ] && title="$*" || read -r -p "Title (window $idx):" title
+  if [ $# -gt 0 ]; then
+    title="$*"
+  else  # user-input title
+    read -r -p "Title (window $idx):" title
+  fi
   title=${title:-window $idx}
-  [ -e "$_title_path" ] || touch "$_title_path"
-  sed -i '/^'"$idx"':.*$/d' "$_title_path"  # remove existing title from file
-  echo "$idx: $title" >> "$_title_path"  # add to file
+  if [ -n "$TMUX" ]; then
+    tmux rename-window "$title"
+  else
+    [ -e "$_title_path" ] || touch "$_title_path"
+    sed -i '/^'"$idx"':.*$/d' "$_title_path"  # remove existing title from file
+    echo "$idx: $title" >> "$_title_path"  # add to file
+  fi
 }
 alias title='_title_set'  # easier for user
 
