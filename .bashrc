@@ -345,16 +345,15 @@ alias cd='cd -P'                    # don't want this on my mac temporarily
 alias ls='ls --color=always -AF'    # ls with dirs differentiate from files
 alias ld='ls --color=always -AFd'   # ls with details and file sizes
 alias ll='ls --color=always -AFhl'  # ls with details and file sizes
-alias tmux='tmux -CC'               # use control-mode by default for iterm integration
 alias dirs='dirs -p | tac | xargs'  # show dir stack matching prompt order
 alias curl='curl -O'                # always download associated file
 alias ctags='ctags -o -'            # print tags to stdout by default
 alias ctime='date +%s'              # current time in seconds since epoch
 alias mtime='date +%s -r'           # modification time of input file
-mv() { git mv "$@" 2>/dev/null || command mv "$@"; }    # prefer git mv to standard
-popd() { command popd "$@" >/dev/null || return 1; }    # suppress wrong-order printing
-pushd() { command pushd "$@" >/dev/null || return 1; }  # suppress wrong-order printing
 export LESS="--RAW-CONTROL-CHARS"
+pushd() { command pushd "$@" >/dev/null || return 1; }  # suppress wrong-order printing
+popd() { command popd "$@" >/dev/null || return 1; }  # suppress wrong-order printing
+mv() { command git mv "$@" 2>/dev/null || command mv "$@"; }  # prefer git mv to standard
 [ -r ~/.LESS_TERMCAP ] && source ~/.LESS_TERMCAP
 if hash tput 2>/dev/null; then
   export LESS_TERMCAP_md=$'\e[1;33m'      # begin blink
@@ -650,7 +649,7 @@ man() {
 }
 
 # Git and vim overrides {{{2
-# Prevent git stash from running without 'git stash push' and test message length.
+# Handle git commit messages and require 'git stash push'
 # NOTE: 'git stash --staged push' will stash only staged changes. Should use more often.
 # https://stackoverflow.com/q/48751491/4970632
 git() {
@@ -672,10 +671,12 @@ git() {
   command git "$@"
 }
 
-# Open one tab per file
+# Handle vim commands and helper functions
+# See: https://vi.stackexchange.com/a/6114
 # NOTE: Previously cleared screen and deleted scrollback history but now
 # just use &restorescreen=1 and &t_ti and &t_te escape codes.
-# See: https://vi.stackexchange.com/a/6114
+# NOTE: The man and help functions are seldom used. Prefer native pagers or running
+# help and man mappings from vim sessions (see .vim/autoload/shell.vim).
 vi() {
   HOME=/dev/null command vim -i NONE -u NONE "$@"
 }
@@ -684,8 +685,26 @@ vim() {
   command vim --cmd 'set restorescreen' -p "$@"
   [[ " $* " =~ (--version|--help|-h) ]] && return
 }
+iman() {
+  local arg="$*"
+  [[ "$arg" =~ " " ]] && arg=${arg//-/ }
+  [ $# -eq 0 ] && echo "Requires one argument." && return 1
+  if command man "$arg" 1>/dev/null; then  # could display error message
+    vim --cmd 'set buftype=nofile' -c "call shell#man_page(0, '$*')"
+  fi
+}
+ihelp() {
+  local result
+  [ $# -eq 0 ] && echo "Requires argument." && return 1
+  [ "$1" == cdo ] && result=$("$1" --help "${@:2}" 2>&1) || result=$("$@" --help 2>&1)
+  if [ "$(echo "$result" | wc -l)" -gt 2 ]; then
+    vim --cmd 'set buftype=nofile' -c "call shell#help_page(0, '$*')"
+  else
+    echo "No help information for $*."
+  fi
+}
 
-# Vim session initiation and restoration
+# Handle vim and tmux sessions
 # See: https://apple.stackexchange.com/q/31872/214359
 # NOTE: Previously had manual overrides for various fold commands. But not
 # anymore, seems unnecessary with simple FastFold + native folding.
@@ -693,7 +712,16 @@ vim() {
 # sed -i '/zt/a setlocal nofoldenable' "$path"  # disable folds after opening file
 # sed -i 'N;/normal! z[oc]/!P;D' "$path"  # remove previous fold commands
 # sed -i '/^[0-9]*,[0-9]*fold$/d' "$path"  # remove manual fold definitions
-vim-session() {
+tmux() {
+  if [ "$#" -gt 0 ]; then
+    command tmux "$@"
+  elif command tmux list-sessions | grep iterm; then
+    command tmux -CC attach -t iterm
+  else
+    command tmux -CC new-session -t iterm
+  fi
+}
+session() {
   local arg path flags root alt  # flags and session file
   for arg in "$@"; do
     if [[ "$arg" =~ ^-.* ]]; then
@@ -714,27 +742,6 @@ vim-session() {
   alt=${root/$HOME/\~}  # alternative root with tilde
   sed -i "\\:^lcd \\($root\\|$alt\\)\$:d" "$path"  # remove outdated lcd calls
   vim -S "$path" "${flags[@]}"  # call above function
-}
-
-# Vim version of help and man page
-# NOTE: No longer default. Prefer pagers in general.
-vh() {
-  local result
-  [ $# -eq 0 ] && echo "Requires argument." && return 1
-  [ "$1" == cdo ] && result=$("$1" --help "${@:2}" 2>&1) || result=$("$@" --help 2>&1)
-  if [ "$(echo "$result" | wc -l)" -gt 2 ]; then
-    vim --cmd 'set buftype=nofile' -c "call shell#help_page(0, '$*')"
-  else
-    echo "No help information for $*."
-  fi
-}
-vm() {
-  local search arg="$*"
-  [[ "$arg" =~ " " ]] && arg=${arg//-/ }
-  [ $# -eq 0 ] && echo "Requires one argument." && return 1
-  if command man "$arg" 1>/dev/null; then  # could display error message
-    vim --cmd 'set buftype=nofile' -c "call shell#man_page(0, '$*')"
-  fi
 }
 
 # Open files optionally based on name
@@ -1932,29 +1939,34 @@ _fzf_define_complete() {
 # overrides default '%q' quoted printing by replacing escaped tildes with unexpanded.
 # NOTE: This supports command completion for empty lines, first word in the line, and
 # `man`, `help`, `type`, and `which`. Caches commands in .fzf.commands to save time
-_fzf_default_completion() {
-  local mode args
-  mode=$1; shift;
-  [ "$mode" -ge 1 ] && args=" -type d -printf %P/\n , " || args=''
-  test "$(find $HOME/.fzf.commands -mmin -10080 2>/dev/null)" || echo 'FZF: Generating commands...' \
-    && compgen -c | grep -v '[!.:{}]' | sort | uniq >$HOME/.fzf.commands
-  COMP_CWORD=0 _fzf_complete '+m' -- "$@" < <(cat \
-    <(find -L . -mindepth 1 -maxdepth 1 \( $args -type f -executable -printf "%P\n" \)) \
-    <(compgen -A function) <(tac $HOME/.fzf.commands | sed 's/$/ /') \
-  )
-}
 _fzf_general_completion() {
   local cur mode
   mode=$1; shift;
-  cur="${COMP_WORDS[COMP_CWORD]}"
+  cur=${COMP_WORDS[COMP_CWORD]}
   if [[ "$cur" =~ \$[^/]*$ ]]; then  # subsequent e.g. $HOME/<Tab> expands variables
     _fzf_complete '-m' -- "$@" < <(compgen -v | sed 's@^@'"${cur%\$*}"'\$@')
   elif [ "$mode" -ge 1 ]; then  # directories only
-    __fzf_generic_path_completion _fzf_compgen_dir "+m" "/" "$@"
+    __fzf_generic_path_completion _fzf_compgen_dir '+m' '/' "$@"
   else  # general paths
-    __fzf_generic_path_completion _fzf_compgen_path "-m" "" "$@"
+    __fzf_generic_path_completion _fzf_compgen_path '-m' '' "$@"
   fi
-  COMPREPLY=( "${COMPREPLY[@]/\\~/\~}" )
+  COMPREPLY=("${COMPREPLY[@]/\\~/\~}")
+}
+_fzf_default_completion() {
+  local cur dir mode flags format
+  mode=$1; shift;
+  [ "${#COMP_WORDS[@]}" -gt 0 ] && cur=${COMP_WORDS[COMP_CWORD]} || cur=''
+  [[ "$cur" =~ / ]] && dir=${cur%/*} format=%p || dir=. format=%P
+  flags=(-type f -executable -printf "$format \n")
+  [ "$mode" -gt 0 ] && flags+=(, -type d -printf "$format/\n")
+  test "$(find $HOME/.fzf.commands -mmin -10080 2>/dev/null)" || {
+    echo 'FZF: Generating commands...'
+    compgen -c | grep -v '[!.:{}]' | sort | uniq >$HOME/.fzf.commands
+  }
+  COMP_CWORD=0 _fzf_complete '+m' -- "$@" < <(cat \
+    <(find -L "$dir" -mindepth 1 -maxdepth 1 \( "${flags[@]}" \)) \
+    <(compgen -A function) <(tac $HOME/.fzf.commands | sed 's/$/ /') \
+  )
 }
 
 # Add command-specific completion functions {{{2
@@ -1993,7 +2005,7 @@ if [ "${FZF_SKIP:-0}" == 0 ]; then
     _fzf_post() { COMPREPLY=( "${COMPREPLY[@]/\\~/\~}" ); }  # unexpand home directory
     _fzf_dir_completion() { _fzf_general_completion 1 "$@"; }
     _fzf_path_completion() { _fzf_general_completion 0 "$@"; }
-    _fzf_exe_completion() { _fzf_default_completion 0 "$@"; }
+    _fzf_help_completion() { _fzf_default_completion 0 "$@"; }
     _fzf_empty_completion() { _fzf_default_completion 1 "$@"; }
     _fzf_cdo_completion_post() { cat | sed 's/(.*) *$//g' | sed 's/ *$//g'; }
     _fzf_git_completion_post() { cat | sed 's/(.*) *$//g' | sed 's/ *$//g'; }
@@ -2011,7 +2023,7 @@ if [ "${FZF_SKIP:-0}" == 0 ]; then
     _fzf_define_complete 'cdo' cdo
     _fzf_define_complete 'bind' bind
     _fzf_define_complete 'shopt' shopt
-    _fzf_define_complete 'exe' help man type which
+    _fzf_define_complete 'help' help man type which
   fi
   echo 'done'
 fi
