@@ -1473,7 +1473,7 @@ endif
 if s:enable_ddc
   call s:plug('matsui54/denops-popup-preview.vim')  " show previews during pmenu selection
   call s:plug('vim-denops/denops.vim')  " ddc dependency
-  call s:plug('Shougo/ddc.vim')  " fourth generation (requires deno)
+  call s:plug('Shougo/ddc.vim', {'commit': '74743f5'})  " fourth generation (requires deno)
   call s:plug('Shougo/ddc-ui-native')  " matching words near cursor
 endif
 
@@ -1498,7 +1498,7 @@ if s:enable_ddc
   call s:plug('matsui54/ddc-buffer')  " matching words from buffer (as in neocomplete)
   call s:plug('shun/ddc-source-vim-lsp')  " language server protocol completion for vim 8+
   call s:plug('Shougo/ddc-source-around')  " matching words near cursor
-  call s:plug('LumaKernel/ddc-source-file')  " matching file names
+  call s:plug('LumaKernel/ddc-source-file', {'commit': '7233513'})  " matching file names
 endif
 
 " Delimiters and snippets {{{2
