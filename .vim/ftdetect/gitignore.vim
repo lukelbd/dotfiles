@@ -1,2 +1,2 @@
-" Filetype declarations. Include other ignore-type files.
-au BufNewFile,BufRead {.,}gitignore,{.,}gitignore.default,{.,}wildignore,{.,}agignore,{.,}rgignore,{.,}ignore set filetype=gitignore
+" Filetype declarations. Add default gitignore and grep ignore files
+au BufNewFile,BufRead .gitignore.default,.{,ag,rg,wild}ignore set filetype=gitignore

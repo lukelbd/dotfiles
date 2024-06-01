@@ -43,6 +43,10 @@ endif
 function! Foldtext_markdown(...)
   return call('fold#fold_text', [])
 endfunction
+if exists('b:common_syntax') || !exists('b:current_syntax')
+  finish  " remove b:common_syntax on Syntax * autocommand
+endif
+let b:common_syntax = 1
 call fold#update_folds(1, 1)
 silent! doautocmd CursorHold
 silent! doautocmd ConflictMarkerDetect BufReadPost

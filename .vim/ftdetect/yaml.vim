@@ -1,2 +1,2 @@
-" Filetype declarations. Include matplotlib and proplot setting files.
-autocmd BufNewFile,BufRead *matplotlibrc,*proplotrc,*.mplstyle,*.style,*.table,*.yaml,*.yml set filetype=yaml
+" Filetype declarations. Add matplotlib and proplot settings
+autocmd BufNewFile,BufRead *{matplotlib,proplot}rc,*.{mpl,}style,*.table set filetype=yaml

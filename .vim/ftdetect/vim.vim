@@ -1,2 +1,2 @@
-" Filetype declarations. Include vimrc files.
-au BufNewFile,BufRead {.,}vimrc*,{.,}vimconfig*,{.,}vimsession*,*.vim set filetype=vim
+" Filetype declarations. Add session and config files
+au BufNewFile,BufRead {.,}vimconfig*,{.,}vimsession* set filetype=vim

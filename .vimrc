@@ -28,11 +28,11 @@
 set nocompatible
 set encoding=utf-8
 scriptencoding utf-8
-let g:linelength = 88  " see below configuration
-let g:mapleader = "\<Space>"  " see <Leader> mappings
-let g:refresh = get(g:, 'refresh', localtime())
 let s:conda = $HOME . '/mambaforge/bin'  " gui vim support
 let $PATH = ($PATH !~# s:conda ? s:conda . ':' : '') . $PATH
+let g:refresh = get(g:, 'refresh', localtime())
+let g:mapleader = "\<Space>"  " see <Leader> mappings
+let g:linelength = 88  " see below configuration
 
 " Global settings {{{2
 " WARNING: Setting default 'foldmethod' and 'foldexpr' can cause buffer-local
@@ -1300,14 +1300,16 @@ call plug#begin('~/.vim/plugged')
 let s:forks = ['vim-syntaxMarkerFold']  " previous attempt
 let s:enable_ddc = 1  " popup completion
 let s:enable_lsp = 1  " lsp integration
+let g:filetype_m = 'matlab'  " default .m filetype
+let g:filetype_f = 'fortran'  " default .f filetype
+let g:filetype_inc = 'fortran'  " default .inc filetype
+let g:filetype_cfg = 'dosini'  " default .cfg filetype
+let g:filetype_cls = 'tex'  " default .cls filetype
 
 " Helper function for downloaded plugins
 " NOTE: This allows adding to s:forks above without changing anything else
 function! s:get_plug(regex) abort
   return filter(split(&runtimepath, ','), "v:val =~# '" . a:regex . "'")
-endfunction
-function! s:has_plug(key) abort
-  return &runtimepath =~# '/' . a:key . '\>'
 endfunction
 function! s:plug(plug, ...) abort
   let name = split(a:plug, '/')[-1]
@@ -1327,6 +1329,9 @@ command! -nargs=1 GetPlug echom 'Plugins: ' . join(s:get_plug(<q-args>), ', ')
 
 " Helper function for pushing user-specific plugins
 " See: https://github.com/junegunn/vim-plug/issues/32
+function! s:has_plug(key) abort
+  return &runtimepath =~# '/' . a:key . '\>'
+endfunction
 function! s:push(auto, arg) abort
   if a:arg =~# '/' || isdirectory(a:arg)
     let path = fnamemodify(a:arg, ':p')
@@ -1631,7 +1636,6 @@ call s:plug('KabbAmine/yowish.vim')  " for macvim
 call s:plug('lilydjwg/colorizer')  " only in macvim or when &t_Co == 256
 let g:colorizer_nomap = 1  " use custom mapping
 let g:colorizer_startup = 0  " too expensive to enable at startup
-let g:filetype_m = 'matlab'  " see $VIMRUNTIME/autoload/dist/ft.vim
 let g:latex_to_unicode_file_types = ['julia']  " julia-vim feature
 let g:riv_python_rst_hl = 0  " highlight rest in python docstrings
 let g:vim_markdown_conceal = 1  " conceal stuff
@@ -2003,7 +2007,6 @@ if &g:foldenable || s:has_plug('FastFold')  " {{{
   exe 'runtime plugin/fastfold.vim'
   augroup fold_setup
     au!
-    au VimEnter * exe 'runtime after/common.vim'
     au BufEnter * setlocal foldtext=fold#fold_text()  " re-apply fold text
     au BufWinEnter * call fold#update_folds(0, 1)  " apply default level
     au TextChanged,TextChangedI * let b:fastfold_queued = 1
@@ -2614,7 +2617,8 @@ endif  " }}}
 " load is triggered by higher-priority 'au Syntax * call s:SynSet()' (see :au Syntax).
 augroup syntax_setup
   au!
-  au Syntax * exe 'unlet! b:af_py_loaded' | exe 'unlet! b:af_rst_loaded'
+  au Syntax * unlet! b:af_py_loaded | unlet! b:af_rst_loaded
+  au Syntax * unlet! b:common_syntax | runtime after/common.vim
 augroup END
 command! -nargs=? ShowGroups call syntax#show_stack(<f-args>)
 command! -nargs=0 ShowNames exe 'help highlight-groups' | exe 'normal! zt'

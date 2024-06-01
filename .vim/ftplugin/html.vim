@@ -21,7 +21,7 @@ nnoremap <buffer> <Plug>ExecuteFile0 <Cmd>call <sid>open_html_file()
 " a document for styling with e.g. a CSS file.
 " NOTE: div delim adapted from :help surround to only insert the tag
 " if a class is provided (see tex.vim).
-let s:delims = {
+let b:succinct_delims = {
   \ 't': "<\1<\1>\r</\1\1>",
   \ 'T': "<title>\r</title>",
   \ '1': "<h1>\r</h1>",
@@ -39,5 +39,4 @@ let s:delims = {
   \ 's': "<strong>\r</strong>",
   \ 'l': "\1Link: \r..*\r<a href=\"&\">\1\r\1\r..*\r</a>\1",
   \ 'd': "\1Class: \r..*\r<div class=\"&\">\1\r\1\r..*\r</div>\1",
-  \ }
-call succinct#add_delims(s:delims, 1)
+\ }

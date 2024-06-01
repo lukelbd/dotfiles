@@ -8,15 +8,10 @@
 " e.g. markdown or python folding overrides. Note (after testing) this will also
 " apply the updates because all ':filetype' command does is trigger script sourcing.
 let s:config_ignore = [
-  \ '/.fzf/',
-  \ '/plugged/',
-  \ '/\.\?vimsession*',
-  \ '/\.\?vim/autoload/vim.vim',
-  \ '/\.\?vim/after/common.vim',
-  \ '/\(micro\|mini\|mamba\)\(forge\|conda\|mamba\)\d\?/'
-\ ]  " common.vim sourced manually, others managed externally
+  \ '/.fzf/', '/plugged/', '/\(micro\|mini\|mamba\)\(forge\|conda\|mamba\)\d\?/',
+  \ '/\.\?vimsession*', '/\.\?vim/autoload/vim.vim', '/\.\?vim/after/common.vim',
+\ ]  " common.vim sourced by filetype detect, others managed externally
 function! vim#config_refresh(bang, ...) abort
-  silent! runtime autoload/succinct.vim  " remove this after restarting sessions
   let time = get(g:, 'refresh', localtime())
   let regex = join(s:config_ignore, '\|')
   let paths = []
@@ -25,6 +20,8 @@ function! vim#config_refresh(bang, ...) abort
     if path !~# expand('~') || path =~# regex || index(paths, ipath) != -1
       continue  " skip files not edited by user or matching regex
     endif
+    let state = 'g:loaded_' . fnamemodify(ipath, ':t:r')
+    if exists(state) | exe 'unlet! ' . state | endif
     if path =~# '/syntax/\|/ftplugin/'  " sourced by :filetype detect
       let ftype = fnamemodify(path, ':t:r')  " e.g. ftplugin/python.vim --> python
       if &filetype ==# ftype | call add(paths, ipath) | endif
@@ -36,7 +33,6 @@ function! vim#config_refresh(bang, ...) abort
   let closed = foldclosed('.')
   call tag#update_files()  " call during .vimrc refresh
   filetype detect
-  runtime after/common.vim
   if closed <= 0 | exe 'silent! normal! zv' | endif | redraw
   echom 'Loaded: ' . join(map(paths, "fnamemodify(v:val, ':~')[2:]"), ', ') . '.'
   let g:refresh = localtime()
@@ -121,8 +117,8 @@ endfunction
 " Source current file or lines
 " NOTE: This fails when calling from current script so use expr mapping
 function! vim#source_general() abort
-  let name = 'g:loaded_' . expand('%:t:r')
-  if exists(name) | exe 'unlet! ' . name | endif
+  let state = 'g:loaded_' . expand('%:t:r')
+  if exists(state) | exe 'unlet! ' . state | endif
   if v:count
     exe line('.') . ',' . (line('.') + v:count) . 'source'
     echom 'Sourced ' . v:count . ' lines'
