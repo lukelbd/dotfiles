@@ -2007,9 +2007,10 @@ if &g:foldenable || s:has_plug('FastFold')  " {{{
   exe 'runtime plugin/fastfold.vim'
   augroup fold_setup
     au!
+    au TextChanged,TextChangedI * let b:fastfold_queued = 1
     au BufEnter * setlocal foldtext=fold#fold_text()  " re-apply fold text
     au BufWinEnter * call fold#update_folds(0, 1)  " apply default level
-    au TextChanged,TextChangedI * let b:fastfold_queued = 1
+    au VimEnter * call fold#update_folds(1, 1)  " fix fastfold bug
   augroup END
   let g:baan_fold = 1
   let g:clojure_fold = 1
@@ -2668,7 +2669,7 @@ if !v:vim_did_enter | nohlsearch | endif
 call syntax#update_highlights() | redraw!
 augroup jump_setup
   au!
-  au VimEnter,BufWinEnter * if get(w:, 'clear_jumps', 1)
-    \ | silent clearjumps | let w:clear_jumps = 0 | endif
+  au VimEnter,BufWinEnter *
+    \ if get(w:, 'clear_jumps', 1) | silent clearjumps | let w:clear_jumps = 0 | endif
 augroup END
 nnoremap <Leader><Leader> <Cmd>echo system('curl https://icanhazdadjoke.com/')<CR>
