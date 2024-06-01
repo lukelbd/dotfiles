@@ -90,7 +90,7 @@ set nojoinspaces  " do not add two spaces to join (see also common.vim)
 set noshowmode  " hide e.g. 'insert' from bottom line (redundant with statusline)
 set nostartofline  " do not move to column 1 when scrolling or changing buffers
 set noswapfile " no more swap files, instead use session
-set notimeout  " wait forever when doing multi-key *mappings*
+set notimeout  " do not time out on multi-key mappings
 set nowrap  " global wrap setting possibly overwritten by wraptoggle
 set nrformats=alpha  " never interpret numbers as 'octal'
 set path=.  " used in various built-in searching utilities, file_in_path complete opt
@@ -119,8 +119,9 @@ set tagcase=match  " match case when searching tags
 set tagrelative  " paths in tags file are relative to location
 set tags=.vimtags,./.vimtags  " home, working dir, or file dir
 set tagstack  " auto-add to tagstack with :tag commands
-set timeoutlen=0  " othterwise do not wait at all
-set ttimeout ttimeoutlen=0  " wait zero seconds for multi-key *keycodes* e.g. <S-Tab> escape code
+set timeoutlen=1000  " mapping timeout length (ignored due to set notimeout)
+set ttimeout  " time out on multi-byte key codes (needed for insert escape)
+set ttimeoutlen=5  " multi-byte key code timeout length
 set ttymouse=sgr  " different cursor shapes for different modes
 set undodir=~/.vim_undo_hist  " ./setup enforces existence
 set undofile  " save undo history
@@ -635,11 +636,11 @@ for s:key in ['z', 'f', 'F', 'n', 'N'] | silent! exe 'unmap! z' . s:key | endfor
 nnoremap zv zvzzze
 vnoremap zv zvzzze
 nnoremap zx <Cmd>call fold#update_folds(0, 0)<CR>
-nnoremap zX <Cmd>call fold#update_folds(1, 2)<CR><Cmd>echom 'Updated folds'<CR>
-nnoremap zV <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>zvzzze
 vnoremap zx <Cmd>call fold#update_folds(0, 0)<CR>
-vnoremap zX <Cmd>call fold#update_folds(1, 2)<CR><Cmd>echom 'Updated folds'<CR>
-vnoremap zV <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>zvzzze
+nnoremap zX <Cmd>call fold#update_folds(0, 2)<CR>
+vnoremap zX <Cmd>call fold#update_folds(0, 2)<CR>
+nnoremap zV <Cmd>call fold#update_folds(1, 0)<CR><Cmd>echom 'Updated folds'<CR>zvzzze
+vnoremap zV <Cmd>call fold#update_folds(1, 0)<CR><Cmd>echom 'Updated folds'<CR>zvzzze
 
 " Toggle folds over selection or under matches after updating
 " NOTE: Here fold#toggle_folds_expr() calls fold#update_folds() before toggling.
@@ -949,6 +950,9 @@ nmap U <Plug>(RepeatRedo)
 
 " Record macro by pressing Q with optional count
 " NOTE: This permits e.g. 1, or '1, for specific macros. Note cannot run 'q' from autoload
+" NOTE: Vim inserts key code <80><fd>5 (corresponds to ASCII table number 53 which is
+" KE_IGNORE) when pressing escape in insert mode if ttimeout is enabled so that when
+" mapping is replayed the escape will be parsed literally. See: https://vi.stackexchange.com/a/35207/8084
 nnoremap <expr> , v:register ==# '"' ? parse#get_register('@') : '@' . v:register
 vnoremap <expr> , v:register ==# '"' ? parse#get_register('@') : '@' . v:register
 nnoremap <expr> Q empty(reg_recording()) ? parse#get_register('q')
@@ -2651,8 +2655,10 @@ nnoremap <Leader>9 <Cmd>Colors<CR>
 nnoremap <Leader>0 <Cmd>exe 'Scheme ' . g:colors_default<CR>
 
 " Clear jumps for new tabs and to ignore stuff from vimrc and plugin files.
+" TODO: Fix issue where gitgutter interrupts vim-succinct getchar()
 " See: https://stackoverflow.com/a/2419692/4970632
 " See: http://vim.1045645.n5.nabble.com/Clearing-Jumplist-td1152727.html
+" silent! exe 'au! gitgutter CursorHoldI'
 silent! exe 'runtime autoload/repeat.vim'
 if !v:vim_did_enter | nohlsearch | endif
 call syntax#update_highlights() | redraw!

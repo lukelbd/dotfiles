@@ -255,6 +255,8 @@ function! syntax#update_highlights() abort
   call s:highlight_group('InfoMsg', 'LightYellow', 'Black', '')
   call s:highlight_group('ModeMsg', 0, 'White', 'bold')
   call s:highlight_group('StrikeThrough', 0, 0, 'strikethrough')
+  call s:highlight_group('StatusLineTerm', 'LightYellow', 'Black', '')
+  call s:highlight_group('StatusLineTermNC', '', 'LightYellow', '')
   for group in ['Conceal', 'Pmenu', 'Terminal']
     call add(pairs, [group, 'Normal'])
   endfor

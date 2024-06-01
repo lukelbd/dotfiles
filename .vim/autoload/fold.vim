@@ -380,7 +380,7 @@ function! fold#update_folds(force, ...) abort
   let fugitive = !empty(get(b:, 'fugitive_type', ''))  " e.g. one-file diffs and commits
   let marker1 = search('{{{1\s*$', 'wn') > 0
   let marker2 = search('{{{2\s*$', 'wn')
-  let imarker = &l:foldmethod ==# 'manual' && marker1 && marker2  " manual markers
+  let imarker = &l:foldmethod ==# 'manual' && marker1  " manual markers
   let jmarker = &l:foldmethod ==# 'marker' && marker2  " modeline markers
   let default = fugitive || imarker || jmarker  " default fold level
   if a:0  " initialize

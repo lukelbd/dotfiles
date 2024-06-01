@@ -360,20 +360,23 @@ function! git#stage_hunks(stage) range abort
   let cmd = 'GitGutter' . action . 'Hunk'
   call s:update_hunks()
   let hunks = gitgutter#hunk#hunks(bufnr(''))
+  let offset = 0  " offset after undo
   let ranges = []  " ranges staged
-  let [iline, jline] = sort([a:firstline, a:lastline], 'n')
-  let [ifold, jfold] = [foldclosed(iline), foldclosedend(jline)]
-  let [iline, jline] = [ifold > 0 ? ifold : iline, jfold > 0 ? jfold : jline]
-  for [line0, count0, line1, count1] in hunks
-    let line2 = count1 ? line1 + count1 - 1 : line1  " to closing line
+  let [ispan, jspan] = sort([a:firstline, a:lastline], 'n')
+  let [ifold, jfold] = [foldclosed(ispan), foldclosedend(jspan)]
+  let [ispan, jspan] = [ifold > 0 ? ifold : ispan, jfold > 0 ? jfold : jspan]
+  for [hunk0, count0, hunk1, count1] in copy(hunks)
+    let [iline, jline] = [ispan + offset, jspan + offset]
+    let [line0, line1] = [hunk0 + offset, hunk1 + offset]
+    let line2 = count1 ? line1 + count1 - 1 : line1  " changed closing line
     if iline <= line1 && jline >= line2
       let range = []  " selection encapsulates hunk
     elseif iline >= line1 && jline <= line2
-      let range = count0 ? [] : [iline, jline]
+      let range = count0 || !a:stage ? [] : [iline, jline]
     elseif iline <= line2 && jline >= line2  " starts inside goes outside
-      let range = count0 ? [] : [iline, line2]
+      let range = count0 || !a:stage ? [] : [iline, line2]
     elseif iline <= line1 && jline >= line1  " starts outside goes inside
-      let range = count0 ? [] : [line1, jline]
+      let range = count0 || !a:stage ? [] : [line1, jline]
     else  " no update needed
       continue
     endif
@@ -381,11 +384,13 @@ function! git#stage_hunks(stage) range abort
     exe line1 | exe join(range, ',') . cmd
     call winrestview(winview)
     let range = empty(range) ? [line1, line2] : range
-    call add(ranges, join(uniq(range), '-'))
+    let range = map(uniq(range), 'v:val - offset')
+    let offset += a:stage ? 0 : count0 - count1
+    call add(ranges, join(range, '-'))
   endfor
-  if !empty(ranges)
-    call s:update_hunks() | redraw
-    echom action . ' hunks: ' . join(ranges, ', ')
+  if !empty(ranges)  " synchronous update fails here for some reason
+    redraw | echom action . ' hunks: ' . join(ranges, ', ')
+    call timer_start(200, function('s:update_hunks', [1]))
   endif
 endfunction
 " For <expr> map accepting motion

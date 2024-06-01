@@ -354,7 +354,7 @@ endfunction
 function! file#update() abort
   let tabline_changed = exists('b:tabline_filechanged') ? b:tabline_filechanged : 0
   let statusline_changed = exists('b:statusline_filechanged') ? b:statusline_filechanged : 0
-  update  " only if unmodified
+  silent! exe 'GitGutter' | update  " only if unmodified
   if &l:modified && tabline_changed && !b:tabline_filechanged
     let b:tabline_filechanged = 1
   endif

@@ -1941,7 +1941,7 @@ _fzf_define_complete() {
 # overrides default '%q' quoted printing by replacing escaped tildes with unexpanded.
 # NOTE: This supports command completion for empty lines, first word in the line, and
 # `man`, `help`, `type`, and `which`. Caches commands in .fzf.commands to save time
-_fzf_general_completion() {
+_fzf_generic_completion() {
   local cur mode
   mode=$1; shift;
   cur=${COMP_WORDS[COMP_CWORD]}
@@ -1955,18 +1955,24 @@ _fzf_general_completion() {
   COMPREPLY=("${COMPREPLY[@]/\\~/\~}")
 }
 _fzf_default_completion() {
-  local cur dir mode flags format
+  local cur dir fmt mode flags
   mode=$1; shift;
   [ "${#COMP_WORDS[@]}" -gt 0 ] && cur=${COMP_WORDS[COMP_CWORD]} || cur=''
-  [[ "$cur" =~ / ]] && dir=${cur%/*} format=%p || dir=. format=%P
-  flags=(-type f -executable -printf "$format \n")
-  [ "$mode" -gt 0 ] && flags+=(, -type d -printf "$format/\n")
+  if [[ "$cur" =~ ^\~ ]]; then
+    dir=${cur/#\~/$HOME} fmt=%p
+  elif [[ "$cur" =~ '/' ]]; then
+    dir=${cur%/*} fmt=%p
+  else
+    dir=. fmt=%P
+  fi
+  flags=(-type f -executable -printf "$fmt \n")
+  [ "$mode" -gt 0 ] && flags+=(, -type d -printf "$fmt/\n")
   test "$(find $HOME/.fzf.commands -mmin -10080 2>/dev/null)" || {
-    echo 'FZF: Generating commands...'
+    echo 'Updating fzf command cache...' >&2
     compgen -c | grep -v '[!.:{}]' | sort | uniq >$HOME/.fzf.commands
   }
   COMP_CWORD=0 _fzf_complete '+m' -- "$@" < <(cat \
-    <(find -L "$dir" -mindepth 1 -maxdepth 1 \( "${flags[@]}" \)) \
+    <(find -L "$dir" -mindepth 1 -maxdepth 1 \( "${flags[@]}" \) | sed "s|^$HOME|~|") \
     <(compgen -A function) <(tac $HOME/.fzf.commands | sed 's/$/ /') \
   )
 }
@@ -2005,8 +2011,8 @@ if [ "${FZF_SKIP:-0}" == 0 ]; then
     complete -r  # reset completion
     source ~/.fzf.bash
     _fzf_post() { COMPREPLY=( "${COMPREPLY[@]/\\~/\~}" ); }  # unexpand home directory
-    _fzf_dir_completion() { _fzf_general_completion 1 "$@"; }
-    _fzf_path_completion() { _fzf_general_completion 0 "$@"; }
+    _fzf_dir_completion() { _fzf_generic_completion 1 "$@"; }
+    _fzf_path_completion() { _fzf_generic_completion 0 "$@"; }
     _fzf_help_completion() { _fzf_default_completion 0 "$@"; }
     _fzf_empty_completion() { _fzf_default_completion 1 "$@"; }
     _fzf_cdo_completion_post() { cat | sed 's/(.*) *$//g' | sed 's/ *$//g'; }
@@ -2151,6 +2157,7 @@ if [ "${ITERM_SHELL_INTEGRATION_SKIP:-0}" == 0 ] \
   && [ -r ~/.iterm2_shell_integration.bash ] \
   && [ -z "$VIMRUNTIME" ]; then
   _setup_message 'Enabling shell integration'
+  export ITERM_ENABLE_SHELL_INTEGRATION_WITH_TMUX=1
   source ~/.iterm2_shell_integration.bash
   unalias imgcat imgls
   _imgshow() {
@@ -2256,10 +2263,10 @@ fi
 # NOTE: This also fixes bug from restarting iterm sessions
 [ -n "$VIMRUNTIME" ] \
   && unset PROMPT_COMMAND
-$_macos && [ -z "$OLDPWD" ] && [ "$PWD" == "$HOME" ] \
-  && _title_cwd
 $_macos && [ -r $HOME/mackup/shell.sh ] \
   && source $HOME/mackup/shell.sh
+$_macos && [ -z "$OLDPWD" ] && [ "$PWD" == "$HOME" ] \
+  && _title_cwd
 [ -z "$_bashrc_loaded" ] && [[ "$(hostname)" =~ "$HOSTNAME" ]] \
   && command curl https://icanhazdadjoke.com/ 2>/dev/null && echo
 _bashrc_loaded=true

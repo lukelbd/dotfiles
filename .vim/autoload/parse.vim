@@ -287,7 +287,9 @@ function! parse#set_translate(name, mode) abort
       call parse#set_register(info, name1, name2)
     endif
   endif
-  if a:mode ==# 'q' | echom 'Finished macro' | endif | return name1
+  if a:mode ==# 'q'  " show recording
+    echom 'Macro @' . (a:name ==# '0' ? name1 : a:name) . ': ' . getreg(a:name)
+  endif | return name1
 endfunction
 function! parse#setup_registers() abort
   let b:registers = {}
