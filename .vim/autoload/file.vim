@@ -21,13 +21,17 @@ function! file#echo_path(head, ...) abort
 endfunction
 function! file#expand_cfile(...) abort
   let show = a:0 ? a:1 : 0
-  let path = expand('<cfile>')
-  for root in ['', getcwd(), expand('%:p:h'), parse#get_root(expand('%:p'))]
-    let check = empty(root) ? path : root . '/' . path
-    let files = glob(check, 0, 1)
-    if !empty(files) | break | endif
-  endfor
-  return map(files, 'RelativePath(v:val, show)')
+  let names = [expand('<cfile>'), expand('<cWORD>')]
+  let roots = ['', expand('%:p:h'), parse#get_root(expand('%:p'))]
+  call map(names, {_, val -> substitute(val, '^\~', $HOME, '')})
+  call filter(roots, {_, val -> empty(val) || getcwd() !=# val})
+  for name in names
+    for root in name =~# '^\/' ? [''] : roots
+      let path = empty(root) ? name : root . '/' . name
+      let paths = glob(path, 0, 1)
+      if !empty(paths) | break | endif
+    endfor
+  endfor | return map(paths, 'RelativePath(v:val, show)')
 endfunction
 
 " Generate list of files in directory
