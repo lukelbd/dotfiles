@@ -564,14 +564,14 @@ cnoremap <expr> <S-Right> repeat('<Del>', len(getcmdline()) - getcmdpos() + 1)
 " NOTE: Karabiner remaps Ctrl-h/j/k/l keys to arrow key presses so here apply
 " maps to both in case working from terminal without these maps. Also note iTerm
 " maps mod-delete and mod-backspace keys to shift arrows which do normal mode scrolls.
-noremap <expr> <C-u> window#scroll_infer(-0.33, 0)
-noremap <expr> <C-d> window#scroll_infer(0.33, 0)
-noremap <expr> <C-b> window#scroll_infer(-0.66, 0)
-noremap <expr> <C-f> window#scroll_infer(0.66, 0)
-inoremap <expr> <C-u> window#scroll_infer(-0.33, 0)
-inoremap <expr> <C-d> window#scroll_infer(0.33, 0)
-inoremap <expr> <C-b> window#scroll_infer(-0.66, 0)
-inoremap <expr> <C-f> window#scroll_infer(0.66, 0)
+for s:mode in ['n', 'v', 'i']
+  exe s:mode . 'noremap <ScrollWheelLeft> <ScrollWheelRight>'
+  exe s:mode . 'noremap <ScrollWheelRight> <ScrollWheelLeft>'
+  exe s:mode . 'noremap <expr> <C-u> window#scroll_infer(-0.33, 0)'
+  exe s:mode . 'noremap <expr> <C-d> window#scroll_infer(0.33, 0)'
+  exe s:mode . 'noremap <expr> <C-b> window#scroll_infer(-0.66, 0)'
+  exe s:mode . 'noremap <expr> <C-f> window#scroll_infer(0.66, 0)'
+endfor
 inoremap <expr> <Up> window#scroll_infer(-1)
 inoremap <expr> <Down> window#scroll_infer(1)
 inoremap <expr> <C-k> window#scroll_infer(-1)
@@ -961,8 +961,8 @@ nnoremap <expr> Q empty(reg_recording()) ? parse#get_register('q')
   \ : 'q<Cmd>call parse#set_translate(' . string(reg_recording()) . ', "q")<CR>'
 
 " Operator register and display utilities
-" NOTE: Peekaboo uses <C-\><C-o> for insert-mode peekaboo which still moves cursor
-" when inserting on end-of-line. So use custom <Cmd> mappings instead.
+" NOTE: Here peekaboo#peek() returns <Plug>(peekaboo) which invokes peekaboo#aboo()
+" with <C-\><C-o> which moves cursor when called from end-of-line. Use below instead
 " NOTE: For some reason cannot set g:peekaboo_ins_prefix = '' and simply have <C-r>
 " trigger the mapping. See https://vi.stackexchange.com/q/5803/8084
 inoremap <expr> <C-r> parse#get_register('i')
@@ -1370,9 +1370,10 @@ call s:plug('junegunn/vim-peekaboo')  " register display
 call s:plug('mbbill/undotree')  " undo history display
 call s:plug('yegappan/mru')  " most recent file
 let g:MRU_file = '~/.vim_mru_files'  " default (custom was ignored for some reason)
-let g:peekaboo_window = 'vertical topleft 30new'
+let g:peekaboo_delay = -1  " disable delay intended for override maps
 let g:peekaboo_prefix = "\1"  " disable mappings in lieu of 'nomap' option
 let g:peekaboo_ins_prefix = "\1"  " disable mappings in lieu of 'nomap' option
+let g:peekaboo_window = 'vertical topleft 30new'
 
 " Shared plugin frameworks (e.g. fzf)
 " TODO: Use ctrl-a then enter or e.g. ctrl-q to auto-populate quickfix list with lines
@@ -1805,11 +1806,13 @@ if s:has_plug('vim-succinct') || s:has_plug('vim-sneak')  " {{{
 endif  " }}}
 
 " Text object settings
+" TODO: Remove b:surround_1 autocommand after restarting sessions
 " NOTE: Here use mnemonic 'v' for 'value' and 'C' for comment. The first avoids
 " conflicts with ftplugin/tex.vim and the second with 'c' curly braces.
 if s:has_plug('vim-textobj-user')  " {{{
   augroup textobj_setup
     au!
+    au BufEnter * unlet! b:surround_1
     au VimEnter * call textobj#sentence#init()
   augroup END
   omap an <Plug>(textobj-numeral-a)
