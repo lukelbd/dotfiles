@@ -35,6 +35,7 @@
                 "pylsp.plugins.flake8.filename": null,
                 "pylsp.plugins.flake8.hangClosing": null,
                 "pylsp.plugins.flake8.ignore": [
+                    "E303",
                     "E501",
                     "F401",
                     "E261",
