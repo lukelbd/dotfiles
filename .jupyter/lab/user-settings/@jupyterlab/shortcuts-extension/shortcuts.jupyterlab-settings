@@ -543,6 +543,13 @@
             "selector": ".jp-Notebook.jp-mod-commandMode:not(.jp-mod-readWrite) :focus"
         },
         {
+            "command": "notebook:change-cell-to-raw",
+            "keys": [
+                "\\"
+            ],
+            "selector": ".jp-Notebook.jp-mod-commandMode:not(.jp-mod-readWrite) :focus"
+        },
+        {
             "command": "notebook:change-cell-to-code",
             "keys": [
                 "0"
@@ -624,7 +631,7 @@
         {
             "command": "kernelmenu:reconnect-to-kernel",
             "keys": [
-                "R"
+                "E"
             ],
             "selector": "[data-jp-kernel-user]:not(.jp-mod-readWrite) :focus:not(:read-write)"
         },
@@ -643,6 +650,15 @@
                 "Q"
             ],
             "selector": "[data-jp-kernel-user]:not(.jp-mod-readWrite) :focus:not(:read-write)"
+        },
+        {
+            "command": "kernelmenu:restart",
+            "keys": [
+                "0",
+                "0"
+            ],
+            "selector": "[data-jp-kernel-user]:not(.jp-mod-readWrite) :focus:not(:read-write)",
+            "disabled": true
         },
         {
             "command": "kernelmenu:restart",
@@ -691,7 +707,14 @@
             "keys": [
                 "S"
             ],
-            "selector": "body"
+            "selector": ".jp-Notebook.jp-mod-commandMode:not(.jp-mod-readWrite) :focus"
+        },
+        {
+            "command": "docmanager:rename",
+            "keys": [
+                "R"
+            ],
+            "selector": ".jp-Notebook.jp-mod-commandMode:not(.jp-mod-readWrite) :focus"
         },
         {
             "command": "docmanager:rename",
