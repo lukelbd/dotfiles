@@ -961,15 +961,8 @@ nnoremap <expr> Q empty(reg_recording()) ? parse#get_register('q')
   \ : 'q<Cmd>call parse#set_translate(' . string(reg_recording()) . ', "q")<CR>'
 
 " Operator register and display utilities
-" NOTE: Here peekaboo#peek() returns <Plug>(peekaboo) which invokes peekaboo#aboo()
-" with <C-\><C-o> which moves cursor when called from end-of-line. Use below instead
-" NOTE: For some reason cannot set g:peekaboo_ins_prefix = '' and simply have <C-r>
-" trigger the mapping. See https://vi.stackexchange.com/q/5803/8084
 inoremap <expr> <C-r> parse#get_register('i')
 cnoremap <expr> <C-r> parse#get_register('c')
-imap <F6> <Cmd>call peekaboo#peek(1, "\<C-r>", 0)<CR><Cmd>call peekaboo#aboo()<CR>
-nmap <expr> <F6> peekaboo#peek(1, '"', 0)
-vmap <expr> <F6> peekaboo#peek(1, '"', 0)
 
 " Declare alphabetic registers with count (consistent with mark utilities)
 " WARNING: Critical to use 'nmap' and 'vmap' since do not want operator-mode
@@ -1369,11 +1362,9 @@ call s:plug('tpope/vim-obsession')  " sparse features on top of built-in session
 call s:plug('junegunn/vim-peekaboo')  " register display
 call s:plug('mbbill/undotree')  " undo history display
 call s:plug('yegappan/mru')  " most recent file
-let g:MRU_file = '~/.vim_mru_files'  " default (custom was ignored for some reason)
-let g:peekaboo_delay = -1  " disable delay intended for override maps
 let g:peekaboo_prefix = "\1"  " disable mappings in lieu of 'nomap' option
 let g:peekaboo_ins_prefix = "\1"  " disable mappings in lieu of 'nomap' option
-let g:peekaboo_window = 'vertical topleft 30new'
+let g:MRU_file = '~/.vim_mru_files'  " default (custom was ignored for some reason)
 
 " Shared plugin frameworks (e.g. fzf)
 " TODO: Use ctrl-a then enter or e.g. ctrl-q to auto-populate quickfix list with lines
@@ -1406,7 +1397,7 @@ let g:fzf_tags_command = 'ctags -R -f .vimtags ' . join(parse#get_ignores(0, 0, 
 
 " Navigation and searching
 " NOTE: The vim-tags @#&*/?! mappings auto-integrate with vim-indexed-search. Also
-" disable colors for increased speed.
+" disable colors here for increased speed.
 " See: https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
 " call s:plug('tpope/vim-unimpaired')  " bracket map navigation, no longer used
 " call s:plug('kshenoy/vim-signature')  " mark signs, unneeded and abandoned
@@ -1529,6 +1520,8 @@ endif
 " call s:plug('SirVer/ultisnips')  " fancy snippet actions
 call s:plug('tpope/vim-surround')
 call s:plug('raimondi/delimitmate')
+let g:surround_no_mappings = 1  " use vim-succinct mappings
+let g:surround_no_insert_mappings = 1  " use vim-succinct mappings
 
 " Text object definitions
 " NOTE: Also use vim-succinct to auto-convert every vim-surround delimiter
@@ -1754,15 +1747,7 @@ silent! delcommand SplitjoinSplit
 " Matches and delimiters {{{2
 " NOTE: Here vim-tags searching integrates with indexed-search and vim-succinct
 " surround delimiters integrate with matchup '%' keys.
-if s:has_plug('vim-matchup') || s:has_plug('vim-indexed-search')  " {{{
-  let g:indexed_search_center = 0  " disable centered match jumping
-  let g:indexed_search_colors = 0  " disable colors for speed
-  let g:indexed_search_dont_move = 1  " irrelevant due to custom mappings
-  let g:indexed_search_line_info = 1  " show first and last line indicators
-  let g:indexed_search_max_lines = 100000  " increase from default of 3000 for log files
-  let g:indexed_search_shortmess = 1  " shorter message
-  let g:indexed_search_numbered_only = 1  " only show numbers
-  let g:indexed_search_n_always_searches_forward = 1  " see also vim-sneak
+if s:has_plug('vim-matchup')  " {{{
   let g:matchup_delim_nomids = 1  " skip e.g. 'else' during % jumps and text objects
   let g:matchup_delim_noskips = 1  " skip e.g. 'if' 'endif' in comments
   let g:matchup_matchparen_enabled = 1  " enable matchupt matching on startup
@@ -1771,38 +1756,44 @@ if s:has_plug('vim-matchup') || s:has_plug('vim-indexed-search')  " {{{
   let g:matchup_transmute_enabled = 0  " issues with tex, use vim-succinct instead
   let g:matchup_text_obj_linewise_operators = ['y', 'd', 'c', 'v', 'V', "\<C-v>"]
 endif  " }}}
+if s:has_plug('vim-indexed-search')  " {{{
+  let g:indexed_search_center = 0  " disable centered match jumping
+  let g:indexed_search_colors = 0  " disable colors for speed
+  let g:indexed_search_dont_move = 1  " irrelevant due to custom mappings
+  let g:indexed_search_line_info = 1  " show first and last line indicators
+  let g:indexed_search_max_lines = 100000  " increase from default of 3000 for log files
+  let g:indexed_search_shortmess = 1  " shorter message
+  let g:indexed_search_numbered_only = 1  " only show numbers
+  let g:indexed_search_n_always_searches_forward = 1  " see also vim-sneak
+endif  " }}}
 
 " Navigation and delimiters
 " NOTE: Tried easy motion but way too complicated / slows everything down
 " See: https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
-if s:has_plug('vim-succinct') || s:has_plug('vim-sneak')  " {{{
-  map f <Plug>Sneak_f
-  map F <Plug>Sneak_F
-  map t <Plug>Sneak_t
-  map T <Plug>Sneak_T
-  nmap s <Plug>Sneak_s
-  nmap S <Plug>Sneak_S
-  vmap s <Plug>Sneak_s
-  vmap S <Plug>Sneak_S
+if s:has_plug('vim-succinct')  " {{{
   inoremap <F3> <Plug>PrevDelim
   inoremap <F4> <Plug>NextDelim
+  let g:succinct_delims = {'e': '\n\r\n', 'f': '\1function: \1(\r)', 'A': '\1array: \1[\r]'}
+  let g:succinct_snippet_map = '<C-e>'  " default mapping
+  let g:succinct_surround_map = '<C-s>'  " default mapping
   let g:delimitMate_expand_cr = 2  " expand even if non empty
   let g:delimitMate_expand_space = 1
   let g:delimitMate_jump_expansion = 1
   let g:delimitMate_excluded_regions = 'String'  " disabled inside by default
+endif  " }}}
+if s:has_plug('vim-sneak')  " {{{
+  for s:key in ['f', 'F', 't', 'T']
+    exe 'map ' . s:key . ' <Plug>Sneak_' . s:key
+  endfor
+  for s:mode in ['n', 'v'] | for s:key in ['s', 'S']
+    exe s:mode . 'map ' . s:key . ' <Plug>Sneak_' . s:key
+  endfor | endfor
   let g:sneak#label = 1  " show labels on matches for quicker jumping
   let g:sneak#s_next = 1  " press s/f/t repeatedly to jump matches until next motion
   let g:sneak#f_reset = 0  " keep f search separate from s
   let g:sneak#t_reset = 0  " keep t search separate from s
   let g:sneak#absolute_dir = 1  " same search direction no matter initial direction
   let g:sneak#use_ic_scs = 0  " search always case-sensitive, similar to '*' or popup
-  let g:succinct_surround_map = '<C-s>'
-  let g:succinct_snippet_map = '<C-e>'
-  let g:succinct_delims = {
-    \ 'e': '\n\r\n',
-    \ 'f': '\1function: \1(\r)',
-    \ 'A': '\1array: \1[\r]',
-  \ }  " additional definitions
 endif  " }}}
 
 " Text object settings
@@ -1992,7 +1983,7 @@ if s:has_plug('vim-gutentags')  " {{{
   " let g:gutentags_file_list_command = 'git ls-files'  " alternative to exclude ignores
 endif  " }}}
 
-" Enable native vim syntax folding and configure fastfold
+" Vim syntax folding and fastfold settings
 " WARNING: Have to refresh after VimEnter since fastfold does bunch of setup stuff
 " that affects current buffer. When opening sessions windows not-in-focus have
 " correct fold-open status and marker updates but main window does not.
@@ -2035,63 +2026,23 @@ if &g:foldenable || s:has_plug('FastFold')  " {{{
   let g:zsh_fold_enable = 1
 endif  " }}}
 
-" Lsp server integration {{{2
-" NOTE: LspDefinition accepts <mods> and stays in current buffer for local definitions,
-" so below behavior is close to 'Drop': https://github.com/prabirshrestha/vim-lsp/pull/776
-" NOTE: Highlighting under keywords required for reference jumping with [d and ]d but
-" monitor for updates: https://github.com/prabirshrestha/vim-lsp/issues/655
+" Lsp server settings {{{2
+" NOTE: The autocmd gives signature popups the same borders as hover popups, or else
+" they have double border. See: https://github.com/prabirshrestha/vim-lsp/issues/594
 " NOTE: Require kludge to get markdown syntax to work for some popups e.g. python dict()
 " signature windows. See: https://github.com/prabirshrestha/vim-lsp/issues/1289
+" NOTE: See 'jupyterlab-lsp/plugin.jupyterlab-settings' for examples. Results are
+" shown in :CheckHelath. Try below when debugging (should disable :LspHover)
+" let s:python_settings = {'plugins': {'jedi_hover': {'enabled': v:false} } }
 " WARNING: Servers are 'pylsp', 'bash-language-server', 'vim-language-server'. Tried
 " 'jedi-language-server' but had issues on linux, and tried 'texlab' but was slow. Note
 " some cannot be installed with mamba and need vim-lsp-swettings :LspInstallServer.
-" WARNING: foldexpr=lsp#ui#vim#folding#foldexpr() foldtext=lsp#ui#vim#folding#foldtext()
-" cause insert mode slowdowns even with g:lsp_fold_enabled = 0. Now use fast fold with
-" native syntax foldmethod. Also tried tagfunc=lsp#tagfunc but now use LspDefinition
-if s:has_plug('vim-lsp')  " {{{
-  " Autocommands and mappings
-  " NOTE: The autocmd gives signature popups the same borders as hover popups, or else
-  " they have double border. See: https://github.com/prabirshrestha/vim-lsp/issues/594
+if s:has_plug('vim-lsp-settings')  " {{{
   augroup lsp_setup
     au!
     au User lsp_float_opened call window#setup_preview()
     au FileType markdown.lsp-hover let b:lsp_do_conceal = 1 | setlocal conceallevel=2
   augroup END
-  command! -nargs=? LspToggle call switch#lsp(<args>)
-  command! -nargs=? ClearDoc call stack#clear_stack('doc')
-  command! -nargs=? ListDoc call stack#print_stack('doc')
-  command! -nargs=? PopDoc call stack#pop_stack('doc', <q-args>, 1)
-  command! -nargs=? Doc call stack#push_stack('doc', 'python#doc_page', <f-args>)
-  noremap [r <Cmd>LspPreviousReference<CR>
-  noremap ]r <Cmd>LspNextReference<CR>
-  nnoremap gr <Cmd>LspReferences<CR>
-  nnoremap gR <Cmd>LspRename<CR>
-  nnoremap zr <Cmd>LspDocumentSymbol<CR>
-  nnoremap zR <Cmd>LspDocumentSymbolSearch<CR>
-  nnoremap gd <Cmd>LspHover --ui=float<CR>
-  nnoremap gD <Cmd>LspSignatureHelp<CR>
-  nnoremap zd <Cmd>LspPeekDefinition<CR>
-  nnoremap zD <Cmd>LspPeekDeclaration<CR>
-  vnoremap gd <Cmd>LspHover --ui=float<CR>
-  vnoremap gD <Cmd>LspSignatureHelp<CR>
-  vnoremap zd <Cmd>LspPeekDefinition<CR>
-  vnoremap zD <Cmd>LspPeekDeclaration<CR>
-  nnoremap g<CR> <Cmd>call lsp#ui#vim#definition(0, "call feedkeys('zv', 'n') \| tab")<CR>
-  nnoremap z<CR> <Cmd>silent! normal! gdzv<CR><Cmd>noh<CR>
-  nnoremap <Leader>a <Cmd>LspInstallServer<CR>
-  nnoremap <Leader>A <Cmd>LspUninstallServer<CR>
-  nnoremap <Leader>f <Cmd>call edit#auto_format(0)<CR>
-  nnoremap <Leader>F <Cmd>call edit#auto_format(1)<CR>
-  nnoremap <Leader>d <Cmd>call stack#push_stack('doc', 'python#doc_page')<CR>
-  nnoremap <Leader>D <Cmd>call python#fzf_doc()<cr>
-  nnoremap <Leader>& <Cmd>call switch#lsp()<CR>
-  nnoremap <Leader>% <Cmd>call window#show_health()<CR>
-  nnoremap <Leader>^ <Cmd>call window#show_manager()<CR>
-  " Lsp and server settings
-  " See: https://github.com/python-lsp/python-lsp-server/issues/477
-  " NOTE: See 'jupyterlab-lsp/plugin.jupyterlab-settings' for examples. Results are
-  " shown in :CheckHelath. Try below when debugging (should disable :LspHover)
-  " let s:python_settings = {'plugins': {'jedi_hover': {'enabled': v:false} } }
   let s:tex_settings = {}
   let s:bash_settings = {}
   let s:julia_settings = {}
@@ -2125,9 +2076,51 @@ if s:has_plug('vim-lsp')  " {{{
   let g:lsp_use_native_client = 1  " improve speed, use c for communicaiton
 endif  " }}}
 
-" Lsp completion settings (see :help ddc-options). Note underscore seems to
-" indicate all sources, used for global filter options, and filetype-specific
-" options can be added with ddc#custom#patch_filetype(filetype, ...).
+" Lsp integration commands and mappings
+" See: https://github.com/python-lsp/python-lsp-server/issues/477
+" NOTE: LspDefinition accepts <mods> and stays in buffer for local definitions so g<CR>
+" behavior is close to 'Drop': https://github.com/prabirshrestha/vim-lsp/pull/776
+" NOTE: Highlighting under keywords required for reference jumping with [d and ]d but
+" monitor for updates: https://github.com/prabirshrestha/vim-lsp/issues/655
+" WARNING: foldexpr=lsp#ui#vim#folding#foldexpr() foldtext=lsp#ui#vim#folding#foldtext()
+" cause insert mode slowdowns even with g:lsp_fold_enabled = 0. Now use fast fold with
+" native syntax foldmethod. Also tried tagfunc=lsp#tagfunc but now use LspDefinition
+if s:has_plug('vim-lsp')  " {{{
+  command! -nargs=? LspToggle call switch#lsp(<args>)
+  command! -nargs=? ClearDoc call stack#clear_stack('doc')
+  command! -nargs=? ListDoc call stack#print_stack('doc')
+  command! -nargs=? PopDoc call stack#pop_stack('doc', <q-args>, 1)
+  command! -nargs=? Doc call stack#push_stack('doc', 'python#doc_page', <f-args>)
+  noremap [r <Cmd>LspPreviousReference<CR>
+  noremap ]r <Cmd>LspNextReference<CR>
+  nnoremap gr <Cmd>LspReferences<CR>
+  nnoremap gR <Cmd>LspRename<CR>
+  nnoremap zr <Cmd>LspDocumentSymbol<CR>
+  nnoremap zR <Cmd>LspDocumentSymbolSearch<CR>
+  nnoremap gd <Cmd>LspHover --ui=float<CR>
+  nnoremap gD <Cmd>LspSignatureHelp<CR>
+  nnoremap zd <Cmd>LspPeekDefinition<CR>
+  nnoremap zD <Cmd>LspPeekDeclaration<CR>
+  vnoremap gd <Cmd>LspHover --ui=float<CR>
+  vnoremap gD <Cmd>LspSignatureHelp<CR>
+  vnoremap zd <Cmd>LspPeekDefinition<CR>
+  vnoremap zD <Cmd>LspPeekDeclaration<CR>
+  nnoremap g<CR> <Cmd>call lsp#ui#vim#definition(0, "call feedkeys('zv', 'n') \| tab")<CR>
+  nnoremap z<CR> <Cmd>silent! normal! gdzv<CR><Cmd>noh<CR>
+  nnoremap <Leader>a <Cmd>LspInstallServer<CR>
+  nnoremap <Leader>A <Cmd>LspUninstallServer<CR>
+  nnoremap <Leader>f <Cmd>call edit#auto_format(0)<CR>
+  nnoremap <Leader>F <Cmd>call edit#auto_format(1)<CR>
+  nnoremap <Leader>d <Cmd>call stack#push_stack('doc', 'python#doc_page')<CR>
+  nnoremap <Leader>D <Cmd>call python#fzf_doc()<cr>
+  nnoremap <Leader>& <Cmd>call switch#lsp()<CR>
+  nnoremap <Leader>% <Cmd>call window#show_health()<CR>
+  nnoremap <Leader>^ <Cmd>call window#show_manager()<CR>
+endif  " }}}
+
+" Lsp completion settings (see :help ddc-options).
+" Note underscore seems to indicate all sources (used for global filter options)
+" and filetype-specific options added with ddc#custom#patch_filetype(filetype, ...).
 " NOTE: Previously had installation permissions issues so used various '--allow'
 " flags to support. See: https://github.com/Shougo/ddc.vim/issues/120
 " NOTE: Try to limit memory to 50M. Engine flags are passed to '--v8-flags' flag
@@ -2507,13 +2500,17 @@ if s:has_plug('codi.vim')  " {{{
   \ }
 endif  " }}}
 
-" Session saving and undo history
+" Session saving and undo/register history
 " WARNING: Critical to load vinegar before sinse setup_netrw() manipulates vinegar
 " mappings, and critical to load enuch first so rename is not overwritten.
-" NOTE: Undotree normally triggers on BufEnter but may contribute to slowdowns. Use
-" below to override built-in augroup before enabling buffer.
 " TODO: Currently can only clear history with 'C' in active pane not externally. Need
 " to submit PR for better command. See: https://github.com/mbbill/undotree/issues/158
+" NOTE: Here peekaboo#peek() returns <Plug>(peekaboo) which invokes peekaboo#aboo()
+" with <C-\><C-o> which moves cursor when called from end-of-line. Use below instead
+" NOTE: For some reason cannot set g:peekaboo_ins_prefix = '' and simply have <C-r>
+" trigger the mapping. See https://vi.stackexchange.com/q/5803/8084
+" NOTE: Undotree normally triggers on BufEnter but may contribute to slowdowns. Use
+" below to override built-in augroup before enabling buffer.
 " NOTE: :Obsession .vimsession activates vim-obsession BufEnter and VimLeavePre
 " autocommands and saved session files call let v:this_session=expand("<sfile>:p")
 " (so that v:this_session is always set when initializing with vim -S .vimsession)
@@ -2527,8 +2524,7 @@ if s:has_plug('vim-obsession')  " {{{
   nnoremap <Leader>$ <Cmd>Session<CR>
 endif  " }}}
 if s:has_plug('vim-eunuch')  " {{{
-  silent! exe 'runtime plugin/eunuch.vim'
-  silent! exe 'runtime plugin/vinegar.vim'
+  silent! exe 'runtime plugin/eunuch.vim plugin/vinegar.vim'
   augroup netrw_setup
     au! | au FileType netrw call shell#setup_netrw()
   augroup END
@@ -2536,6 +2532,19 @@ if s:has_plug('vim-eunuch')  " {{{
   nnoremap <Tab>\ <Cmd>call shell#show_netrw('topleft vsplit', 1)<CR>
   nnoremap <Tab>= <Cmd>call shell#show_netrw('topleft vsplit', 0)<CR>
   nnoremap <Tab>- <Cmd>call shell#show_netrw('botright split', 1)<CR>
+endif  " }}}
+if s:has_plug('vim-peekaboo')  " {{{
+  augroup peekaboo_setup
+    au! | au BufEnter * let b:peekaboo_on = 1  " disable internal mappings
+  augroup END
+  for s:mode in ['i', 'c']
+    exe s:mode . 'map <F6> <Cmd>call peekaboo#peek(1, "\<C-r>", 0)<CR><Cmd>call peekaboo#aboo()<CR>'
+  endfor
+  for s:mode in ['n', 'v']
+    exe s:mode . 'map <expr> <F6> peekaboo#peek(1, ''"'', 0)'
+  endfor
+  let g:peekaboo_delay = -1  " WARNING: critical or else insert mapping fails
+  let g:peekaboo_window = 'vertical topleft 30new'
 endif  " }}}
 if s:has_plug('undotree')  " {{{
   function! Undotree_Augroup() abort  " autoload/undotree.vim s:undotree.Toggle()

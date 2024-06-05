@@ -23,9 +23,6 @@ let s:indent2 = get(maparg('>', '', 0, 1), 'buffer', 0)
 if &l:filetype !=# 'markdown'  " vim includes special reference bullets
   let &l:formatlistpat = &g:formatlistpat  " see vimrc
 endif
-if exists('*peekaboo#on') && exists('*peekaboo#on')
-  silent! call peekaboo#off() | silent! call peekaboo#on()
-endif
 if !s:jump1 && !s:jump2  " no single bracket mappings
   map <buffer> [[ <Plug>TagsBackwardTop
   map <buffer> ]] <Plug>TagsForwardTop
