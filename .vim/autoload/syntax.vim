@@ -257,6 +257,8 @@ function! syntax#update_highlights() abort
   call s:highlight_group('StrikeThrough', 0, 0, 'strikethrough')
   call s:highlight_group('StatusLineTerm', 'LightYellow', 'Black', '')
   call s:highlight_group('StatusLineTermNC', '', 'LightYellow', '')
+  call s:highlight_group('CSVColumnEven', '', 'LightRed', '')
+  call s:highlight_group('CSVColumnOdd', '', 'Red', '')
   for group in ['Conceal', 'Pmenu', 'Terminal']
     call add(pairs, [group, 'Normal'])
   endfor

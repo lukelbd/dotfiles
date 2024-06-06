@@ -132,7 +132,7 @@ function! comment#next_label(count, ...) abort
   if &foldopen =~# 'quickfix' | exe 'normal! zv' | endif
 endfunction
 
-" Toggle comment under cursor accounting for folds
+" Comment toggling and table comments
 " NOTE: Required since default 'gcc' maps to g@$ operator function call
 function! comment#toggle_comment(...) abort
   call tcomment#ResetOption()
@@ -147,4 +147,20 @@ function! comment#toggle_comment(...) abort
   else  " toggle fold
     call feedkeys(line1 . 'ggg@$', 'n')
   endif
+endfunction
+function! comment#setup_table() abort
+  if !exists(':CSVInit') | return | endif
+  let winview = winsaveview()
+  let char = matchstr(getline(1), '^[#%"]')
+  let char = empty(char) ? '#' : char
+  goto | let head1 = search('^\s*\a', 'W')
+  let head2 = head1 ? search('^\s*[.+-]\?\d', 'W') : head1
+  let g:csv_delim = expand('%:e') ==# 'txt' ? ' ' : ','
+  let b:csv_headerline = head2 ? head2 - 1 : head1  " header above numeric
+  let &l:commentstring = char . '%s'
+  goto | let info = search('^\s*[^' . char . ']', 'nW') - 1
+  let expr = info > 1 && !foldlevel(1) ? 1 . ',' . info . 'fold' : ''
+  exe 'CSVInit' | setlocal foldenable
+  call feedkeys("\<Cmd>" . expr . "\<CR>", 'n')
+  call winrestview(winview)
 endfunction

@@ -1629,6 +1629,7 @@ call s:plug('flazz/vim-colorschemes')  " macvim colorschemes
 call s:plug('fcpg/vim-fahrenheit')  " macvim colorschemes
 call s:plug('KabbAmine/yowish.vim')  " macvim colorschemes
 call s:plug('lilydjwg/colorizer')  " requires macvim or &t_Co == 256
+let g:no_csv_maps = 1  " use custom maps
 let g:csv_disable_fdt = 1  " use custom foldtext
 let g:colorizer_nomap = 1  " use custom mapping
 let g:colorizer_startup = 0  " too expensive to enable at startup
@@ -1881,8 +1882,7 @@ endif  " }}}
 if s:has_plug('tcomment_vim')  " {{{
   augroup comment_setup
     au!
-    au FileType csv,text let s:val = matchstr(getline(1), '^[#%"]')
-    \ | let &l:commentstring = (empty(s:val) ? '#' : s:val) . '%s'
+    au FileType csv,text call comment#setup_table()
   augroup END
   for s:key1 in ['>', '<'] | for s:key2 in ['b', 'c', '>', '<>']
     silent! exe 'unmap g' . s:key1 . s:key2
