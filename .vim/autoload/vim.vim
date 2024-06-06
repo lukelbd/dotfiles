@@ -32,7 +32,7 @@ function! vim#config_refresh(bang, ...) abort
   endfor
   let closed = foldclosed('.')
   call tag#update_files()  " call during .vimrc refresh
-  filetype detect
+  filetype detect  " apply syntax and folds
   if closed <= 0 | exe 'silent! normal! zv' | endif | redraw
   echom 'Loaded: ' . join(map(paths, "fnamemodify(v:val, ':~')[2:]"), ', ') . '.'
   let g:refresh = localtime()

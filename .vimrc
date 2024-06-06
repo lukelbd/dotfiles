@@ -1629,8 +1629,7 @@ call s:plug('flazz/vim-colorschemes')  " macvim colorschemes
 call s:plug('fcpg/vim-fahrenheit')  " macvim colorschemes
 call s:plug('KabbAmine/yowish.vim')  " macvim colorschemes
 call s:plug('lilydjwg/colorizer')  " requires macvim or &t_Co == 256
-let g:csv_comment = '[#"]'  " enable comments
-let g:csv_disable_fdt = 1  " disable foldtext
+let g:csv_disable_fdt = 1  " use custom foldtext
 let g:colorizer_nomap = 1  " use custom mapping
 let g:colorizer_startup = 0  " too expensive to enable at startup
 let g:latex_to_unicode_file_types = ['julia']  " julia-vim feature
@@ -1865,22 +1864,26 @@ if s:has_plug('vim-easy-align')  " {{{
     au BufEnter * let g:easy_align_delimiters['c']['pattern'] = '\s' . comment#get_regex()
   augroup END
   map z, <Plug>(EasyAlign)
-  let s:semi_group = {'pattern': ';\+'}
-  let s:case_group = {'pattern': ')', 'stick_to_left': 1, 'left_margin': 0}
-  let s:chain_group = {'pattern': '\(&&\|||\)'}  " hello world
-  let s:comment_group = {'pattern': '\s#'}  " default value
   let g:easy_align_delimiters = {
-    \ ';': s:semi_group,
-    \ ')': s:case_group,
-    \ '&': s:chain_group,
-    \ 'c': s:comment_group,
+    \ ';': {'pattern': ';\+'},
+    \ ')': {'pattern': ')', 'stick_to_left': 1, 'left_margin': 0},
+    \ '&': {'pattern': '\(&&\|||\)'},
+    \ 'c': {'pattern': '\s#'},
   \ }
+  let g:easy_align_bypass_fold = 0  " avoid conflict with fastfold
+  let g:easy_align_delimiter_align = 'r'  " align varied-length delimiters
+  let g:easy_align_ignore_groups = ['Comment', 'String']
 endif  " }}}
 
 " Comment toggle settings
 " NOTE: This disable several maps but keeps many others. Remove unmap commands
 " after restarting existing vim sessions.
 if s:has_plug('tcomment_vim')  " {{{
+  augroup comment_setup
+    au!
+    au FileType csv,text let s:val = matchstr(getline(1), '^[#%"]')
+    \ | let &l:commentstring = (empty(s:val) ? '#' : s:val) . '%s'
+  augroup END
   for s:key1 in ['>', '<'] | for s:key2 in ['b', 'c', '>', '<>']
     silent! exe 'unmap g' . s:key1 . s:key2
   endfor | endfor
@@ -2628,15 +2631,17 @@ endif  " }}}
 
 " Syntax utilities {{{2
 " Show popup windows and things
-" NOTE: This fixes 'riv' bug where changing g:riv_python_rst_hl after startup has no
+" NOTE: Here common.vim fails to apply mark fold overrides if called right away,
+" perhaps race condition with syntax fold definitions. Use feedkeys() instead
+" NOTE: Here fix 'riv' bug where changing g:riv_python_rst_hl after startup has no
 " effect. Grepped vim runtime and plugged, riv is literally only place where 'syntax'
 " file employs 'loaded' variables with finish block (typically only used for plugins).
 " Also note Syntax triggers after 'set syntax=' and after loading syntax files, since
 " load is triggered by higher-priority 'au Syntax * call s:SynSet()' (see :au Syntax).
 augroup syntax_setup
   au!
-  au Syntax * unlet! b:af_py_loaded | unlet! b:af_rst_loaded
-  au Syntax * unlet! b:common_syntax | runtime after/common.vim
+  au Syntax * unlet! b:common_syntax | unlet! b:af_py_loaded | unlet! b:af_rst_loaded
+  au Syntax * call feedkeys("\<Cmd>runtime after/common.vim\<CR>", 'n')
 augroup END
 command! -nargs=? ShowGroups call syntax#show_stack(<f-args>)
 command! -nargs=0 ShowNames exe 'help highlight-groups' | exe 'normal! zt'

@@ -367,12 +367,12 @@ function! fold#update_folds(force, ...) abort
     elseif &l:filetype ==# 'rst'
       setlocal foldmethod=expr  " e.g. in case stuck
       setlocal foldexpr=RstFold#GetRstFold()
-    elseif method ==# 'manual' && cached ==# 'manual'
+    elseif method ==# 'manual' && cached =~# '^\(manual\|syntax\)$'
       setlocal foldmethod=syntax
     endif
     let b:fastfold_markers = []
     call SimpylFold#Recache()
-    silent! FastFoldUpdate
+    exe 'FastFoldUpdate'
     call fold#add_markers()
     let b:fastfold_queued = 0
   endif
