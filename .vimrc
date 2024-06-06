@@ -65,7 +65,7 @@ set foldnestmax=6  " allow only some folds
 set foldopen=insert,mark,quickfix,tag,undo  " opening folds on cursor movement, disallow block folds
 set foldtext=fold#fold_text()  " default function for generating text shown on fold line
 set guicursor+=a:blinkon0  " skip blinking cursor
-set guifont=Monaco:h12  " match iterm settings
+set guifont=Menlo:h13  " match iterm settings
 set guioptions=M  " skip $VIMRUNTIME/menu.vim https://vi.stackexchange.com/q/10348/8084
 set history=500  " remember 500 previous searches / commands and save in .viminfo
 set hlsearch  " highlight as you search forward
@@ -1618,16 +1618,19 @@ let g:SimpylFold_docstring_preview = 0  " disable foldtext() override
 call s:plug('vim-scripts/applescript.vim')  " applescript syntax support
 call s:plug('andymass/vim-matlab')  " recently updated vim-matlab fork from matchup author
 call s:plug('preservim/vim-markdown')  " see .vim/after/syntax.vim for kludge fix
+call s:plug('chrisbra/csv.vim')  " csv syntax highlighting
 call s:plug('Rykka/riv.vim')  " restructured text, syntax folds
-call s:plug('tmux-plugins/vim-tmux')
-call s:plug('anntzer/vim-cython')
-call s:plug('tpope/vim-liquid')
-call s:plug('cespare/vim-toml')
-call s:plug('JuliaEditorSupport/julia-vim')
-call s:plug('flazz/vim-colorschemes')  " for macvim
-call s:plug('fcpg/vim-fahrenheit')  " for macvim
-call s:plug('KabbAmine/yowish.vim')  " for macvim
-call s:plug('lilydjwg/colorizer')  " only in macvim or when &t_Co == 256
+call s:plug('tmux-plugins/vim-tmux')  " tmux syntax highlighting
+call s:plug('anntzer/vim-cython')  " cython syntax highlighting
+call s:plug('tpope/vim-liquid')  " liquid syntax highlighting
+call s:plug('cespare/vim-toml')  " toml syntax highlighting
+call s:plug('JuliaEditorSupport/julia-vim')  " julia syntax highlighting
+call s:plug('flazz/vim-colorschemes')  " macvim colorschemes
+call s:plug('fcpg/vim-fahrenheit')  " macvim colorschemes
+call s:plug('KabbAmine/yowish.vim')  " macvim colorschemes
+call s:plug('lilydjwg/colorizer')  " requires macvim or &t_Co == 256
+let g:csv_comment = '[#"]'  " enable comments
+let g:csv_disable_fdt = 1  " disable foldtext
 let g:colorizer_nomap = 1  " use custom mapping
 let g:colorizer_startup = 0  " too expensive to enable at startup
 let g:latex_to_unicode_file_types = ['julia']  " julia-vim feature
@@ -1771,9 +1774,13 @@ endif  " }}}
 " NOTE: Tried easy motion but way too complicated / slows everything down
 " See: https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
 if s:has_plug('vim-succinct')  " {{{
+  let g:succinct_delims = {
+    \ 'e': '\n\r\n',
+    \ 'f': '\1function: \1(\r)',
+    \ 'A': '\1array: \1[\r]'
+  \ }
   inoremap <F3> <Plug>PrevDelim
   inoremap <F4> <Plug>NextDelim
-  let g:succinct_delims = {'e': '\n\r\n', 'f': '\1function: \1(\r)', 'A': '\1array: \1[\r]'}
   let g:succinct_snippet_map = '<C-e>'  " default mapping
   let g:succinct_surround_map = '<C-s>'  " default mapping
   let g:delimitMate_expand_cr = 2  " expand even if non empty
@@ -2438,7 +2445,8 @@ if s:has_plug('vim-gitgutter')  " {{{
   nnoremap zG <Cmd>GitGutterAll \| echom 'Updated global hunks'<CR>
 endif  " }}}
 
-" Calculation plugin settings {{{2
+" Utility plugin settings {{{2
+" Calculations and increments
 " Julia usage bug: https://github.com/meta Kirby/codi.vim/issues/120
 " Python history bug: https://github.com/metakirby5/codi.vim/issues/85
 " Syncing bug (kludge is workaround): https://github.com/metakirby5/codi.vim/issues/106
@@ -2518,15 +2526,15 @@ if s:has_plug('vim-obsession')  " {{{
   augroup session_setup
     au!
     au VimEnter * exe !empty(v:this_session) ? 'Obsession ' . v:this_session : ''
-    au BufReadPost * exe line('''"') && line('''"') <= line('$') ? 'keepjumps normal! g`"' : ''
   augroup END
   command! -nargs=* -complete=customlist,vim#complete_sessions Session call vim#init_session(<q-args>)
   nnoremap <Leader>$ <Cmd>Session<CR>
 endif  " }}}
-if s:has_plug('vim-eunuch')  " {{{
+if s:has_plug('vim-eunuch') || s:has_plug('vim-obsession')  " {{{
   silent! exe 'runtime plugin/eunuch.vim plugin/vinegar.vim'
   augroup netrw_setup
-    au! | au FileType netrw call shell#setup_netrw()
+    au!
+    au FileType netrw call shell#setup_netrw()
   augroup END
   command! -nargs=* -complete=file -bang Rename call file#rename(<q-args>, '<bang>')
   nnoremap <Tab>\ <Cmd>call shell#show_netrw('topleft vsplit', 1)<CR>
@@ -2535,23 +2543,20 @@ if s:has_plug('vim-eunuch')  " {{{
 endif  " }}}
 if s:has_plug('vim-peekaboo')  " {{{
   augroup peekaboo_setup
-    au! | au BufEnter * let b:peekaboo_on = 1  " disable internal mappings
+    au!
+    au BufEnter * let b:peekaboo_on = 1
   augroup END
-  for s:mode in ['i', 'c']
-    exe s:mode . 'map <F6> <Cmd>call peekaboo#peek(1, "\<C-r>", 0)<CR><Cmd>call peekaboo#aboo()<CR>'
-  endfor
-  for s:mode in ['n', 'v']
-    exe s:mode . 'map <expr> <F6> peekaboo#peek(1, ''"'', 0)'
-  endfor
   let g:peekaboo_delay = -1  " WARNING: critical or else insert mapping fails
   let g:peekaboo_window = 'vertical topleft 30new'
+  imap <F6> <Cmd>call peekaboo#peek(1, "\<C-r>", 0)<CR><Cmd>call peekaboo#aboo()<CR>
+  cmap <F6> <Cmd>call peekaboo#peek(1, "\<C-r>", 0)<CR><Cmd>call peekaboo#aboo()<CR>
+  nmap <expr> <F6> peekaboo#peek(1, '"', 0)
+  vmap <expr> <F6> peekaboo#peek(1, '"', 0)
 endif  " }}}
 if s:has_plug('undotree')  " {{{
   function! Undotree_Augroup() abort  " autoload/undotree.vim s:undotree.Toggle()
     if !undotree#UndotreeIsVisible() | return | endif
-    augroup Undotree
-      au! | au InsertLeave,TextChanged * call undotree#UndotreeUpdate()
-    augroup END
+    augroup Undotree | au! | au InsertLeave,TextChanged * call undotree#UndotreeUpdate() | augroup END
   endfunction
   function! Undotree_CustomMap() abort  " autoload/undotree.vim s:undotree.BindKey()
     call window#default_width(0)
@@ -2676,12 +2681,12 @@ nnoremap <Leader>0 <Cmd>exe 'Scheme ' . g:colors_default<CR>
 " See: https://stackoverflow.com/a/2419692/4970632
 " See: http://vim.1045645.n5.nabble.com/Clearing-Jumplist-td1152727.html
 " silent! exe 'au! gitgutter CursorHoldI'
+augroup jump_setup
+  au!
+  au BufReadPost * exe line('''"') && line('''"') <= line('$') ? 'keepjumps normal! g`"' : ''
+  au VimEnter,BufWinEnter * if get(w:, 'clear_jumps', 1) | silent clearjumps | let w:clear_jumps = 0 | endif
+augroup END
 silent! exe 'runtime autoload/repeat.vim'
 if !v:vim_did_enter | nohlsearch | endif
 call syntax#update_highlights() | redraw!
-augroup jump_setup
-  au!
-  au VimEnter,BufWinEnter *
-    \ if get(w:, 'clear_jumps', 1) | silent clearjumps | let w:clear_jumps = 0 | endif
-augroup END
 nnoremap <Leader><Leader> <Cmd>echo system('curl https://icanhazdadjoke.com/')<CR>

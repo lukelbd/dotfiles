@@ -748,6 +748,8 @@ session() {
 
 # Open files optionally based on name
 # Revert to default behavior if -a specified
+# NOTE: Panoply can be installed with brew install --cask panoply but requires java
+# with brew install --cask temurin and could not get to work. Use website instead.
 open() {
   ! $_macos && echo "Error: open() should be run from your macbook." && return 1
   local files flags app app_default
