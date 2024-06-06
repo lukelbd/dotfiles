@@ -367,7 +367,7 @@ function! fold#update_folds(force, ...) abort
     elseif &l:filetype ==# 'rst'
       setlocal foldmethod=expr  " e.g. in case stuck
       setlocal foldexpr=RstFold#GetRstFold()
-    elseif method ==# 'manual' && cached =~# '^\(manual\|syntax\)$'
+    elseif &l:filetype !=# 'csv' && method ==# 'manual' && cached ==# 'manual'
       setlocal foldmethod=syntax
     endif
     let b:fastfold_markers = []
