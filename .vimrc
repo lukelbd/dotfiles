@@ -65,7 +65,7 @@ set foldnestmax=6  " allow only some folds
 set foldopen=insert,mark,quickfix,tag,undo  " opening folds on cursor movement, disallow block folds
 set foldtext=fold#fold_text()  " default function for generating text shown on fold line
 set guicursor+=a:blinkon0  " skip blinking cursor
-set guifont=Menlo:h13  " match iterm settings
+set guifont=Menlo:h12  " match iterm settings
 set guioptions=M  " skip $VIMRUNTIME/menu.vim https://vi.stackexchange.com/q/10348/8084
 set history=500  " remember 500 previous searches / commands and save in .viminfo
 set hlsearch  " highlight as you search forward
