@@ -15,7 +15,7 @@ function! utils#null_operator_expr(...) abort
 endfunction
 " For conditoinal CursorHold operations
 function! utils#none_pending() abort
-  return v:register ==# '"' && v:count == 0 && mode() !~# '^no'
+  return v:register ==# '"' && v:count == 0 && mode(1) !~# '^no'
 endfunction
 
 " Catch errors while running tests or events while calling peekaboo

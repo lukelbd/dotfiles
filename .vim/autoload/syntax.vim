@@ -1,58 +1,68 @@
 "-----------------------------------------------------------------------------"
 " Utilities for syntax syncing
 "-----------------------------------------------------------------------------"
-" Move to next conceal character
-" See: https://stackoverflow.com/a/24224578/4970632
+" Helper functions for concealed characters
 " NOTE: This detects both columns concealed with matchadd(..., {'conceal': ''}) and
 " syntax 'conceal' or 'concealends'. In the former case leverage fact that matchadd
 " method is only used to make tex and markdown characters invisible, so no need to
 " compare replacement characters or check groups -- simply skip those columns.
-function! s:skip_chars(...) abort
-  let cols = []  " column numbers concealed with empty string
-  let line = getline(a:0 ? a:1 : '.')
+function! syntax#_concealed(...) abort
+  let [line, cols] = [getline(a:0 ? a:1 : '.'), []]  " concealed with empty string
   let matches = filter(getmatches(), "v:val.group ==# 'Conceal'")
-  let regexes = uniq(map(matches, 'v:val.pattern'))
-  for regex in regexes
-    let idx = 0  " search start of string
-    while idx >= 0 && idx < len(line)
+  for regex in uniq(map(matches, 'v:val.pattern'))
+    let idx = 0 | while idx >= 0 && idx < len(line)
       let [str, jdx, idx] = matchstrpos(line, regex, idx)
       call extend(cols, empty(str) ? [] : range(jdx + 1, idx))
     endwhile
-  endfor
-  return cols
+  endfor | return cols
 endfunction
-function! syntax#next_char(count)
-  let [lnum, cnum, cmax] = [line('.'), col('.'), col('$')]
-  let [line, cols] = [getline(lnum), s:skip_chars(lnum)]
-  let [icnt, jcnt] = [a:count, 0]
+function! syntax#get_concealed(...) abort
+  let cnum = a:0 > 0 ? a:1 : col('.')
+  let cols = a:0 > 1 ? a:2 : syntax#_concealed()
   let cmode = mode() ==# '' ? 'v' : mode()
-  let offset = a:count < 0 ? -1 : 0
-  let delta = a:count < 0 ? -1 : 1
+  let hidden = index(cols, cnum) != -1
+  if cnum && &l:concealcursor =~? cmode[:0]
+    let [concealed, cchar, _] = synconcealed('.', cnum)
+  else
+    let [concealed, cchar] = [0, '']
+  endif
+  return concealed ? cchar : hidden ? 1 : 0
+endfunction
+
+" Jump to next conceal charactee
+" See: https://stackoverflow.com/a/24224578/4970632
+" NOTE: This will be inaccurate for horizontal motions spanning multiple lines
+" but generally not noticeable in that case (e.g. 20l just means 'go far away').
+function! syntax#next_nonconceal(count, ...) abort
+  let [delta, offset] = a:count < 0 ? [-1, -1] : [1, 0]
+  let [lnum, line] = [line('.'), getline('.')]
+  let [cnum, cmax] = [col('.'), col('$')]
+  let [icnt, jcnt] = [a:count, 0]
+  let cols = a:0 ? a:1 : syntax#_concealed(lnum)
   while delta * icnt > 0
-    let concealed = 0
-    let invisible = index(cols, cnum + offset) != -1
     if a:count < 0 && cnum <= 1 || a:count > 0 && cnum >= cmax
       let jcnt += icnt | break
     endif
-    if cnum && &l:concealcursor =~? cmode[:0]
-      let [concealed, cchar, _] = synconcealed(lnum, cnum + offset)
-    endif
-    if invisible || !concealed
+    let concealed = syntax#get_concealed(cnum + offset, cols)
+    if !type(concealed)
       if a:count < 0
         let cnum -= len(matchstr(line[:cnum - 2], '.$'))
       else  " vint: next-line -ProhibitUsingUndeclaredVariable
         let cnum += len(matchstr(line[cnum - 1:], '^.'))
       endif
-      let [sub, add] = [invisible ? 0 : 1, 1]
+      let [sub, add] = [concealed ? 0 : 1, 1]
     else
       let pnum = cnum  " previous colum number
       let cnum += delta  " increment column number
       while cnum > 1 && cnum < cmax
-        let [concealed, ichar, _] = synconcealed(lnum, cnum + offset)
-        if !concealed || cchar !=# ichar | break | endif
-        let cnum += delta  " increment column number
+        let icon = syntax#get_concealed(cnum + offset, cols)
+        if !type(icon) && empty(icon) || type(icon) && icon !=# concealed
+          break
+        else  " increment column number
+          let cnum += delta
+        endif
       endwhile
-      let sub = strchars(cchar)
+      let sub = strchars(concealed)
       if a:count < 0
         let add = strchars(line[max([cnum - 1, 0]):pnum - 2])
       else
@@ -62,8 +72,7 @@ function! syntax#next_char(count)
     let icnt -= delta * sub  " iterate input count
     let jcnt += delta * add  " iterate output count
   endwhile
-  let motion = jcnt > 0 ? jcnt . 'l' : jcnt < 0 ? -jcnt . 'h' : ''
-  return "\<Ignore>" . motion
+  return jcnt > 0 ? jcnt . 'l' : jcnt < 0 ? -jcnt . 'h' : ''
 endfunction
 
 " Switch to next or previous colorschemes and print the name

@@ -36,9 +36,14 @@ endfunction
 " instead of the current position for external windows, so when switching from
 " current window, jump to top of the list before the requested user position. Also
 " scroll additionally by minus 1 if 'current' position is beyond end of the list.
+function! jump#next_jump(...) abort
+  return call('s:next_list', [0] + a:000)
+endfunction
+function! jump#next_change(...) abort
+  return call('s:next_list', [1] + a:000)
+endfunction
 function! s:feed_list(mode, iloc, ...) abort
-  " vint: -ProhibitUnnecessaryDoubleQuote
-  let [key1, key2] = a:mode ? ["g;", "g,"] : ["\<C-o>", "\<C-i>"]
+  let [key1, key2] = a:mode ? ['g;', 'g,'] : ["\<C-o>", "\<C-i>"]
   let [tnr, wnr; rest] = a:0 ? a:000 : [tabpagenr(), winnr(), 0]
   silent exe tnr . 'tabnext' | silent exe wnr . 'wincmd w'
   let keys = tnr == tabpagenr() && wnr == winnr() ? '' : '1000' . key2  " initial
@@ -49,9 +54,9 @@ function! s:feed_list(mode, iloc, ...) abort
 endfunction
 function! s:next_list(mode, count) abort  " navigate to nth location in list
   let [opts, idx] = s:get_list(a:mode)
-  let lnum = get(get(opts, -1, {}), 'lnum', 0)
-  let cnum = get(get(opts, -1, {}), 'col', 0)
-  let bnum = get(get(opts, -1, {}), 'bufnr', bufnr())
+  let iopt = get(opts, -1, {})
+  let [lnum, cnum] = [get(iopt, 'lnum', 0), get(iopt, 'col', 0)]
+  let bnum = get(iopt, 'bufnr', bufnr())
   let iend = bnum == bufnr() && lnum == line('.') && cnum + 1 == col('.')
   let idel = iend && idx == len(opts) && a:count < 0 ? -1 : 0
   let jdx = idx + a:count + idel  " jump from e.g. '11'/10 to 9/10
@@ -220,15 +225,51 @@ function! jump#push_jump() abort
   endif
 endfunction
 
+" Navigate location list errors cyclically
+" Adding '+ 1 - reverse' fixes vint issue where ]x does not move from final error
+" See: https://vi.stackexchange.com/a/14359
+function! jump#setup_loc() abort
+  exe 'nnoremap <buffer> <CR> <CR>zv'
+endfunction
+function! jump#next_loc(count, list, ...) abort
+  let cmd = a:list ==# 'loc' ? 'll' : 'cc'
+  let func = 'get' . a:list . 'list'
+  let reverse = a:0 && a:1
+  let params = a:list ==# 'loc' ? [0] : []
+  let items = call(func, params)
+  call map(items, "extend(v:val, {'idx': v:key + 1})")
+  if reverse | call reverse(items) | endif
+  if empty(items)
+    redraw | echohl ErrorMsg
+    echom 'Error: No locations'
+    echohl None | return
+  endif
+  let [lnum, cnum] = [line('.'), col('.')]
+  let [cmps, oper] = [[], reverse ? '<' : '>']
+  call add(cmps, 'v:val.lnum ' . oper . ' lnum')
+  call add(cmps, 'v:val.col ' . oper . ' cnum + 1 - reverse')
+  call filter(items, join(cmps, ' || '))
+  let idx = get(get(items, 0, {}), 'idx', '')
+  if type(idx) != 0
+    exe reverse ? line('$') : 1 | call jump#next_loc(a:count, a:list, reverse)
+  elseif a:count > 1
+    exe cmd . ' ' . idx | call jump#next_loc(a:count - 1, a:list, reverse)
+  else  " jump to error
+    exe cmd . ' ' . idx
+  endif
+  if &l:foldopen =~# '\<quickfix\>' | exe 'normal! zv' | endif
+endfunction
+
 " Navigate words with restricted &iskeyword
 " NOTE: This implements 'g' and 'h' text object motions using word jump mappings.
 " Use gw/ge/gb/gm for snake_case and zw/ze/zb/zm for CapitalCaseFooBar or camelCase.
-function! jump#next_alpha(motion, mode, ...) abort
+" Jump to next word or WORD accunting for conceal
+function! jump#next_part(motion, mode, ...) abort
   let cmd = 'setlocal iskeyword=' . &l:iskeyword  " vint: next-line -ProhibitUnnecessaryDoubleQuote
   let &l:iskeyword = a:mode ? "a-z,48-57" : "@,48-57,192-255"
   let cnt = a:mode ? s:adjust_count(a:motion) : v:count1
   let action = a:0 ? a:1 ==# 'c' ? "\<Esc>c" : a:1 : ''
-  call feedkeys(action . cnt . a:motion . "\<Cmd>" . cmd . "\<CR>", 'n')
+  call feedkeys(action . cnt . a:motion . "\<Cmd>" . cmd . "\<CR>", 'm')
 endfunction
 function! s:adjust_count(motion) abort
   let [line, idx, cnt] = [getline('.'), col('.') - 1, v:count1]
@@ -255,16 +296,9 @@ function! s:adjust_count(motion) abort
   endfor | return cnt
 endfunction
 
-" Navigate matches and lists without editing jumplist
-" NOTE: This implements indexed-search directional consistency
-" and avoids adding to the jumplist to prevent overpopulation
-function! jump#next_jump(...) abort
-  return call('s:next_list', [0] + a:000)
-endfunction
-function! jump#next_change(...) abort
-  return call('s:next_list', [1] + a:000)
-endfunction
-function! jump#next_match(count) abort
+" Navigate searches with indexed-search
+" NOTE: This adds indexed-search directional consistency and preserves jumplist
+function! jump#next_search(count) abort
   let forward = get(g:, 'indexed_search_n_always_searches_forward', 0)  " default
   if forward && !v:searchforward  " implement 'always forward'
     let map = a:count > 0 ? 'N' : 'n'
@@ -282,37 +316,22 @@ function! jump#next_match(count) abort
   endif
 endfunction
 
-" Navigate location list errors cyclically
-" Adding '+ 1 - reverse' fixes vint issue where ]x does not move from final error
-" See: https://vi.stackexchange.com/a/14359
-function! jump#setup_list() abort
-  exe 'nnoremap <buffer> <CR> <CR>zv'
-endfunction
-function! jump#next_list(count, list, ...) abort
-  let cmd = a:list ==# 'loc' ? 'll' : 'cc'
-  let func = 'get' . a:list . 'list'
-  let reverse = a:0 && a:1
-  let params = a:list ==# 'loc' ? [0] : []
-  let items = call(func, params)
-  call map(items, "extend(v:val, {'idx': v:key + 1})")
-  if reverse | call reverse(items) | endif
-  if empty(items)
-    redraw | echohl ErrorMsg
-    echom 'Error: No locations'
-    echohl None | return
-  endif
-  let [lnum, cnum] = [line('.'), col('.')]
-  let [cmps, oper] = [[], reverse ? '<' : '>']
-  call add(cmps, 'v:val.lnum ' . oper . ' lnum')
-  call add(cmps, 'v:val.col ' . oper . ' cnum + 1 - reverse')
-  call filter(items, join(cmps, ' || '))
-  let idx = get(get(items, 0, {}), 'idx', '')
-  if type(idx) != 0
-    exe reverse ? line('$') : 1 | call jump#next_list(a:count, a:list, reverse)
-  elseif a:count > 1
-    exe cmd . ' ' . idx | call jump#next_list(a:count - 1, a:list, reverse)
-  else  " jump to error
-    exe cmd . ' ' . idx
-  endif
-  if &l:foldopen =~# '\<quickfix\>' | exe 'normal! zv' | endif
+" Navigate words ignoring conceal
+" NOTE: For some reason running separate normal mode command for adjustment solves
+" issue where deleting to end-of-line with 'e' either omits character includes newline
+function! jump#next_word(motion, ...) abort
+  let adjust = mode(1) =~# '^no' && a:motion ==? 'e' ? 'l' : ''
+  let [lnum, cols] = [line('.'), syntax#_concealed()]
+  let [delta, offset] = a:motion =~? '^[we]$' ? [1, 0] : [-1, -1]
+  for _ in range(a:0 ? a:1 : v:count1)
+    let cols = lnum == line('.') ? cols : syntax#_concealed()
+    let concealed = syntax#get_concealed(col('.') + offset, cols)
+    let [keys, lnum] = ['', line('.')]
+    if type(concealed) || !empty(concealed)
+      let keys .= syntax#next_nonconceal(delta, cols)
+      let keys .= delta > 0 ? 'h' : 'l'
+    endif
+    exe 'normal! ' . keys . a:motion
+    exe empty(adjust) ? '' : 'normal! ' . adjust
+  endfor
 endfunction

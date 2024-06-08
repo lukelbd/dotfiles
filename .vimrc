@@ -460,7 +460,7 @@ augroup panel_setup
   au TerminalWinOpen * call window#setup_panel(1)
   au BufRead,BufEnter fugitive://* if &filetype !=# 'fugitive' | call window#setup_panel() | endif
   au FileType help call vim#setup_help()
-  au FileType qf call jump#setup_list()
+  au FileType qf call jump#setup_loc()
   au FileType man call shell#setup_man()
   au FileType gitcommit call git#setup_commit()
   au FileType fugitiveblame call git#setup_blame() | call git#setup_panel()
@@ -528,17 +528,15 @@ nnoremap <Tab>< <Cmd>call window#move_tab(tabpagenr() - v:count1)<CR>
 " General motions and scrolling {{{2
 " NOTE: Use parentheses since g0/g$ are navigation and z0/z9 used for color schemes
 " NOTE: Mapped jumping commands do not open folds by default, hence the expr below
-" NOTE: Here h/l skip concealed syntax regions and matchadd() matches (respecting
-" &concealcursor values) and m/M is the missing previous end-of-word mapping.
+silent! exe 'runtime autoload/utils.vim'
 for s:key in ['0', '^'] | exe 'noremap ' . s:key . ' ' . s:key . 'ze' | endfor
 for s:key in ['g0', 'g^'] | exe 'noremap ' . s:key . ' ' . s:key . 'ze' | endfor
-noremap <expr> h (v:count ? '<Esc>' : '') . syntax#next_char(-v:count1)
-noremap <expr> l (v:count ? '<Esc>' : '') . syntax#next_char(v:count1)
 noremap <expr> gg 'gg' . (v:count ? 'zv' : '')
 noremap <expr> G 'G' . (v:count ? 'zv' : '')
-exe 'noremap g( ze' | exe 'noremap g) zs'
-exe 'noremap z( zb' | exe 'noremap z) zt'
-exe 'noremap m ge' | exe 'noremap M gE'
+noremap g( ze
+noremap g) zs
+noremap z( zb
+noremap z) zt
 
 " Repair modifier-arrow key presses. Use iTerm to remap <BS> and <Del> to Shift-Arrow
 " presses, then convert to no-op in normal mode and deletions for insert/command mode.
@@ -758,10 +756,10 @@ noremap <F8> <Esc><Cmd>call mark#next_mark(v:count1)<CR>
 " NOTE: In general location list and quickfix list filled by ale, but quickfix also
 " temporarily filled by lsp commands or fzf mappings, so add below generalized
 " mapping for jumping between e.g. variables, grep matches, tag matches, etc.
-command! -count=1 Lprev call jump#next_list(<count>, 'loc', 1)
-command! -count=1 Lnext call jump#next_list(<count>, 'loc', 0)
-command! -count=1 Qprev call jump#next_list(<count>, 'qf', 1)
-command! -count=1 Qnext call jump#next_list(<count>, 'qf', 0)
+command! -count=1 Lprev call jump#next_loc(<count>, 'loc', 1)
+command! -count=1 Lnext call jump#next_loc(<count>, 'loc', 0)
+command! -count=1 Qprev call jump#next_loc(<count>, 'qf', 1)
+command! -count=1 Qnext call jump#next_loc(<count>, 'qf', 0)
 nnoremap [{ <Cmd>exe v:count1 . 'Qprev'<CR><Cmd>call window#show_list(1)<CR><Cmd>wincmd p<CR>
 nnoremap ]} <Cmd>exe v:count1 . 'Qnext'<CR><Cmd>call window#show_list(1)<CR><Cmd>wincmd p<CR>
 nnoremap [X <Cmd>exe v:count1 . 'Qprev'<CR>
@@ -855,33 +853,46 @@ vnoremap <LeftMouse> <LeftMouse>my<Cmd>exe 'keepjumps normal! `z' . visualmode()
 for s:key in ['(', ')'] | exe 'silent! unmap ' . s:key | endfor
 nnoremap ; <Cmd>call switch#hlsearch(1 - v:hlsearch, 1)<CR>
 vnoremap ; <Cmd>call switch#hlsearch(1 - v:hlsearch, 1)<CR>
-noremap N <Cmd>call jump#next_match(-v:count1)<CR>
-noremap n <Cmd>call jump#next_match(v:count1)<CR>
+noremap N <Cmd>call jump#next_search(-v:count1)<CR>
+noremap n <Cmd>call jump#next_search(v:count1)<CR>
 noremap { <Cmd>exe 'keepjumps normal! ' . v:count1 . '{'<CR>
 noremap } <Cmd>exe 'keepjumps normal! ' . v:count1 . '}'<CR>
 
+" Navigate horizontally ignoring concealed regions
+" NOTE: Here h/l skip concealed syntax regions and matchadd() matches (respecting
+" &concealcursor values) and m/M is the missing previous end-of-word mapping.
+noremap <expr> h (v:count ? '<Esc>' : '') . syntax#next_nonconceal(-v:count1)
+noremap <expr> l (v:count ? '<Esc>' : '') . syntax#next_nonconceal(v:count1)
+noremap w <Cmd>call jump#next_word('w')<CR>
+noremap W <Cmd>call jump#next_word('W')<CR>
+noremap b <Cmd>call jump#next_word('b')<CR>
+noremap B <Cmd>call jump#next_word('B')<CR>
+noremap e <Cmd>call jump#next_word('e')<CR>
+noremap E <Cmd>call jump#next_word('E')<CR>
+noremap m <Cmd>call jump#next_word('ge')<CR>
+noremap M <Cmd>call jump#next_word('gE')<CR>
+
 " Move between alphanumeric groups of characters (i.e. excluding dots, dashes,
 " underscores). This is consistent with tmux vim selection navigation
-silent! exe 'runtime autoload/utils.vim'
-noremap gw <Cmd>call jump#next_alpha('w', 0)<CR>
-noremap gb <Cmd>call jump#next_alpha('b', 0)<CR>
-noremap ge <Cmd>call jump#next_alpha('e', 0)<CR>
-noremap gm <Cmd>call jump#next_alpha('ge', 0)<CR>
-call utils#repeat_map('o', 'gw', 'AlphaNextStart', "<Cmd>call jump#next_alpha('w', 0, v:operator)<CR>")
-call utils#repeat_map('o', 'gb', 'AlphaPrevStart', "<Cmd>call jump#next_alpha('b', 0, v:operator)<CR>")
-call utils#repeat_map('o', 'ge', 'AlphaNextEnd',   "<Cmd>call jump#next_alpha('e', 0, v:operator)<CR>")
-call utils#repeat_map('o', 'gm', 'AlphaPrevEnd',   "<Cmd>call jump#next_alpha('ge, 0, v:operator)<CR>")
+noremap gw <Cmd>call jump#next_part('w', 1)<CR>
+noremap gb <Cmd>call jump#next_part('b', 1)<CR>
+noremap ge <Cmd>call jump#next_part('e', 1)<CR>
+noremap gm <Cmd>call jump#next_part('m', 1)<CR>
+call utils#repeat_map('o', 'gw', 'AlphaNextStart', "<Cmd>call jump#next_part('w', 1, v:operator)<CR>")
+call utils#repeat_map('o', 'gb', 'AlphaPrevStart', "<Cmd>call jump#next_part('b', 1, v:operator)<CR>")
+call utils#repeat_map('o', 'ge', 'AlphaNextEnd',   "<Cmd>call jump#next_part('e', 1, v:operator)<CR>")
+call utils#repeat_map('o', 'gm', 'AlphaPrevEnd',   "<Cmd>call jump#next_part('m, 1, v:operator)<CR>")
 
 " Move between groups of characters with the same case
 " NOTE: This is helpful when refactoring and renaming variables
-noremap zw <Cmd>call jump#next_alpha('w', 1)<CR>
-noremap zb <Cmd>call jump#next_alpha('b', 1)<CR>
-noremap ze <Cmd>call jump#next_alpha('e', 1)<CR>
-noremap zm <Cmd>call jump#next_alpha('ge', 1)<CR>
-call utils#repeat_map('o', 'zw', 'CaseNextStart', "<Cmd>call jump#next_alpha('w', 1, v:operator)<CR>")
-call utils#repeat_map('o', 'zb', 'CasePrevStart', "<Cmd>call jump#next_alpha('b', 1, v:operator)<CR>")
-call utils#repeat_map('o', 'ze', 'CaseNextEnd',   "<Cmd>call jump#next_alpha('e', 1, v:operator)<CR>")
-call utils#repeat_map('o', 'zm', 'CasePrevEnd',   "<Cmd>call jump#next_alpha('ge, 1, v:operator)<CR>")
+noremap zw <Cmd>call jump#next_part('w', 2)<CR>
+noremap zb <Cmd>call jump#next_part('b', 2)<CR>
+noremap ze <Cmd>call jump#next_part('e', 2)<CR>
+noremap zm <Cmd>call jump#next_part('m', 2)<CR>
+call utils#repeat_map('o', 'zw', 'CaseNextStart', "<Cmd>call jump#next_part('w', 2, v:operator)<CR>")
+call utils#repeat_map('o', 'zb', 'CasePrevStart', "<Cmd>call jump#next_part('b', 2, v:operator)<CR>")
+call utils#repeat_map('o', 'ze', 'CaseNextEnd',   "<Cmd>call jump#next_part('e', 2, v:operator)<CR>")
+call utils#repeat_map('o', 'zm', 'CasePrevEnd',   "<Cmd>call jump#next_part('m, 2, v:operator)<CR>")
 
 " Comments and header regions {{{2
 " NOTE: <Plug> name cannot be subset of other name or results in delay
