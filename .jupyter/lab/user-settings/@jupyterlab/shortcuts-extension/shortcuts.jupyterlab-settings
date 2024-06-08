@@ -724,14 +724,14 @@
             "keys": [
                 "/"
             ],
-            "selector": ".jp-mod-searchable"
+            "selector": ".jp-Notebook.jp-mod-commandMode:not(.jp-mod-readWrite) :focus"
         },
         {
             "command": "documentsearch:startWithReplace",
             "keys": [
                 "Shift /"
             ],
-            "selector": ".jp-mod-searchable"
+            "selector": ".jp-Notebook.jp-mod-commandMode:not(.jp-mod-readWrite) :focus"
         },
         {
             "command": "docmanager:save",
