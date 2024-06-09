@@ -364,9 +364,11 @@ function! fold#fzf_source(...) abort
   let [folds, ifolds] = [[], fold#get_folds(lmin, lmax, level)]
   for [_, lnum] in outer | exe lnum . 'foldopen' | endfor
   for [line1, line2, level] in ifolds  " guaranteed to match level
-    call add(folds, [line1, line2, level])
+    let ifold = [line1, line2, level]
+    call add(folds, ifold)
     if !empty(filter(copy(inner), 'v:val[1] >= line1 && v:val[1] <= line2'))
-      call extend(folds, fold#get_source(line1, line2, level + 1))
+      let ifolds = fold#fzf_source(line1, line2, level + 1)
+      call extend(folds, ifolds)
     endif
   endfor
   for [_, lnum] in reverse(outer) | exe lnum . 'foldclose' | endfor
@@ -378,6 +380,7 @@ function! fold#fzf_folds(...) abort
   let [path, source] = [expand('%'), []]
   for [line1, line2, level] in folds
     let [text, _, stats] = s:fold_text(line1, line2, level)
+    let stats = substitute(stats, '^\(\d\):\+', '\1:', '')
     let text = substitute(text, '^\s*', '', '')
     let text = path . ':' . line1 . ':' . stats . ' ' . text
     call add(source, text)

@@ -688,7 +688,7 @@ noremap [z <Cmd>keepjumps normal! zk<CR><Cmd>keepjumps normal! [z<CR>
 noremap ]z <Cmd>keepjumps normal! zj<CR><Cmd>keepjumps normal! [z<CR>
 noremap zk <Cmd>keepjumps normal! [z<CR>
 noremap zj <Cmd>keepjumps normal! ]z<CR>
-nnoremap gz <Cmd>Folds<CR>
+nnoremap gz <Cmd>call fold#fzf_folds()<CR>
 nnoremap z[ <Cmd>call fold#update_level('m')<CR>
 nnoremap z] <Cmd>call fold#update_level('r')<CR>
 nnoremap z{ <Cmd>call fold#update_level('M')<CR>
