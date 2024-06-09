@@ -1396,9 +1396,9 @@ let g:MRU_file = '~/.vim_mru_files'  " default (custom was ignored for some reas
 " call s:plug('Shougo/ddu.vim')  " third generation
 " call s:plug('Shougo/ddu-ui-filer.vim')  " successor to Shougo/vimfiler and Shougo/defx.nvim
 " call s:plug('ctrlpvim/ctrlp.vim')  " replaced with fzf
+" call s:plug('roosta/fzf-folds.vim')  " replaced with custom utility
 call s:plug('~/.fzf')  " fzf installation location, will add helptags and runtimepath
 call s:plug('junegunn/fzf.vim')  " pin to version supporting :Drop
-call s:plug('roosta/fzf-folds.vim')  " jump to folds
 let g:fzf_action = {'ctrl-m': 'Drop', 'ctrl-e': 'split', 'ctrl-r': 'vsplit' }  " have file search and grep open to existing window if possible
 let g:fzf_buffers_jump = 1  " jump to existing window if already open
 let g:fzf_history_dir = expand('~/.fzf-hist')  " navigate searches with ctrl-n, ctrl-p
@@ -2652,7 +2652,7 @@ endif  " }}}
 augroup syntax_setup
   au!
   au Syntax * unlet! b:common_syntax | unlet! b:af_py_loaded | unlet! b:af_rst_loaded
-  au Syntax * call feedkeys("\<Cmd>runtime after/common.vim\<CR>", 'n')
+  au Syntax * call timer_start(100, function('execute', ['runtime after/common.vim']))
 augroup END
 command! -nargs=? ShowGroups call syntax#show_stack(<f-args>)
 command! -nargs=0 ShowNames exe 'help highlight-groups' | exe 'normal! zt'

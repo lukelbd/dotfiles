@@ -289,29 +289,20 @@ endfunction
 " Generate truncated fold text. In future should include error cound information.
 " NOTE: Since gitgutter signs are not shown over closed folds include summary of
 " changes in fold text. See https://github.com/airblade/vim-gitgutter/issues/655
-function! fold#fold_text(...) abort
-  let winview = winsaveview()  " translate byte column index to character index
-  if a:0  " debugging mode
-    exe winview.lnum | let [line1, line2, level] = fold#get_fold()
-    call winrestview(winview)
-  else  " internal mode
-    let [line1, line2] = [v:foldstart, v:foldend]
-    let level = len(v:folddashes)
-  endif
-  let level = level . repeat(':', level)  " fold level
-  let lines = string(line2 - line1 + 1)  " number of lines
-  let leftidx = charidx(getline(winview.lnum), winview.leftcol)
+function! s:fold_text(line1, line2, level)
+  let level = a:level . repeat(':', a:level)  " fold level
+  let lines = string(a:line2 - a:line1 + 1)  " number of lines
   let maxlen = get(g:, 'linelength', 88) - 1  " default maximum
-  let flags = edit#get_errors(line1, line2)  " lintint messages
-  let flags .= git#stat_hunks(line1, line2, 0, 1)  " abbreviate with '1'
+  let flags = edit#get_errors(a:line1, a:line2)  " lintint messages
+  let flags .= git#stat_hunks(a:line1, a:line2, 0, 1)  " abbreviate with '1'
   let dots = repeat('·', len(string(line('$'))) - len(lines))
   let stats = level . dots . lines  " default statistics
   if &l:diff  " fill with maximum width
     let [label, stats] = [level . dots . lines, repeat('~', maxlen - strwidth(stats) - 2)]
   elseif exists('*' . &l:filetype . '#fold_text')
-    let label = {&l:filetype}#fold_text(line1, line2)
+    let label = {&l:filetype}#fold_text(a:line1, a:line2)
   else  " global default label
-    let label = fold#get_label(line1)
+    let label = fold#get_label(a:line1)
   endif
   let [delim1, delim2] = s:get_delims(label)
   let indent = matchstr(label, '^\s*')
@@ -326,7 +317,81 @@ function! fold#fold_text(...) abort
     let label = label . '···' . delim2 . '  '
   endif
   let space = repeat(' ', width - strwidth(label))
+  return [label, space, stats]
+endfunction
+function! fold#fold_text(...) abort
+  let winview = winsaveview()  " translate byte column index to character index
+  if a:0 && a:1  " debugging mode
+    exe winview.lnum | let [line1, line2, level] = fold#get_fold()
+    call winrestview(winview)
+  else  " internal mode
+    let [line1, line2] = [v:foldstart, v:foldend]
+    let level = len(v:folddashes)
+  endif
+  let leftidx = charidx(getline(winview.lnum), winview.leftcol)
+  let [label, space, stats] = s:fold_text(line1, line2, level)
   return strcharpart(label . space . stats, leftidx)
+endfunction
+
+
+" Jump to folds in current file
+" NOTE: This was adapted from fzf fold plugin that used approach of temporarily
+" opening and closing folds.
+" See: https://github.com/roosta/fzf-folds.vim
+function! s:fold_sink(fold) abort
+  if empty(a:fold) | return | endif
+  let [path, lnum; rest] = split(a:fold, ':')
+  exe 'normal! m'''
+  call cursor(lnum, 0)
+  exe 'normal! zvzzze'
+endfunction
+function! s:fold_sort(line1, line2, level, ...) abort
+  let [outer, inner] = [[], []]
+  for lnum in range(a:line1, a:line2)
+    let ilevel = foldlevel(lnum)
+    if !ilevel | continue | endif
+    let iline = foldclosed(lnum)
+    if ilevel > a:level
+      call add(inner, [ilevel, lnum])
+    elseif iline > 0 && index(outer, [ilevel, iline]) == -1
+      call add(outer, [ilevel, iline])
+    endif
+  endfor | return [sort(outer), sort(inner)]
+endfunction
+function! fold#fzf_source(...) abort
+  let [lmin, lmax, level] = a:0 ? a:000 : [1, line('$'), 1]
+  let [outer, inner] = s:fold_sort(lmin, lmax, level)
+  let [folds, ifolds] = [[], fold#get_folds(lmin, lmax, level)]
+  for [_, lnum] in outer | exe lnum . 'foldopen' | endfor
+  for [line1, line2, level] in ifolds  " guaranteed to match level
+    call add(folds, [line1, line2, level])
+    if !empty(filter(copy(inner), 'v:val[1] >= line1 && v:val[1] <= line2'))
+      call extend(folds, fold#get_source(line1, line2, level + 1))
+    endif
+  endfor
+  for [_, lnum] in reverse(outer) | exe lnum . 'foldclose' | endfor
+  return folds
+endfunction
+function! fold#fzf_folds(...) abort
+  let bang = a:0 ? a:1 : 0
+  let folds = fold#fzf_source()
+  let [path, source] = [expand('%'), []]
+  for [line1, line2, level] in folds
+    let [text, _, stats] = s:fold_text(line1, line2, level)
+    let text = substitute(text, '^\s*', '', '')
+    let text = path . ':' . line1 . ':' . stats . ' ' . text
+    call add(source, text)
+  endfor
+  let opts = fzf#vim#with_preview({'placeholder': '{1}:{2}'})
+  let opts = join(map(get(opts, 'options', []), 'fzf#shellescape(v:val)'), ' ')
+  let opts .= ' -d : --with-nth 3.. --preview-window +{2}-/2 --layout=reverse-list'
+  if empty(text) | return | endif
+  let options = {
+    \ 'source': source,
+    \ 'sink': function('s:fold_sink'),
+    \ 'options': opts . " --prompt='Fold> '",
+  \ }
+  return fzf#run(fzf#wrap('folds', options, bang))
 endfunction
 
 " Update the fold bounds, level, and open-close status
@@ -406,35 +471,20 @@ endfunction
 function! s:toggle_state(line1, line2, ...) abort range
   let level = a:0 ? a:1 : 0
   for lnum in range(a:line1, a:line2)
-    let inum = foldclosed(lnum)
-    if inum > 0 && (!level || level == foldlevel(inum))
-      return 1
-    endif
+    let inum = foldclosed(lnum) | let ilevel = foldlevel(inum)
+    if inum > 0 && (!level || level == ilevel) | return 1 | endif
   endfor
 endfunction
-function! s:toggle_inner(line1, line2, level, ...) abort
-  let [outer, inner] = [[], []]
+function! s:toggle_inner(line1, line2, level, ...)
   let [fold1, fold2] = [foldclosed(a:line1), foldclosedend(a:line2)]
   let [line1, line2] = [fold1 > 0 ? fold1 : a:line1, fold2 > 0 ? fold2 : a:line2]
-  for lnum in range(line1, line2)
-    let ilevel = foldlevel(lnum)
-    if !ilevel | continue | endif
-    let iline = foldclosed(lnum)
-    if ilevel > a:level
-      call add(inner, [ilevel, lnum])
-    elseif iline > 0 && index(outer, [ilevel, iline]) == -1
-      call add(outer, [ilevel, iline])
-    endif
-  endfor
-  for [_, lnum] in sort(outer) | exe lnum . 'foldopen' | endfor
-  let level = a:level + 1  " minimum folding level
-  let toggle = a:0 ? a:1 : 1 - s:toggle_state(a:line1, a:line2, level)
-  let recurse = a:0 > 0 ? a:2 : 0
-  let toggled = []
-  for [_, lnum] in toggle ? reverse(sort(inner)) : sort(inner)
-    let inum = foldclosed(lnum)
-    let ilevel = foldlevel(inum > 0 ? inum : lnum)
-    if ilevel == level || recurse && ilevel > level
+  let [outer, inner] = s:fold_sort(line1, line2, a:level)
+  for [_, lnum] in outer | exe lnum . 'foldopen' | endfor
+  let toggle = a:0 ? a:1 : 1 - s:toggle_state(a:line1, a:line2, a:level + 1)
+  let [recurse, toggled] = [a:0 > 0 ? a:2 : 0, []]
+  for [_, lnum] in toggle ? reverse(inner) : inner
+    let inum = foldclosed(lnum) | let ilevel = foldlevel(inum > 0 ? inum : lnum)
+    if ilevel == a:level + 1 || recurse && ilevel > a:level + 1
       if toggle && inum <= 0
         exe lnum . 'foldclose'
         call add(toggled, [foldclosed(lnum), foldclosedend(lnum), ilevel])
@@ -444,7 +494,7 @@ function! s:toggle_inner(line1, line2, level, ...) abort
       endif
     endif
   endfor
-  for [_, lnum] in reverse(sort(outer)) | exe lnum . 'foldclose' | endfor
+  for [_, lnum] in reverse(outer) | exe lnum . 'foldclose' | endfor
   return [toggle, toggled]
 endfunction
 
@@ -468,9 +518,10 @@ function! fold#toggle_parents(...) abort range
   for [line1, line2, level] in fold#get_parents(lmin, lmax)
     if line2 <= line1 | continue | endif
     let toggle = a:0 ? a:1 : 1 - s:toggle_state(line1, line1)
-    let [_, folds] = s:toggle_inner(line1, line2, level, toggle, 1)
+    let args = [line1, line2, level, toggle, 1]
+    let result = call('s:toggle_inner', args)
     exe line1 . (toggle ? 'foldclose' : 'foldopen')
-    let counts[toggle] += 1 + len(folds)
+    let counts[toggle] += 1 + len(result[1])
   endfor
   let toggle = counts[0] && counts[1] ? 2 : counts[1] ? 1 : 0
   call s:toggle_finish(toggle, counts[0] + counts[1]) | return ''

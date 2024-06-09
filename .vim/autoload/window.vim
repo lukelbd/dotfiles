@@ -237,7 +237,7 @@ function! window#fzf_goto(...) abort
     \ 'source' : s:tab_source(1),
     \ 'options': opts . ' --prompt="Goto> "',
   \ }
-  return fzf#run(fzf#wrap('goto', options, bang)) | return ''
+  return fzf#run(fzf#wrap('goto', options, bang))
 endfunction
 function! window#fzf_move(...) abort
   let bang = a:0 ? a:1 : 0
@@ -249,7 +249,7 @@ function! window#fzf_move(...) abort
     \ 'source' : s:tab_source(1),
     \ 'options': opts . ' --prompt="Move> "',
   \ }
-  return fzf#run(fzf#wrap('move', options, bang)) | return ''
+  return fzf#run(fzf#wrap('move', options, bang))
 endfunction
 
 " Scroll recent files
