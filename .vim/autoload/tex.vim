@@ -44,7 +44,7 @@ endfunction
 let s:maxlines = 100  " maxumimum lines to search
 function! tex#fold_text(lnum, ...) abort
   let [line1, line2] = [a:lnum + 1, a:lnum + s:maxlines]
-  let label = fold#get_label(a:lnum, 0)
+  let label = fold#fold_label(a:lnum, 0)
   let regex = '^\([%\t ]*\)\(.*\)$'
   let [_, indent, label; rest] = matchlist(label, regex)
   let isframe = label =~# '^\\begingroup\|^\\begins*{\s*frame\*\?\s*}'
@@ -55,14 +55,14 @@ function! tex#fold_text(lnum, ...) abort
     let tail = isframe ? '\\frametitle' : '\\label'
     for lnum in range(line1, min([line2, a:0 ? a:1 : line2]))
       let bool = getline(lnum) =~# head . tail
-      if bool | let label = fold#get_label(lnum, 0) | break | endif
+      if bool | let label = fold#fold_label(lnum, 0) | break | endif
     endfor
   endif
   if label =~# '{\s*\(%.*\)\?$'  " append lines
     let [line1, line2] = [lnum + 1, lnum + s:maxlines]
     for lnum in range(line1, min([line2, a:0 ? a:1 : line2]))
       let bool = lnum == line1 || label[-1:] ==# '{'
-      let label .= (bool ? '' : ' ') . fold#get_label(lnum, 1)
+      let label .= (bool ? '' : ' ') . fold#fold_label(lnum, 1)
     endfor
   endif
   let label = substitute(label, '\\\@<!\\', '', 'g')  " remove backslashes

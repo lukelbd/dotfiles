@@ -154,15 +154,15 @@ function! python#fold_text(lnum, ...) abort
     let heads[string(a:lnum)] = lnum
   endif
   let [line1, line2] = [lnum + 1, lnum + s:maxlines]
-  let label = fold#get_label(lnum, 0)
+  let label = fold#fold_label(lnum, 0)
   let width = get(g:, 'linelength', 88) - 10  " minimum width
   let regex = '["'']\{3}'  " docstring expression
   if label =~# '^try:\s*$'  " append lines
-    let label .= ' ' . fold#get_label(line1, 1)  " remove indent
+    let label .= ' ' . fold#fold_label(line1, 1)  " remove indent
   endif
   if label =~# regex . '\s*$'  " append lines
     for lnum in range(line1, min([line2, a:0 ? a:1 : line2]))
-      let itext = fold#get_label(lnum, 1)
+      let itext = fold#fold_label(lnum, 1)
       let istop = itext =~# regex  " docstring close
       let itext = itext =~# '[-=]\{3,}' ? '' : itext
       let space = !istop && lnum > line1 ? ' ' : '' 

@@ -2,7 +2,8 @@
 " Utilities for vimscript files
 "-----------------------------------------------------------------------------"
 " Refresh recently modified configuration files
-" NOTE: Here 'filetype detect' also triggers 'FileType' autocommands (tested).
+" NOTE: Here 'filetype detect' triggers Syntax autocommand that calls common.vim
+" and applies foldmethod / sets queue, then FileType autocommand that calls FastFold
 " NOTE: Previously tried to update and track per-filetype refreshes but was way
 " overkill and need ':filetype detect' anyway to both detect changes and to trigger
 " e.g. markdown or python folding overrides. Note (after testing) this will also
@@ -31,9 +32,9 @@ function! vim#config_refresh(bang, ...) abort
     endif
   endfor
   let closed = foldclosed('.')
-  call tag#update_files()  " call during .vimrc refresh
-  filetype detect  " apply syntax and folds
-  if closed <= 0 | exe 'silent! normal! zv' | endif | redraw
+  filetype detect  " update syntax, filetype, folds
+  let expr = closed > 0 ? foldclosed('.') > 0 ? '' : 'zc' : 'zv'
+  exe 'silent! normal! ' . expr | redraw
   echom 'Loaded: ' . join(map(paths, "fnamemodify(v:val, ':~')[2:]"), ', ') . '.'
   let g:refresh = localtime()
 endfunction

@@ -1,68 +1,6 @@
 "-----------------------------------------------------------------------------"
 " Utilities for vim folds
 "-----------------------------------------------------------------------------"
-" Add fastfold-managed manual folds with marks
-" WARNING: Critical to re-open folds after defining or subsequent fold definitions
-" fail. Still want to initialize with closed folds though so do that afterwards.
-" NOTE: Previously tried using regions with 'vim-syntaxMarkerFold' but causes major
-" issues since either disables highlighting or messes up inner highlight items when
-" trying to use e.g. contains=ALL since several use naked 'contained' property.
-function! s:is_divider(...) abort
-  let regex = '\(' . comment#get_regex(0) . '\)\?'
-  let regex = '^' . regex . '\s*[-=]\{3,}' . regex . '\(\s\|$\)'
-  return getline(a:0 ? a:1 : '.') =~# regex
-endfunction
-function! fold#add_markers() abort
-  if &l:foldmethod !=# 'manual' | return | endif
-  let winview = winsaveview()
-  let [mark1, mark2] = split(&l:foldmarker, ',')
-  let [head, tail] = ['\%(^\|\s\)\zs', '\(\d*\)\s*$']  " end of line only
-  let regex = head . '\(' . mark1 . '\|' . mark2 . '\)' . tail
-  let queue = []  " fold queue
-  let heads = {}  " mark lines
-  goto | while v:true
-    let flags = line('.') == 1 && col('.') == 1 ? 'cW' : 'W'
-    let [lnum, cnum] = searchpos(regex, flags, "tags#get_skip(0, 'Comment')")
-    if lnum == 0 || cnum == 0 | break | endif
-    let line = getline(lnum)
-    let parts = matchlist(line, regex, cnum - 1)
-    if empty(parts)
-      echohl WarningMsg
-      echom 'Warning: Failed to setup mark folds.'
-      echohl None | break
-    endif
-    let lnum -= s:is_divider(lnum - 1) && s:is_divider(lnum + 1)
-    let [mark, level] = parts[1:2]
-    if parts[1] =~# mark2  " close previously defined fold
-      let level = empty(level) ? max(keys(heads)) : str2nr(level)
-      if has_key(heads, string(level))
-        call add(queue, [level, heads[level], lnum])
-        call remove(heads, level)
-      endif
-    else  " open fold after deleting previous and closing inner
-      let level = empty(level) ? max(keys(heads)) + 1 : str2nr(level)
-      for ilevel in range(level, 10)
-        if has_key(heads, string(ilevel))
-          call add(queue, [ilevel, heads[ilevel], lnum - 1])
-          call remove(heads, ilevel)
-        endif
-      endfor
-      let heads[level] = lnum
-    endif
-  endwhile
-  for level in keys(heads)
-    call add(queue, [str2nr(level), heads[level], line('$')])
-  endfor
-  for [level, line1, line2] in sort(queue)
-    exe line1 . ',' . line2 . 'fold' | exe line1 . 'foldopen'
-  endfor
-  for [_, line1, _] in reverse(sort(queue))
-    exe line1 . 'foldclose'
-  endfor
-  call winrestview(winview)
-  let b:fastfold_markers = queue
-endfunction
-
 " Return bounds and level for any closed fold or open fold of requested level
 " NOTE: No native way to get bounds if fold is open so use normal-mode algorithm.
 " Also [z never raises error, but does update jumplist even though not documented
@@ -245,50 +183,114 @@ function! fold#get_parents(...) abort
   return call('s:get_folds', ['fold#get_parent'] + a:000)
 endfunction
 
+" Return fastfold-managed manual folds with marks
+" WARNING: Critical to re-open folds after defining or subsequent fold definitions
+" fail. Still want to initialize with closed folds though so do that afterwards.
+" NOTE: Previously tried using regions with 'vim-syntaxMarkerFold' but causes major
+" issues since either disables highlighting or messes up inner highlight items when
+" trying to use e.g. contains=ALL since several use naked 'contained' property.
+function! s:is_divider(...) abort
+  let regex = '\(' . comment#get_regex(0) . '\)\?'
+  let regex = '^' . regex . '\s*[-=]\{3,}' . regex . '\(\s\|$\)'
+  return getline(a:0 ? a:1 : '.') =~# regex
+endfunction
+function! fold#get_markers() abort
+  let winview = winsaveview()
+  let [mark1, mark2] = split(&l:foldmarker, ',')
+  let [head, tail] = ['\%(^\|\s\)\zs', '\(\d*\)\s*$']  " end of line only
+  let regex = head . '\(' . mark1 . '\|' . mark2 . '\)' . tail
+  let folds = []  " fold queue
+  let heads = {}  " mark lines
+  goto | while v:true
+    let flags = line('.') == 1 && col('.') == 1 ? 'cW' : 'W'
+    let [lnum, cnum] = searchpos(regex, flags, "tags#get_skip(0, 'Comment')")
+    if lnum == 0 || cnum == 0 | break | endif
+    let line = getline(lnum)
+    let parts = matchlist(line, regex, cnum - 1)
+    if empty(parts)
+      echohl WarningMsg
+      echom 'Warning: Failed to setup mark folds.'
+      echohl None | break
+    endif
+    let lnum -= s:is_divider(lnum - 1) && s:is_divider(lnum + 1)
+    let [mark, level] = parts[1:2]
+    if parts[1] =~# mark2  " close previously defined fold
+      let level = empty(level) ? max(keys(heads)) : str2nr(level)
+      if has_key(heads, string(level))
+        call add(folds, [level, heads[level], lnum])
+        call remove(heads, level)
+      endif
+    else  " open fold after deleting previous and closing inner
+      let level = empty(level) ? max(keys(heads)) + 1 : str2nr(level)
+      for ilevel in range(level, 10)
+        if has_key(heads, string(ilevel))
+          call add(folds, [ilevel, heads[ilevel], lnum - 1])
+          call remove(heads, ilevel)
+        endif
+      endfor
+      let heads[level] = lnum
+    endif
+  endwhile
+  for level in keys(heads)
+    call add(folds, [str2nr(level), heads[level], line('$')])
+  endfor
+  call winrestview(winview)
+  return sort(folds)
+endfunction
+
 " Return default fold label
 " NOTE: This filters trailing comments, removes git-diff chunk text following stats,
 " and adds following line if the fold line is a single open delimiter (e.g. json).
-function! s:fix_empty(label, line) abort
+function! s:get_delims(label, ...) abort
+  let pairs = {'[': ']', '(': ')', '{': '}', '<': '>'}
+  let items = call('matchlist', [a:label, '\([[({<]*\)\s*$'] + a:000)
+  let delim1 = split(get(items, 1, ''), '\zs', 1)
+  let delim2 = map(copy(delim1), {idx, val -> get(pairs, val, '')})
+  let append = &l:filetype ==# 'python' && get(delim1, -1, '') ==# ')'
+  call add(delim2, append && a:label =~# '^\s*\(def\|class\)\>' ? ':' : '')
+  return [join(delim1, ''), join(delim2, '')]
+endfunction
+function! s:get_inner(label, line) abort
   let label1 = substitute(a:label, '^\s*', '', '')
   let [delim1, outer] = s:get_delims(label1)
   if label1 !=# delim1 | return '' | endif  " not naked delimiter
-  let label2 = fold#get_label(a:line, 1)
+  let label2 = fold#fold_label(a:line, 1)
   let [delim2, _] = s:get_delims(label2)
   if label2 ==# delim2 | return '' | endif  " no additional info
   let inner = substitute(label2, '\s*\([[({<]*\)\s*$', '', 'g')
   return ' ' . inner . ' ··· ' . outer  " e.g. json folds
 endfunction
-function! s:get_delims(label, ...) abort
-  let delims = {'[': ']', '(': ')', '{': '}', '<': '>'}  " delimiter mapping
-  let regex = '\([[({<]*\)\s*$'  " opening delimiter regex
-  let items = call('matchlist', [a:label, regex] + a:000)
-  let delim1 = split(get(items, 1, ''), '\zs', 1)
-  let delim2 = map(copy(delim1), {idx, val -> get(delims, val, '')})
-  if &l:filetype ==# 'python' && get(delim1, -1, '') ==# ')'
-    call add(delim2, a:label =~# '^\s*\(def\|class\)\>' ? ':' : '')
-  endif | return [join(delim1, ''), join(delim2, '')]
-endfunction
-function! fold#get_label(line, ...) abort
-  let regex = comment#get_regex(0)
+function! fold#fold_label(line, ...) abort
   let initial = getline(a:line + s:is_divider(a:line))
   let fugitive = !empty(get(b:, 'fugitive_type', '')) || &l:filetype =~# '^git$\|^diff$'
   let marker = split(&l:foldmarker, ',')[0] . '\d*\s*$'
-  let strip = '\(\S\@<=\s\+' . regex . '.*\)\?\s*$'
-  let strip = a:0 && a:1 ? '\(^\s*\|' . strip . '\)' : strip
+  let regex = '\(\S\@<=\s\+' . comment#get_regex(0) . '.*\)\?\s*$'
+  let regex = a:0 && a:1 ? '\(^\s*\|' . regex . '\)' : regex
   let label = substitute(initial, marker, '', '')
-  let label = substitute(label, strip, '', 'g')
+  let label = substitute(label, regex, '', 'g')
   if fugitive  " remove context information following delta
     let label = substitute(label, '^\(@@.\{-}@@\).*$', '\1', '')
-  endif
-  if !a:0 || !a:1  " append next line for naked open delimiters
-    let label .= s:fix_empty(label, a:line + 1)
-  endif
-  return label
+  elseif !a:0 || !a:1  " append next line for naked open delimiters
+    let label .= s:get_inner(label, a:line + 1)
+  endif | return label
 endfunction
 
 " Generate truncated fold text. In future should include error cound information.
 " NOTE: Since gitgutter signs are not shown over closed folds include summary of
 " changes in fold text. See https://github.com/airblade/vim-gitgutter/issues/655
+function! fold#fold_text(...) abort
+  let winview = winsaveview()  " translate byte column index to character index
+  if a:0 && a:1  " debugging mode
+    exe winview.lnum | let [line1, line2, level] = fold#get_fold()
+    call winrestview(winview)
+  else  " internal mode
+    let [line1, line2] = [v:foldstart, v:foldend]
+    let level = len(v:folddashes)
+  endif
+  let leftidx = charidx(getline(winview.lnum), winview.leftcol)
+  let [label, space, stats] = s:fold_text(line1, line2, level)
+  return strcharpart(label . space . stats, leftidx)
+endfunction
 function! s:fold_text(line1, line2, level)
   let level = a:level . repeat(':', a:level)  " fold level
   let lines = string(a:line2 - a:line1 + 1)  " number of lines
@@ -302,7 +304,7 @@ function! s:fold_text(line1, line2, level)
   elseif exists('*' . &l:filetype . '#fold_text')
     let label = {&l:filetype}#fold_text(a:line1, a:line2)
   else  " global default label
-    let label = fold#get_label(a:line1)
+    let label = fold#fold_label(a:line1)
   endif
   let [delim1, delim2] = s:get_delims(label)
   let indent = matchstr(label, '^\s*')
@@ -319,32 +321,10 @@ function! s:fold_text(line1, line2, level)
   let space = repeat(' ', width - strwidth(label))
   return [label, space, stats]
 endfunction
-function! fold#fold_text(...) abort
-  let winview = winsaveview()  " translate byte column index to character index
-  if a:0 && a:1  " debugging mode
-    exe winview.lnum | let [line1, line2, level] = fold#get_fold()
-    call winrestview(winview)
-  else  " internal mode
-    let [line1, line2] = [v:foldstart, v:foldend]
-    let level = len(v:folddashes)
-  endif
-  let leftidx = charidx(getline(winview.lnum), winview.leftcol)
-  let [label, space, stats] = s:fold_text(line1, line2, level)
-  return strcharpart(label . space . stats, leftidx)
-endfunction
 
-
-" Jump to folds in current file
-" NOTE: This was adapted from fzf fold plugin that used approach of temporarily
-" opening and closing folds.
-" See: https://github.com/roosta/fzf-folds.vim
-function! s:fold_sink(fold) abort
-  if empty(a:fold) | return | endif
-  let [path, lnum; rest] = split(a:fold, ':')
-  exe 'normal! m'''
-  call cursor(lnum, 0)
-  exe 'normal! zvzzze'
-endfunction
+" Helper functions for returning all folds
+" NOTE: Necessary to temporarily open outer folds before toggling inner folds. No way
+" to target them with :fold commands or distinguish adjacent children with same level
 function! s:fold_sort(line1, line2, level, ...) abort
   let [outer, inner] = [[], []]
   for lnum in range(a:line1, a:line2)
@@ -358,7 +338,7 @@ function! s:fold_sort(line1, line2, level, ...) abort
     endif
   endfor | return [sort(outer), sort(inner)]
 endfunction
-function! fold#fzf_source(...) abort
+function! fold#fold_source(...) abort
   let [lmin, lmax, level] = a:0 ? a:000 : [1, line('$'), 1]
   let [outer, inner] = s:fold_sort(lmin, lmax, level)
   let [folds, ifolds] = [[], fold#get_folds(lmin, lmax, level)]
@@ -367,16 +347,28 @@ function! fold#fzf_source(...) abort
     let ifold = [line1, line2, level]
     call add(folds, ifold)
     if !empty(filter(copy(inner), 'v:val[1] >= line1 && v:val[1] <= line2'))
-      let ifolds = fold#fzf_source(line1, line2, level + 1)
+      let ifolds = fold#fold_source(line1, line2, level + 1)
       call extend(folds, ifolds)
     endif
   endfor
   for [_, lnum] in reverse(outer) | exe lnum . 'foldclose' | endfor
   return folds
 endfunction
+
+" Generate lists of folds
+" NOTE: This was adapted from fzf-folds plugin. This includes folds inside closed
+" parent folds and uses custom fold-text function instead of foldtextresult().
+" See: https://github.com/roosta/fzf-folds.vim
+function! s:goto_fold(fold) abort
+  if empty(a:fold) | return | endif
+  let [path, lnum; rest] = split(a:fold, ':')
+  exe 'normal! m'''
+  call cursor(lnum, 0)
+  exe 'normal! zvzzze'
+endfunction
 function! fold#fzf_folds(...) abort
   let bang = a:0 ? a:1 : 0
-  let folds = fold#fzf_source()
+  let folds = fold#fold_source()
   let [path, source] = [expand('%'), []]
   for [line1, line2, level] in folds
     let [text, _, stats] = s:fold_text(line1, line2, level)
@@ -391,17 +383,49 @@ function! fold#fzf_folds(...) abort
   if empty(text) | return | endif
   let options = {
     \ 'source': source,
-    \ 'sink': function('s:fold_sink'),
+    \ 'sink': function('s:goto_fold'),
     \ 'options': opts . " --prompt='Fold> '",
   \ }
   return fzf#run(fzf#wrap('folds', options, bang))
 endfunction
 
-" Update the fold bounds, level, and open-close status
-" NOTE: Could use e.g. &foldlevel = v:vount but want to keep foldlevel truncated
-" to maximum number found in file as native 'zr' does. So use the below instead
+" Update the default fold options
+" NOTE: This is called by after/common.vim following Syntax autocommand
 " NOTE: Sometimes run into issue where opening new files or reading updates
 " permanently disables 'expr' folds. Account for this by re-applying fold method.
+function! fold#update_options() abort
+  let current = &l:foldmethod
+  let cached = get(w:, 'lastfdm', 'manual')
+  if &l:diff  " difference mode enabled
+    diffupdate | let [method, expr] = ['diff', '']
+  elseif &l:filetype ==# 'python'
+    let [method, expr] = ['expr', 'python#fold_expr(v:lnum)']
+  elseif &l:filetype ==# 'markdown'
+    let [method, expr] = ['expr', 'Foldexpr_markdown(v:lnum)']
+  elseif &l:filetype ==# 'rst'
+    let [method, expr] = ['expr', 'RstFold#GetRstFold()']
+  elseif &l:filetype ==# 'csv'
+    let [method, expr] = ['manual', '']
+  else  " default syntax folding
+    let [method, expr] = ['syntax', '']
+  endif
+  let markers = fold#get_markers()  " changed on TextChanged,TextChangedI
+  let &l:foldtext = 'fold#fold_text()'
+  let b:fastfold_markers = markers
+  if !empty(expr) && &l:foldexpr !=# expr
+    call SimpylFold#Recache()
+    let &l:foldexpr = expr
+    let &l:foldmethod = 'expr'
+  elseif current ==# 'manual' && cached ==# 'manual'
+  \ || current !=# 'manual' && current !=# method
+  \ || current ==# 'manual' && cached !=# method
+    let &l:foldmethod = method
+  endif
+endfunction
+
+" Update the fold bounds, level, and open-close status
+" NOTE: Could use e.g. &foldlevel = v:count but want to keep foldlevel truncated
+" to maximum number found in file as native 'zr' does. So use the below instead
 " WARNING: Regenerating b:SimPylFold_cache with manual SimpylFold#FoldExpr() call
 " can produce strange internal bug. Instead rely on FastFoldUpdate to fill the cache.
 function! fold#update_level(...) abort
@@ -419,53 +443,36 @@ function! fold#update_level(...) abort
   echom 'Fold level: ' . &l:foldlevel
 endfunction
 function! fold#update_folds(force, ...) abort
-  let queued = get(b:, 'fastfold_queued', 1)  " changed on TextChanged,TextChangedI
-  let cached = get(w:, 'lastfdm', 'manual')  " managed by FastFoldUpdate
-  let method = &l:foldmethod
+  let markers = get(b:, 'fastfold_markers', [])
+  let method = &l:foldmethod  " current method
+  let queued = a:force || get(b:, 'fastfold_queued', 0)  " TextChanged,TextChangedI
   let winview = winsaveview()
-  if queued || a:force
-    if &l:diff  " difference mode enabled
-      diffupdate | setlocal foldmethod=diff
-    elseif &l:filetype ==# 'python'
-      setlocal foldmethod=expr  " e.g. in case stuck
-      setlocal foldexpr=python#fold_expr(v:lnum)
-    elseif &l:filetype ==# 'markdown'
-      setlocal foldmethod=expr  " e.g. in case stuck
-      setlocal foldexpr=Foldexpr_markdown(v:lnum)
-    elseif &l:filetype ==# 'rst'
-      setlocal foldmethod=expr  " e.g. in case stuck
-      setlocal foldexpr=RstFold#GetRstFold()
-    elseif &l:filetype !=# 'csv' && method ==# 'manual' && cached ==# 'manual'
-      setlocal foldmethod=syntax
-    endif
-    let b:fastfold_markers = []
-    call SimpylFold#Recache()
+  if queued || method !=# 'manual'  " re-apply or convert to manual
     exe 'FastFoldUpdate'
-    call fold#add_markers()
-    let b:fastfold_queued = 0
   endif
-  let filetypes = {'json': 2}  " filetype-specific initial levels
-  let fugitive = !empty(get(b:, 'fugitive_type', ''))  " e.g. one-file diffs and commits
-  let marker1 = search('{{{1\s*$', 'wn') > 0
-  let marker2 = search('{{{2\s*$', 'wn')
-  let imarker = &l:foldmethod ==# 'manual' && marker1  " manual markers
-  let jmarker = &l:foldmethod ==# 'marker' && marker2  " modeline markers
-  let default = fugitive || imarker || jmarker  " default fold level
-  if a:0  " initialize
-    if a:1 > 0  " apply defaults
-      let &l:foldlevel = get(filetypes, &filetype, default)
-    else  " re-apply
-      let &l:foldlevel = &l:foldlevel
-    endif
-    for lnum in fold#get_ignores()
-      exe lnum . 'foldopen'
-    endfor
-    if a:1 <= 1  " open under cursor
-      exe 'normal! zvzzze'
-    endif
+  if queued && !exists('b:fastfold_markers')  " re-generate markers
+    let markers = fold#get_markers()
+  endif  " generate on vim-enter to reduce buf-enter lags
+  for [level, line1, line2] in markers
+    exe line1 . ',' . line2 . 'fold' | exe line1 . 'foldopen'
+  endfor
+  let igit = get(b:, 'fugitive_type', '')
+  let iarg = a:0 ? a:1 : !empty(markers) ? 1 : method !=# 'manual' ? 1 : 0
+  let level = &l:filetype ==# 'json' ? 2 : !empty(igit) ? 1 : 0
+  let level = level ? level : &l:foldmethod ==# 'manual' && search('{{{1\s*$', 'wn') > 0
+  let level = level ? level : &l:foldmethod ==# 'marker' && search('{{{2\s*$', 'wn') > 0
+  if a:0 || iarg  " apply defaults
+    let &l:foldlevel = iarg ? level : &l:foldlevel
   endif
-  setlocal foldtext=fold#fold_text()
+  for lnum in iarg ? fold#get_ignores() : []
+    exe lnum . 'foldopen'
+  endfor
+  if a:0 && a:1 == 0 || iarg == 1 && line('.') != foldclosed('.')  " open under cursor
+    exe 'normal! zvzzze'
+  endif
   call winrestview(winview)
+  let b:fastfold_queued = 0
+  unlet! b:fastfold_markers
 endfunction
 
 " Toggle inner folds within requested range
@@ -477,6 +484,13 @@ function! s:toggle_state(line1, line2, ...) abort range
     let inum = foldclosed(lnum) | let ilevel = foldlevel(inum)
     if inum > 0 && (!level || level == ilevel) | return 1 | endif
   endfor
+endfunction
+function! s:toggle_show(toggle, count) abort
+  exe a:toggle ? '' : 'normal! zzze'
+  let head = a:toggle > 1 ? 'Toggled' : a:toggle ? 'Closed' : 'Opened'
+  let msg = head . ' ' . a:count . ' fold' . (a:count > 1 ? 's' : '') . '.'
+  let cmd = a:count > 0 ? 'echom ' . string(msg) : "echoerr 'E490: No folds found'"
+  call feedkeys("\<Cmd>" . cmd . "\<CR>", 'n')
 endfunction
 function! s:toggle_inner(line1, line2, level, ...)
   let [fold1, fold2] = [foldclosed(a:line1), foldclosedend(a:line2)]
@@ -504,16 +518,6 @@ endfunction
 " Open or close parent fold under cursor and its children
 " NOTE: If called on already-toggled 'current' folds the explicit 'foldclose/foldopen'
 " toggles the parent. So e.g. 'zCzC' first closes python methods then the class.
-function! s:toggle_finish(toggle, count) abort
-  exe a:toggle ? '' : 'normal! zzze'
-  let head = a:toggle > 1 ? 'Toggled' : a:toggle ? 'Closed' : 'Opened'
-  let msg = head . ' ' . a:count . ' fold' . (a:count > 1 ? 's' : '') . '.'
-  if a:count > 0  " show fold count
-    call feedkeys("\<Cmd>echom " . string(msg) . "\<CR>", 'n')
-  else  " consistent with native commands
-    call feedkeys("\<Cmd>echoerr 'E490: No folds found'\<CR>", 'n')
-  endif
-endfunction
 function! fold#toggle_parents(...) abort range
   let [lmin, lmax] = sort([a:firstline, a:lastline], 'n')
   call fold#update_folds(0)
@@ -527,7 +531,7 @@ function! fold#toggle_parents(...) abort range
     let counts[toggle] += 1 + len(result[1])
   endfor
   let toggle = counts[0] && counts[1] ? 2 : counts[1] ? 1 : 0
-  call s:toggle_finish(toggle, counts[0] + counts[1]) | return ''
+  call s:toggle_show(toggle, counts[0] + counts[1]) | return ''
 endfunction
 " For <expr> map accepting motion
 function! fold#toggle_parents_expr(...) abort
@@ -559,7 +563,7 @@ function! fold#toggle_children(top, ...) abort range
     let counts[toggle] += len(folds)  " if zero then continue
   endfor
   let toggle = counts[0] && counts[1] ? 2 : counts[1] ? 1 : 0
-  call s:toggle_finish(toggle, counts[0] + counts[1]) | return ''
+  call s:toggle_show(toggle, counts[0] + counts[1]) | return ''
 endfunction
 " For <expr> map accepting motion
 function! fold#toggle_children_expr(...) abort
@@ -606,7 +610,7 @@ function! fold#toggle_folds(...) range abort
     let line2 = min([line2, lmax])
     exe line1 . ',' . line2 . (toggle ? 'foldclose' : 'foldopen')
   endfor
-  call s:toggle_finish(toggle, len(folds)) | return ''
+  call s:toggle_show(toggle, len(folds)) | return ''
   if empty(folds)
     call feedkeys("\<Cmd>echoerr 'E490: No folds found'\<CR>", 'n')
   endif | return ''

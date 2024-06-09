@@ -44,14 +44,13 @@ if exists('b:common_syntax') || !exists('b:current_syntax')
   finish  " remove b:common_syntax on Syntax * autocommand
 endif
 let b:common_syntax = 1
-call fold#update_folds(1, 1)
-silent! doautocmd CursorHold
-silent! doautocmd ConflictMarkerDetect BufReadPost
-silent! doautocmd conflict_marker_setup BufWinEnter
 call syntax#update_groups()
 call syntax#update_matches()
 call syntax#update_highlights()
-for s:suffix in ['g', 's', 'S', '%']
+for s:autocmd in ['CursorHold', 'ConflictMarkerDetect BufReadPost', 'conflict_marker_setup BufWinEnter']
+  silent! exe 'doautocmd ' . s:autocmd
+endfor
+for s:suffix in ['g', 's', 'S', '%']  " instead use <C-g> to insert literals
   exe 'silent! iunmap <C-g>' . s:suffix
   exe 'silent! iunmap <buffer><C-g>' . s:suffix
 endfor

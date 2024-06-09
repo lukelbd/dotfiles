@@ -629,7 +629,7 @@ cnoremap <silent> <expr> / window#close_wild('/')
 " NOTE: Here fold#update_folds() re-enforces special expr fold settings for markdown
 " and python files then applies default toggle status that differs from buffer-wide
 " &foldlevel for fortran python and tex files (e.g. always open \begin{document}).
-command! -bang -nargs=? Refold call fold#update_folds(<bang>0, <f-args>)
+command! -bang -nargs=? UpdateFolds call fold#update_folds(<bang>0, <f-args>)
 for s:key in ['z', 'f', 'F', 'n', 'N'] | silent! exe 'unmap! z' . s:key | endfor
 nnoremap zv zvzzze
 vnoremap zv zvzzze
@@ -2017,16 +2017,24 @@ endif  " }}}
 " See: https://github.com/Konfekt/FastFold and https://github.com/tmhedberg/SimpylFold
 if &g:foldenable || s:has_plug('FastFold')  " {{{
   let g:fastfold_savehook = 0  " use custom instead
+  let g:fastfold_minlines = 0  " always apply so we can add markers
   let g:fastfold_fold_command_suffixes =  []  " use custom instead
   let g:fastfold_fold_movement_commands = []  " use custom instead
+  let g:fastfold_skip_filetypes = s:panel_filetypes  " unnecessary
   exe 'runtime plugin/fastfold.vim'
   augroup fold_setup
     au!
-    au TextChanged,TextChangedI * let b:fastfold_queued = 1
-    au BufEnter * setlocal foldtext=fold#fold_text()  " re-apply fold text
-    au BufWinEnter * call fold#update_folds(0, 1)  " apply default level
-    au VimEnter * call fold#update_folds(1, 1)  " fix fastfold bug
+    au TextChanged,TextChangedI * let b:fastfold_queued = 1 | unlet! b:fastfold_markers
+    au FileType * silent! doautocmd Mkd CursorHold | call fold#update_options()
+    au VimEnter * call fold#update_folds(0, 1) | call s:fastfold_init()
   augroup END
+  function! s:fastfold_init() abort
+    augroup fastfold_setup
+      au!
+      au BufEnter * call fold#update_folds(0)
+      au FileType * call fold#update_folds(0, 1)
+    augroup END
+  endfunction
   let g:baan_fold = 1
   let g:clojure_fold = 1
   let g:fortran_fold = 1
@@ -2651,8 +2659,9 @@ endif  " }}}
 " load is triggered by higher-priority 'au Syntax * call s:SynSet()' (see :au Syntax).
 augroup syntax_setup
   au!
-  au Syntax * unlet! b:common_syntax | unlet! b:af_py_loaded | unlet! b:af_rst_loaded
-  au Syntax * call timer_start(100, function('execute', ['runtime after/common.vim']))
+  au Syntax * unlet! b:af_py_loaded | unlet! b:af_rst_loaded
+  " au Syntax * call timer_start(10, function('execute', ['runtime after/common.vim']))
+  au Syntax * unlet! b:common_syntax | exe 'runtime after/common.vim'
 augroup END
 command! -nargs=? ShowGroups call syntax#show_stack(<f-args>)
 command! -nargs=0 ShowNames exe 'help highlight-groups' | exe 'normal! zt'
