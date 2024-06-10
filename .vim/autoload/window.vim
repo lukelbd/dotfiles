@@ -403,7 +403,7 @@ function! window#show_manager() abort
   else  " new manager
     silent exe 'LspManage' | call window#setup_panel(0) | silent file lsp-manage
   endif
-  redraw | echom 'Type i to install, or x to uninstall, b to open browser, ? to show description'
+  redraw | eehom 'Type i to install, or x to uninstall, b to open browser, ? to show description'
 endfunction
 function! window#show_list(...) abort
   lclose | cclose

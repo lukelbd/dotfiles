@@ -37,9 +37,6 @@ endif
 " re-apply it along with other settings. Critical to prevent e.g. javascript.vim
 " from overwriting fold settings: https://github.com/tpope/vim-markdown/pull/173
 " and note this requires g:vim_markdown_override_foldtext = 1 in .vimrc (default).
-function! Foldtext_markdown(...)
-  return call('fold#fold_text', [])
-endfunction
 if exists('b:common_syntax') || !exists('b:current_syntax')
   finish  " remove b:common_syntax on Syntax * autocommand
 endif
@@ -47,7 +44,7 @@ let b:common_syntax = 1
 call syntax#update_groups()
 call syntax#update_matches()
 call syntax#update_highlights()
-for s:autocmd in ['CursorHold', 'ConflictMarkerDetect BufReadPost', 'conflict_marker_setup BufWinEnter']
+for s:autocmd in ['ConflictMarkerDetect BufReadPost', 'conflict_marker_setup BufWinEnter']
   silent! exe 'doautocmd ' . s:autocmd
 endfor
 for s:suffix in ['g', 's', 'S', '%']  " instead use <C-g> to insert literals

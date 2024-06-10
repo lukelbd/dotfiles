@@ -139,6 +139,7 @@ let &g:breakat = '  !*-+;:,./?'  " break lines following punctuation
 let &g:cindent = 0  " disable c-style current line indentation
 let &g:expandtab = 1  " global expand tab (respect tab toggling)
 let &g:foldenable = 1  " global fold enable (respect 'zn' toggling)
+let &g:foldmethod = 'syntax'  " global default fold method
 let &g:formatlistpat = '^\s*\([*>+-]\|\d\+[)>:.]\)\s\+'  " filetype agnostic bullets
 let &g:indentkeys = '0{,0},0),0],0#,!^F,o,O'  " default indentation triggers
 let &g:iskeyword = '@,48-57,_,192-255'  " default keywords
@@ -2015,21 +2016,30 @@ endif  " }}}
 " zn and zN fold toggle between no folds/previous folds without affecting foldlevel.
 " See: https://www.reddit.com/r/vim/comments/c5g6d4/why_is_folding_so_slow/
 " See: https://github.com/Konfekt/FastFold and https://github.com/tmhedberg/SimpylFold
-if &g:foldenable || s:has_plug('FastFold')  " {{{
-  augroup fold_setup
-    au!
-    au VimEnter,BufEnter * call fold#update_method()
-    au TextChanged,TextChangedI * let b:fastfold_queued = 1 | unlet! b:fastfold_markers
-  augroup END
-  function! s:fastfold_init() abort
-    augroup fastfold_init
-      au! | au VimEnter * call fold#update_folds(0, 1) | call s:fastfold_setup()
+if s:has_plug('FastFold')  " {{{
+  function! s:fold_init(...) abort
+    if !a:0 || !a:1  " autocommands preceding fastfold
+      augroup fastfold_setup
+        au! | au VimEnter * call fold#update_method() | call s:fold_setup()
+      augroup END
+    else  " autocommands following fastfold
+      augroup fastfold_update
+        au! | au VimEnter * call fold#update_folds(0, 1) | call s:fold_update()
+      augroup END
+    endif
+  endfunction
+  function! s:fold_setup() abort
+    augroup fold_setup
+      au!
+      au FileType,BufEnter,VimEnter * call fold#update_method()
+      au TextChanged,TextChangedI * let b:fastfold_queued = 1 | unlet! b:fastfold_markers
     augroup END
   endfunction
-  function! s:fastfold_setup() abort
-    augroup fastfold_setup
-      au! | au BufEnter * call fold#update_folds(0)
-      au FileType * call fold#update_folds(0, 1)
+  function! s:fold_update() abort
+    augroup fold_update
+      au!
+      au BufEnter * call fold#update_folds(0)
+      au FileType * unlet! b:fastfold_markers | call fold#update_folds(0, 1)
     augroup END
   endfunction
   let g:baan_fold = 1
@@ -2056,8 +2066,7 @@ if &g:foldenable || s:has_plug('FastFold')  " {{{
   let g:fastfold_skip_filetypes = s:panel_filetypes
   let g:fastfold_fold_command_suffixes =  []
   let g:fastfold_fold_movement_commands = []
-  exe 'runtime plugin/fastfold.vim'
-  call s:fastfold_init()  " initialize autocommands
+  call s:fold_init(0) | runtime plugin/fastfold.vim | call s:fold_init(1)
 endif  " }}}
 
 " Lsp server settings {{{2
@@ -2665,7 +2674,6 @@ endif  " }}}
 augroup syntax_setup
   au!
   au Syntax * unlet! b:af_py_loaded | unlet! b:af_rst_loaded
-  " au Syntax * call timer_start(10, function('execute', ['runtime after/common.vim']))
   au Syntax * unlet! b:common_syntax | exe 'runtime after/common.vim'
 augroup END
 command! -nargs=? ShowGroups call syntax#show_stack(<f-args>)

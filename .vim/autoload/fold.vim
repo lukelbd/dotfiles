@@ -397,7 +397,7 @@ function! fold#update_method() abort
   let [method, expr] = ['syntax', '']  " default values
   let current = &l:foldmethod  " active method
   let cached = get(w:, 'lastfdm', 'manual')
-  if !v:vim_did_enter || &l:filetype ==# 'csv'  " initialize with 'manual'
+  if &l:filetype ==# 'csv'  " initialize with 'manual'
     let method = 'manual'
   elseif &l:diff  " difference mode enabled
     silent! diffupdate | let method = 'diff'
@@ -409,18 +409,13 @@ function! fold#update_method() abort
     let expr = 'RstFold#GetRstFold()'
   endif
   let method = !empty(expr) ? 'expr' : method
+  let recache = cached ==# 'manual' || method !=# cached
   let &l:foldtext = 'fold#fold_text()'
-  if !exists('b:fastfold_markers')
-    let b:fastfold_markers = fold#get_markers()
-  endif
   if !empty(expr) && &l:foldexpr !=# expr
     call SimpylFold#Recache()
-    let &l:foldexpr = expr
-    let &l:foldmethod = 'expr'
-  elseif method ==# 'manual'
-  \ || current ==# 'manual' && cached ==# 'manual'
+    let &l:foldmethod = 'expr' | let &l:foldexpr = expr
+  elseif current ==# 'manual' && recache
   \ || current !=# 'manual' && current !=# method
-  \ || current ==# 'manual' && cached !=# method
     let &l:foldmethod = method
   endif
 endfunction
@@ -433,49 +428,42 @@ endfunction
 function! fold#update_level(...) abort
   let level = &l:foldlevel
   if a:0  " input direction
-    let cmd = v:count1 . 'z' . a:1
-  elseif !v:count || v:count == level  " preserve level
-    let cmd = ''
-  else  " apply level
-    let cmd = abs(v:count - level) . (v:count > level ? 'zr' : 'zm')
-  endif
-  if !empty(cmd)
-    silent! exe 'normal! ' . cmd
+    silent! exe 'normal! ' . v:count1 . 'z' . a:1
+  elseif v:count && v:count != level  " preserve level
+    silent! exe 'normal! ' . abs(v:count - level) . (v:count > level ? 'zr' : 'zm')
   endif
   echom 'Fold level: ' . &l:foldlevel
 endfunction
 function! fold#update_folds(force, ...) abort
-  let markers = get(b:, 'fastfold_markers', [])
-  let method = &l:foldmethod  " current method
   let queued = a:force || get(b:, 'fastfold_queued', 0)  " TextChanged,TextChangedI
+  let manual = &l:foldmethod ==# 'manual'  " current method
   let winview = winsaveview()
-  if queued && !exists('b:fastfold_markers')  " re-generate markers
-    let markers = fold#get_markers()
-  else
-    unlet! b:fastfold_markers
-  endif  " generate on vim-enter to reduce buf-enter lags
-  if queued || method !=# 'manual'  " re-apply or convert to manual
-    exe 'FastFoldUpdate'
+  if queued || !manual  " re-apply or convert
+    exe 'FastFoldUpdate' | unlet! b:fastfold_markers
   endif
-  for [level, line1, line2] in markers
+  if !exists('b:fastfold_markers')
+    let b:fastfold_markers = fold#get_markers()
+  endif
+  for [level, line1, line2] in b:fastfold_markers
     exe line1 . ',' . line2 . 'fold' | exe line1 . 'foldopen'
   endfor
   let igit = get(b:, 'fugitive_type', '')
-  let iarg = a:0 ? a:1 : !empty(markers) ? 1 : method !=# 'manual' ? 1 : 0
+  let iarg = a:0 ? a:1 : !manual || !empty(b:fastfold_markers)
   let level = &l:filetype ==# 'json' ? 2 : !empty(igit) ? 1 : 0
   let level = level ? level : &l:foldmethod ==# 'manual' && search('{{{1\s*$', 'wn') > 0
   let level = level ? level : &l:foldmethod ==# 'marker' && search('{{{2\s*$', 'wn') > 0
-  if a:0 || iarg  " apply defaults
+  if iarg || a:0  " apply defaults
     let &l:foldlevel = iarg ? level : &l:foldlevel
   endif
-  for lnum in iarg ? fold#get_ignores() : []
+  for lnum in iarg || a:0 ? fold#get_ignores() : []
     exe lnum . 'foldopen'
   endfor
-  if a:0 && a:1 == 0 || iarg == 1 && line('.') != foldclosed('.')  " open under cursor
+  if a:0 && a:1 == 0 || a:0 && a:1 == 1 && line('.') != foldclosed('.')
     exe 'normal! zvzzze'
   endif
   call winrestview(winview)
   let b:fastfold_queued = 0
+  let b:fastfold_markers = []
 endfunction
 
 " Toggle inner folds within requested range
@@ -528,6 +516,8 @@ function! fold#toggle_parents(...) abort range
   for [line1, line2, level] in fold#get_parents(lmin, lmax)
     if line2 <= line1 | continue | endif
     let toggle = a:0 ? a:1 : 1 - s:toggle_state(line1, line1)
+    let line1 = max([lmin, line1])  " truncate range
+    let line2 = min([lmax, line2])  " truncate range
     let args = [line1, line2, level, toggle, 1]
     let result = call('s:toggle_inner', args)
     exe line1 . (toggle ? 'foldclose' : 'foldopen')
@@ -548,13 +538,10 @@ function! fold#toggle_children(top, ...) abort range
   let [lmin, lmax] = sort([a:firstline, a:lastline], 'n')
   call fold#update_folds(0)
   let counts = [0, 0]
-  if a:top  " outer-most inner folds
-    let folds = fold#get_parents(lmin, lmax)
-  else  " inner-most inner folds
-    let level = foldlevel('.')
-    let folds = fold#get_folds(lmin, lmax, level)
-    let fmin = min(map(copy(folds), 'v:val[0]'))
-    let fmax = max(map(copy(folds), 'v:val[1]'))
+  let level = foldlevel('.')
+  let folds = a:top ? fold#get_parents(lmin, lmax) : fold#get_folds(lmin, lmax, level)
+  if !a:top  " inner-most inner folds
+    let [fmin, fmax] = [min(map(copy(folds), 'v:val[0]')), max(map(copy(folds), 'v:val[1]'))]
     let [fmin, fmax] = fmin && fmax ? [fmin, fmax] : [lmin, lmax]
     let levels = map(range(fmin, fmax), 'foldlevel(v:val)')
     let folds = min(levels) == max(levels) ? fold#get_folds(lmin, lmax, level - 1) : folds
