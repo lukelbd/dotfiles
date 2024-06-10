@@ -393,37 +393,39 @@ endfunction
 " NOTE: This is called by after/common.vim following Syntax autocommand
 " NOTE: Sometimes run into issue where opening new files or reading updates
 " permanently disables 'expr' folds. Account for this by re-applying fold method.
-function! fold#update_options() abort
-  let current = &l:foldmethod
+function! fold#update_method() abort
+  let [method, expr] = ['syntax', '']  " default values
+  let current = &l:foldmethod  " active method
   let cached = get(w:, 'lastfdm', 'manual')
-  if &l:diff  " difference mode enabled
-    diffupdate | let [method, expr] = ['diff', '']
-  elseif &l:filetype ==# 'python'
-    let [method, expr] = ['expr', 'python#fold_expr(v:lnum)']
+  if !v:vim_did_enter || &l:filetype ==# 'csv'  " initialize with 'manual'
+    let method = 'manual'
+  elseif &l:diff  " difference mode enabled
+    silent! diffupdate | let method = 'diff'
   elseif &l:filetype ==# 'markdown'
-    let [method, expr] = ['expr', 'Foldexpr_markdown(v:lnum)']
+    silent! doautocmd Mkd CursorHold | let expr = 'Foldexpr_markdown(v:lnum)'
+  elseif &l:filetype ==# 'python'
+    let expr = 'python#fold_expr(v:lnum)'
   elseif &l:filetype ==# 'rst'
-    let [method, expr] = ['expr', 'RstFold#GetRstFold()']
-  elseif &l:filetype ==# 'csv'
-    let [method, expr] = ['manual', '']
-  else  " default syntax folding
-    let [method, expr] = ['syntax', '']
+    let expr = 'RstFold#GetRstFold()'
   endif
-  let markers = fold#get_markers()  " changed on TextChanged,TextChangedI
+  let method = !empty(expr) ? 'expr' : method
   let &l:foldtext = 'fold#fold_text()'
-  let b:fastfold_markers = markers
+  if !exists('b:fastfold_markers')
+    let b:fastfold_markers = fold#get_markers()
+  endif
   if !empty(expr) && &l:foldexpr !=# expr
     call SimpylFold#Recache()
     let &l:foldexpr = expr
     let &l:foldmethod = 'expr'
-  elseif current ==# 'manual' && cached ==# 'manual'
+  elseif method ==# 'manual'
+  \ || current ==# 'manual' && cached ==# 'manual'
   \ || current !=# 'manual' && current !=# method
   \ || current ==# 'manual' && cached !=# method
     let &l:foldmethod = method
   endif
 endfunction
 
-" Update the fold bounds, level, and open-close status
+" Update the fold bound, level, and open-close status
 " NOTE: Could use e.g. &foldlevel = v:count but want to keep foldlevel truncated
 " to maximum number found in file as native 'zr' does. So use the below instead
 " WARNING: Regenerating b:SimPylFold_cache with manual SimpylFold#FoldExpr() call
@@ -447,12 +449,14 @@ function! fold#update_folds(force, ...) abort
   let method = &l:foldmethod  " current method
   let queued = a:force || get(b:, 'fastfold_queued', 0)  " TextChanged,TextChangedI
   let winview = winsaveview()
+  if queued && !exists('b:fastfold_markers')  " re-generate markers
+    let markers = fold#get_markers()
+  else
+    unlet! b:fastfold_markers
+  endif  " generate on vim-enter to reduce buf-enter lags
   if queued || method !=# 'manual'  " re-apply or convert to manual
     exe 'FastFoldUpdate'
   endif
-  if queued && !exists('b:fastfold_markers')  " re-generate markers
-    let markers = fold#get_markers()
-  endif  " generate on vim-enter to reduce buf-enter lags
   for [level, line1, line2] in markers
     exe line1 . ',' . line2 . 'fold' | exe line1 . 'foldopen'
   endfor
@@ -472,7 +476,6 @@ function! fold#update_folds(force, ...) abort
   endif
   call winrestview(winview)
   let b:fastfold_queued = 0
-  unlet! b:fastfold_markers
 endfunction
 
 " Toggle inner folds within requested range

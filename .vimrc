@@ -2016,22 +2016,19 @@ endif  " }}}
 " See: https://www.reddit.com/r/vim/comments/c5g6d4/why_is_folding_so_slow/
 " See: https://github.com/Konfekt/FastFold and https://github.com/tmhedberg/SimpylFold
 if &g:foldenable || s:has_plug('FastFold')  " {{{
-  let g:fastfold_savehook = 0  " use custom instead
-  let g:fastfold_minlines = 0  " always apply so we can add markers
-  let g:fastfold_fold_command_suffixes =  []  " use custom instead
-  let g:fastfold_fold_movement_commands = []  " use custom instead
-  let g:fastfold_skip_filetypes = s:panel_filetypes  " unnecessary
-  exe 'runtime plugin/fastfold.vim'
   augroup fold_setup
     au!
+    au VimEnter,BufEnter * call fold#update_method()
     au TextChanged,TextChangedI * let b:fastfold_queued = 1 | unlet! b:fastfold_markers
-    au FileType * silent! doautocmd Mkd CursorHold | call fold#update_options()
-    au VimEnter * call fold#update_folds(0, 1) | call s:fastfold_init()
   augroup END
   function! s:fastfold_init() abort
+    augroup fastfold_init
+      au! | au VimEnter * call fold#update_folds(0, 1) | call s:fastfold_setup()
+    augroup END
+  endfunction
+  function! s:fastfold_setup() abort
     augroup fastfold_setup
-      au!
-      au BufEnter * call fold#update_folds(0)
+      au! | au BufEnter * call fold#update_folds(0)
       au FileType * call fold#update_folds(0, 1)
     augroup END
   endfunction
@@ -2053,6 +2050,14 @@ if &g:foldenable || s:has_plug('FastFold')  " {{{
   let g:vimsyn_folding = 'aflpP'
   let g:xml_syntax_folding = 1
   let g:zsh_fold_enable = 1
+  let g:fastfold_minlines = 0
+  let g:fastfold_fdmhook = 0
+  let g:fastfold_savehook = 0
+  let g:fastfold_skip_filetypes = s:panel_filetypes
+  let g:fastfold_fold_command_suffixes =  []
+  let g:fastfold_fold_movement_commands = []
+  exe 'runtime plugin/fastfold.vim'
+  call s:fastfold_init()  " initialize autocommands
 endif  " }}}
 
 " Lsp server settings {{{2
