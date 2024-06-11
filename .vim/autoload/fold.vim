@@ -367,22 +367,36 @@ function! s:goto_fold(fold) abort
   exe 'normal! zvzzze'
 endfunction
 function! fold#fzf_folds(...) abort
-  let bang = a:0 ? a:1 : 0
+  let bang = a:0 ? a:1 : 0  " fullscreen
+  let hunk = '\%(%s\(\d\+\)\)\?'  " hunk regex
   let folds = fold#fold_source()
-  let [path, source] = [expand('%'), []]
+  let regex = join(map(['!', '+', '\~', '-'], 'printf(hunk, v:val)'), '')
+  let [texts, pairs1, pairs2] = [[], [], []]
   for [line1, line2, level] in folds
     let [text, _, stats] = s:fold_text(line1, line2, level)
+    let parts = map(matchlist(text, regex)[1:4], 'str2nr(v:val)')
+    let hunks = parts[1] + parts[2] + parts[3]  " note str2nr('') is zero
     let stats = substitute(stats, '^\(\d\):\+', '\1:', '')
+    let stats = substitute(stats, '·', ' ', 'g')
     let text = substitute(text, '^\s*', '', '')
-    let text = path . ':' . line1 . ':' . stats . ' ' . text
-    call add(source, text)
+    let text = bufname() . ':' . line1 . ':' . stats . ' ' . text
+    if parts[0]  " ale.vim error
+      call add(pairs1, [hunks, parts[0]])
+    elseif hunks  " gitgutter hunk
+      call add(pairs2, [hunks, text])
+    else  " standard label
+      call add(texts, text)
+    endif
   endfor
+  let pairs1 = sort(pairs1, {i1, i2 -> i2[0] - i1[0]})
+  let pairs2 = sort(pairs2, {i1, i2 -> i2[0] - i1[0]})
+  let texts = map(pairs1, 'v:val[1]') + map(pairs2, 'v:val[1]') + texts
   let opts = fzf#vim#with_preview({'placeholder': '{1}:{2}'})
   let opts = join(map(get(opts, 'options', []), 'fzf#shellescape(v:val)'), ' ')
   let opts .= ' -d : --with-nth 3.. --preview-window +{2}-/2 --layout=reverse-list'
   if empty(text) | return | endif
   let options = {
-    \ 'source': source,
+    \ 'source': texts,
     \ 'sink': function('s:goto_fold'),
     \ 'options': opts . " --prompt='Fold> '",
   \ }
