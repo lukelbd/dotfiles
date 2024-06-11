@@ -248,7 +248,7 @@ function! jump#next_loc(count, list, ...) abort
   let [cmps, oper] = [[], reverse ? '<' : '>']
   call add(cmps, 'v:val.lnum ' . oper . ' lnum')
   call add(cmps, 'v:val.col ' . oper . ' cnum + 1 - reverse')
-  call filter(items, join(cmps, ' || '))
+  call filter(items, join(cmps, ' || v:val.lnum == lnum && '))
   let idx = get(get(items, 0, {}), 'idx', '')
   if type(idx) != 0
     exe reverse ? line('$') : 1 | call jump#next_loc(a:count, a:list, reverse)

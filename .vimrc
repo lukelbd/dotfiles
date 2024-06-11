@@ -781,10 +781,10 @@ nnoremap g/ <Cmd>BLines<CR>
 nnoremap g? <Cmd>Lines<CR>
 nnoremap / <Cmd>let b:open_search = 0<CR>/
 nnoremap ? <Cmd>let b:open_search = 0<CR>?
-nnoremap z/ <Cmd>call switch#opensearch()<CR>
-nnoremap z? <Cmd>call switch#opensearch(1)<CR>
-vnoremap z/ <Cmd>call switch#opensearch()<CR>
-vnoremap z? <Cmd>call switch#opensearch(1)<CR>
+nnoremap z/ <Cmd>call switch#showmatches()<CR>
+nnoremap z? <Cmd>call switch#showchanges()<CR>
+vnoremap z/ <Cmd>call switch#showmatches()<CR>
+vnoremap z? <Cmd>call switch#showchanges()<CR>
 
 " Search over current scope or selected line range
 " NOTE: This overrides default vim-tags g/ and g? maps. Allows selecting range with

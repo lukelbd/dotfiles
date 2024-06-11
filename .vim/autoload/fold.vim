@@ -362,26 +362,28 @@ endfunction
 function! s:goto_fold(fold) abort
   if empty(a:fold) | return | endif
   let [path, lnum; rest] = split(a:fold, ':')
-  exe 'normal! m'''
-  call cursor(lnum, 0)
+  exe 'normal! m''' | call cursor(lnum, 0)
   exe 'normal! zvzzze'
+endfunction
+function! s:get_flags(fold) abort
+  let hunk = '\%(%s\(\d\+\)\)\?'  " hunk regex
+  let regex = join(map(['!', '+', '\~', '-'], 'printf(hunk, v:val)'), '')
+  let parts = map(matchlist(a:fold, regex)[1:4], 'str2nr(v:val)')
+  return [parts[0], parts[1] + parts[2] + parts[3]]  " note str2nr('') is zero
 endfunction
 function! fold#fzf_folds(...) abort
   let bang = a:0 ? a:1 : 0  " fullscreen
-  let hunk = '\%(%s\(\d\+\)\)\?'  " hunk regex
   let folds = fold#fold_source()
-  let regex = join(map(['!', '+', '\~', '-'], 'printf(hunk, v:val)'), '')
   let [texts, pairs1, pairs2] = [[], [], []]
   for [line1, line2, level] in folds
     let [text, _, stats] = s:fold_text(line1, line2, level)
-    let parts = map(matchlist(text, regex)[1:4], 'str2nr(v:val)')
-    let hunks = parts[1] + parts[2] + parts[3]  " note str2nr('') is zero
+    let [locs, hunks] = s:get_flags(text)
     let stats = substitute(stats, '^\(\d\):\+', '\1:', '')
     let stats = substitute(stats, '·', ' ', 'g')
     let text = substitute(text, '^\s*', '', '')
     let text = bufname() . ':' . line1 . ':' . stats . ' ' . text
-    if parts[0]  " ale.vim error
-      call add(pairs1, [hunks, parts[0]])
+    if locs  " ale.vim locations
+      call add(pairs1, [locs, text])
     elseif hunks  " gitgutter hunk
       call add(pairs2, [hunks, text])
     else  " standard label
@@ -575,7 +577,6 @@ function! fold#toggle_children_expr(...) abort
 endfunction
 
 " Open or close inner folds within range (i.e. maximum fold level)
-" NOTE: Here 'toggle' closes folds when 1 and opens when 0 (follows convention)
 " NOTE: This permits using e.g. 'zck' and 'zok' even when outside fold and without
 " fear of accideif ntally closing huge block e.g. class or document under cursor.
 function! fold#toggle_folds(...) range abort

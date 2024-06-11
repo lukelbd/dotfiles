@@ -2,10 +2,11 @@
 " Utilities for switching stuff on and off
 "-----------------------------------------------------------------------------"
 " Helper function
-function! s:echo_state(prefix, toggle, ...)
+function! s:echo_state(text, toggle, ...)
   if !a:0 || !a:1
-    let state = a:toggle ? 'enabled' : 'disabled'
-    redraw | echom toupper(a:prefix[0]) . a:prefix[1:] . ' ' . state . '.'
+    let [str1, str2] = a:text =~# 'folds' ? ['open', 'clos'] : ['enabl', 'disabl']
+    let state = a:toggle ? str1 . 'ed' : str2 . 'ed'
+    redraw | echom toupper(a:text[0]) . a:text[1:] . ' ' . state . '.'
   endif
 endfunction
 
@@ -180,25 +181,6 @@ function! switch#localdir(...) abort
   call call('s:echo_state', ["Local directory '" . local . "'", toggle, suppress])
 endfunction
 
-" Toggle revealing matches in folds
-" NOTE: Auto disable whenever set nohlsearch is restore
-function! switch#opensearch(...) abort
-  let state = get(b:, 'open_search', 0)
-  let toggle = a:0 > 0 ? a:1 : 1 - state
-  let suppress = a:0 > 1 ? a:2 : 0
-  let winview = winsaveview()
-  if toggle  " :global previous search
-    call fold#update_folds(0, 2) | global//silent! normal! zv
-    call feedkeys("\<Cmd>set hlsearch\<CR>", 'n')
-  else  " keep hlsearch enabled
-    call fold#update_folds(0, 1)
-    call feedkeys("\<Cmd>set hlsearch\<CR>", 'n')
-  endif
-  call winrestview(winview)
-  call call('s:echo_state', ['Open searches', toggle, suppress])
-  let b:open_search = toggle
-endfunction
-
 " Enable and disable LSP engines
 " NOTE: The server status can lag because takes a while for async server stop
 " let servers = lsp#get_server_names()  " servers applied to any filetype
@@ -278,6 +260,59 @@ function! switch#reveal(...) abort
       au TextChanged,InsertEnter,InsertLeave * call s:reveal_restore() | autocmd! reveal_restore
     augroup END
   endif | return ''
+endfunction
+
+" Toggle folds with gitgutter hunks
+" NOTE: Auto disable whenever set nohlsearch is restore
+function! s:get_changes() abort
+  let lnums = []
+  for [line1, line2, _] in fold#fold_source()
+    let hunks = git#stat_hunks(line1, line2, 0, 1)
+    let errors = edit#get_errors(line1, line2)
+    if !empty(hunks) || !empty(errors) | call add(lnums, line1) | endif
+  endfor | return lnums
+endfunction
+function! switch#showchanges(...) abort
+  let winview = winsaveview()
+  let lnums = s:get_changes()
+  let state = empty(filter(copy(lnums), 'foldclosed(v:val) > 0'))
+  let toggle = a:0 > 0 ? a:1 : 1 - state
+  let suppress = a:0 > 1 ? a:2 : 0
+  if toggle  " :global previous search
+    call fold#update_folds(0, 2)
+    for lnum in lnums | exe 'keepjumps silent! normal! ' . lnum . 'Gzv' | endfor
+    call winrestview(winview)
+  else  " keep hlsearch enabled
+    call winrestview(winview)
+    call fold#update_folds(0, 1)
+  endif
+  call call('s:echo_state', ['Unstaged folds', toggle, suppress])
+endfunction
+
+" Toggle folds with search matches
+" NOTE: Auto disable whenever set nohlsearch is restore
+function! s:get_matches() abort
+  let lnums = []
+  for [line1, line2, _] in fold#fold_source()
+    exe line1 | if search(@/, 'nW', line2) | call add(lnums, line1) | endif
+  endfor | return lnums
+endfunction
+function! switch#showmatches(...) abort
+  let winview = winsaveview()
+  let lnums = s:get_matches()
+  let state = empty(filter(copy(lnums), 'foldclosed(v:val) > 0'))
+  let toggle = a:0 > 0 ? a:1 : 1 - state
+  let suppress = a:0 > 1 ? a:2 : 0
+  if toggle  " :global previous search
+    call fold#update_folds(0, 2)
+    global//silent! normal! zv
+    call winrestview(winview)
+  else  " keep hlsearch enabled
+    call winrestview(winview)
+    call fold#update_folds(0, 1)
+  endif
+  call feedkeys("\<Cmd>set hlsearch\<CR>", 'n')
+  call call('s:echo_state', ['Matching folds', toggle, suppress])
 endfunction
 
 " Toggle spell check on and off
