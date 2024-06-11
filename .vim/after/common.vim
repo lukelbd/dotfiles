@@ -9,8 +9,8 @@
 " in vim files for jumping to functions) but skips mapping in presence of buffer-local
 " single-bracket maps (e.g. help file tag navigation) and buffer-local indent maps
 " (e.g. fugitive indent toggling). Should remove unmap lines after restarting vim.
+let &l:conceallevel = &l:filetype ==# 'vim' ? 0 : 2
 let &l:concealcursor = 'nc'
-let &l:conceallevel = 2
 let &l:formatoptions = 'rojclqn'
 let &l:joinspaces = 0
 let &l:linebreak = 1

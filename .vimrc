@@ -875,25 +875,25 @@ noremap M <Cmd>call jump#next_word('gE')<CR>
 
 " Move between alphanumeric groups of characters (i.e. excluding dots, dashes,
 " underscores). This is consistent with tmux vim selection navigation
-noremap gw <Cmd>call jump#next_part('w', 1)<CR>
-noremap gb <Cmd>call jump#next_part('b', 1)<CR>
-noremap ge <Cmd>call jump#next_part('e', 1)<CR>
-noremap gm <Cmd>call jump#next_part('m', 1)<CR>
-call utils#repeat_map('o', 'gw', 'AlphaNextStart', "<Cmd>call jump#next_part('w', 1, v:operator)<CR>")
-call utils#repeat_map('o', 'gb', 'AlphaPrevStart', "<Cmd>call jump#next_part('b', 1, v:operator)<CR>")
-call utils#repeat_map('o', 'ge', 'AlphaNextEnd',   "<Cmd>call jump#next_part('e', 1, v:operator)<CR>")
-call utils#repeat_map('o', 'gm', 'AlphaPrevEnd',   "<Cmd>call jump#next_part('m, 1, v:operator)<CR>")
+noremap gw <Cmd>call jump#next_part('w', 0)<CR>
+noremap gb <Cmd>call jump#next_part('b', 0)<CR>
+noremap ge <Cmd>call jump#next_part('e', 0)<CR>
+noremap gm <Cmd>call jump#next_part('m', 0)<CR>
+call utils#repeat_map('o', 'gw', 'AlphaNextStart', "<Cmd>call jump#next_part('w', 0, v:operator)<CR>")
+call utils#repeat_map('o', 'gb', 'AlphaPrevStart', "<Cmd>call jump#next_part('b', 0, v:operator)<CR>")
+call utils#repeat_map('o', 'ge', 'AlphaNextEnd',   "<Cmd>call jump#next_part('e', 0, v:operator)<CR>")
+call utils#repeat_map('o', 'gm', 'AlphaPrevEnd',   "<Cmd>call jump#next_part('m, 0, v:operator)<CR>")
 
 " Move between groups of characters with the same case
 " NOTE: This is helpful when refactoring and renaming variables
-noremap zw <Cmd>call jump#next_part('w', 2)<CR>
-noremap zb <Cmd>call jump#next_part('b', 2)<CR>
-noremap ze <Cmd>call jump#next_part('e', 2)<CR>
-noremap zm <Cmd>call jump#next_part('m', 2)<CR>
-call utils#repeat_map('o', 'zw', 'CaseNextStart', "<Cmd>call jump#next_part('w', 2, v:operator)<CR>")
-call utils#repeat_map('o', 'zb', 'CasePrevStart', "<Cmd>call jump#next_part('b', 2, v:operator)<CR>")
-call utils#repeat_map('o', 'ze', 'CaseNextEnd',   "<Cmd>call jump#next_part('e', 2, v:operator)<CR>")
-call utils#repeat_map('o', 'zm', 'CasePrevEnd',   "<Cmd>call jump#next_part('m, 2, v:operator)<CR>")
+noremap zw <Cmd>call jump#next_part('w', 1)<CR>
+noremap zb <Cmd>call jump#next_part('b', 1)<CR>
+noremap ze <Cmd>call jump#next_part('e', 1)<CR>
+noremap zm <Cmd>call jump#next_part('m', 1)<CR>
+call utils#repeat_map('o', 'zw', 'CaseNextStart', "<Cmd>call jump#next_part('w', 1, v:operator)<CR>")
+call utils#repeat_map('o', 'zb', 'CasePrevStart', "<Cmd>call jump#next_part('b', 1, v:operator)<CR>")
+call utils#repeat_map('o', 'ze', 'CaseNextEnd',   "<Cmd>call jump#next_part('e', 1, v:operator)<CR>")
+call utils#repeat_map('o', 'zm', 'CasePrevEnd',   "<Cmd>call jump#next_part('m, 1, v:operator)<CR>")
 
 " Comments and header regions {{{2
 " NOTE: <Plug> name cannot be subset of other name or results in delay

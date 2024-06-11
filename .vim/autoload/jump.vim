@@ -263,41 +263,60 @@ endfunction
 " Navigate words with restricted &iskeyword
 " NOTE: This implements 'g' and 'h' text object motions using word jump mappings.
 " Use gw/ge/gb/gm for snake_case and zw/ze/zb/zm for CapitalCaseFooBar or camelCase.
-" Jump to next word or WORD accunting for conceal
-function! jump#next_part(motion, mode, ...) abort
+function! jump#next_part(key, mode, ...) abort
   let cmd = 'setlocal iskeyword=' . &l:iskeyword  " vint: next-line -ProhibitUnnecessaryDoubleQuote
   let &l:iskeyword = a:mode ? "a-z,48-57" : "@,48-57,192-255"
-  let cnt = a:mode ? s:adjust_count(a:motion) : v:count1
+  let cnt = a:mode ? s:get_count(a:key) : v:count1
   let action = a:0 ? a:1 ==# 'c' ? "\<Esc>c" : a:1 : ''
-  call feedkeys(action . cnt . a:motion . "\<Cmd>" . cmd . "\<CR>", 'm')
+  call feedkeys(action . cnt . a:key . "\<Cmd>" . cmd . "\<CR>", 'm')
 endfunction
-function! s:adjust_count(motion) abort
-  let [line, idx, cnt] = [getline('.'), col('.') - 1, v:count1]
-  for _ in range(v:count1)
-    if a:motion =~# '^[we]$'  " vint: next-line -ProhibitUsingUndeclaredVariable
-      let text = line[idx:]
-    else  " reverse search
-      let text = join(reverse(split(line[:idx], '\zs')), '')
+function! s:get_count(key) abort
+  let [line, idx] = [getline('.'), col('.') - 1]
+  let forward = a:key =~# '^[we]$'
+  let regex = a:key ==# 'w' ? '\u\+\l\+' : a:key ==# 'b' ? '\a\l\+\u\+' : '\l\+\u\+'
+  let cnt = v:count1  " adjusted count
+  for _ in range(v:count1)  " vint: next-line -ProhibitUsingUndeclaredVariable
+    let text = forward ? line[idx:] : line[:idx]
+    let text = forward ? text : join(reverse(split(text, '\zs')), '')
+    let idx1 = matchend(text, '^\s\+')
+    let idx2 = matchend(text, '^' . regex)
+    if idx1 > 0  " ignore space
+      let idx += forward ? idx1 : -idx1
+    elseif idx2 > 0  " note idx2 is end byte of match end plus 1
+      let idx += forward ? idx2 : -idx2 | let cnt += 1
+    else
+      break
     endif
-    let [_, _, jdx] = matchstrpos(text, '^\s\+')
-    if jdx > 0  " leading space
-      let idx += a:motion =~# '^[we]$' ? jdx : -jdx | continue
-    elseif a:motion ==# 'w'  " forward start of word
-      let regex = '^\C[A-Z]\+[a-z]\+'
-    elseif a:motion ==# 'b'  " backward start of word
-      let regex = '^\C[A-Za-z][a-z]\+[A-Z]\+'
-    else  " end of word
-      let regex = '^\C[a-z]\+[A-Z]\+'
-    endif
-    let [_, _, jdx] = matchstrpos(text, regex)
-    if jdx < 0 | break | endif
-    let cnt += 1  " note jdx is end byte of match end plus 1
-    let idx += a:motion =~# '^[we]$' ? jdx : -jdx
   endfor | return cnt
 endfunction
 
+" Jump to next word or WORD accunting for conceal
+" NOTE: For some reason running separate normal mode command for adjustment solves
+" issue where deleting to end-of-line with 'e' either omits character includes newline
+" TODO: Support conceal-aware a-word and i-word text objects. Use function that
+" cancels operator in progress, runs a new 'gWaw' operation to record '[ and '], then
+" augment the positions to account for concealed characters with a new operator and
+" put that into a hidden or supplementary vim-textobj-user mapping.
+function! jump#next_word(key, ...) abort
+  let adjust = mode(1) =~# '^no' && a:key ==? 'e' ? 'l' : ''
+  let [lnum, cols] = [line('.'), syntax#_concealed()]
+  let [delta, offset] = a:key =~? '^[we]$' ? [1, 0] : [-1, -1]
+  for _ in range(a:0 ? a:1 : v:count1)
+    let cols = lnum == line('.') ? cols : syntax#_concealed()
+    let concealed = syntax#get_concealed(col('.') + offset, cols)
+    let [keys, lnum] = ['', line('.')]
+    if type(concealed) || !empty(concealed)
+      let keys .= syntax#next_nonconceal(delta, cols)
+      let keys .= delta > 0 ? 'h' : 'l'
+    endif
+    exe 'normal! ' . keys . a:key
+    exe empty(adjust) ? '' : 'normal! ' . adjust
+  endfor
+endfunction
+
 " Navigate searches with indexed-search
-" NOTE: This adds indexed-search directional consistency and preserves jumplist
+" NOTE: This implements directional consistency from indexed-search, shows
+" the search index, and preserves the jumplist during navigation.
 function! jump#next_search(count) abort
   let forward = get(g:, 'indexed_search_n_always_searches_forward', 0)  " default
   if forward && !v:searchforward  " implement 'always forward'
@@ -314,24 +333,4 @@ function! jump#next_search(count) abort
   if !empty(@/)
     call feedkeys("\<Cmd>exe b:curpos == getcurpos() ? '' : 'ShowSearchIndex'\<CR>", 'n')
   endif
-endfunction
-
-" Navigate words ignoring conceal
-" NOTE: For some reason running separate normal mode command for adjustment solves
-" issue where deleting to end-of-line with 'e' either omits character includes newline
-function! jump#next_word(motion, ...) abort
-  let adjust = mode(1) =~# '^no' && a:motion ==? 'e' ? 'l' : ''
-  let [lnum, cols] = [line('.'), syntax#_concealed()]
-  let [delta, offset] = a:motion =~? '^[we]$' ? [1, 0] : [-1, -1]
-  for _ in range(a:0 ? a:1 : v:count1)
-    let cols = lnum == line('.') ? cols : syntax#_concealed()
-    let concealed = syntax#get_concealed(col('.') + offset, cols)
-    let [keys, lnum] = ['', line('.')]
-    if type(concealed) || !empty(concealed)
-      let keys .= syntax#next_nonconceal(delta, cols)
-      let keys .= delta > 0 ? 'h' : 'l'
-    endif
-    exe 'normal! ' . keys . a:motion
-    exe empty(adjust) ? '' : 'normal! ' . adjust
-  endfor
 endfunction

@@ -229,7 +229,7 @@ if ! $nobbl && $bibliography; then
 fi
 
 #------------------------------------------------------------------------------#
-# Compile and display the document(s)  {{{1
+# Compile and display the document(s) {{{1
 #------------------------------------------------------------------------------#
 # Helper functions {{{2
 # First argument indicates whether to print message
