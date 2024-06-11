@@ -1,5 +1,7 @@
 {
     "defaultConfig": {
-        "codeFolding": true
+        "codeFolding": true,
+        "lineNumbers": false,
+        "lineWrap": false
     }
 }

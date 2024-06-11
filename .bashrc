@@ -1862,6 +1862,7 @@ echo 'done'
 # so behavior matches shell completion behavior. Enforce terminal background default
 # color using -1 below. ANSI codes: https://stackoverflow.com/a/33206814/4970632
 [ "${FZF_SKIP:-0}" == 0 ] && _setup_message 'Enabling fzf'
+COMP_WORDBREAKS=${COMP_WORDBREAKS//@}  # support @ path expansion
 _fzf_hist="$HOME/.fzf-hist"  # history files used by fzf.vim and shell
 _fzf_marks="$HOME/.fzf-marks/fzf-marks.plugin.bash"
 _fzf_args_prune=' \( -fstype devfs -o -fstype devtmpfs -o -fstype proc -o -fstype sysfs \) -prune -o '
@@ -1891,21 +1892,21 @@ _fzf_bindings=( \
     --ansi --color=bg:-1,bg+:-1 --layout=default --exit-0 --inline-info --height=~20% \
     --bind='$(IFS=,; echo "${_fzf_bindings[*]}")'
   "
+  FZF_COMPLETION_OPTS="--history='$_fzf_hist/ctrl-i'"  # also uses default opts
+  FZF_COMPLETION_TRIGGER=''  # ensure ${-default} expands to nothing
+  FZF_COMPLETION_PATH_COMMANDS=''  # use custom function instead
+  FZF_COMPLETION_DIR_COMMANDS=''  # use custom function instead
+  FZF_COMPLETION_VAR_COMMANDS=''  # use custom function instead
   FZF_ALT_C_OPTS="--history='$_fzf_hist/ctrl-f'"  # also uses default opts
   FZF_CTRL_T_OPTS="--history='$_fzf_hist/ctrl-t'"  # also uses default opts
-  FZF_COMPLETION_OPTS="--history='$_fzf_hist/ctrl-i'"  # also uses default opts
-  FZF_COMPLETION_TRIGGER=''    # ensure ${-default} expands to nothing
-  FZF_COMPLETION_PATH_COMMANDS=''  # ensure ${-default} expands to nothing
-  FZF_COMPLETION_DIR_COMMANDS=''  # ensure ${-default} expands to nothing
-  FZF_COMPLETION_VAR_COMMANDS=''  # ensure ${-default} expands to nothing
-  FZF_MARKS_FILE=${HOME}/.fzf.marks  # source directory
-  FZF_MARKS_COMMAND='fzf --height=40% --reverse'  # default command
-  FZF_MARKS_JUMP="\C-g"  # jump binding
   FZF_MARKS_COLOR_LHS=39  # ansi color
   FZF_MARKS_COLOR_RHS=36  # ansi color
   FZF_MARKS_COLOR_COLON=33  # ansi color
   FZF_MARKS_NO_COLORS=0  # disable no colors
   FZF_MARKS_KEEP_ORDER=0  # disable keep order
+  FZF_MARKS_COMMAND='fzf --height=40% --reverse'  # default command
+  FZF_MARKS_FILE=${HOME}/.fzf.marks  # source directory
+  FZF_MARKS_JUMP="\C-g"  # jump binding
 }
 
 # Add general completion functions {{{2
@@ -1916,11 +1917,11 @@ _fzf_bindings=( \
 # off with tab, and fuzzy search the depth-1 directory contents.
 _fzf_compgen_dir() {
   command find -L "$1" -maxdepth 1 -mindepth 1 ${_fzf_args_prune//\\/} \
-    -type d -print 2>/dev/null | sed 's@^\./@@;s@^'"$HOME"'@~@'
+    -type d -print 2>/dev/null | sed 's|^\./||;s|^'"$HOME"'|~|'
 }
 _fzf_compgen_path() {
   command find -L "$1" -maxdepth 1 -mindepth 1 ${_fzf_args_prune//\\/} \
-    \( -type d -printf "%p/\n" , ! -type d -print \) 2>/dev/null | sed 's@^\./@@;s@^'"$HOME"'@~@'
+    \( -type d -printf "%p/\n" , ! -type d -print \) 2>/dev/null | sed 's|^\./||;s|^'"$HOME"'|~|'
 }
 _fzf_define_complete() {
   local kind func cmd
@@ -1948,7 +1949,7 @@ _fzf_generic_completion() {
   mode=$1; shift;
   cur=${COMP_WORDS[COMP_CWORD]}
   if [[ "$cur" =~ \$[^/]*$ ]]; then  # subsequent e.g. $HOME/<Tab> expands variables
-    _fzf_complete '-m' -- "$@" < <(compgen -v | sed 's@^@'"${cur%\$*}"'\$@')
+    _fzf_complete '-m' -- "$@" < <(compgen -v | sed 's|^|'"${cur%\$*}"'\$|')
   elif [ "$mode" -ge 1 ]; then  # directories only
     __fzf_generic_path_completion _fzf_compgen_dir '+m' '/' "$@"
   else  # general paths
