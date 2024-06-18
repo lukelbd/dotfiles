@@ -186,20 +186,28 @@ function! tag#fzf_btags(bang, query, ...) abort
 endfunction
 
 " Select from the current tag files
+" TODO: Auto-generate
 " NOTE: Tried 'readtags -t - -e -E -Q (#/.py/ $input) -l' but fails since parses
 " the tag file path appended by tags.pl to each line. Instead simply use awk.
-" NOTE: Formatting with more complex regex can cause slowdown. Avoid complex
-" regex patterns e.g. extra globs and non-greedy globs.
+" NOTE: Formatting with more complex regex can cause slowdown. Avoid complex regex
+" patterns e.g. extra globs and non-greedy globs.
 function! s:get_files(...) abort
-  let tags = [] |
-  for path in a:000
+  let tags = []
+  let roots = ['.git', '.hg', '.svn', '.bzr', '_darcs', '_darcs', '_FOSSIL_', '.fslckout']
+  for path in a:000  " resolve removes trailing slash
     let path = resolve(expand(path))
     if filereadable(path)
       call add(tags, path)
     elseif isdirectory(path)
       call extend(tags, globpath(path, '**/.vimtags', 0, 1))
     endif
-  endfor | return tags
+  endfor
+  for root in roots
+    let paths = globpath(root, '.vimtags', 0, 1)
+    if empty(paths)
+      call system(g:fzf_tags_command)
+    endif
+  endfor
 endfunction
 function! tag#fzf_tags(type, bang, ...) abort
   let scripts = utils#get_scripts('fzf.vim/autoload/fzf/vim.vim')

@@ -295,7 +295,7 @@ function! s:fold_text(line1, line2, level)
   let level = a:level . repeat(':', a:level)  " fold level
   let lines = string(a:line2 - a:line1 + 1)  " number of lines
   let maxlen = get(g:, 'linelength', 88) - 1  " default maximum
-  let flags = edit#get_errors(a:line1, a:line2)  " lintint messages
+  let flags = edit#stat_errors(a:line1, a:line2)  " lintint messages
   let flags .= git#stat_hunks(a:line1, a:line2, 0, 1)  " abbreviate with '1'
   let dots = repeat('·', len(string(line('$'))) - len(lines))
   let stats = level . dots . lines  " default statistics
@@ -453,6 +453,7 @@ endfunction
 function! fold#update_folds(force, ...) abort
   let queued = a:force || get(b:, 'fastfold_queued', 0)  " TextChanged,TextChangedI
   let manual = &l:foldmethod ==# 'manual'  " current method
+  let closed = foldclosed('.')
   let winview = winsaveview()
   if queued || !manual  " re-apply or convert
     exe 'FastFoldUpdate' | unlet! b:fastfold_markers
@@ -463,21 +464,24 @@ function! fold#update_folds(force, ...) abort
   for [level, line1, line2] in b:fastfold_markers
     exe line1 . ',' . line2 . 'fold' | exe line1 . 'foldopen'
   endfor
-  let igit = get(b:, 'fugitive_type', '')
-  let iarg = a:0 ? a:1 : !manual || !empty(b:fastfold_markers)
-  let level = &l:filetype ==# 'json' ? 2 : !empty(igit) ? 1 : 0
-  let level = level ? level : &l:foldmethod ==# 'manual' && search('{{{1\s*$', 'wn') > 0
-  let level = level ? level : &l:foldmethod ==# 'marker' && search('{{{2\s*$', 'wn') > 0
-  if iarg || a:0  " apply defaults
-    let &l:foldlevel = iarg ? level : &l:foldlevel
+  let reset = a:0 || !manual || !empty(b:fastfold_markers)
+  let base = &l:filetype ==# 'json' ? 2 : !empty(get(b:, 'fugitive_type', '')) ? 1 : 0
+  let base = base ? base : &l:foldmethod ==# 'manual' && search('{{{1\s*$', 'wn') > 0
+  let base = base ? base : &l:foldmethod ==# 'marker' && search('{{{2\s*$', 'wn') > 0
+  if reset  " re-apply level
+    let &l:foldlevel = a:0 ? base : &l:foldlevel
   endif
-  for lnum in iarg || a:0 ? fold#get_ignores() : []
+  for lnum in reset ? fold#get_ignores() : []
     exe lnum . 'foldopen'
   endfor
-  if a:0 && a:1 == 0 || a:0 && a:1 == 1 && line('.') != foldclosed('.')
-    exe 'normal! zvzzze'
-  endif
   call winrestview(winview)
+  let iclosed = foldclosed('.')
+  let ilevel = foldlevel('.')
+  if a:0 && iclosed > 0  " apply default status
+    exe a:1 ? '' : 'normal! zv'
+  elseif reset && ilevel > 0  " restore original status
+    exe closed > 0 ? iclosed > 0 ? '' : 'normal! zc' : 'normal! zv'
+  endif
   let b:fastfold_queued = 0
   let b:fastfold_markers = []
 endfunction

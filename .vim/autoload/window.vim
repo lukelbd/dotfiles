@@ -376,10 +376,10 @@ function! window#setup_panel(...) abort
   if a:0 && a:1  " editable window
     return
   endif
-  for [char, frac] in [['d', 0.5], ['u', -0.5]]
+  for [char, frac] in [['d', 0.33], ['u', -0.33], ['f', 0.66], ['b', -0.66]]
     exe 'noremap <expr> <nowait> <buffer> ' . char . ' window#scroll_normal(' . frac . ')'
   endfor
-  for char in 'uUrRxXpPdDcCaAiIoO'  " in lieu of set nomodifiable
+  for char in 'uUrRxXpPdDcCaAiIoOfFtT'  " in lieu of set nomodifiable
     if !get(maparg(char, 'n', 0, 1), 'buffer', 0)  " preserve buffer-local maps
       exe 'nmap <buffer> ' char . ' <Nop>'
     endif

@@ -1,11 +1,14 @@
 "-----------------------------------------------------------------------------"
 " Utilities for parsing input
 "-----------------------------------------------------------------------------"
-" Get the project 'root' from input directory
+" Helper functions for root parsing
 " NOTE: Root detectors are copied from g:gutentags_add_default_root_markers.
-" NOTE: Previously tried just '__init__.py' for e.g. conda-managed packages and
-" placing '.tagproject' in vim-plug folder but this caused tons of nested .vimtags
-" file creations including *duplicate* tags when invoking :Tags function.
+" NOTE: Previously tried just '__init__.py' for e.g. conda-managed packages and placing
+" '.vimtags' in vim-plug folder but this caused tons of nested .vimtags creations.
+let s:projs = ['.git', '.hg', '.svn', '.bzr', '_darcs', '_darcs', '_FOSSIL_', '.fslckout']
+let s:confs = ['__init__.py', 'setup.py', 'setup.cfg']  " configuration files
+let s:dists = ['research', 'shared', 'school', 'software', 'forks', 'clones', 'builds']
+let s:heads = ['bin', 'data', 'tmp', 'share', 'local', '.local']  " other distributions
 function! s:proj_root(head, globs, ...) abort
   let roots = []  " general projects
   let root = fnamemodify(a:head, ':p')
@@ -38,19 +41,43 @@ function! s:dist_root(head, tails, ...) abort
   let suffix = matchstr(strpart(a:head, len(head)), regex)  " share/vim/vim91 -> vim91
   return head . suffix  " optional version subfolder
 endfunction
+
+" Get the project 'root' from input directory
+" NOTE: Search order is critical. Prefer git repos to python distributions, and
+" prefer e.g. user-settings subfolders to git repos. Also avoid generating tags
+" within deeply nested system files with 'local', 'bin', 'share' root finding.
+function! parse#get_roots(...) abort
+  let roots = []
+  for path in a:0 ? a:000 : [getcwd()]
+    let path = expand(resolve(a:0 ? a:1 : '.'))
+    echom 'path!! ' . path
+    if !isdirectory(path)
+      redraw | echohl ErrorMsg
+      echom 'Error: Invalid directory ' . string(path) . '.'
+      echohl None | continue
+    endif
+    let glob = '**/{' . join(s:projs + s:confs, ',') . '}'
+    for file in sort(globpath(path, glob, 0, 1))
+      echom 'File: ' . file
+      let root = parse#get_root(file)
+      call extend(roots, index(roots, root) < 0 ? [root] : [])
+    endfor
+  endfor
+  return roots
+endfunction
 function! parse#get_root(...) abort
   let path = resolve(expand(a:0 ? a:1 : '%'))
   let head = fnamemodify(path, ':p:h')  " remove file or trailing slash
   let tails = ['servers', 'user-settings']
   let root = s:dist_root(head, tails)  " e.g. @jupyterlab, .vim_lsp_settings
   if !empty(root) | return root | endif
-  let globs = ['.git', '.hg', '.svn', '.bzr', '_darcs', '_darcs', '_FOSSIL_', '.fslckout']
+  let globs = copy(s:projs)
   let root = s:proj_root(head, globs, 0)  " highest-level control system indicator
   if !empty(root) | return root | endif
-  let globs = ['__init__.py', 'setup.py', 'setup.cfg']
+  let globs = copy(s:confs)
   let root = s:proj_root(head, globs, 1)  " lowest-level python distribution indicator
   if !empty(root) | return root | endif
-  let tails = ['research', 'shared', 'school', 'software', 'builds', 'clones', 'forks', 'data', 'tmp', 'local', 'share', 'bin']
+  let tails = copy(s:dists + s:heads)
   let root = s:dist_root(head, tails)  " subfolders within meta-folders
   if !empty(root) | return root | endif
   let tails = ['mackup', 'Mackup', 'icloud', 'com~apple~CloudDocs']
@@ -73,7 +100,9 @@ function! parse#get_paths(mode, global, level, ...)
   else  " current buffer
     let paths = [resolve(expand('%:p'))]
   endif
-  if empty(args) && a:level >= 2  " path projects
+  if empty(args) && a:level >= 3  " TODO: recursive projects
+    :
+  elseif empty(args) && a:level >= 2  " path projects
     let paths = map(paths, 'parse#get_root(v:val)')
   elseif empty(args) && a:level >= 1  " path folders
     let paths = map(paths, "empty(v:val) || isdirectory(v:val) ? v:val : fnamemodify(v:val, ':h')")

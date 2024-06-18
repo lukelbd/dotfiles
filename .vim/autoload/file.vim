@@ -65,6 +65,9 @@ function! file#glob_paths(lead, ...) abort
 endfunction
 
 " Open recently edited file
+" TODO: Add command to select arbitrary project roots within open buffer paths
+" and trigger gutentags tag-file generation (or use synchronous fzf auto-generation
+" by temporarily setting g:tags_command to project directory)
 " NOTE: This is companion to :History with nicer behavior. Files tracked
 " in ~/.vim_mru_files across different open vim sessions.
 function! file#fzf_history(arg, ...)

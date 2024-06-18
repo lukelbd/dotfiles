@@ -1,43 +1,55 @@
 "-----------------------------------------------------------------------------"
 " A giant vim configuration that does all sorts of magical things. {{{1
 "-----------------------------------------------------------------------------"
-" Critical stuff {{{2
-" NOTE: See .vim/after/common.vim and .vim/after/filetype.vim for overrides of
-" buffer-local syntax and 'conceal-', 'format-', 'linebreak', and 'joinspaces'.
+" Initial stuff {{{2
+" WARNING: Vim may suppress messages even without :silent invocation (e.g. BufEnter
+" fold updates, delayed :redraw). Always use :unsilent echom when debugging
 " NOTE: The refresh variable used in .vim/autoload/vim.vim to autoload recently
 " updated script and line length variable used in linting tools below.
 " NOTE: Use karabiner to convert ctrl-j/k/h/l into arrow keys. So anything
 " mapped to these control combinations below must also be assigned to arrow keys.
+" NOTE: Use iterm to ensure alt-arrow presses always report as ^[[1;3A/B/C/D instead
+" of ^[[1;9A/B/C/D (or disable profile..keys 'apps can change how keys are reported').
 " NOTE: Use iterm to convert impossible ctrl+key combos to function keys using hex
 " codes obtained from below links (also :help t_k1-9 and :help t_F1+9)
+" NOTE: Here cursor shape requires either ptmux passthrough codes (see 'vitality.vim')
+" or below terminal overrides. Previously used ':au FocusLost * stopinsert' workaround
+" F1/F2: 0x1b 0x4f 0x50/0x51  (Ctrl-, Ctrl-.) (5-digit codes failed)
+" F3/F4: 0x1b 0x4f 0x52/0x53 (Ctrl-[ Ctrl-])
+" F5/F6: 0x1b 0x5b 0x31 0x35/0x37 0x7e (Ctrl-; Ctrl-') (3-digit codes failed)
+" F7/F8: 0x1b 0x5b 0x31 0x38/0x39 0x7e (Ctrl-i Ctrl-m)
+" F9/F10: 0x1b 0x5b 0x32 0x30/0x31 0x7e (currently unused) (forum codes required)
+" F11/F12: 0x1b 0x5b 0x32 0x33/0x34 0x7e (currently unused)
 " See: https://github.com/c-bata/go-prompt/blob/82a9122/input.go#L94-L125
 " See: https://eevblog.com/forum/microcontrollers/mystery-of-vt100-keyboard-codes/
-" F1: 0x1b 0x4f 0x50 (Ctrl-,) (5-digit codes failed)
-" F2: 0x1b 0x4f 0x51 (Ctrl-.)
-" F3: 0x1b 0x4f 0x52 (Ctrl-[)
-" F4: 0x1b 0x4f 0x53 (Ctrl-])
-" F5: 0x1b 0x5b 0x31 0x35 0x7e (Ctrl-;) (3-digit codes failed)
-" F6: 0x1b 0x5b 0x31 0x37 0x7e (Ctrl-')
-" F7: 0x1b 0x5b 0x31 0x38 0x7e (Ctrl-i)
-" F8: 0x1b 0x5b 0x31 0x39 0x7e (Ctrl-m)
-" F9: 0x1b 0x5b 0x32 0x30 0x7e
-" F10: 0x1b 0x5b 0x32 0x31 0x7e
-" F11: 0x1b 0x5b 0x32 0x33 0x7e (forum codes required)
-" F12: 0x1b 0x5b 0x32 0x34 0x7e
+" See: https://stackoverflow.com/a/44473667/4970632 (terminal cursor overrides)
+
 " vint: -ProhibitSetNoCompatible
 set nocompatible
 set encoding=utf-8
-scriptencoding utf-8
-let s:conda = $HOME . '/mambaforge/bin'  " gui vim support
-let $PATH = ($PATH !~# s:conda ? s:conda . ':' : '') . $PATH
+let g:linelength = 88
+let g:mapleader = "\<Space>"
 let g:refresh = get(g:, 'refresh', localtime())
-let g:mapleader = "\<Space>"  " see <Leader> mappings
-let g:linelength = 88  " see below configuration
+let &t_vb = ''  " visual bell (disable completely)
+let &t_ti = "\e7\e[r\e[?47h"  " termcap mode (keep scrollback)
+let &t_te = "\e[?47l\e8"  " termcap end (keep scrollback)
+let &t_SI = "\e[6 q"  " bar cursor (insert mode)
+let &t_SR = "\e[4 q"  " underline cursor (replace mode)
+let &t_EI = "\e[2 q"  " block cursor (normal mode)
+let &t_ZH = "\e[3m"  " italics mode
+let &t_ZR = "\e[23m"  " italics end
+scriptencoding utf-8
 
 " Global settings {{{2
+" NOTE: Here plugins integrate with tags, location/quickfix lists, and jump/change
+" lists while fzf.vim fully replaces native :grep and :find commands.
+" NOTE: See .vim/after/common.vim and .vim/after/filetype.vim for overrides of
+" buffer-local syntax and 'conceal-', 'format-', 'linebreak', and 'joinspaces'.
 " WARNING: Setting default 'foldmethod' and 'foldexpr' can cause buffer-local
 " expression folding e.g. simpylfold to disappear and not retrigger, while using
 " setglobal didn't work for filetypes with folding not otherwise auto-triggered (vim)
+let s:path = $HOME . '/mambaforge/bin'  " gui vim support
+let $PATH = ($PATH !~# s:path ? s:path . ':' : '') . $PATH
 set autoindent  " indents new lines
 set backspace=indent,eol,start  " backspace by indent
 set breakindent  " visually indent wrapped lines
@@ -157,26 +169,6 @@ let &g:softtabstop = 2  " default 2 spaces
 let &g:spell = 0  " global spell disable (only use text files)
 let &g:tabstop = 2  " default 2 spaces
 let &g:wildignore = join(parse#get_ignores(2, 1, 0), ',')
-
-" Configure cursor and screen-restore escapes
-" NOTE: In tmux cursor shape support requires either Ptmux escape codes (e.g. through
-" 'vitality') or terminal overrides. Previously used FocusLost autocommand below.
-" See: https://github.com/sjl/vitality.vim/issues/29 (cursor changing in tmux panes)
-" See: https://stackoverflow.com/a/44473667/4970632 (outdated terminal overrides)
-" See: https://vi.stackexchange.com/a/14203/8084 (outdated Ptmux sequences)
-" See: https://github.com/tmux/tmux/wiki/FAQ#what-is-the-passthrough-escape-sequence-and-how-do-i-use-it
-" See: https://www.reddit.com/r/vim/comments/24g8r8/italics_in_terminal_vim_and_tmux/
-" autocmd FocusLost * exe 'stopinsert'  " outdated
-" call s:plug('sjl/vitality.vim')  " outdated
-" let g:vitality_always_assume_iterm = 1  " outdated
-let &t_vb = ''  " disable visual bell
-let &t_ti = "\e7\e[r\e[?47h"  " termcap start (restore screen)
-let &t_te = "\e[?47l\e8"  " termcap end (restore screen)
-let &t_SI = "\e[6 q"  " insert start
-let &t_SR = "\e[4 q"  " replace start
-let &t_EI = "\e[2 q"  " insert/replace end
-let &t_ZH = "\e[3m"  " italics start
-let &t_ZR = "\e[23m"  " italics end
 
 " Shared plugin settings {{{2
 " Filetypes for several different settings
@@ -549,6 +541,8 @@ endfor
 for s:mode in ['', 'i', 'c']  " native motions by word
   exe s:mode . 'noremap <M-Left> <S-Left>'
   exe s:mode . 'noremap <M-Right> <S-Right>'
+  exe s:mode . 'noremap <A-Left> <S-Left>'
+  exe s:mode . 'noremap <A-Right> <S-Right>'
 endfor
 for s:mode in ['i', 'c']  " native backwards delete mappings
   exe s:mode . 'noremap <S-Up> <C-w>'
@@ -817,8 +811,8 @@ nnoremap z" <Cmd>call grep#call_grep('rg', 1, 3)<CR>
 " NOTE: Search open files for print statements and project files for others
 " NOTE: Currently do not use :Fixme :Error or :Xxx but these are also highlighted
 let s:conflicts = '^' . repeat('[<>=|]', 7) . '\($\|\s\)'
-command! -bang -nargs=* -complete=file Debugs call grep#call_rg(<bang>0, 2, '^\s*ic(', <f-args>)
-command! -bang -nargs=* -complete=file Prints call grep#call_rg(<bang>0, 2, '^\s*print(', <f-args>)
+command! -bang -nargs=* -complete=file Debugs call grep#call_rg(<bang>0, 2, comment#get_print(1), <f-args>)
+command! -bang -nargs=* -complete=file Prints call grep#call_rg(<bang>0, 2, comment#get_print(0), <f-args>)
 command! -bang -nargs=* -complete=file Notes call grep#call_rg(<bang>0, 2, '\<\(Note\|NOTE\):', <f-args>)
 command! -bang -nargs=* -complete=file Todos call grep#call_rg(<bang>0, 2, '\<\(Todo\|TODO\|Fixme\|FIXME\):', <f-args>)
 command! -bang -nargs=* -complete=file Warnings call grep#call_rg(<bang>0, 2, '\<\(Warning\|WARNING\|Error\|ERROR\):', <f-args>)
@@ -1045,11 +1039,11 @@ vnoremap <expr> < edit#indent_lines_expr(1, v:count1)
 " NOTE: See 'vim-unimpaired' for original. This is similar to vim-succinct 'e' object
 call utils#repeat_map('n', '[e', 'BlankUp', '<Cmd>put!=repeat(nr2char(10), v:count1) \| '']+1<CR>')
 call utils#repeat_map('n', ']e', 'BlankDown', '<Cmd>put=repeat(nr2char(10), v:count1) \| ''[-1<CR>')
-call utils#repeat_map('n', 'ch', 'MoveLeft', '<Cmd>call edit#move_chars(1)<CR>')
-call utils#repeat_map('n', 'cl', 'MoveRight', '<Cmd>call edit#move_chars(0)<CR>')
-call utils#repeat_map('n', 'ck', 'MoveAbove', '<Cmd>call edit#move_lines(1)<CR>')
-call utils#repeat_map('n', 'cj', 'MoveBelow', '<Cmd>call edit#move_lines(0)<CR>')
-call utils#repeat_map('n', 'cL', 'MoveSplit', 'myi<CR><Esc><Cmd>keepjumps normal! `y<Cmd>delmark y<CR>')
+call utils#repeat_map('n', 'ch', 'ChangeLeft', '<Cmd>call edit#change_chars(1)<CR>')
+call utils#repeat_map('n', 'cl', 'ChangeRight', '<Cmd>call edit#change_chars(0)<CR>')
+call utils#repeat_map('n', 'ck', 'ChangeAbove', '<Cmd>call edit#change_lines(1)<CR>')
+call utils#repeat_map('n', 'cj', 'ChangeBelow', '<Cmd>call edit#change_lines(0)<CR>')
+call utils#repeat_map('n', 'cL', 'ChangeSplit', 'myi<CR><Esc><Cmd>keepjumps normal! `y<Cmd>delmark y<CR>')
 
 " Join and wrap lines with user formatting
 " Uses :Join command added by conjoin plugin
@@ -1386,7 +1380,7 @@ let g:MRU_file = '~/.vim_mru_files'  " default (custom was ignored for some reas
 " NOTE: 'Drop' opens selection in existing window, similar to switchbuf=useopen,usetab.
 " However :Buffers still opens duplicate tabs even with fzf_buffers_jump=1.
 " NOTE: Specify ctags command below and set default 'tags' above accordingly, however
-" in practice this is only used if gutentags files unavailable and after confirm prompt
+" in this is only used if gutentags files unavailable (see tag.vim s:get_files)
 " See: https://github.com/junegunn/fzf.vim/issues/185
 " See: https://github.com/junegunn/fzf/issues/1577#issuecomment-492107554
 " See: https://www.reddit.com/r/vim/comments/9504rz/denite_the_best_vim_pluggin/e3pbab0/
@@ -1690,17 +1684,23 @@ let g:vimtex_fold_enabled = 1
 let g:vimtex_fold_types = {'envs' : {'whitelist': ['enumerate', 'itemize', 'math']}}
 
 " Shell and other utilities {{{2
-" NOTE: For why to avoid these plugins see https://shapeshed.com/vim-netrw/
-" various shortcuts to test whole file, current test, next test, etc.
+" NOTE: Previously used vitality.vim to support FocusLost in iterm+tmux and avoid
+" insert-mode-cursor in other panes. Now use tmux integration and key codes above.
 " NOTE: Previously used ansi plugin to preserve colors in 'command --help' pages
 " but now redirect colorized git help info to their corresponding man pages.
+" See: https://shapeshed.com/vim-netrw/ (why to avoid nerdtree-type plugins)
+" See: https://vi.stackexchange.com/a/14203/8084 (outdated ptmux sequences)
+" See: https://www.reddit.com/r/vim/comments/24g8r8/italics_in_terminal_vim_and_tmux/
+" See: https://github.com/tmux/tmux/wiki/FAQ#what-is-the-passthrough-escape-sequence-and-how-do-i-use-it
 " call s:plug('powerman/vim-plugin-AnsiEsc')  " colorize help pages
+" call s:plug('sjl/vitality.vim')  " outdated (tmux+iterm passthrough sequences)
 " call s:plug('vim-scripts/LargeFile')  " disable syntax highlighting for large files
 " call s:plug('Shougo/vimshell.vim')  " first generation :terminal add-ons
 " call s:plug('Shougo/deol.nvim')  " second generation :terminal add-ons
 " call s:plug('jez/vim-superman')  " replaced with vim.vim and bashrc utilities
 " call s:plug('scrooloose/nerdtree')  " unnecessary
 " call s:plug('jistr/vim-nerdtree-tabs')  " unnecessary
+" let g:vitality_always_assume_iterm = 1  " outdated (tmux+iterm passthrough sequences)
 call s:plug('tpope/vim-eunuch')  " shell utils like chmod rename and move
 call s:plug('tpope/vim-vinegar')  " netrw enhancements (acts on filetype netrw)
 let g:LargeFile = 1  " megabyte limit
@@ -1838,26 +1838,26 @@ if s:has_plug('vim-textobj-user')  " {{{
   let g:textobj#sentence#move_n = ')'  " smarter sentence navigation
   let g:vim_textobj_parameter_mapping = 'k'  " i.e. 'keyword' or 'keyword argument'
   let s:textobj_alpha = {
-    \ 'g': '\(\<\|[^0-9A-Za-z]\@<=[0-9A-Za-z]\@=\)\r\(\>\|[^0-9A-Za-z]\)',
-    \ 'h': '\(\<\|[0-9a-z]\@<=[^0-9a-z]\@=\)\r\(\>\|[0-9a-z]\@<=[^0-9a-z]\@=\)',
-    \ 'v': '\(\k\|[*:.-]\)\@<!\(\k\|[*:.-]\)\@=\r\(\k\|[*:.-]\)\@<=\(\k\|[*:.-]\)\@!\s*',
-  \ }  " 'ag' includes e.g. trailing underscore similar to 'a word'
+        \ 'g': '\(\<\|[^0-9A-Za-z]\@<=[0-9A-Za-z]\@=\)\r\(\>\|[^0-9A-Za-z]\)',
+        \ 'h': '\(\<\|[0-9a-z]\@<=[^0-9a-z]\@=\)\r\(\>\|[0-9a-z]\@<=[^0-9a-z]\@=\)',
+        \ 'v': '\(\k\|[*:.-]\)\@<!\(\k\|[*:.-]\)\@=\r\(\k\|[*:.-]\)\@<=\(\k\|[*:.-]\)\@!\s*',
+        \ }  " 'ag' includes e.g. trailing underscore similar to 'a word'
   let s:textobj_entire = {
-    \ 'select-a': 'aE',  'select-a-function': 'textobj#entire#select_a',
-    \ 'select-i': 'iE',  'select-i-function': 'textobj#entire#select_i'
-  \ }
+        \ 'select-a': 'aE',  'select-a-function': 'textobj#entire#select_a',
+        \ 'select-i': 'iE',  'select-i-function': 'textobj#entire#select_i'
+        \ }
   let s:textobj_comment = {
-    \ 'select-i': 'iC', 'select-i-function': 'textobj#comment#select_i',
-    \ 'select-a': 'aC', 'select-a-function': 'textobj#comment#select_a',
-  \ }
+        \ 'select-i': 'iC', 'select-i-function': 'textobj#comment#select_i',
+        \ 'select-a': 'aC', 'select-a-function': 'textobj#comment#select_big_a',
+        \ }
   let s:textobj_fold = {
-    \ 'select-i': 'iz', 'select-i-function': 'fold#get_fold_i',
-    \ 'select-a': 'az', 'select-a-function': 'fold#get_fold_a',
-  \ }
+        \ 'select-i': 'iz', 'select-i-function': 'fold#get_fold_i',
+        \ 'select-a': 'az', 'select-a-function': 'fold#get_fold_a',
+        \ }
   let s:textobj_parent = {
-    \ 'select-i': 'iZ', 'select-i-function': 'fold#get_parent_i',
-    \ 'select-a': 'aZ', 'select-a-function': 'fold#get_parent_a',
-  \ }
+        \ 'select-i': 'iZ', 'select-i-function': 'fold#get_parent_i',
+        \ 'select-a': 'aZ', 'select-a-function': 'fold#get_parent_a',
+        \ }
   call succinct#add_objects('alpha', s:textobj_alpha, 0, 1)  " do not escape
   call textobj#user#plugin('comment', {'-': s:textobj_comment})  " no <Plug> suffix
   call textobj#user#plugin('entire', {'-': s:textobj_entire})  " no <Plug> suffix

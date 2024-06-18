@@ -4,10 +4,12 @@
 #-----------------------------------------------------------------------------
 # Installation and configuration notes {{{2
 # shellcheck disable=1090,2181,2120,2076
-# This should override defaults in /etc/profile in /etc/bashrc. Check out the system
-# default setting before using this and make sure your $PATH is populated. To permit
-# pulling from github use ssh-keygen -R github.com and to SSH between servers see below:
-# https://github.blog/2023-03-23-we-updated-our-rsa-ssh-host-key/
+# NOTE: Can fix issue where contexts.app do not see iterm2 by enabling 'secure input'
+# and running a sudo command. See: https://apple.stackexchange.com/a/453855/214359
+# NOTE: This overrides defaults in /etc/profile in /etc/bashrc. Check out the system
+# default setting before using this and make sure your $PATH is populated.
+# NOTE: To permit pulling from github use ssh-keygen -R github.com and to SSH between
+# servers see: https://github.blog/2023-03-23-we-updated-our-rsa-ssh-host-key/
 # https://thegeekstuff.com/2008/11/3-steps-to-perform-ssh-login-without-password-using-ssh-keygen-ssh-copy-id/
 # * To see what is available for package/environment managers, possibly ignoring
 #   dependencies, use e.g. brew (list|leaves|deps --installed) (--cask|--formulae),
@@ -24,7 +26,8 @@
 #   platypus when "localhost" is in the URL (simply calls chromium --kiosk "$url").
 # * Switch between jupyter kernels in a lab session by installing nb_conda_kernels:
 #   https://github.com/Anaconda-Platform/nb_conda_kernels. In some jupyter versions
-#   requires removing ~/mambaforge/etc/jupyter/jupyter_config.json to suppress warnings.
+#   requires removing ~/mambaforge/etc/jupyter/jupyter_config.json to suppress
+#   warnings. Use base environment 'conda-env' kernel as the default for new notebooks.
 #   See: https://fcollonval.medium.com/conda-environments-in-jupyter-ecosystem-without-pain-e9fab3992fb7
 # * To get lsp features in jupyterlab (e.g. autocompletion, suggestions) use the
 #   following: https://github.com/jupyter-lsp/jupyterlab-lsp plus python-lsp-server
@@ -369,9 +372,8 @@ fi
 # readline functions, but strings specifying our own) and the -s show bindings bound
 # to macos (can be combination of key-presses and shell commands).
 # For more info see: https://stackoverflow.com/a/949006/4970632.
-alias binds='bind -P'  # the functions, for example 'forward-char'
-alias inputs='bind -v'  # the 'set' options, and their values
-alias actions='bind -l'  # the functions, for example 'forward-char'
+alias actions='bind -P'  # the functions, for example 'forward-char'
+alias options='bind -v | sort'  # the 'set' options, and their values
 alias aliases='compgen -a'  # shell aliases
 alias variables='compgen -v'  # shell variables
 alias functions='compgen -A function'  # shell functions
@@ -391,7 +393,7 @@ if $_macos; then  # see https://apple.stackexchange.com/a/352770/214359
   alias bindings="bind -Xps | egrep '\\\\C|\\\\e' | grep -v do-lowercase-version | sort"
 else  # shellcheck disable=2142
   alias cores="cat /proc/cpuinfo | awk '/^processor/{print \$3}' | wc -l"
-  alias hardware="cat /etc/*-release"  # print operating system info
+  alias hardware='cat /etc/*-release'  # print operating system info
   alias bindings="bind -ps | egrep '\\\\C|\\\\e' | grep -v do-lowercase-version | sort"
 fi
 

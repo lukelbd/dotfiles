@@ -268,7 +268,7 @@ function! s:get_changes() abort
   let lnums = []
   for [line1, line2, _] in fold#fold_source()
     let hunks = git#stat_hunks(line1, line2, 0, 1)
-    let errors = edit#get_errors(line1, line2)
+    let errors = edit#stat_errors(line1, line2)
     if !empty(hunks) || !empty(errors) | call add(lnums, line1) | endif
   endfor | return lnums
 endfunction
@@ -286,7 +286,7 @@ function! switch#showchanges(...) abort
     call winrestview(winview)
     call fold#update_folds(0, 1)
   endif
-  call call('s:echo_state', ['Unstaged folds', toggle, suppress])
+  call call('s:echo_state', [len(lnums) . ' folds', toggle, suppress])
 endfunction
 
 " Toggle folds with search matches
@@ -312,7 +312,7 @@ function! switch#showmatches(...) abort
     call fold#update_folds(0, 1)
   endif
   call feedkeys("\<Cmd>set hlsearch\<CR>", 'n')
-  call call('s:echo_state', ['Matching folds', toggle, suppress])
+  call call('s:echo_state', [len(lnums) . ' folds', toggle, suppress])
 endfunction
 
 " Toggle spell check on and off

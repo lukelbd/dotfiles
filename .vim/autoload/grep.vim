@@ -2,35 +2,37 @@
 " Utilities for grepping
 "-----------------------------------------------------------------------------"
 " Helper functions for parsing grep input
+" NOTE: Grep, ag, and rg use standard PCRE regex syntax distinct from vim. Use 'man
+"  pcre2pattern' for info: https://github.com/ggreer/the_silver_searcher/issues/850
 " WARNING: Strange bug seems to cause :Ag and :Rg to only work on individual files
 " if more than one file is passed. Otherwise preview window shows 'file is not found'
 " error and selecting from menu fails. So always pass extra dummy name.
-function! s:parse_grep(global, level, pattern, ...) abort
-  let @/ = a:pattern  " set as the previous search
-  let flags = ''  " additional pattern-dependent flags
-  let flags .= a:pattern =~# '\\c' ? ' --ignore-case' : ''  " same in ag and rg
-  let flags .= a:pattern =~# '\\C' ? ' --case-sensitive' : ''  " same in ag and rg
-  let flags = empty(flags) ? '--smart-case' : trim(flags)
-  let args = [0, a:global, a:level] + a:000
-  let regex = s:parse_pattern(a:pattern)
-  let paths = call('parse#get_paths', args)
-  let paths = empty(paths) ? paths : add(paths, 'dummy.fzf')  " fix bug described above
-  return [regex, join(paths, ' '), flags]
+function! s:parse_grep(global, level, regex, ...) abort
+  let @/ = a:regex  " highlight matches
+  if a:regex =~? '\\c'  " apply case manually
+    let case = a:regex =~# '\\C' ? '--case-sensitive' : '--ignore-case'
+  else  " infer case from options
+    let case = &smartcase ? '--smart-case' : &ignorecase ? '--ignore-case' : '--case-sensitive'
+  endif
+  let paths = call('parse#get_paths', [0, a:global, a:level] + a:000)
+  let paths = empty(paths) ? paths : add(paths, 'dummy.fzf')  " fix bug (see above)
+  return [s:parse_regex(a:regex), join(paths, ' '), case]
 endfunction
-function! s:parse_pattern(pattern)
-  let regex = substitute(a:pattern, '\\%\([$^]\)', '\1', 'g')  " file border to line border
-  let regex = substitute(regex, '\\%\([#V]\|[<>]\?''m\)', '', 'g')  " ignore markers
-  let regex = substitute(regex, '\\%[<>]\?\(\.\|[0-9]\+\)[lcv]', '', 'g')  " ignore ranges
-  let regex = substitute(regex, '\\[<>]', '\\b', 'g')  " sided word border to unsided
-  let regex = substitute(regex, '\\[cvCV]', '', 'g')  " ignore case and magic markers
-  let regex = substitute(regex, '\C\\S', "[^ \t]", 'g')  " non-whitespace characters
-  let regex = substitute(regex, '\C\\s', "[ \t]",  'g')  " whitespace characters
-  let regex = substitute(regex, '\C\\[IKF]', '[a-zA-Z_]', 'g')  " letters underscore
-  let regex = substitute(regex, '\C\\[ikf]', '\\w', 'g')  " numbers letters underscore
-  let regex = substitute(regex, '\\%\?\([(|)]\)', '@\1', 'g')  " mark grouping parentheses
-  let regex = substitute(regex, '\(^\|[^@\\]\)\([(|)]\)', '\1\\\2', 'g')  " escape parentheses
-  let regex = substitute(regex, '@\([(|)]\)', '\1', 'g')  " unmark grouping parentheses
-  return fzf#shellescape(regex)  " similar to native but handles other shells
+function! s:parse_regex(regex) abort  " convert to pcre syntax
+  let regex = substitute(a:regex, '\\%\([$^]\)', '\1', 'g')  " convert file borders
+  let regex = substitute(regex, '\\%\([#V]\|[<>]\?''m\)', '', 'g')  " ignore mark ranges
+  let regex = substitute(regex, '\\%[<>]\?\(\.\|[0-9]\+\)[lcv]', '', 'g')  " ignore pos ranges
+  let regex = substitute(regex, '\\[<>]', '\\b', 'g')  " convert boundaries to pcre
+  let regex = substitute(regex, '\\[cvCV]', '', 'g')  " ignore indicators (see below)
+  let regex = substitute(regex, '\C\\S', "[^ \t]", 'g')  " non-whitespace indicator
+  let regex = substitute(regex, '\C\\s', "[ \t]",  'g')  " whitespace indicator
+  let regex = substitute(regex, '\C\\_S', "[^ \t\n]", 'g')  " including newlines
+  let regex = substitute(regex, '\C\\_s', "[ \t\n]",  'g')  " including newlines
+  let regex = substitute(regex, '\C\\[IKF]', '[a-zA-Z_]', 'g')  " convert to alphabetic
+  let regex = substitute(regex, '\C\\[ikf]', '\\w', 'g')  " convert to alphanumeric
+  let regex = substitute(regex, '\%(\\%\?\)\@<!\([(|)+?{]\)', '\\\\\1', 'g')  " double escape magics
+  let regex = substitute(regex, '\\\(%\?[(]\|[|)+?{]\)', '\1', 'g')  " unescape magics
+  return fzf#shellescape(regex)  " similar to native method but supports other shells
 endfunction
 
 " Call Ag or Rg from command
@@ -45,27 +47,28 @@ endfunction
 " Fzf matches paths: https://github.com/junegunn/fzf.vim/issues/346
 " Ag ripgrep flags: https://github.com/junegunn/fzf.vim/issues/921#issuecomment-1577879849
 " Ag ignore file: https://github.com/ggreer/the_silver_searcher/issues/1097
-function! grep#call_ag(global, level, pattern, ...) abort
+function! grep#call_ag(global, level, regex, ...) abort
   let flags = a:level > 1 ? '--hidden' : '--hidden --depth 0'
   let flags .= a:0 || a:level > 2 ? ' --unrestricted' : ' --path-to-ignore ~/.ignore'
   let flags .= a:0 || a:level > 2 ? ' -t' : ' --path-to-ignore ~/.wildignore'  " compare to rg
-  let args = [a:global, a:level, a:pattern] + a:000
-  let [regex, paths, extra] = call('s:parse_grep', args)
+  let args = [a:global, a:level, a:regex] + a:000
+  let [regex, paths, case] = call('s:parse_grep', args)
   let opts = fzf#vim#with_preview()
-  let source = join([flags, extra, '--', regex, paths], ' ')
+  let source = join([flags, case, '--', regex, paths], ' ')
   let filter = ' | sed "s@$HOME@~@"'  " post-process
   call fzf#vim#ag_raw(source . filter, opts, 0)  " 0 is no fullscreen
   redraw | echom 'Ag ' . regex . ' (level ' . a:level . ')'
 endfunction
-function! grep#call_rg(global, level, pattern, ...) abort
+function! grep#call_rg(global, level, regex, ...) abort
   let flags = a:level > 1 ? '--hidden' : '--hidden --max-depth 1'
   let flags .= a:0 || a:level > 2 ? ' --no-ignore' : ' --ignore-file ~/.ignore'
   let flags .= ' --ignore-file ~/.wildignore'  " compare to ag
-  let args = [a:global, a:level, a:pattern] + a:000
-  let [regex, paths, extra] = call('s:parse_grep', args)
+  let flags .= a:regex =~# '\\c' ? ' --ignore-case' : a:regex =~# '\\C' ? '--case-sensitive' : &l:smartcase
+  let args = [a:global, a:level, a:regex] + a:000
+  let [regex, paths, case] = call('s:parse_grep', args)
   let opts = fzf#vim#with_preview()
   let head = 'rg --column --line-number --no-heading --color=always'
-  let source = join([head, flags, '--', regex, paths], ' ')
+  let source = join([head, flags, case, '--', regex, paths], ' ')
   let filter = ' | sed "s@$HOME@~@"'  " post-process
   call fzf#vim#grep(source . filter, opts, 0)  " 0 is no fullscreen
   redraw | echom 'Rg ' . regex . ' (level ' . a:level . ')'

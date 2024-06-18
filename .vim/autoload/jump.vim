@@ -234,26 +234,27 @@ endfunction
 function! jump#next_loc(count, list, ...) abort
   let cmd = a:list ==# 'loc' ? 'll' : 'cc'
   let func = 'get' . a:list . 'list'
-  let reverse = a:0 && a:1
+  let backward = a:0 > 0 ? a:1 : 0
+  let recursed = a:0 > 1 ? a:2 : 0
   let params = a:list ==# 'loc' ? [0] : []
   let items = call(func, params)
   call map(items, "extend(v:val, {'idx': v:key + 1})")
-  if reverse | call reverse(items) | endif
+  if backward | call reverse(items) | endif
   if empty(items)
     redraw | echohl ErrorMsg
     echom 'Error: No locations'
     echohl None | return
   endif
   let [lnum, cnum] = [line('.'), col('.')]
-  let [cmps, oper] = [[], reverse ? '<' : '>']
+  let [cmps, oper] = [[], backward ? '<' : '>']
   call add(cmps, 'v:val.lnum ' . oper . ' lnum')
-  call add(cmps, 'v:val.col ' . oper . ' cnum + 1 - reverse')
+  call add(cmps, 'v:val.col ' . oper . ' cnum + 1 - backward')
   call filter(items, join(cmps, ' || v:val.lnum == lnum && '))
   let idx = get(get(items, 0, {}), 'idx', '')
-  if type(idx) != 0
-    exe reverse ? line('$') : 1 | call jump#next_loc(a:count, a:list, reverse)
+  if type(idx) && !recursed
+    exe backward ? '$' : '1' | call jump#next_loc(a:count, a:list, backward, 1)
   elseif a:count > 1
-    exe cmd . ' ' . idx | call jump#next_loc(a:count - 1, a:list, reverse)
+    exe cmd . ' ' . idx | call jump#next_loc(a:count - 1, a:list, backward)
   else  " jump to error
     exe cmd . ' ' . idx
   endif

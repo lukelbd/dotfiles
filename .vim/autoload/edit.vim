@@ -1,43 +1,19 @@
 "-----------------------------------------------------------------------------"
 " Utilities for formatting text
 "-----------------------------------------------------------------------------"
-" Helper function
-" NOTE: Native delimitMate#ExpandReturn() issues <Esc> then fails to split brackets due
-" to InsertLeave autocommand that repositions cursor. Use <C-c> to avoid InsertLeave.
-function! edit#echo_range(msg, num, ...) range abort
-  let head = a:msg =~# '\s' ? ' on ' : ' '
-  let tail = join(a:000, '')
-  let tail = empty(tail) ? '' : ' (args ' . tail . ')'
-  redraw | echom a:msg . head  . a:num . ' line(s)' . tail
-endfunction
-
-" Return linting and server information
-" NOTE: This is used to show error messages on closed folds similar
-" to method used to show git-gutter hunk summaries on closed folds.
-function! edit#get_servers() abort
+" Auto-format with external plugin
+" NOTE: Not all servers support auto formtting. Seems 'pylsp' uses autopep8 consistent
+" with flake8 warnings. Use below function to print active servers.
+function! s:auto_servers() abort
   let servers = lsp#get_allowed_servers()
   let table = split(lsp#get_server_status(), "\n")
   let lines = map(table, 'split(v:val, '':\s*'')')
   let names = map(filter(table, 'v:val[1] ==# ''running'''), 'v:val[0]')
   return filter(servers, 'index(names, v:val) >= 0')
 endfunction
-function! edit#get_errors(...) range abort
-  let [line1, line2] = a:0 ? a:000 : [a:firstline, a:lastline]
-  let [info, cnts, flags] = ['', {}, {'E': '!', 'W': '@', 'I': '#'}]
-  for item in get(b:, 'ale_highlight_items', {})
-    if item.bufnr == bufnr() && item.lnum >= line1 && item.lnum <= line2
-      let flag = get(flags, item.type, '?')
-      let cnts[flag] = get(cnts, flag, 0) + 1
-    endif
-  endfor | return join(map(items(cnts), 'v:val[0] . v:val[1]'), '')
-endfunction
-
-" Auto formatting utilities
-" NOTE: Not all servers support auto formtting. Seems 'pylsp' uses autopep8 consistent
-" with flake8 warnings. Use below function to print active servers.
 function! edit#auto_format(...) abort
   let formatters = get(g:, 'formatters_' . &l:filetype, [])
-  let servers = edit#get_servers()
+  let servers = s:auto_servers()
   if a:0 && a:1 && !empty(servers)  " possibly aborts
     exe 'LspDocumentFormat' | call fold#update_folds(1)
   elseif !empty(formatters)
@@ -48,6 +24,99 @@ function! edit#auto_format(...) abort
     echom 'Error: No formatters available'
     echohl None
   endif
+endfunction
+
+" Change order of adjacent characters
+" NOTE: This accounts for multi-byte characters and preserves current column. Common
+" touch-typing error is to hit keys in wrong order so this is really helpful.
+function! edit#change_chars(...) abort
+  let winview = winsaveview()
+  let text = getline('.')
+  let cnt = a:0 && a:1 ? -1 : 1
+  let idx = charidx(text, col('.') - 1)
+  let idx = cnt > 0 ? idx + 1 : idx
+  if idx > 0 && idx < strchars(text)
+    let char1 = strcharpart(text, idx - 1, 1)
+    let char2 = strcharpart(text, idx, 1)
+    let head = strcharpart(text, 0, idx - 1)
+    let tail = strcharpart(text, idx + 1)
+    let winview.col = len(head) + len(char2) * (cnt > 0)
+    call setline('.', head . char2 . char1 . tail)
+  endif
+  call winrestview(winview) | redraw
+endfunction
+
+" Change order of adjacent lines
+" NOTE: This keeps existing registers and folds. If calling on line with closed fold
+" will transfer entire fold contents and define new FastFold-managed manual folds.
+function! edit#change_lines(...) abort
+  let winview = winsaveview()  " save view
+  let line1 = winview.lnum
+  let cnt = a:0 && a:1 ? -1 : 1
+  if line1 + cnt < 1 || line1 + cnt > line('$') | return | endif
+  let [level1, close1] = [foldlevel(line1) > 0, foldclosed(line1) > 0]
+  let [line11, line12] = close1 ? [foldclosed(line1), foldclosedend(line1)] : [line1, line1]
+  let lines1 = getline(line11, line12)  " lines to swap
+  let line2 = cnt > 0 ? line12 + cnt : line11 + cnt
+  let [level2, close2] = [foldlevel(line2) > 0, foldclosed(line2) > 0]
+  let [line21, line22] = close2 ? [foldclosed(line2), foldclosedend(line2)] : [line2, line2]
+  let lines2 = getline(line21, line22)  " lines to swap
+  call deletebufline(bufnr(), min([line11, line21]), max([line12, line22]))
+  call append(min([line11, line21]) - 1, cnt > 0 ? lines2 + lines1 : lines1 + lines2)
+  if level1 && &l:foldmethod ==# 'manual'
+    let [fold1, fold2] = [line11 + cnt * len(lines2), line12 + cnt * len(lines2)]
+    exe fold1 . ',' . fold2 . 'fold'
+    exe fold1 . (close1 ? '' : 'foldopen')
+  endif
+  if level2 && &l:foldmethod ==# 'manual'
+    let [fold1, fold2] = [line21 - cnt * len(lines1), line22 - cnt * len(lines1)]
+    exe fold1 . ',' . fold2 . 'fold'
+    exe fold1 . (close2 ? '' : 'foldopen')
+  endif
+  let winview.lnum = line21
+  call winrestview(winview) | redraw
+endfunction
+
+" Format using &formatoptions setting
+" NOTE: This implements line wrapping and joining settings, and accounts for comment
+" continuation and automatic indentation based on shiftwidth or formatlistpat.
+" NOTE: This wraps to optional input count column rather than text width, and
+" disables vim-markdown hack that enforces bullet continuations via &comments entries
+" See: https://vi.stackexchange.com/a/7712/8084 and :help g@
+function! edit#format_lines(...) range abort
+  let regex = substitute(&l:formatlistpat, '^\^', '', '')  " include comments
+  let regex = '^\(' . comment#get_regex(0) . '\)\?' . regex
+  let width1 = &l:textwidth  " previous text wdith
+  let width2 = a:0 && a:1 ? a:1 : width1
+  let comments1 = split(&l:comments, '\\\@<!,')
+  let comments2 = filter(copy(comments1), {_, val -> val !~# ':[*>+-]$'})
+  exe a:firstline | let lnums = [a:firstline]
+  while v:true
+    let lnum = search(regex, 'W', a:lastline)
+    if lnum <= 0 | break | endif
+    if lnum == a:firstline | continue | endif
+    call add(lnums, lnum)
+  endwhile
+  for idx in reverse(range(len(lnums)))
+    let line1 = lnums[idx]
+    let line2 = get(lnums, idx + 1, a:lastline + 1) - 1
+    let cnt = line2 - line1 + 1
+    try
+      let &l:textwidth = width2
+      let &l:comments = join(comments2, ',')
+      exe line1 | exe 'normal! ' . cnt . 'gqq'
+    finally
+      let &l:textwidth = width1
+      let &l:comments = join(comments1, ',')
+    endtry
+  endfor
+  let cnt = a:lastline - a:firstline + 1
+  let range = cnt > 1 ? cnt . ' lines' : cnt . ' line'
+  redraw | echom 'Wrapped ' . range . ' to ' . width2 . ' characters'
+endfunction
+" For <expr> map accepting motion
+function! edit#format_lines_expr(...) abort
+  return utils#motion_func('edit#format_lines', a:000)
 endfunction
 
 " Indent or join lines by count
@@ -79,11 +148,11 @@ function! edit#join_lines_expr(...) abort
   return utils#motion_func('edit#join_lines', a:000)
 endfunction
 
-" Insert mode delete and undo
+" Insert mode delete-by-tabs, delimit-mate actions, improved undo
 " NOTE: This restores cursor position after insert-mode undo. First queue translation
 " with edit#insert_mode() then run edit#insert_undo() on InsertLeave (e.g. after 'ciw')
-" NOTE: Remove single tab or up to &tabstop spaces to the right of cursor. This
-" enforces consistency with 'softtab' backspace-by-tabs behavior.
+" NOTE: Native delimitMate#ExpandReturn() issues <Esc> then fails to split brackets due
+" to InsertLeave autocommand that repositions cursor. Use <C-c> to avoid InsertLeave.
 let s:insert_keys = {'s': 'ExpandSpace', 'r': 'ExpandReturn', 'b': 'BS'}
 function! edit#insert_mode(...) abort
   let imode = a:0 ? a:1 : get(b:, 'insert_mode', '')
@@ -97,7 +166,7 @@ function! edit#insert_char(key, ...) abort
 endfunction
 function! edit#insert_delete(...) abort  " vint: -ProhibitUsingUndeclaredVariable
   let [idx, text] = [col('.') - 1, getline('.')]
-  let text = text[idx:idx + &tabstop - 1]
+  let text = text[idx:idx + &tabstop - 1]  " forward-delete-by-tab
   let regex = '^\(\t\| \{,' . &tabstop . '}\).*$'
   let pad = substitute(text, regex, '\1', '')
   let cnt = empty(pad) ? a:0 && a:1 : len(pad)
@@ -116,37 +185,24 @@ function! edit#insert_undo(...) abort
   let b:insert_mode = iundo | return "\<C-g>u"
 endfunction
 
-" Switch adjacent characters or lines
-" NOTE: This keeps existing registers and folds. If calling on line with closed fold
-" will transfer entire fold contents and define new FastFold-managed manual folds.
-function! edit#move_chars(...) abort
-  let [cnum, line] = [col('.'), getline('.')]
-  let idx = a:0 && a:1 ? cnum - 1 : cnum
-  if idx > 0 && idx < len(line)
-    let line = line[:idx - 2] . line[idx] . line[idx - 1] . line[idx + 1:]
-    call setline('.', line)
-  endif
+" Return error messages and replacement message
+" NOTE: This is used to show error messages on closed folds similar
+" to method used to show git-gutter hunk summaries on closed folds.
+function! s:stat_range(msg, num, ...) range abort
+  let head = a:msg =~# '\s' ? ' on ' : ' '
+  let tail = join(a:000, '')
+  let tail = empty(tail) ? '' : ' (args ' . tail . ')'
+  redraw | echom a:msg . head  . a:num . ' line(s)' . tail
 endfunction
-function! edit#move_lines(...) abort
-  let [line1, delta] = [line('.'), a:0 && a:1 ? -1 : 1]
-  if line1 + delta < 1 || line1 + delta > line('$') | return | endif
-  let [line11, line12] = [foldclosed(line1), foldclosedend(line1)]
-  let [line11, line12] = line11 > 0 ? [line11, line12] : [line1, line1]
-  let line2 = delta > 0 ? line12 + delta : line11 + delta
-  let [fold1, fold2] = [foldlevel(line1) > 0, foldlevel(line2) > 0]
-  let [close1, close2] = [foldclosed(line1) > 0, foldclosed(line2) > 0]
-  let [line21, line22] = [foldclosed(line2), foldclosedend(line2)]
-  let [line21, line22] = line21 > 0 ? [line21, line22] : [line2, line2]
-  let [line1, line2] = delta > 0 ? [line11, line22] : [line21, line12]
-  let [text1, text2] = [getline(line11, line12), getline(line21, line22)]
-  call deletebufline(bufnr(), line1, line2)  " delete without register
-  call append(line1 - 1, delta > 0 ? text2 + text1 : text1 + text2)
-  let range1 = (line11 + delta * len(text2)) . ',' . (line12 + delta * len(text2))
-  let range2 = (line21 - delta * len(text1)) . ',' . (line22 - delta * len(text1))
-  let manual = &l:foldmethod ==# 'manual'  " e.g. fast fold enabled
-  if manual && fold1 | exe range1 . 'fold' | exe range1 . (close1 ? 'foldclose' : 'foldopen') | endif
-  if manual && fold2 | exe range2 . 'fold' | exe range2 . (close2 ? 'foldclose' : 'foldopen') | endif
-  exe line21 | exe close1 ? '' : 'normal! zv'
+function! edit#stat_errors(...) range abort
+  let [line1, line2] = a:0 ? a:000 : [a:firstline, a:lastline]
+  let [info, cnts, flags] = ['', {}, {'E': '!', 'W': '@', 'I': '#'}]
+  for item in get(b:, 'ale_highlight_items', {})
+    if item.bufnr == bufnr() && item.lnum >= line1 && item.lnum <= line2
+      let flag = get(flags, item.type, '?')
+      let cnts[flag] = get(cnts, flag, 0) + 1
+    endif
+  endfor | return join(map(items(cnts), 'v:val[0] . v:val[1]'), '')
 endfunction
 
 " Search sort or reverse the input lines
@@ -155,17 +211,17 @@ endfunction
 function! edit#sel_lines(...) range abort
   let range = printf('\%%>%dl\%%<%dl', a:firstline - 1, a:lastline + 1)
   call feedkeys((a:0 && a:1 ? '?' : '/') . range, 'n')
-  call edit#echo_range('Searching', a:lastline - a:firstline - 1)
+  call s:stat_range('Searching', a:lastline - a:firstline - 1)
 endfunction
 function! edit#sort_lines(...) range abort  " vint: -ProhibitUnnecessaryDoubleQuote
   let range = a:firstline == a:lastline ? '' : a:firstline . ',' . a:lastline
   exe 'silent ' . range . 'sort ' . join(a:000, '')
-  call edit#echo_range('Sorted', a:lastline - a:firstline + 1)
+  call s:stat_range('Sorted', a:lastline - a:firstline + 1)
 endfunction
 function! edit#reverse_lines() range abort  " vint: -ProhibitUnnecessaryDoubleQuote
   let range = a:firstline == a:lastline ? '' : a:firstline . ',' . a:lastline
   exe 'silent ' . range . 'g/^/m' . (empty(range) ? 0 : a:firstline - 1)
-  call edit#echo_range('Reversed', a:lastline - a:firstline + 1)
+  call s:stat_range('Reversed', a:lastline - a:firstline + 1)
 endfunction
 " For <expr> map accepting motion
 function! edit#sel_lines_expr(...) abort
@@ -230,51 +286,9 @@ function! edit#search_replace(msg, ...) range abort
   endfor
   let @/ = pattern
   call winrestview(winview)
-  call edit#echo_range(a:msg, cnt)
+  call s:stat_range(a:msg, cnt)
 endfunction
 " For <expr> map accepting motion
 function! edit#search_replace_expr(...) abort
   return utils#motion_func('edit#search_replace', a:000)
-endfunction
-
-" Format using &formatoptions,
-" NOTE: This implements line wrapping and joining settings, and accounts for comment
-" continuation and automatic indentation based on shiftwidth or formatlistpat.
-" NOTE: This wraps to optional input count column rather than text width, and
-" disables vim-markdown hack that enforces bullet continuations via &comments entries
-" See: https://vi.stackexchange.com/a/7712/8084 and :help g@
-function! edit#format_lines(...) range abort
-  let regex = substitute(&l:formatlistpat, '^\^', '', '')  " include comments
-  let regex = '^\(' . comment#get_regex(0) . '\)\?' . regex
-  let width1 = &l:textwidth  " previous text wdith
-  let width2 = a:0 && a:1 ? a:1 : width1
-  let comments1 = split(&l:comments, '\\\@<!,')
-  let comments2 = filter(copy(comments1), {_, val -> val !~# ':[*>+-]$'})
-  exe a:firstline | let lnums = [a:firstline]
-  while v:true
-    let lnum = search(regex, 'W', a:lastline)
-    if lnum <= 0 | break | endif
-    if lnum == a:firstline | continue | endif
-    call add(lnums, lnum)
-  endwhile
-  for idx in reverse(range(len(lnums)))
-    let line1 = lnums[idx]
-    let line2 = get(lnums, idx + 1, a:lastline + 1) - 1
-    let cnt = line2 - line1 + 1
-    try
-      let &l:textwidth = width2
-      let &l:comments = join(comments2, ',')
-      exe line1 | exe 'normal! ' . cnt . 'gqq'
-    finally
-      let &l:textwidth = width1
-      let &l:comments = join(comments1, ',')
-    endtry
-  endfor
-  let cnt = a:lastline - a:firstline + 1
-  let range = cnt > 1 ? cnt . ' lines' : cnt . ' line'
-  redraw | echom 'Wrapped ' . range . ' to ' . width2 . ' characters'
-endfunction
-" For <expr> map accepting motion
-function! edit#format_lines_expr(...) abort
-  return utils#motion_func('edit#format_lines', a:000)
 endfunction

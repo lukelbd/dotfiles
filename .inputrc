@@ -5,45 +5,13 @@
 # use printf('0x%02x', char2nr("\<C-x>")) to convert characters to iterm hex.
 # See: https://stackoverflow.com/a/12191699/4970632
 #-----------------------------------------------------------------------------#
-# Vi-mode command line editing
-# bind 'set editing-mode vi'
-# Insert mode as line cursor
-# bind 'set vi-ins-mode-string "\1\e[6 q\2"'
-# Normal mode as block cursor
-# bind 'set vi-cmd-mode-string "\1\e[2 q\2"'
-
-# Complete backward without changing scroll history
-"\e[Z": menu-complete-backward
-# Complete forward without changing scroll history
-"\C-i": menu-complete
-# Tab-like complete backward with F1 = ctrl-, (see .vimrc)
-"\eOP": menu-complete-backward
-# Tab-like complete forward with F2 = ctrl-. (see .vimrc)
-"\eOQ": menu-complete
-# <Home> key from sed -n l <Ctrl-Left> i.e. 0x1b 0x5b 0x48
-"\e[H": beginning-of-line
-# <End> key from sed -n l <Ctrl-Right> i.e. 0x1b 0x5b 0x46
-"\e[F": end-of-line
-# <Alt-Left> key from sed -n l <Alt-Left>
-"\e[1;3D": backward-word
-# <Alt-Right> key from sed -n -l <Alt-Right>
-"\e[1;3C": forward-word
-# <Alt-Up> key from sed -n l <Alt-Left>
-"\e[1;3A": shell-backward-word
-# <Alt-Down> key from sed -n -l <Alt-Right>
-"\e[1;3B": shell-forward-word
-# <Shift-Left> key from sed -n l <Shift-Left>
-"\e[1;2D": unix-line-discard
-# <Shift-Right> key from sed -n -l <Shift-Right>
-"\e[1;2C": kill-line
-# <Shift-Down> key from sed -n l <Shift-Left>
-"\e[1;2A": backward-kill-word
-# <Shift-Up> key from sed -n -l <Shift-Right>
-"\e[1;2B": kill-word
-# fzf-file search binding
-"\C-f": "\C-b\C-k \C-u`__fzf_cd__`\e\C-e\er\C-m\C-y\C-h\e \C-y\ey\C-x\C-x\C-d"
-
 # Terminal settings
+# Command line mode vi or emacs
+set editing-mode emacs
+# Insert mode as line cursor
+set vi-ins-mode-string "\1\e[6 q\2"
+# Normal mode as block cursor
+set vi-cmd-mode-string "\1\e[2 q\2"
 # Key sequence timeout: https://unix.stackexchange.com/a/318497/112647
 set keyseq-timeout 50
 # Exclude mode from prompt
@@ -72,3 +40,43 @@ set page-completions off
 set completion-query-items 0
 # Add trailing slash to directory symlink
 set mark-symlinked-directories on
+
+# Key bindings (see bashrc)
+# Complete with fzf fuzzy file search
+"\C-f": "\C-b\C-k \C-u`__fzf_cd__`\e\C-e\er\C-m\C-y\C-h\e \C-y\ey\C-x\C-x\C-d"
+# Complete backward without changing scroll history
+"\e[Z": menu-complete-backward
+# Complete forward without changing scroll history
+"\C-i": menu-complete
+# Tab-like complete backward with F1 = ctrl-, (see .vimrc)
+"\eOP": menu-complete-backward
+# Tab-like complete forward with F2 = ctrl-. (see .vimrc)
+"\eOQ": menu-complete
+# <Home> key from sed -n l <Ctrl-Left> i.e. 0x1b 0x5b 0x48
+"\e[H": beginning-of-line
+# <End> key from sed -n l <Ctrl-Right> i.e. 0x1b 0x5b 0x46
+"\e[F": end-of-line
+# <Ctrl-Left> key from sed -n l <Ctrl-Left>
+"\e[1;5D": beginning-of-line
+# <Ctrl-Right> key from sed -n -l <Ctrl-Right>
+"\e[1;5C": end-of-line
+# <Ctrl-Up> key from sed -n l <Ctrl-Left>
+"\e[1;5A": beginning-of-line
+# <Ctrl-Down> key from sed -n -l <Ctrl-Right>
+"\e[1;5B": end-of-line
+# <Alt-Left> key from sed -n l <Alt-Left>
+"\e[1;3D": backward-word
+# <Alt-Right> key from sed -n -l <Alt-Right>
+"\e[1;3C": forward-word
+# <Alt-Up> key from sed -n l <Alt-Left>
+"\e[1;3A": shell-backward-word
+# <Alt-Down> key from sed -n -l <Alt-Right>
+"\e[1;3B": shell-forward-word
+# <Shift-Left> key from sed -n l <Shift-Left>
+"\e[1;2D": unix-line-discard
+# <Shift-Right> key from sed -n -l <Shift-Right>
+"\e[1;2C": kill-line
+# <Shift-Down> key from sed -n l <Shift-Left>
+"\e[1;2A": backward-kill-word
+# <Shift-Up> key from sed -n -l <Shift-Right>
+"\e[1;2B": kill-word

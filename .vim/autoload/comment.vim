@@ -2,28 +2,39 @@
 " Utilities for inserting comments
 "-----------------------------------------------------------------------------"
 " Helper functions
-" TODO: Also use &comments or tcomment supporting functions that parse &comments
-" to optionally choose between block comments and inline comments when inserting.
-" NOTE: This uses cursor line as default header value, e.g. turning header into comment,
-" and searches non-printable dummy characters 1-32 from &isprint. Note character
-" zero is null i.e. string termination so matches empty string. See :help /\]
+" TODO: Use &comments or tcomment supporting functions that parse &comments to
+" optionally choose between block comments and inline comments when inserting.
+" NOTE: Search non-printable dummy characters 1-32 from &isprint by default. Note zero
+" character is null i.e. string termination so matches empty string. See :help /\]
 function! comment#get_string(...) abort
   let space = repeat(' ', a:0 ? a:1 : 0)  " include spaces
   let string = substitute(&commentstring, '^$', '%s', '')  " copied from tpope/commentary
   let string = substitute(string, '\S\zs\s*%s', space . '%s', '')
-  let string = substitute(string, '%s\s*\ze\S', '%s' . space, '')
-  return string
+  return substitute(string, '%s\s*\ze\S', '%s' . space, '')
 endfunction
 function! comment#get_regex(...) abort
+  let special = '[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]'
   let space = a:0 && a:1 ? '\s\+' : a:0 ? '\s*' : ''  " prepend spaces
-  let noop = '[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]'
   let regex = substitute(comment#get_string(), '%s.*', '', '')
-  let regex = empty(regex) ? noop : escape(regex, '[]\.*$~')
-  return space . regex  " include spaces if passed
+  return space . (empty(regex) ? special : escape(regex, '[]\.*$~'))
+endfunction
+function! comment#get_print(debug) abort
+  let root = parse#get_root(expand('%:p'))
+  let opts = ['setup.py', 'setup.cfg', '__init__.py']
+  call filter(opts, '!empty(globpath(root, v:val))')
+  if &l:filetype ==# 'sh'  " shell scripting
+    let regex = a:debug ? '^\s*echo\>.*2\s*>&\s*1' : '^\s*echo\>'
+  elseif !empty(opts)  " python project
+    let regex = a:debug ? '^\s*ic(' : '^\s*print('
+  else  " default project
+    let regex = a:debug ? '\(^\|\s\+\)unsilent\s\+echom\?\>' : '^\s*echom\?\>'
+  endif | return regex
 endfunction
 
-" Add general comment matching current indentation (used for author date) or add dashes
-" up to current line length (ignoring leading comments, used for python and markdown)
+" Comment and section headers
+" NOTE: This adds comment matching current indentaiton (used for author date) or dashes
+" up to current line length ignoring comments (used for python and markdown). Also
+" uses uses cursor line as default header value, e.g. turning header into comment.
 function! s:get_header() abort
   let regex = '^\s*\(' . comment#get_regex() . '\s*\)\?'
   let cursor = substitute(getline('.'), regex, '', '')
@@ -53,8 +64,9 @@ function! comment#append_line(fill, ...) abort
   if double | call append(line('.') - 1, append) | endif
 endfunction
 
-" Add character or inline headers '# Hello world! #' and '# ---- Hello world! ---- #'
-" or add line headers of arbitrary width given input fill charaacters.
+" Character or inline headers
+" NOTE: This adds inline headers e.g. '# Hello world #' and '# ---- Hello world ---- #'
+" and header lines of arbitrary width given the input fill charaacters.
 function! comment#header_inchar() abort
   let header = s:get_header()
   if empty(header) | return | endif
