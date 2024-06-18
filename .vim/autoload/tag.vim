@@ -185,30 +185,42 @@ function! tag#fzf_btags(bang, query, ...) abort
   return fzf#run(fzf#wrap('btags', options, a:bang))
 endfunction
 
+" Generate tag files automatically
+" NOTE: Native finddir() and findpath() ignore hidden folders unless explicitly
+" specified with e.g. '.*/**/'. But avoid huge globs since can cause slowdowns
+function! s:get_files(...) abort
+  let [files, roots] = [[], []]
+  for root in call('parse#get_roots', a:000)
+    let file = root . '/.vimtags'
+    let path = RelativePath(file)
+    if filereadable(file)
+      call add(files, file)
+    else
+      call add(roots, root)
+    endif
+  endfor
+  let paths = join(map(copy(roots), 'string(RelativePath(v:val))'), ' ')
+  let prompt = 'Generate ' . len(roots) . ' tag files (paths ' . paths . ')?'
+  if !empty(roots) && confirm(prompt, "&no\n&yes") > 1
+    for root in roots
+      let file = root . '/.vimtags'
+      let path = RelativePath(file)
+      redraw | echom 'Generating tag file ' . string(path)
+      call system('cd ' . root . ' && ' . g:fzf_tags_command)
+      if filereadable(file)
+        call add(files, file)
+      else
+        redraw | echohl WarningMsg
+        echom 'Warning: Failed to generate tag file ' . string(path)
+        echohl None
+      endif
+    endfor
+  endif | return files
+endfunction
+
 " Select from the current tag files
-" TODO: Auto-generate
 " NOTE: Tried 'readtags -t - -e -E -Q (#/.py/ $input) -l' but fails since parses
 " the tag file path appended by tags.pl to each line. Instead simply use awk.
-" NOTE: Formatting with more complex regex can cause slowdown. Avoid complex regex
-" patterns e.g. extra globs and non-greedy globs.
-function! s:get_files(...) abort
-  let tags = []
-  let roots = ['.git', '.hg', '.svn', '.bzr', '_darcs', '_darcs', '_FOSSIL_', '.fslckout']
-  for path in a:000  " resolve removes trailing slash
-    let path = resolve(expand(path))
-    if filereadable(path)
-      call add(tags, path)
-    elseif isdirectory(path)
-      call extend(tags, globpath(path, '**/.vimtags', 0, 1))
-    endif
-  endfor
-  for root in roots
-    let paths = globpath(root, '.vimtags', 0, 1)
-    if empty(paths)
-      call system(g:fzf_tags_command)
-    endif
-  endfor
-endfunction
 function! tag#fzf_tags(type, bang, ...) abort
   let scripts = utils#get_scripts('fzf.vim/autoload/fzf/vim.vim')
   if empty(scripts) | return | endif

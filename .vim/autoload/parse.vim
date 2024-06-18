@@ -2,14 +2,13 @@
 " Utilities for parsing input
 "-----------------------------------------------------------------------------"
 " Helper functions for root parsing
-" NOTE: Root detectors are copied from g:gutentags_add_default_root_markers.
-" NOTE: Previously tried just '__init__.py' for e.g. conda-managed packages and placing
-" '.vimtags' in vim-plug folder but this caused tons of nested .vimtags creations.
+" NOTE: Root detectors are copied from g:gutentags_add_default_root_markers. This
+" supports both explicit repositories and implicit 'distributions' in named folders
 let s:projs = ['.git', '.hg', '.svn', '.bzr', '_darcs', '_darcs', '_FOSSIL_', '.fslckout']
 let s:confs = ['__init__.py', 'setup.py', 'setup.cfg']  " configuration files
 let s:dists = ['research', 'shared', 'school', 'software', 'forks', 'clones', 'builds']
 let s:heads = ['bin', 'data', 'tmp', 'share', 'local', '.local']  " other distributions
-function! s:proj_root(head, globs, ...) abort
+function! s:proj_root(head, names, ...) abort
   let roots = []  " general projects
   let root = fnamemodify(a:head, ':p')
   while !empty(root) && root !=# '/'
@@ -17,15 +16,15 @@ function! s:proj_root(head, globs, ...) abort
     call add(roots, root)
   endwhile
   for root in a:0 && a:1 ? reverse(roots) : roots
-    for glob in a:globs  " input names or patterns
-      if !empty(globpath(root, glob, 0, 1)) | return root | endif
+    for name in a:names
+      if !empty(globpath(root, name, 0, 1)) | return root | endif
     endfor
   endfor | return ''
 endfunction
-function! s:dist_root(head, tails, ...) abort
+function! s:dist_root(head, names, ...) abort
   let head = a:head  " general distributions
   let tail = fnamemodify(head, ':t')
-  let idx = index(a:tails, tail)
+  let idx = index(a:names, tail)
   if idx >= 0  " avoid distribution tags e.g. ~/research/.vimtags
     let [head, tail] = a:0 ? [head, a:1] : [expand('~'), 'dotfiles']
     return head . '/' . tail
@@ -33,7 +32,7 @@ function! s:dist_root(head, tails, ...) abort
   while v:true  " see also tags#tag_files()
     let ihead = fnamemodify(head, ':h')
     if empty(ihead) || ihead ==# head | let head = '' | break | endif
-    let idx = index(a:tails, fnamemodify(ihead, ':t'))
+    let idx = index(a:names, fnamemodify(ihead, ':t'))
     if idx >= 0 | break | endif  " preceding head e.g. share/vim
     let head = ihead  " tag file candidate
   endwhile
@@ -42,50 +41,55 @@ function! s:dist_root(head, tails, ...) abort
   return head . suffix  " optional version subfolder
 endfunction
 
-" Get the project 'root' from input directory
-" NOTE: Search order is critical. Prefer git repos to python distributions, and
-" prefer e.g. user-settings subfolders to git repos. Also avoid generating tags
-" within deeply nested system files with 'local', 'bin', 'share' root finding.
-function! parse#get_roots(...) abort
-  let roots = []
-  for path in a:0 ? a:000 : [getcwd()]
-    let path = expand(resolve(a:0 ? a:1 : '.'))
-    echom 'path!! ' . path
-    if !isdirectory(path)
-      redraw | echohl ErrorMsg
-      echom 'Error: Invalid directory ' . string(path) . '.'
-      echohl None | continue
-    endif
-    let glob = '**/{' . join(s:projs + s:confs, ',') . '}'
-    for file in sort(globpath(path, glob, 0, 1))
-      echom 'File: ' . file
-      let root = parse#get_root(file)
-      call extend(roots, index(roots, root) < 0 ? [root] : [])
-    endfor
-  endfor
-  return roots
-endfunction
+" Get single root or all roots within the path
+" NOTE: Order here is critical. Prefer git repos to python repos and prefer
+" truncating deeply nested path names e.g. 'user-settings' jupyterlab folders.
 function! parse#get_root(...) abort
   let path = resolve(expand(a:0 ? a:1 : '%'))
   let head = fnamemodify(path, ':p:h')  " remove file or trailing slash
-  let tails = ['servers', 'user-settings']
-  let root = s:dist_root(head, tails)  " e.g. @jupyterlab, .vim_lsp_settings
+  let names = ['servers', 'user-settings']
+  let root = s:dist_root(head, names)  " e.g. @jupyterlab, .vim_lsp_settings
   if !empty(root) | return root | endif
-  let globs = copy(s:projs)
-  let root = s:proj_root(head, globs, 0)  " highest-level control system indicator
+  let names = copy(s:projs)
+  let root = s:proj_root(head, names, 0)  " highest-level control system indicator
   if !empty(root) | return root | endif
-  let globs = copy(s:confs)
-  let root = s:proj_root(head, globs, 1)  " lowest-level python distribution indicator
+  let names = copy(s:confs)
+  let root = s:proj_root(head, names, 1)  " lowest-level python distribution indicator
   if !empty(root) | return root | endif
-  let tails = copy(s:dists + s:heads)
-  let root = s:dist_root(head, tails)  " subfolders within meta-folders
+  let names = copy(s:dists + s:heads)
+  let root = s:dist_root(head, names)  " subfolders within meta-folders
   if !empty(root) | return root | endif
-  let tails = ['mackup', 'Mackup', 'icloud', 'com~apple~CloudDocs']
-  let root = s:dist_root(head, tails)  " subfolders within cloud docs
+  let names = ['mackup', 'Mackup', 'icloud', 'com~apple~CloudDocs']
+  let root = s:dist_root(head, names)  " subfolders within cloud docs
   if !empty(root) | return root | endif
-  let tails = map(globpath(fnamemodify(expand('~'), ':h'), '*', 1, 1), {_, val -> fnamemodify(val, ':t')})
-  let root = s:dist_root(head, tails)  " subfolders within user folders
+  let names = map(globpath(fnamemodify(expand('~'), ':h'), '*', 1, 1), {_, val -> fnamemodify(val, ':t')})
+  let root = s:dist_root(head, names)  " subfolders within user folders
   return empty(root) ? head : root
+endfunction
+function! parse#get_roots(...) abort
+  let result = []
+  for path in a:0 ? a:000 : ['.']  " resolve removes trailing slash
+    let path = resolve(expand(path))
+    let path = fnamemodify(path, ':p')
+    let base = finddir('.git', path . ';')  " repo at and above path
+    if !empty(base)
+      call add(result, fnamemodify(base, ':h'))
+    endif
+    for repo in finddir('.git', path . '/*/**', -1)
+      call add(result, fnamemodify(repo, ':h'))
+    endfor
+    for name in s:confs
+      let file = findfile(name, path . '/**', 1)
+      if empty(file) | continue | endif
+      let heads = []
+      for head in ['.git'] + s:confs
+        call extend(heads, finddir(head, file . ';', -1))
+      endfor
+      if empty(heads)
+        call add(result, fnamemodify(file, ':h'))
+      endif
+    endfor
+  endfor | return result
 endfunction
 
 " Get paths from the open files and projects

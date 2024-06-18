@@ -105,7 +105,7 @@ set noswapfile " no more swap files, instead use session
 set notimeout  " do not time out on multi-key mappings
 set nowrap  " global wrap setting possibly overwritten by wraptoggle
 set nrformats=alpha  " never interpret numbers as 'octal'
-set path=.  " used in various built-in searching utilities, file_in_path complete opt
+set path=.,,**  " cfile, cdir, glob (:find command, file_in_path command-complete)
 set previewheight=20  " default preview window height
 set pumheight=10  " maximum popup menu height
 set pumwidth=10  " minimum popup menu width
@@ -642,10 +642,13 @@ vnoremap zV <Cmd>call fold#update_folds(1, 0)<CR><Cmd>echom 'Updated folds'<CR>z
 nnoremap <expr> _ (foldclosed('.') > 0 ? 'zvzz' : foldlevel('.') > 0 ? 'zc' : 'zz') . 'ze'
 vnoremap <expr> _ fold#toggle_folds_expr() . 'zzze'
 nnoremap zz <Cmd>call fold#toggle_folds()<CR>
+nnoremap zaa <Cmd>call fold#toggle_folds()<CR>
 nnoremap zcc <Cmd>call fold#toggle_folds(1)<CR>
 nnoremap zoo <Cmd>call fold#toggle_folds(0)<CR>
+nnoremap <expr> za fold#toggle_folds_expr()
 nnoremap <expr> zc fold#toggle_folds_expr(1)
 nnoremap <expr> zo fold#toggle_folds_expr(0)
+vnoremap <expr> za fold#toggle_folds_expr()
 vnoremap <expr> zz fold#toggle_folds_expr()
 vnoremap <expr> zc fold#toggle_folds_expr(1)
 vnoremap <expr> zo fold#toggle_folds_expr(0)
@@ -657,15 +660,14 @@ vnoremap <expr> zo fold#toggle_folds_expr(0)
 " NOTE: Here 'zC' will close fold only up to current level or for definitions
 " inside class (special case for python). For recursive motion mapping similar
 " to 'zc' and 'zo' could use e.g. noremap <expr> zC fold#toggle_folds_expr(1, 1)
-nnoremap za zn
-nnoremap zA zN<Cmd>call fold#update_folds(0)<CR>
+exe 'silent! unmap zn'
+nnoremap zN zN<Cmd>call fold#update_folds(0)<CR>
 nnoremap zi <Cmd>call fold#toggle_children(0)<CR>
 nnoremap zI <Cmd>call fold#toggle_children(1)<CR>
 nnoremap zZ <Cmd>call fold#toggle_parents()<CR>
 nnoremap zC <Cmd>call fold#toggle_parents(1)<CR>
 nnoremap zO <Cmd>call fold#toggle_parents(0)<CR>
-vnoremap za zn
-vnoremap zA zN<Cmd>call fold#update_folds(0)<CR>
+vnoremap zN zN<Cmd>call fold#update_folds(0)<CR>
 vnoremap <expr> zi fold#toggle_children_expr(0)
 vnoremap <expr> zI fold#toggle_children_expr(1)
 vnoremap <expr> zZ fold#toggle_parents_expr()<CR>
@@ -705,7 +707,8 @@ augroup jumps_setup
   au CursorHold,TextChanged,InsertLeave * if utils#none_pending() | call jump#push_jump() | endif
 augroup END
 command! -bang -nargs=0 Jumps call jump#fzf_jumps(<bang>0)
-nnoremap zn <Cmd>call jump#fzf_jumps()<CR>
+nnoremap g<Down> <Cmd>call jump#fzf_jumps()<CR>
+nnoremap g<Up> <Cmd>call jump#fzf_jumps()<CR>
 noremap <C-j> <Esc><Cmd>call jump#next_jump(-v:count1)<CR>
 noremap <C-k> <Esc><Cmd>call jump#next_jump(v:count1)<CR>
 noremap <Down> <Esc><Cmd>call jump#next_jump(-v:count1)<CR>
@@ -715,7 +718,8 @@ noremap <Up> <Esc><Cmd>call jump#next_jump(v:count1)<CR>
 " NOTE: This accounts for iterm function-key maps and karabiner arrow-key maps
 " change entries removed. Here <F5>/<F6> are <Ctrl-/>/<Ctrl-\> in iterm
 command! -bang -nargs=0 Changes call jump#fzf_changes(<bang>0)
-nnoremap zN <Cmd>call jump#fzf_changes()<CR>
+nnoremap g<Left> <Cmd>call jump#fzf_changes()<CR>
+nnoremap g<Right> <Cmd>call jump#fzf_changes()<CR>
 noremap <C-h> <Esc><Cmd>call jump#next_change(-v:count1)<CR>
 noremap <C-l> <Esc><Cmd>call jump#next_change(v:count1)<CR>
 noremap <Left> <Esc><Cmd>call jump#next_change(-v:count1)<CR>

@@ -294,10 +294,9 @@ endfunction
 " Jump to next word or WORD accunting for conceal
 " NOTE: For some reason running separate normal mode command for adjustment solves
 " issue where deleting to end-of-line with 'e' either omits character includes newline
-" TODO: Support conceal-aware a-word and i-word text objects. Use function that
-" cancels operator in progress, runs a new 'gWaw' operation to record '[ and '], then
-" augment the positions to account for concealed characters with a new operator and
-" put that into a hidden or supplementary vim-textobj-user mapping.
+" TODO: Support conceal-aware word objects. Use function that cancels operation, runs a
+" new 'g@aw' operation to record '[ and '], then augments the positions to account for
+" concealed characters with new operator (via a supplementary textobj-user mapping).
 function! jump#next_word(key, ...) abort
   let adjust = mode(1) =~# '^no' && a:key ==? 'e' ? 'l' : ''
   let [lnum, cols] = [line('.'), syntax#_concealed()]
