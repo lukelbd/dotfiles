@@ -71,6 +71,7 @@ function! parse#get_roots(...) abort
   for path in a:0 ? a:000 : ['.']  " resolve removes trailing slash
     let path = resolve(expand(path))
     let path = fnamemodify(path, ':p')
+    let path = substitute(path, '/$', '', '')
     let base = finddir('.git', path . ';')  " repo at and above path
     if !empty(base)
       call add(result, fnamemodify(base, ':h'))
@@ -79,15 +80,25 @@ function! parse#get_roots(...) abort
       call add(result, fnamemodify(repo, ':h'))
     endfor
     for name in s:confs
-      let file = findfile(name, path . '/**', 1)
-      if empty(file) | continue | endif
       let heads = []
-      for head in ['.git'] + s:confs
-        call extend(heads, finddir(head, file . ';', -1))
+      let paths = []
+      let files = findfile(name, path . '/**', -1)
+      for path in sort(files, {i1, i2 -> strchars(i1) - strchars(i2)})
+        if empty(filter(copy(paths), 'strpart(path, 0, len(v:val)) ==# v:val'))
+          call add(paths, fnamemodify(path, ':h'))
+        endif
       endfor
-      if empty(heads)
-        call add(result, fnamemodify(file, ':h'))
-      endif
+      for path in paths
+        if index(result, path) >= 0 | continue | endif
+        let glob = fnamemodify(path, ':h') . ';'  " search above
+        let heads = finddir('.git', glob, -1)
+        for name in s:confs
+          call extend(heads, findfile(name, glob, -1))
+        endfor
+        if empty(heads)
+          call add(result, path)
+        endif
+      endfor
     endfor
   endfor | return result
 endfunction

@@ -215,7 +215,8 @@ function! s:get_files(...) abort
         echohl None
       endif
     endfor
-  endif | return files
+  endif
+  echom 'Searching ' . len(files) . ' tag files' | return files
 endfunction
 
 " Select from the current tag files
