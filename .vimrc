@@ -242,13 +242,15 @@ let s:shellcheck_ignore =
 " * Ctrl-a and Ctrl-x used for incrementing, use + and - instead
 " * Backspace scrolls to left and Delete removes character to right
 " * Enter and Underscore scrolls down on first non-blank character
+" * Shift arrow keys are replaced by option arrow and page scroll commands
 for s:key in [
   \ '@', 'q', 'Q', 'K', 'ZZ', 'ZQ', '][', '[]',
   \ '<C-p>', '<C-n>', '<C-a>', '<C-x>', '<C-t>', '<C-r>',
+  \ '<S-Up>', '<S-Down>', '<S-Left>', '<S-Right>',
   \ '<Delete>', '<Backspace>', '<CR>', '_',
 \ ]
-  if empty(maparg(s:key, 'n'))
-    exe 'nnoremap ' . s:key . ' <Nop>'
+  if empty(maparg(s:key, ''))
+    exe 'noremap ' . s:key . ' <Nop>'
   endif
 endfor
 
@@ -344,10 +346,10 @@ nnoremap g< <Cmd>call file#fzf_recent()<CR>
 command! -nargs=* -complete=file Drop call file#drop_file(<f-args>)
 command! -nargs=? Paths call file#show_paths(<f-args>)
 command! -nargs=? Local call switch#localdir(<args>)
-nnoremap zl <Cmd>Paths<CR>
-nnoremap zL <Cmd>Local<CR>
-nnoremap gl <Cmd>call file#show_cfile()<CR>
-nnoremap gL <Cmd>call call('file#drop_file', file#expand_cfile())<CR>
+nnoremap zp <Cmd>Paths<CR>
+nnoremap zP <Cmd>Local<CR>
+nnoremap gp <Cmd>call file#show_cfile()<CR>
+nnoremap gP <Cmd>call call('file#drop_file', file#expand_cfile())<CR>
 
 " Open file in current directory or some input directory
 " NOTE: Anything that is not :Files gets passed to :Drop command
@@ -389,15 +391,16 @@ nnoremap <Leader><F5> <Cmd>Commands<CR>
 " NOTE: For some reason even though :help :mes claims count N shows the N most recent
 " message, for some reason using 1 shows empty line and 2 shows previous plus newline.
 for s:key in ['[[', ']]'] | silent! exe 'unmap! g' . s:key | endfor
+for s:key in [';;', '::'] | silent! exe 'unmap! g' . s:key | endfor
 nnoremap <Leader>; <Cmd>let &cmdwinheight = window#get_height(0)<CR>q:
 nnoremap <Leader>/ <Cmd>let &cmdwinheight = window#get_height(0)<CR>q/
 nnoremap <Leader>: <Cmd>History:<CR>
 nnoremap <Leader>? <Cmd>History/<CR>
 nnoremap <Leader>v <Cmd>call vim#show_help()<CR>
 nnoremap <Leader>V <Cmd>Helptags<CR>
-nnoremap z; <Cmd>20message<CR>
-nnoremap z: @:
-vnoremap z: @:
+nnoremap g; <Cmd>20message<CR>
+nnoremap g: @:
+vnoremap g: @:
 
 " Shell commands and help windows {{{2
 " add shortcut to search for all non-ASCII chars (previously used all escape chars).
@@ -535,19 +538,14 @@ noremap z) zt
 " presses, then convert to no-op in normal mode and deletions for insert/command mode.
 " NOTE: iTerm remaps Ctrl+Arrow presses to shell scrolling so cannot be used, and
 " remaps Cmd+Left/Right to Home/End which are natively understood by vim.
-for s:arrow in ['Up', 'Down', 'Left', 'Right']
-  exe 'noremap <S-' . s:arrow . '> <Nop>'
-endfor
 for s:mode in ['', 'i', 'c']  " native motions by word
   exe s:mode . 'noremap <M-Left> <S-Left>'
   exe s:mode . 'noremap <M-Right> <S-Right>'
-  exe s:mode . 'noremap <A-Left> <S-Left>'
-  exe s:mode . 'noremap <A-Right> <S-Right>'
+  exe s:mode . 'noremap <M-Up> <Home>'
+  exe s:mode . 'noremap <M-Down> <End>'
 endfor
-for s:mode in ['i', 'c']  " native backwards delete mappings
-  exe s:mode . 'noremap <S-Up> <C-w>'
-  exe s:mode . 'noremap <S-Left> <C-u>'
-endfor
+for s:mode in ['i', 'c'] | exe s:mode . 'noremap <S-Up> <C-w>' | endfor
+for s:mode in ['i', 'c'] |  exe s:mode . 'noremap <S-Left> <C-u>' | endfor
 inoremap <expr> <S-Down> repeat('<Del>', matchend(getline('.')[col('.') - 1:], '\>'))
 inoremap <expr> <S-Right> repeat('<Del>', len(getline('.')) - col('.') + 1)
 cnoremap <expr> <S-Down> repeat('<Del>', matchend(getcmdline()[getcmdpos() - 1:], '\>'))
@@ -780,22 +778,22 @@ nnoremap g/ <Cmd>call grep#call_grep('lines', 0, 0)<CR>
 nnoremap g? <Cmd>call grep#call_grep('lines', 1, 0)<CR>
 nnoremap / <Cmd>let b:open_search = 0<CR>/
 nnoremap ? <Cmd>let b:open_search = 0<CR>?
-nnoremap z/ <Cmd>call switch#showmatches()<CR>
-nnoremap z? <Cmd>call switch#showchanges()<CR>
-vnoremap z/ <Cmd>call switch#showmatches()<CR>
-vnoremap z? <Cmd>call switch#showchanges()<CR>
+nnoremap z; <Cmd>call switch#showmatches()<CR>
+nnoremap z: <Cmd>call switch#showchanges()<CR>
+vnoremap z; <Cmd>call switch#showmatches()<CR>
+vnoremap z: <Cmd>call switch#showchanges()<CR>
 
 " Search over current scope or selected line range
 " NOTE: This overrides default vim-tags g/ and g? maps. Allows selecting range with
 " input motion. Useful for debugging text objexts or when scope algorithm fails.
-nnoremap g;; <Cmd>call tags#set_search('', 1)<CR><Cmd>call feedkeys(empty(@/) ? '' : '/' . @/, 'n')<CR>
-nnoremap g:: <Cmd>call tags#set_search('', 1)<CR><Cmd>call feedkeys(empty(@/) ? '' : '?' . @/, 'n')<CR>
+nnoremap z// <Cmd>call tags#set_search('', 1)<CR><Cmd>call feedkeys(empty(@/) ? '' : '/' . @/, 'n')<CR>
+nnoremap z?? <Cmd>call tags#set_search('', 1)<CR><Cmd>call feedkeys(empty(@/) ? '' : '?' . @/, 'n')<CR>
 vnoremap <expr> / edit#sel_lines_expr(0)
 vnoremap <expr> ? edit#sel_lines_expr(1)
-nnoremap <expr> g; edit#sel_lines_expr(0)
-nnoremap <expr> g: edit#sel_lines_expr(1)
-vnoremap <expr> g; edit#sel_lines_expr(0)
-vnoremap <expr> g: edit#sel_lines_expr(1)
+nnoremap <expr> z/ edit#sel_lines_expr(0)
+nnoremap <expr> z? edit#sel_lines_expr(1)
+vnoremap <expr> z/ edit#sel_lines_expr(0)
+vnoremap <expr> z? edit#sel_lines_expr(1)
 
 " Interactive file jumping with grep commands
 " NOTE: Maps use default search pattern '@/'. Commands can be called with arguments
@@ -2418,32 +2416,32 @@ if s:has_plug('vim-fugitive')  " {{{
     au!
     au BufEnter * call git#setup_commands()
   augroup END
-  nnoremap gp <Cmd>BCommits<CR>
-  nnoremap gP <Cmd>Commits<CR>
-  nnoremap zP <Cmd>call git#run_map(0, 0, '', 'blame')<CR>
-  nnoremap zpp <Cmd>call git#run_map(2, 0, '', 'blame ')<CR>
-  nnoremap <expr> zp git#run_map_expr(2, 0, '', 'blame ')
-  vnoremap <expr> zp git#run_map_expr(2, 0, '', 'blame ')
+  nnoremap gl <Cmd>BCommits<CR>
+  nnoremap gL <Cmd>Commits<CR>
+  nnoremap zL <Cmd>call git#run_map(0, 0, '', 'blame')<CR>
+  nnoremap zll <Cmd>call git#run_map(2, 0, '', 'blame ')<CR>
+  nnoremap <expr> zl git#run_map_expr(2, 0, '', 'blame ')
+  vnoremap <expr> zl git#run_map_expr(2, 0, '', 'blame ')
   nnoremap <Leader>' <Cmd>call git#run_map(0, 0, '', '')<CR>
   nnoremap <Leader>" <Cmd>call git#run_map(0, 0, '', 'status')<CR>
-  nnoremap <Leader>p <Cmd>call git#run_map(0, 0, '', 'commits')<CR>
-  nnoremap <Leader>P <Cmd>call git#run_map(0, 0, '', 'tree')<CR>
+  nnoremap <Leader>y <Cmd>call git#run_map(0, 0, '', 'commits')<CR>
+  nnoremap <Leader>Y <Cmd>call git#run_map(0, 0, '', 'tree')<CR>
   nnoremap <Leader>u <Cmd>call git#run_map(0, 0, '', 'push origin')<CR>
   nnoremap <Leader>U <Cmd>call git#run_map(0, 0, '', 'pull origin')<CR>
   nnoremap <Leader>i <Cmd>call git#run_commit(0, 'oops')<CR>
   nnoremap <Leader>I <Cmd>call git#run_commit(1, 'oops')<CR>
   nnoremap <Leader>o <Cmd>call git#run_commit(0, 'commit')<CR>
   nnoremap <Leader>O <Cmd>call git#run_commit(1, 'commit')<CR>
-  nnoremap <Leader>y <Cmd>call git#run_commit(0, 'stash push --include-untracked')<CR>
-  nnoremap <Leader>Y <Cmd>call git#run_commit(1, 'stash push --include-untracked')<CR>
-  nnoremap <Leader>h <Cmd>call git#run_map(0, 0, '', 'diff -- :/')<CR>
-  nnoremap <Leader>H <Cmd>call git#run_map(0, 0, '', 'stage -- :/')<CR>
+  nnoremap <Leader>p <Cmd>call git#run_commit(0, 'stash push --include-untracked')<CR>
+  nnoremap <Leader>P <Cmd>call git#run_commit(1, 'stash push --include-untracked')<CR>
+  nnoremap <Leader>h <Cmd>call git#run_map(0, 0, '', 'diff --staged -- :/')<CR>
+  nnoremap <Leader>H <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- :/')<CR>
   nnoremap <Leader>j <Cmd>call git#run_map(0, 0, '', 'diff -- %')<CR>
   nnoremap <Leader>J <Cmd>call git#run_map(0, 0, '', 'stage -- %')<CR>
   nnoremap <Leader>k <Cmd>call git#run_map(0, 0, '', 'diff --staged -- %')<CR>
   nnoremap <Leader>K <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- %')<CR>
-  nnoremap <Leader>l <Cmd>call git#run_map(0, 0, '', 'diff --staged -- :/')<CR>
-  nnoremap <Leader>L <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- :/')<CR>
+  nnoremap <Leader>l <Cmd>call git#run_map(0, 0, '', 'diff -- :/')<CR>
+  nnoremap <Leader>L <Cmd>call git#run_map(0, 0, '', 'stage -- :/')<CR>
   nnoremap <Leader>b <Cmd>call git#run_map(0, 0, '', 'branches')<CR>
   nnoremap <Leader>B <Cmd>call git#run_map(0, 0, '', 'switch -')<CR>
   let g:fugitive_legacy_commands = 1  " include deprecated :Git status to go with :Git

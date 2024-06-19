@@ -56,27 +56,27 @@ set mark-symlinked-directories on
 "\e[H": beginning-of-line
 # <End> key from sed -n l <Ctrl-Right> i.e. 0x1b 0x5b 0x46
 "\e[F": end-of-line
-# <Ctrl-Left> key from sed -n l <Ctrl-Left>
-"\e[1;5D": beginning-of-line
-# <Ctrl-Right> key from sed -n -l <Ctrl-Right>
-"\e[1;5C": end-of-line
-# <Ctrl-Up> key from sed -n l <Ctrl-Left>
-"\e[1;5A": beginning-of-line
-# <Ctrl-Down> key from sed -n -l <Ctrl-Right>
-"\e[1;5B": end-of-line
-# <Alt-Left> key from sed -n l <Alt-Left>
-"\e[1;3D": backward-word
-# <Alt-Right> key from sed -n -l <Alt-Right>
-"\e[1;3C": forward-word
-# <Alt-Up> key from sed -n l <Alt-Left>
-"\e[1;3A": shell-backward-word
-# <Alt-Down> key from sed -n -l <Alt-Right>
-"\e[1;3B": shell-forward-word
-# <Shift-Left> key from sed -n l <Shift-Left>
-"\e[1;2D": unix-line-discard
+# <Shift-Up> key from sed -n l <Shift-Up>
+"\e[1;2A": backward-kill-word
+# <Shift-Down> key from sed -n -l <Shift-Down>
+"\e[1;2B": kill-word
 # <Shift-Right> key from sed -n -l <Shift-Right>
 "\e[1;2C": kill-line
-# <Shift-Down> key from sed -n l <Shift-Left>
-"\e[1;2A": backward-kill-word
-# <Shift-Up> key from sed -n -l <Shift-Right>
-"\e[1;2B": kill-word
+# <Shift-Left> key from sed -n l <Shift-Left>
+"\e[1;2D": unix-line-discard
+# <Alt-Up> key from sed -n l <Alt-Up>
+"\e[1;3A": beginning-of-line
+# <Alt-Down> key from sed -n -l <Alt-Down>
+"\e[1;3B": end-of-line
+# <Alt-Right> key from sed -n -l <Alt-Right>
+"\e[1;3C": forward-word
+# <Alt-Left> key from sed -n l <Alt-Left>
+"\e[1;3D": backward-word
+# <Ctrl-Up> key from sed -n l <Ctrl-Up>
+"\e[1;5A": beginning-of-line
+# <Ctrl-Down> key from sed -n -l <Ctrl-Down>
+"\e[1;5B": end-of-line
+# <Ctrl-Right> key from sed -n -l <Ctrl-Right>
+"\e[1;5C": end-of-line
+# <Ctrl-Left> key from sed -n l <Ctrl-Left>
+"\e[1;5D": beginning-of-line

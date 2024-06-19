@@ -1870,10 +1870,11 @@ _fzf_marks="$HOME/.fzf-marks/fzf-marks.plugin.bash"
 _fzf_args_prune=' \( -fstype devfs -o -fstype devtmpfs -o -fstype proc -o -fstype sysfs \) -prune -o '
 _fzf_args_ignore=$(ignores 1 plugged packages | sed 's/(/\\(/g;s/)/\\)/g')
 _fzf_bindings=( \
-  ctrl-g:jump ctrl-k:up ctrl-j:down f3:preview-page-up f4:preview-page-down \
+  /:accept tab:accept btab:clear-query ctrl-t:toggle ctrl-s:select ctrl-a:select-all \
+  ctrl-w:cancel ctrl-q:cancel ctrl-k:up ctrl-j:down ctrl-h:left ctrl-l:right \
+  ctrl-g:jump f1:prev-history f2:next-history f3:preview-page-up f4:preview-page-down \
   ctrl-u:half-page-up ctrl-d:half-page-down ctrl-b:page-up ctrl-f:page-down \
-  f1:prev-history f2:next-history btab:clear-query tab:accept /:accept \
-  ctrl-t:toggle ctrl-s:select ctrl-a:select-all ctrl-q:cancel ctrl-w:cancel \
+  alt-left:backward-word alt-right:forward-word alt-up:beginning-of-line alt-down:end-of-line \
   'start:transform(fzf-cursor)' 'left:transform(fzf-cursor -1)' 'right:transform(fzf-cursor +1)' \
 )
 # shellcheck disable=2034

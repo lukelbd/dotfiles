@@ -407,7 +407,7 @@ endfunction
 
 " Update the default fold options
 " NOTE: This is called by after/common.vim following Syntax autocommand
-" NOTE: Sometimes run into issue where opening new files or reading updates
+" WARNING: Sometimes run into issue where opening new files or reading updates
 " permanently disables 'expr' folds. Account for this by re-applying fold method.
 function! fold#update_method() abort
   let [method, expr] = ['syntax', '']  " default values
@@ -437,8 +437,8 @@ function! fold#update_method() abort
 endfunction
 
 " Update the fold bound, level, and open-close status
-" NOTE: Could use e.g. &foldlevel = v:count but want to keep foldlevel truncated
-" to maximum number found in file as native 'zr' does. So use the below instead
+" NOTE: Use normal mode zm/zr instead of :set foldlevel to truncate at maximum level
+" NOTE: Here 'zX' will show at most one nested fold underneath cursor
 " WARNING: Regenerating b:SimPylFold_cache with manual SimpylFold#FoldExpr() call
 " can produce strange internal bug. Instead rely on FastFoldUpdate to fill the cache.
 function! fold#update_level(...) abort
@@ -476,9 +476,10 @@ function! fold#update_folds(force, ...) abort
     let &l:foldlevel = a:0 ? level : &l:foldlevel
     for lnum in fold#get_ignores() | exe lnum . 'foldopen' | endfor
     let iclosed = foldlevel(winview.lnum) ? foldclosed(winview.lnum) : 0
-    let reveal = closed < 0 && iclosed > 0 || closed == 0 && iclosed !=# winview.lnum
-    let keys .= toggle == 0 || reveal && abs(toggle) == 1 ? 'zv' : ''  " reveal cursor
-    let keys .= toggle > 0 && closed > 0 && iclosed < 0 ? 'zc' : ''  " restore close
+    let reopen = closed < 0 && iclosed > 0 || closed == 0 && iclosed !=# winview.lnum
+    let reclose = toggle > 0 && closed > 0 && iclosed < 0
+    let keys .= reopen || toggle == 0 ? 'zv' : ''  " restore open
+    let keys .= reclose || reopen && toggle == 2 ? 'zc' : ''  " restore close
   endif
   exe empty(keys) ? '' : 'silent! normal! ' . keys
   call winrestview(winview)
