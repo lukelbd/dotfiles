@@ -57,12 +57,12 @@ function! grep#call_lines(global, level, regex, ...) abort
   let opts = '-d "\t" --tabstop=1 --nth ' . (2 + show) . '..'
   let opts .= ' --with-nth ' . (a:global ? 1 + show : 2 + show) . '..'
   let opts .= ' --layout=reverse-list --tiebreak=index --extended --ansi'
+  let [_, _, case] = s:parse_grep(a:global, a:level, a:regex)
   let prompt = toupper(cmd[0]) . tolower(cmd[1:]) . '> '
-  let regex1 = a:global ? '' : '^\e\?[^\e]*\D' . bufnr() . '\t'
-  let regex2 = empty(regex) ? '' : '\t[^\e]\+' . regex . '[^\e]\+$'
-  call filter(source, 'v:val =~# regex1 && v:val =~# regex2')
+  let regex1 = a:global ? '' : '^\e\?[^\e]*\D' . bufnr('') . '\t'
+  let regex2 = empty(regex) ? '' : '\t[^\e]\+' . regex . '[^\e]*$'
   let options = {
-    \ 'source': source,
+    \ 'source': filter(source, 'v:val =~ regex1 && v:val =~ regex2'),
     \ 'sink*': function('s:goto_lines'),
     \ 'options': opts . ' --prompt ' . string(prompt),
   \ }

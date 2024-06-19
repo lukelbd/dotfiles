@@ -114,28 +114,28 @@ endfunction
 " NOTE: Here use 'Git' to open standard status pane and 'Git status' to open
 " pane with diff hunks expanded with '=' and folded with 'zc'.
 function! s:run_cmd(bnum, lnum, cmd, ...) abort
+  let winview = winsaveview()
   let input = join(a:000, '')
   let name = split(input, '', 1)[0]
   let editor = index(s:cmd_editor, name) != -1
-  let newbuf = editor || a:bnum != bufnr() || a:cmd =~# '\<v\?split\>'
+  let panel = editor || a:bnum != bufnr() || a:cmd =~# '\<v\?split\>'
   if a:cmd =~# '^echoerr'
     let msg = substitute(a:cmd, '^echoerr', 'echom', '')
     redraw | echohl ErrorMsg | exe msg | echohl None
-  elseif !newbuf  " no panel generated
+  elseif !panel  " no panel generated
     let space = index(s:cmd_oneline, name) != -1 ? ' ' : "\n"
     redraw | echo 'Git ' . input . space | exe a:cmd
   else  " panel generated
     let [width, height] = [winwidth(0), winheight(0)]
     let resize = get(s:cmd_resize, name, 0)  " default panel size
-    silent exe a:cmd | let newbuf = a:bnum != bufnr()
-    if newbuf
-      setlocal bufhidden=delete | if line('$') <= 1 | call window#close_pane(1) | endif
-    endif
-    if bufnr() == a:bnum && input =~# '^blame'  " syncbind is no-op if not vertical
+    silent exe a:cmd | let panel = a:bnum != bufnr()
+    if panel | setlocal bufhidden=delete | endif
+    if panel && line('$') <= 1 | quit | call winrestview(winview) | endif
+    if a:bnum == bufnr() && input =~# '^blame'  " syncbind is no-op if not vertical
       exe a:lnum | exe 'normal! z.' | call feedkeys("\<Cmd>syncbind\<CR>", 'n')
-    elseif newbuf && name ==# 'status'  " open change statistics
+    elseif a:bnum != bufnr() && name ==# 'status'  " open change statistics
       goto | exe 'normal ='
-    elseif newbuf && input =~# '\s\+%'  " open single difference fold
+    elseif a:bnum != bufnr() && input =~# '\s\+%'  " open single difference fold
       exe 'normal! zv'
     endif
     if bufnr() == a:bnum
@@ -146,7 +146,7 @@ function! s:run_cmd(bnum, lnum, cmd, ...) abort
       call window#default_height(resize)
     endif
   endif
-  return newbuf && a:cmd !~# '^echoerr'  " whether echo required
+  return panel && a:cmd !~# '^echoerr'  " whether echo required
 endfunction
 
 " Run fugitive command or mapping

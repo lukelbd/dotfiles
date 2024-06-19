@@ -1821,13 +1821,11 @@ if s:has_plug('vim-sneak')  " {{{
 endif  " }}}
 
 " Text object settings
-" TODO: Remove b:surround_1 autocommand after restarting sessions
 " NOTE: Here use mnemonic 'v' for 'value' and 'C' for comment. The first avoids
 " conflicts with ftplugin/tex.vim and the second with 'c' curly braces.
 if s:has_plug('vim-textobj-user')  " {{{
   augroup textobj_setup
     au!
-    au BufEnter * unlet! b:surround_1
     au VimEnter * call textobj#sentence#init()
   augroup END
   omap an <Plug>(textobj-numeral-a)
@@ -1843,26 +1841,26 @@ if s:has_plug('vim-textobj-user')  " {{{
   let g:textobj#sentence#move_n = ')'  " smarter sentence navigation
   let g:vim_textobj_parameter_mapping = 'k'  " i.e. 'keyword' or 'keyword argument'
   let s:textobj_alpha = {
-        \ 'g': '\(\<\|[^0-9A-Za-z]\@<=[0-9A-Za-z]\@=\)\r\(\>\|[^0-9A-Za-z]\)',
-        \ 'h': '\(\<\|[0-9a-z]\@<=[^0-9a-z]\@=\)\r\(\>\|[0-9a-z]\@<=[^0-9a-z]\@=\)',
-        \ 'v': '\(\k\|[*:.-]\)\@<!\(\k\|[*:.-]\)\@=\r\(\k\|[*:.-]\)\@<=\(\k\|[*:.-]\)\@!\s*',
-        \ }  " 'ag' includes e.g. trailing underscore similar to 'a word'
+    \ 'g': '\(\<\|[^0-9A-Za-z]\@<=[0-9A-Za-z]\@=\)\r\(\>\|[^0-9A-Za-z]\@=\)',
+    \ 'h': '\(\<\|[0-9a-z]\@<=[^0-9a-z]\@=\)\r\(\>\|[0-9a-z]\@<=[^0-9a-z]\@=\)',
+    \ 'v': '\(\k\|[*:.-]\)\@<!\(\k\|[*:.-]\)\@=\r\(\k\|[*:.-]\)\@<=\(\k\|[*:.-]\)\@!\s*',
+  \ }  " 'ag' includes e.g. trailing underscore similar to 'a word'
   let s:textobj_entire = {
-        \ 'select-a': 'aE',  'select-a-function': 'textobj#entire#select_a',
-        \ 'select-i': 'iE',  'select-i-function': 'textobj#entire#select_i'
-        \ }
+    \ 'select-a': 'aE',  'select-a-function': 'textobj#entire#select_a',
+    \ 'select-i': 'iE',  'select-i-function': 'textobj#entire#select_i'
+  \ }
   let s:textobj_comment = {
-        \ 'select-i': 'iC', 'select-i-function': 'textobj#comment#select_i',
-        \ 'select-a': 'aC', 'select-a-function': 'textobj#comment#select_big_a',
-        \ }
+    \ 'select-i': 'iC', 'select-i-function': 'textobj#comment#select_i',
+    \ 'select-a': 'aC', 'select-a-function': 'textobj#comment#select_big_a',
+  \ }
   let s:textobj_fold = {
-        \ 'select-i': 'iz', 'select-i-function': 'fold#get_fold_i',
-        \ 'select-a': 'az', 'select-a-function': 'fold#get_fold_a',
-        \ }
+    \ 'select-i': 'iz', 'select-i-function': 'fold#get_fold_i',
+    \ 'select-a': 'az', 'select-a-function': 'fold#get_fold_a',
+  \ }
   let s:textobj_parent = {
-        \ 'select-i': 'iZ', 'select-i-function': 'fold#get_parent_i',
-        \ 'select-a': 'aZ', 'select-a-function': 'fold#get_parent_a',
-        \ }
+    \ 'select-i': 'iZ', 'select-i-function': 'fold#get_parent_i',
+    \ 'select-a': 'aZ', 'select-a-function': 'fold#get_parent_a',
+  \ }
   call succinct#add_objects('alpha', s:textobj_alpha, 0, 1)  " do not escape
   call textobj#user#plugin('comment', {'-': s:textobj_comment})  " no <Plug> suffix
   call textobj#user#plugin('entire', {'-': s:textobj_entire})  " no <Plug> suffix
