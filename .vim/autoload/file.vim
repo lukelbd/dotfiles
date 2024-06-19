@@ -74,6 +74,8 @@ function! file#fzf_history(arg, ...)
   let bang = a:0 && a:1 || a:arg[len(a:arg) - 1] ==# '!'
   let opts = fzf#vim#with_preview()
   let opts.dir = getcwd()
+  let opts.options = get(opts, 'options', [])
+  call add(opts.options, '--scheme=' . scheme)
   if a:arg[0] ==# ':'
     call fzf#vim#command_history(bang)
   elseif a:arg[0] ==# '/'
@@ -94,7 +96,7 @@ function! file#fzf_recent(...) abort
   let options = {
     \ 'sink': function('file#drop_file'),
     \ 'source' : files,
-    \ 'options': opts . ' --no-sort --prompt=' . prompt,
+    \ 'options': opts . ' --scheme=path --prompt=' . prompt,
   \ }
   return fzf#run(fzf#wrap('recents', options, bang))
 endfunction

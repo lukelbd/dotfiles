@@ -148,43 +148,6 @@ function! edit#join_lines_expr(...) abort
   return utils#motion_func('edit#join_lines', a:000)
 endfunction
 
-" Insert mode delete-by-tabs, delimit-mate actions, improved undo
-" NOTE: This restores cursor position after insert-mode undo. First queue translation
-" with edit#insert_mode() then run edit#insert_undo() on InsertLeave (e.g. after 'ciw')
-" NOTE: Native delimitMate#ExpandReturn() issues <Esc> then fails to split brackets due
-" to InsertLeave autocommand that repositions cursor. Use <C-c> to avoid InsertLeave.
-let s:insert_keys = {'s': 'ExpandSpace', 'r': 'ExpandReturn', 'b': 'BS'}
-function! edit#insert_mode(...) abort
-  let imode = a:0 ? a:1 : get(b:, 'insert_mode', '')
-  let b:insert_mode = imode  " save character
-  return imode
-endfunction
-function! edit#insert_char(key, ...) abort
-  let name = get(s:insert_keys, a:key, a:key)
-  let keys = call('delimitMate#' . name, a:000)
-  return substitute(keys, "\<Esc>", "\<C-c>", 'g')
-endfunction
-function! edit#insert_delete(...) abort  " vint: -ProhibitUsingUndeclaredVariable
-  let [idx, text] = [col('.') - 1, getline('.')]
-  let text = text[idx:idx + &tabstop - 1]  " forward-delete-by-tab
-  let regex = '^\(\t\| \{,' . &tabstop . '}\).*$'
-  let pad = substitute(text, regex, '\1', '')
-  let cnt = empty(pad) ? a:0 && a:1 : len(pad)
-  let head = cnt && pumvisible() ? "\<C-e>" : ''
-  return repeat("\<Delete>", cnt)
-endfunction
-function! edit#insert_undo(...) abort
-  let imode = a:0 ? a:1 : get(b:, 'insert_mode', '')  " default to queued
-  if imode =~# 'o\|O'
-    let iundo = imode
-  elseif col('.') < col('$') - 1  " standard restore
-    let iundo = 'i'
-  else  " end-of-line restore
-    let iundo = 'a'
-  endif
-  let b:insert_mode = iundo | return "\<C-g>u"
-endfunction
-
 " Return error messages and replacement message
 " NOTE: This is used to show error messages on closed folds similar
 " to method used to show git-gutter hunk summaries on closed folds.
@@ -291,4 +254,51 @@ endfunction
 " For <expr> map accepting motion
 function! edit#search_replace_expr(...) abort
   return utils#motion_func('edit#search_replace', a:000)
+endfunction
+
+" Repaired undo and repeat actions
+" NOTE: This restores cursor position after insert-mode undo. First queue translation
+" with edit#wrap_insert() then run edit#undo_insert() on InsertLeave (e.g. after 'ciw')
+function! edit#undo_repeat(key, count) abort
+  let reset = get(g:, 'repeat_tick', -1) == b:changedtick
+  let keys = (a:count ? a:count : '') . a:key
+  exe 'normal! ' . keys
+  exe &l:foldopen =~# 'undo\|all' ? 'normal! zv' : ''
+  if reset | let g:repeat_tick = b:changedtick | endif
+endfunction
+function! edit#undo_insert(...) abort
+  let imode = a:0 ? a:1 : get(b:, 'insert_mode', '')  " default to queued
+  if imode =~# 'o\|O'
+    let iundo = imode
+  elseif col('.') < col('$') - 1  " standard restore
+    let iundo = 'i'
+  else  " end-of-line restore
+    let iundo = 'a'
+  endif
+  let b:insert_mode = iundo | return "\<C-g>u"
+endfunction
+
+" Insert mode delete-by-tabs and delimit-mate keys
+" NOTE: Native delimitMate#ExpandReturn() issues <Esc> then fails to split brackets due
+" to InsertLeave autocommand that repositions cursor. Use <C-c> to avoid InsertLeave.
+function! edit#wrap_insert(...) abort
+  let imode = a:0 ? a:1 : get(b:, 'insert_mode', '')
+  let b:insert_mode = imode  " see above
+  return imode
+endfunction
+function! edit#wrap_delims(key, ...) abort
+  let names = {'s': 'ExpandSpace', 'r': 'ExpandReturn', 'b': 'BS'}
+  let name = get(names, a:key, a:key)
+  let keys = call('delimitMate#' . name, a:000)
+  let keys = substitute(keys, "\<Esc>", "\<C-c>", 'g')
+  return keys
+endfunction
+function! edit#wrap_delete(...) abort  " vint: -ProhibitUsingUndeclaredVariable
+  let [idx, text] = [col('.') - 1, getline('.')]
+  let text = text[idx:idx + &tabstop - 1]  " forward-delete-by-tab
+  let regex = '^\(\t\| \{,' . &tabstop . '}\).*$'
+  let pad = substitute(text, regex, '\1', '')
+  let cnt = empty(pad) ? a:0 && a:1 : len(pad)
+  let head = cnt && pumvisible() ? "\<C-e>" : ''
+  let keys = repeat("\<Delete>", cnt) | return keys
 endfunction

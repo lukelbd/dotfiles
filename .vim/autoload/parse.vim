@@ -115,9 +115,7 @@ function! parse#get_paths(mode, global, level, ...)
   else  " current buffer
     let paths = [resolve(expand('%:p'))]
   endif
-  if empty(args) && a:level >= 3  " TODO: recursive projects
-    :
-  elseif empty(args) && a:level >= 2  " path projects
+  if empty(args) && a:level >= 2  " path projects
     let paths = map(paths, 'parse#get_root(v:val)')
   elseif empty(args) && a:level >= 1  " path folders
     let paths = map(paths, "empty(v:val) || isdirectory(v:val) ? v:val : fnamemodify(v:val, ':h')")

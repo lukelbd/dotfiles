@@ -451,39 +451,37 @@ function! fold#update_level(...) abort
   echom 'Fold level: ' . &l:foldlevel
 endfunction
 function! fold#update_folds(force, ...) abort
-  let queued = a:force || get(b:, 'fastfold_queued', 0)  " TextChanged,TextChangedI
-  let manual = &l:foldmethod ==# 'manual'  " current method
-  let closed = foldclosed('.')
   let winview = winsaveview()
-  if queued || !manual  " re-apply or convert
-    exe 'FastFoldUpdate' | unlet! b:fastfold_markers
+  let closed = foldlevel('.') ? foldclosed('.') : 0
+  let method = &l:foldmethod  " previous method
+  let queued = get(b:, 'fastfold_queued', 0)
+  let toggle = a:0 ? a:1 : -1  " toggle state
+  let folds = []  " manual marker folds
+  if a:force || queued || method !=# 'manual'  " re-apply or convert
+    exe 'FastFoldUpdate'
+    unlet! b:fastfold_markers
+    let b:fastfold_queued = 0
   endif
-  if !exists('b:fastfold_markers')
-    let b:fastfold_markers = fold#get_markers()
+  if &foldmethod ==# 'manual'
+    let folds = exists('b:fastfold_markers') ? b:fastfold_markers : fold#get_markers()
+    for [_, line1, line2] in folds | exe line1 . ',' . line2 . 'fold' | exe line1 . 'foldopen' | endfor
+    let b:fastfold_markers = []  " set to empty to avoid re-applying
   endif
-  for [level, line1, line2] in b:fastfold_markers
-    exe line1 . ',' . line2 . 'fold' | exe line1 . 'foldopen'
-  endfor
-  let reset = a:0 || !manual || !empty(b:fastfold_markers)
-  let base = &l:filetype ==# 'json' ? 2 : !empty(get(b:, 'fugitive_type', '')) ? 1 : 0
-  let base = base ? base : &l:foldmethod ==# 'manual' && search('{{{1\s*$', 'wn') > 0
-  let base = base ? base : &l:foldmethod ==# 'marker' && search('{{{2\s*$', 'wn') > 0
-  if reset  " re-apply level
-    let &l:foldlevel = a:0 ? base : &l:foldlevel
+  let imethod = &l:foldmethod  " updated fold method
+  let level = &l:filetype ==# 'json' ? 2 : empty(get(b:, 'fugitive_type', '')) ? 0 : 1
+  let level = !level && imethod ==# 'manual' ? search('{{{1\s*$', 'wn') > 0 : level
+  let level = !level && imethod ==# 'marker' ? search('{{{2\s*$', 'wn') > 0 : level
+  let keys = winview.lnum . 'G'  " additional toggles
+  if toggle >= 0 || method !=# imethod || !empty(folds)  " update fold level
+    let &l:foldlevel = a:0 ? level : &l:foldlevel
+    for lnum in fold#get_ignores() | exe lnum . 'foldopen' | endfor
+    let iclosed = foldlevel(winview.lnum) ? foldclosed(winview.lnum) : 0
+    let reveal = closed < 0 && iclosed > 0 || closed == 0 && iclosed !=# winview.lnum
+    let keys .= toggle == 0 || reveal && abs(toggle) == 1 ? 'zv' : ''  " reveal cursor
+    let keys .= toggle > 0 && closed > 0 && iclosed < 0 ? 'zc' : ''  " restore close
   endif
-  for lnum in reset ? fold#get_ignores() : []
-    exe lnum . 'foldopen'
-  endfor
+  exe empty(keys) ? '' : 'silent! normal! ' . keys
   call winrestview(winview)
-  let iclosed = foldclosed('.')
-  let ilevel = foldlevel('.')
-  if a:0 && iclosed > 0  " apply default status
-    exe a:1 ? '' : 'normal! zv'
-  elseif reset && ilevel > 0  " restore original status
-    exe closed > 0 ? iclosed > 0 ? '' : 'normal! zc' : 'normal! zv'
-  endif
-  let b:fastfold_queued = 0
-  let b:fastfold_markers = []
 endfunction
 
 " Toggle inner folds within requested range

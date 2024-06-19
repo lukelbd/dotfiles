@@ -132,11 +132,9 @@ function! s:list_source(mode) abort
 endfunction
 
 " Override fzf :Jumps and :Changes
-" NOTE: This implements :Lines navigation across existing open windows and tabs. Native
-" version handles buffer switching separately from s:action_for() invocation.
 " NOTE: This fixes :Jumps issue where getbufline() output can be empty (filter assumes
 " this is non-empty) and because default flag --bind start:post:etc caused error.
-" NOTE: Changelist is managed from the top-down by filtering out double and empty-line
+" NOTE: This overrides changelist from top-down by filtering out double and empty-line
 " entries or entries with invalid lines, then navigating using using drop_file and
 " setpos('.', ...) instead of the native g,/g; keys. Compare with jumplist above.
 function! s:jump_sink(arg) abort  " first item is key binding
@@ -144,12 +142,6 @@ function! s:jump_sink(arg) abort  " first item is key binding
 endfunction
 function! s:change_sink(arg) abort  " first item is key binding
    return empty(a:arg) ? 1 : s:list_sink(1, a:arg[0])
-endfunction
-function! s:lines_sink(arg) abort
-  if empty(a:arg) | return | endif
-  let parts = split(a:arg[0], "\t", 1)
-  silent call file#drop_file(str2nr(parts[0]))
-  exe parts[2] | exe 'normal! zvzzze'
 endfunction
 function! jump#fzf_jumps(...)
   let opts = '+m -x --ansi --cycle --scroll-off 999'
@@ -170,18 +162,6 @@ function! jump#fzf_changes(...) abort
     \ 'options': opts . ' --prompt "Changes> "',
   \ }
   return fzf#run(fzf#wrap('changes', options, a:0 ? a:1 : 0))
-endfunction
-function! jump#fzf_lines(query, ...) abort
-  let [show, lines] = fzf#vim#_lines(1)
-  let opts = ' --nth ' . (show ? 3 : 2) . '..'
-  let opts .= ' --layout=reverse-list --tiebreak=index --extended'
-  let opts .= ' --query ' . shellescape(a:query) . ' --ansi --tabstop=1'
-  let options = {
-    \ 'source': lines,
-    \ 'sink*': function('s:lines_sink'),
-    \ 'options': opts . ' --prompt "Lines> "',
-  \ }
-  return fzf#run(fzf#wrap('lines', options, a:0 ? a:1 : 0))
 endfunction
 
 " Push current location to top of jumplist

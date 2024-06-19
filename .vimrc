@@ -581,16 +581,16 @@ augroup END
 inoremap <silent> <expr> <C-q> window#close_popup('<Cmd>pclose<CR>')
 inoremap <silent> <expr> <C-w> window#close_popup('<Cmd>pclose<CR>')
 inoremap <silent> <expr> <Tab> window#close_popup('<C-]><Tab>', 2, 1)
-inoremap <silent> <expr> <S-Tab> window#close_popup(edit#insert_delete(0), 0, 1)
+inoremap <silent> <expr> <S-Tab> window#close_popup(edit#wrap_delete(0), 0, 1)
 inoremap <silent> <expr> <F2> window#close_popup(ddc#map#manual_complete(), 2, 1)
-inoremap <silent> <expr> <F1> window#close_popup(edit#insert_delete(0), 0, 1)
-inoremap <silent> <expr> <Delete> window#close_popup(edit#insert_delete(1), 1)
+inoremap <silent> <expr> <F1> window#close_popup(edit#wrap_delete(0), 0, 1)
+inoremap <silent> <expr> <Delete> window#close_popup(edit#wrap_delete(1), 1)
 inoremap <silent> <expr> <C-g><CR> window#close_popup('<CR>')
 inoremap <silent> <expr> <C-g><Space> window#close_popup('<Space>')
 inoremap <silent> <expr> <C-g><BackSpace> window#close_popup('<BackSpace>')
-inoremap <silent> <expr> <CR> window#close_popup('<C-]><C-r>=edit#insert_char("r")<CR>', 1, 1)
-inoremap <silent> <expr> <Space> window#close_popup('<C-]><C-r>=edit#insert_char("s")<CR>', 1)
-inoremap <silent> <expr> <Backspace> window#close_popup('<C-r>=edit#insert_char("b")<CR>', 1)
+inoremap <silent> <expr> <CR> window#close_popup('<C-]><C-r>=edit#wrap_delims("r")<CR>', 1, 1)
+inoremap <silent> <expr> <Space> window#close_popup('<C-]><C-r>=edit#wrap_delims("s")<CR>', 1)
+inoremap <silent> <expr> <Backspace> window#close_popup('<C-r>=edit#wrap_delims("b")<CR>', 1)
 
 " Command mode wild menu completion
 " NOTE: This prevents annoyance where multiple old completion options can be shown
@@ -774,9 +774,10 @@ nnoremap ]y <Cmd>exe v:count1 . 'pop'<CR>
 " NOTE: This is only useful when 'search' excluded from &foldopen. Use to quickly
 " jump over possibly-irrelevant matches without opening unrelated folds.
 for s:map in ['//', '/?', '?/', '??'] | silent! exe 'unmap g' . s:map | endfor
-command! -bang -nargs=* Lines call jump#fzf_lines(<q-args>, <bang>0)
-nnoremap g/ <Cmd>BLines<CR>
-nnoremap g? <Cmd>Lines<CR>
+command! -bang -nargs=* BLines call grep#call_lines(0, 0, <q-args>, <bang>0)
+command! -bang -nargs=* Lines call grep#call_lines(1, 0, <q-args>, <bang>0)
+nnoremap g/ <Cmd>call grep#call_grep('lines', 0, 0)<CR>
+nnoremap g? <Cmd>call grep#call_grep('lines', 1, 0)<CR>
 nnoremap / <Cmd>let b:open_search = 0<CR>/
 nnoremap ? <Cmd>let b:open_search = 0<CR>?
 nnoremap z/ <Cmd>call switch#showmatches()<CR>
@@ -946,17 +947,19 @@ noremap ]A <Cmd>call comment#next_label(v:count1, 1, 'note', 'warning', 'error')
 " Normal and insert mode {{{1
 "-----------------------------------------------------------------------------"
 " Override repeat and register {{{2
-" NOTE: Here edit#insert_undo() returns undo-resetting <C-g>u and resets b:insert_mode
+" NOTE: Here fix repeat.vim race condition bug where repeat#wrap feedkeys() finishes
+" after b:changedtick is updated and sequence during successive undos/redos is lost.
+" NOTE: Here edit#wrap_undo() returns undo-resetting <C-g>u and resets b:insert_mode
 " based on cursor position. Also run this on InsertEnter e.g. after 'ciw' operator map
 augroup undo_setup
   au!
-  au InsertEnter * call edit#insert_undo()
+  au InsertEnter * call edit#undo_insert()
 augroup END
-inoremap <expr> <F7> '<Cmd>undo<CR><Esc>' . edit#insert_mode()
-inoremap <expr> <F8> edit#insert_undo()
-nmap . <Plug>(RepeatDot)
-nmap u <Plug>(RepeatUndo)
-nmap U <Plug>(RepeatRedo)
+inoremap <expr> <F7> '<Cmd>undo<CR><Esc>' . edit#wrap_insert()
+inoremap <expr> <F8> edit#undo_insert()
+nnoremap U <Cmd>call edit#undo_repeat("\<C-r>", v:count1)<CR>
+nnoremap u <Cmd>call edit#undo_repeat('u', v:count1)<CR>
+nnoremap . <Cmd>if !repeat#run(v:count) \| echoerr repeat#errmsg() \| endif<CR>
 
 " Record macro by pressing Q with optional count
 " NOTE: This permits e.g. 1, or '1, for specific macros. Note cannot run 'q' from autoload
@@ -985,10 +988,10 @@ vnoremap <expr> " parse#get_register('@', '*')
 
 " Override changes and deletions
 " NOTE: Uppercase registers are same as lowercase but saved in viminfo.
-nnoremap <expr> c (v:count ? '<Esc>zv' : 'zv') . parse#get_register('') . edit#insert_mode('c')
-nnoremap <expr> C (v:count ? '<Esc>zv' : 'zv') . parse#get_register('') . edit#insert_mode('C')
-vnoremap <expr> c parse#get_register('') . edit#insert_mode('c')
-vnoremap <expr> C parse#get_register('') . edit#insert_mode('C')
+nnoremap <expr> c (v:count ? '<Esc>zv' : 'zv') . parse#get_register('') . edit#wrap_insert('c')
+nnoremap <expr> C (v:count ? '<Esc>zv' : 'zv') . parse#get_register('') . edit#wrap_insert('C')
+vnoremap <expr> c parse#get_register('') . edit#wrap_insert('c')
+vnoremap <expr> C parse#get_register('') . edit#wrap_insert('C')
 
 " Delete text, specify registers with counts (no more dd mapping)
 " NOTE: Visual counts are ignored, and cannot use <Esc> because that exits visual mode
@@ -1013,9 +1016,9 @@ vnoremap <expr> P parse#get_register('') . 'P'
 
 " Remove single character
 " NOTE: This omits single-character deletions from register by default
-nnoremap <expr> gx edit#insert_mode('gi')
-nnoremap <expr> cx '"_' . edit#insert_mode('c') . 'l'
-nnoremap <expr> cX '"_' . edit#insert_mode('c') . 'h'
+nnoremap <expr> gx edit#wrap_insert('gi')
+nnoremap <expr> cx '"_' . edit#wrap_insert('c') . 'l'
+nnoremap <expr> cX '"_' . edit#wrap_insert('c') . 'h'
 nnoremap dx x
 nnoremap dX X
 nnoremap x "_x
@@ -1092,37 +1095,37 @@ augroup insert_repair
   au!
   au InsertLeave * exe 'silent! keepjumps normal! `^'
 augroup END
-nnoremap <expr> i edit#insert_mode('i')
-nnoremap <expr> I edit#insert_mode('I')
-nnoremap <expr> a edit#insert_mode('a')
-nnoremap <expr> A edit#insert_mode('A')
-nnoremap <expr> o edit#insert_mode('o')
-nnoremap <expr> O edit#insert_mode('O')
+nnoremap <expr> i edit#wrap_insert('i')
+nnoremap <expr> I edit#wrap_insert('I')
+nnoremap <expr> a edit#wrap_insert('a')
+nnoremap <expr> A edit#wrap_insert('A')
+nnoremap <expr> o edit#wrap_insert('o')
+nnoremap <expr> O edit#wrap_insert('O')
 
 " Enter insert mode from visual mode
 " NOTE: Here 'I' goes to start of selection and 'A' end of selection
 exe 'silent! vunmap o' | exe 'silent! vunmap O'
-vnoremap <expr> gi '<Esc>' . edit#insert_mode('i')
-vnoremap <expr> gI '<Esc>' . edit#insert_mode('I')
-vnoremap <expr> ga '<Esc>' . edit#insert_mode('a')
-vnoremap <expr> gA '<Esc>' . edit#insert_mode('A')
-vnoremap <expr> go '<Esc>' . edit#insert_mode('o')
-vnoremap <expr> gO '<Esc>' . edit#insert_mode('O')
+vnoremap <expr> gi '<Esc>' . edit#wrap_insert('i')
+vnoremap <expr> gI '<Esc>' . edit#wrap_insert('I')
+vnoremap <expr> ga '<Esc>' . edit#wrap_insert('a')
+vnoremap <expr> gA '<Esc>' . edit#wrap_insert('A')
+vnoremap <expr> go '<Esc>' . edit#wrap_insert('o')
+vnoremap <expr> gO '<Esc>' . edit#wrap_insert('O')
 vnoremap <expr> I mode() =~# '^[vV]'
-  \ ? '<Esc><Cmd>keepjumps normal! `<<CR>' . edit#insert_mode('i') : edit#insert_mode('I')
+  \ ? '<Esc><Cmd>keepjumps normal! `<<CR>' . edit#wrap_insert('i') : edit#wrap_insert('I')
 vnoremap <expr> A mode() =~# '^[vV]'
-  \ ? '<Esc><Cmd>keepjumps normal! `><CR>' . edit#insert_mode('a') : edit#insert_mode('A')
+  \ ? '<Esc><Cmd>keepjumps normal! `><CR>' . edit#wrap_insert('a') : edit#wrap_insert('A')
 
 " Enter insert mode with paste toggle
 " NOTE: Switched easy-align mapping from ga for consistency here
-nnoremap <expr> ga switch#paste() . edit#insert_mode('a')
-nnoremap <expr> gA switch#paste() . edit#insert_mode('A')
-nnoremap <expr> gi switch#paste() . edit#insert_mode('i')
-nnoremap <expr> gI switch#paste() . edit#insert_mode('I')
-nnoremap <expr> go switch#paste() . edit#insert_mode('o')
-nnoremap <expr> gO switch#paste() . edit#insert_mode('O')
-nnoremap <expr> gc switch#paste() . parse#get_register('') . edit#insert_mode('c')
-nnoremap <expr> gC switch#paste() . parse#get_register('') . edit#insert_mode('C')
+nnoremap <expr> ga switch#paste() . edit#wrap_insert('a')
+nnoremap <expr> gA switch#paste() . edit#wrap_insert('A')
+nnoremap <expr> gi switch#paste() . edit#wrap_insert('i')
+nnoremap <expr> gI switch#paste() . edit#wrap_insert('I')
+nnoremap <expr> go switch#paste() . edit#wrap_insert('o')
+nnoremap <expr> gO switch#paste() . edit#wrap_insert('O')
+nnoremap <expr> gc switch#paste() . parse#get_register('') . edit#wrap_insert('c')
+nnoremap <expr> gC switch#paste() . parse#get_register('') . edit#wrap_insert('C')
 
 " Characters and spelling {{{2
 " NOTE: \x7F-\x9F are actually displayable but not part of ISO standard so not shown
