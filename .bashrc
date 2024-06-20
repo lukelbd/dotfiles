@@ -1871,7 +1871,7 @@ _fzf_args_prune=' \( -fstype devfs -o -fstype devtmpfs -o -fstype proc -o -fstyp
 _fzf_args_ignore=$(ignores 1 plugged packages | sed 's/(/\\(/g;s/)/\\)/g')
 _fzf_bindings=( \
   /:accept tab:accept btab:clear-query ctrl-t:toggle ctrl-s:select ctrl-a:select-all \
-  ctrl-w:cancel ctrl-q:cancel ctrl-k:up ctrl-j:down ctrl-h:left ctrl-l:right \
+  ctrl-w:cancel ctrl-q:cancel ctrl-k:up ctrl-j:down ctrl-h:backward-char ctrl-l:forward-char \
   ctrl-g:jump f1:prev-history f2:next-history f3:preview-page-up f4:preview-page-down \
   ctrl-u:half-page-up ctrl-d:half-page-down ctrl-b:page-up ctrl-f:page-down \
   alt-left:backward-word alt-right:forward-word alt-up:beginning-of-line alt-down:end-of-line \

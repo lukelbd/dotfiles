@@ -73,7 +73,7 @@ set fillchars=eob:~,vert:\|,lastline:@,fold:\ ,foldopen:\>,foldclose:<
 set foldclose=  " use foldclose=all to auto-close folds when leaving
 set foldcolumn=0  " do not show folds, since fastfold dynamically updates
 set foldlevelstart=0  " hide folds when opening (then 'foldlevel' sets current status)
-set foldnestmax=6  " allow only some folds
+set foldnestmax=8  " allow only some folds
 set foldopen=insert,mark,quickfix,tag,undo  " opening folds on cursor movement, disallow block folds
 set foldtext=fold#fold_text()  " default function for generating text shown on fold line
 set guicursor+=a:blinkon0  " skip blinking cursor
