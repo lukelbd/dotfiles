@@ -123,7 +123,6 @@
 	commands = "!git help -a | grep \"^ \\+[a-z]\" | tr -s ' ' | cut -d' ' -f2"
 	commits  = "!git log --graph --abbrev-commit --date=relative --branches --oneline --decorate --color $(git rev-list -g --all) 2>/dev/null"
 	deleted  = "!git-deleted \"$@\""
-	delta    = diff -M --
 	dictator = "!git-dictator \"$@\""
 	exec     = "!exec \"$@\""
 	get      = "!git-get \"$@\""
@@ -149,6 +148,8 @@
 	staged   = diff --stat=80 --staged
 	stashed  = "!f() { git diff HEAD stash@{${1:-0}} --stat=80 2>/dev/null; }; f"
 	stashes  = stash list
+	stored   = "!f() { git diff stash@{${1:-0}}^ stash@{${1:-0}} 2>/dev/null; }; f"
+	stowed   = "!f() { git diff HEAD stash@{${1:-0}} 2>/dev/null; }; f"
 	stream   = "!git checkout master && pull upstream master"
 	tags     = tag --list
 	top      = rev-parse --show-toplevel
@@ -196,7 +197,6 @@
 	keepBackup = false
 [pager]
 	branch = false
-	latest = false
 	saved = false
 	staged = false
 	stash = false
