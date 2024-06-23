@@ -6,6 +6,9 @@
 " optionally choose between block comments and inline comments when inserting.
 " NOTE: Search non-printable dummy characters 1-32 from &isprint by default. Note zero
 " character is null i.e. string termination so matches empty string. See :help /\]
+" let root = parse#get_root(expand('%:p'))
+" let opts = ['setup.py', 'setup.cfg', '__init__.py']
+" call filter(opts, '!empty(globpath(root, v:val))')
 function! comment#get_string(...) abort
   let space = repeat(' ', a:0 ? a:1 : 0)  " include spaces
   let string = substitute(&commentstring, '^$', '%s', '')  " copied from tpope/commentary
@@ -17,18 +20,6 @@ function! comment#get_regex(...) abort
   let space = a:0 && a:1 ? '\s\+' : a:0 ? '\s*' : ''  " prepend spaces
   let regex = substitute(comment#get_string(), '%s.*', '', '')
   return space . (empty(regex) ? special : escape(regex, '[]\.*$~'))
-endfunction
-function! comment#get_print(debug) abort
-  let root = parse#get_root(expand('%:p'))
-  let opts = ['setup.py', 'setup.cfg', '__init__.py']
-  call filter(opts, '!empty(globpath(root, v:val))')
-  if &l:filetype ==# 'sh'  " shell scripting
-    let regex = a:debug ? '^\s*echo\>.*2\s*>&\s*1' : '^\s*echo\>'
-  elseif !empty(opts)  " python project
-    let regex = a:debug ? '^\s*ic(' : '^\s*print('
-  else  " default project
-    let regex = a:debug ? '\(^\|\s\+\)unsilent\s\+echom\?\>' : '^\s*echom\?\>'
-  endif | return regex
 endfunction
 
 " Comment and section headers

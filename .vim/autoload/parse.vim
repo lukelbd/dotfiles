@@ -132,7 +132,7 @@ function! parse#get_paths(mode, global, level, ...)
     if path =~# '^icloud\>'
       let path = RelativePath(expand('~/' . path))
     elseif empty(path) && (a:mode > 0 || len(paths) > 1)
-      let path = './'  " trailing slash as with other folders
+      let path = './'  " trailing slash same as other folders
     endif
     if !empty(path)  " otherwise return empty list
       call add(result, path)
@@ -276,7 +276,7 @@ function! parse#get_register(mode, ...) abort
   if empty(name)  " clear message
     redraw | echo '' | return ''
   elseif !v:count && a:mode !~# '[icq@m`]'
-    call parse#setup_registers()  " queue register changes
+    call parse#set_registers()  " queue register changes
   endif
   let warn = '' | if v:count > cmax  " emit warning
     let warn .= ' Truncating count ' . v:count . ' to ' . string(name) . ' (count ' . cmax . ')'
@@ -317,6 +317,22 @@ function! parse#set_register(info, dest, ...) abort
     call setreg(nr2char(char), prev)
   endfor | call setreg(dest1, a:info)  " changes unnamed if isunnamed=v:true
 endfunction
+function! parse#set_registers() abort
+  let b:registers = {}
+  let regs = map(range(0, 9), 'string(v:val)')
+  for name in regs  " restore macros
+    let info = getreginfo(name)
+    let info.isunnamed = v:false
+    let b:registers[name] = info
+  endfor
+  let restore = "call map(get(b:, 'registers', {}), 'setreg(v:key, v:val)')"
+  let rotate = 'call parse#set_translate(v:event.regname, v:event.operator)'
+  let reset = 'unlet! b:registers | autocmd! registers_' . bufnr()
+  exe 'augroup registers_' . bufnr() | exe 'au!'
+  exe 'au TextYankPost <buffer> ' . rotate . ' | ' restore . ' | ' . reset
+  exe 'au CursorHold <buffer> if utils#none_pending() | ' . restore . ' | ' . reset . ' | endif'
+  exe 'augroup END'
+endfunction
 function! parse#set_translate(name, mode) abort
   let [_, name1, name2, _] = s:get_props(a:mode, 0)
   let info = getreginfo(a:name)  " information
@@ -332,20 +348,4 @@ function! parse#set_translate(name, mode) abort
   if a:mode ==# 'q'  " show recording
     echom 'Macro @' . (a:name ==# '0' ? name1 : a:name) . ': ' . getreg(a:name)
   endif | return name1
-endfunction
-function! parse#setup_registers() abort
-  let b:registers = {}
-  let regs = map(range(0, 9), 'string(v:val)')
-  for name in regs  " restore macros
-    let info = getreginfo(name)
-    let info.isunnamed = v:false
-    let b:registers[name] = info
-  endfor
-  let restore = "call map(get(b:, 'registers', {}), 'setreg(v:key, v:val)')"
-  let rotate = 'call parse#set_translate(v:event.regname, v:event.operator)'
-  let reset = 'unlet! b:registers | autocmd! registers_' . bufnr()
-  exe 'augroup registers_' . bufnr() | exe 'au!'
-  exe 'au TextYankPost <buffer> ' . rotate . ' | ' restore . ' | ' . reset
-  exe 'au CursorHold <buffer> if utils#none_pending() | ' . restore . ' | ' . reset . ' | endif'
-  exe 'augroup END'
 endfunction

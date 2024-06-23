@@ -7,7 +7,7 @@
 " WARNING: Strange bug seems to cause :Ag and :Rg to only work on individual files
 " if more than one file is passed. Otherwise preview window shows 'file is not found'
 " error and selecting from menu fails. So always pass extra dummy name.
-function! s:parse_grep(global, level, regex, ...) abort
+function! grep#parse(global, level, regex, ...) abort
   let @/ = a:regex  " highlight matches
   if a:regex =~? '\\c'  " apply case manually
     let case = a:regex =~# '\\C' ? '--case-sensitive' : '--ignore-case'
@@ -16,9 +16,9 @@ function! s:parse_grep(global, level, regex, ...) abort
   endif
   let paths = call('parse#get_paths', [0, a:global, a:level] + a:000)
   let paths = empty(paths) ? paths : add(paths, 'dummy.fzf')  " fix bug (see above)
-  return [s:parse_regex(a:regex), join(paths, ' '), case]
+  return [grep#regex(a:regex), join(paths, ' '), case]
 endfunction
-function! s:parse_regex(regex) abort  " convert to pcre syntax
+function! grep#regex(regex) abort  " convert to pcre syntax
   let regex = substitute(a:regex, '\\%\([$^]\)', '\1', 'g')  " convert file borders
   let regex = substitute(regex, '\\%\([#V]\|[<>]\?''m\)', '', 'g')  " ignore mark ranges
   let regex = substitute(regex, '\\%[<>]\?\(\.\|[0-9]\+\)[lcv]', '', 'g')  " ignore pos ranges
@@ -57,7 +57,8 @@ function! grep#call_lines(global, level, regex, ...) abort
   let opts = '-d "\t" --tabstop=1 --nth ' . (2 + show) . '..'
   let opts .= ' --with-nth ' . (a:global ? 1 + show : 2 + show) . '..'
   let opts .= ' --layout=reverse-list --tiebreak=index --extended --ansi'
-  let [_, _, case] = s:parse_grep(a:global, a:level, a:regex)
+  let opts .= ' --query=' . string(succinct#regex(a:regex, 'omns'))
+  let [_, _, case] = grep#parse(a:global, a:level, a:regex)
   let prompt = toupper(cmd[0]) . tolower(cmd[1:]) . '> '
   let regex1 = a:global ? '' : '^\e\?[^\e]*\D' . bufnr('') . '\t'
   let regex2 = empty(regex) ? '' : '\t[^\e]\+' . regex . '[^\e]*$'
@@ -85,7 +86,7 @@ function! grep#call_ag(global, level, regex, ...) abort
   let flags .= a:0 || a:level > 2 ? ' --unrestricted' : ' --path-to-ignore ~/.ignore'
   let flags .= a:0 || a:level > 2 ? ' -t' : ' --path-to-ignore ~/.wildignore'  " compare to rg
   let args = [a:global, a:level, a:regex] + a:000
-  let [regex, paths, case] = call('s:parse_grep', args)
+  let [regex, paths, case] = call('grep#parse', args)
   let opts = fzf#vim#with_preview()
   let source = join([flags, case, '--', regex, paths], ' ')
   let filter = ' | sed "s@$HOME@~@"'  " post-process
@@ -98,7 +99,7 @@ function! grep#call_rg(global, level, regex, ...) abort
   let flags .= ' --ignore-file ~/.wildignore'  " compare to ag
   let flags .= a:regex =~# '\\c' ? ' --ignore-case' : a:regex =~# '\\C' ? '--case-sensitive' : &l:smartcase
   let args = [a:global, a:level, a:regex] + a:000
-  let [regex, paths, case] = call('s:parse_grep', args)
+  let [regex, paths, case] = call('grep#parse', args)
   let opts = fzf#vim#with_preview()
   let head = 'rg --column --line-number --no-heading --color=always'
   let source = join([head, flags, case, '--', regex, paths], ' ')
@@ -119,24 +120,17 @@ function! grep#complete_search(lead, line, cursor)
   return reverse([@/] + opts[1:])  " match to user input
 endfunction
 function! grep#call_grep(cmd, global, level) abort
+  let name = a:level > 2 ? 'root' : a:level > 1 ? 'project' : a:level ? 'folder' : 'buffer'
   let paths = parse#get_paths(1, a:global, a:level)
-  if a:level > 2
-    let name = 'directories'
-  elseif a:level > 1
-    let name = 'open project'
-  elseif a:level > 0
-    let name = 'file folder'
-  else
-    let name = 'open buffer'
-  endif
+  let action = a:cmd ==# 'lines' ? 'Search' : toupper(a:cmd[0]) . a:cmd[1:]
   if a:global && len(paths) > 1  " open files or folders across session
     let label = len(paths) . ' ' . name . 's'
-  elseif len(paths) != 1  " multiple objects
-    let label = name . 's ' . join(paths, ' ')
-  else  " current or input files or folders
-    let label = name . ' ' . paths[0]
+  elseif a:cmd ==# 'lines'
+    let label = 'current buffer'
+  else  " specific paths
+    let label = join(paths, ' ')
   endi
-  let prompt = toupper(a:cmd[0]) . a:cmd[1:] . ' ' . label
+  let prompt = action . ' ' . label
   let regex = utils#input_default(prompt, @/, 'grep#complete_search')
   if empty(regex) | return | endif
   let args = [a:global, a:level, regex]

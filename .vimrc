@@ -798,8 +798,7 @@ vnoremap <expr> z? edit#sel_lines_expr(1)
 " Interactive file jumping with grep commands
 " NOTE: Maps use default search pattern '@/'. Commands can be called with arguments
 " to explicitly specify path (without arguments each name has different default).
-" NOTE: These redefinitions add flexibility to native fzf.vim commands, mnemonic
-" for alternatives is 'local directory' or 'current file'. Also note Rg is faster and
+" NOTE: Commands add flexibility to native fzf.vim commands. Note Rg is faster and
 " has nicer output so use by default: https://unix.stackexchange.com/a/524094/112647
 command! -range=0 -bang -nargs=* -complete=file Grep call call('grep#call_rg', [<bang>0, <count>, tags#get_search(2), <f-args>])
 command! -range=0 -bang -nargs=* -complete=file Find call call('grep#call_rg', [<bang>0, <count>, tags#get_search(1), <f-args>])
@@ -810,22 +809,33 @@ nnoremap g" <Cmd>call grep#call_grep('rg', 0, 2)<CR>
 nnoremap z' <Cmd>call grep#call_grep('rg', 1, 2)<CR>
 nnoremap z" <Cmd>call grep#call_grep('rg', 1, 3)<CR>
 
-" Convenience grep maps and commands
-" NOTE: Search open files for print statements and project files for others
-" NOTE: Currently do not use :Fixme :Error or :Xxx but these are also highlighted
-let s:conflicts = '^' . repeat('[<>=|]', 7) . '\($\|\s\)'
-command! -bang -nargs=* -complete=file Debugs call grep#call_rg(<bang>0, 2, comment#get_print(1), <f-args>)
-command! -bang -nargs=* -complete=file Prints call grep#call_rg(<bang>0, 2, comment#get_print(0), <f-args>)
-command! -bang -nargs=* -complete=file Notes call grep#call_rg(<bang>0, 2, '\<\(Note\|NOTE\):', <f-args>)
-command! -bang -nargs=* -complete=file Todos call grep#call_rg(<bang>0, 2, '\<\(Todo\|TODO\|Fixme\|FIXME\):', <f-args>)
-command! -bang -nargs=* -complete=file Warnings call grep#call_rg(<bang>0, 2, '\<\(Warning\|WARNING\|Error\|ERROR\):', <f-args>)
-command! -bang -nargs=* -complete=file Conflicts call grep#call_rg(<bang>0, 2, s:conflicts, <f-args>)
-nnoremap gG <Cmd>Conflicts<CR>
+" Grepping uncommented print statements
+" NOTE: These searches all open projects by default
+" NOTE: Regexes are assigned to @/ and translated with grep#regex()
+let s:regex_code = '\%(^\s*\|[*;&|]\s\+\)'
+let s:regex_bugs = s:regex_code . '\(ic(.*)\|echo\>.*2>&1\|unsilent\s\+echom\?\>\)'
+let s:regex_echo = s:regex_code . '\(print(.*)\|echom\?\>\)'
+let s:regex_diff = '^' . repeat('[<>=|]', 7) . '\($\|\s\)'
+command! -bang -nargs=* -complete=file Debugs call grep#call_rg(<bang>0, 2, s:regex_bugs <f-args>)
+command! -bang -nargs=* -complete=file Prints call grep#call_rg(<bang>0, 2, s:regex_echo, <f-args>)
+command! -bang -nargs=* -complete=file Conflicts call grep#call_rg(<bang>0, 2, s:regex_diff, <f-args>)
 nnoremap gB <Cmd>Debugs!<CR>
+nnoremap zB <Cmd>Prints!<CR>
+nnoremap gG <Cmd>Conflicts!<CR>
+
+" Convenience grep maps and commands
+" NOTE: This searches current open project by default
+" NOTE: Regexes are assigned to @/ and translated with grep#regex()
+let s:regex_note = '\<\(Note\|NOTE\):'
+let s:regex_todo = '\<\(Todo\|TODO\|Fixme\|FIXME\):'
+let s:regex_warn = '\<\(Warning\|WARNING\|Error\|ERROR\):'
+let s:regex_code = '\(print(.*)\|echom\?\>\)'
+command! -bang -nargs=* -complete=file Notes call grep#call_rg(<bang>0, 2, s:regex_note, <f-args>)
+command! -bang -nargs=* -complete=file Todos call grep#call_rg(<bang>0, 2, s:regex_todo, <f-args>)
+command! -bang -nargs=* -complete=file Warnings call grep#call_rg(<bang>0, 2, s:regex_warn, <f-args>)
 nnoremap gE <Cmd>Todos<CR>
 nnoremap gM <Cmd>Notes<CR>
 nnoremap gW <Cmd>Warnings<CR>
-nnoremap zB <Cmd>Prints!<CR>
 nnoremap zE <Cmd>Todos!<CR>
 nnoremap zM <Cmd>Notes!<CR>
 nnoremap zW <Cmd>Warnings!<CR>
@@ -1951,7 +1961,7 @@ if s:has_plug('vim-tags')  " {{{
   nnoremap gy <Cmd>call tags#select_tag(0)<CR>
   nnoremap gY <Cmd>call tags#select_tag(2)<CR>
   nnoremap zy <Cmd>call tags#select_tag(1)<CR>
-  nnoremap zY <Cmd>UpdateFiles \| UpdateTags \| GutentagsUpdate<CR><Cmd>echom 'Updated buffer tags'<CR>
+  nnoremap zY <Cmd>UpdateFolds \| UpdateFiles \| UpdateTags \| GutentagsUpdate<CR><Cmd>echom 'Updated buffer tags'<CR>
   let s:major = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
   let s:minor = {'fortran': 'ekltvEL', 'python': 'xviI', 'vim': 'vnC', 'tex': 'gioetBCN'}
   let g:tags_keep_jumps = 1  " default is zero
@@ -1984,7 +1994,7 @@ if s:has_plug('vim-gutentags')  " {{{
   nnoremap gt <Cmd>BTags<CR>
   nnoremap gT <Cmd>Tags<CR>
   nnoremap zt <Cmd>FTags<CR>
-  nnoremap zT <Cmd>UpdateFiles \| UpdateTags! \| GutentagsUpdate!<CR><Cmd>echom 'Updated project tags'<CR>
+  nnoremap zT <Cmd>UpdateFolds \| UpdateFiles \| UpdateTags! \| GutentagsUpdate!<CR><Cmd>echom 'Updated project tags'<CR>
   let g:gutentags_trace = 0  " toggle debug mode (also try :ShowIgnores)
   let g:gutentags_background_update = 1  " disable for debugging, printing updates
   let g:gutentags_ctags_auto_set_tags = 0  " tag#update_files() handles this instead

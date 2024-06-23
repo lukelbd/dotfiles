@@ -188,11 +188,11 @@ function! s:setup_syntax() abort  " man-style pydoc syntax
 endfunction
 function! shell#setup_man(...) abort
   if !empty(get(b:, 'doc_name', ''))
-    setlocal tabstop=4 softtabstop=4 shiftwidth=4 foldnestmax=3
+    setlocal tabstop=4 softtabstop=4 shiftwidth=4 foldmethod=indent foldnestmax=3
     call s:setup_syntax()  " set up syntax highlighting
     let [b:doc_name, key, cmd] = [@%, 'doc', 'python#doc_page']
   else
-    setlocal tabstop=7 softtabstop=7 shiftwidth=7 foldnestmax=3
+    setlocal tabstop=7 softtabstop=7 shiftwidth=7 foldmethod=indent foldnestmax=3
     let page = tolower(matchstr(getline(1), '\f\+'))  " from man syntax group
     let pnum = matchstr(getline(1), '(\@<=[1-9][a-z]\=)\@=')  " from man syntax
     let [b:man_name, key, cmd] = [[page, pnum], 'man', 'shell#man_page']
