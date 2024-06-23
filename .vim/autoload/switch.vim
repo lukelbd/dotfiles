@@ -280,8 +280,8 @@ function! switch#showchanges(...) abort
   let suppress = a:0 > 1 ? a:2 : 0
   if toggle  " :global previous search
     call fold#update_folds(0, 2)
-    for lnum in lnums | exe 'keepjumps silent! normal! ' . lnum . 'Gzv' | endfor
-    call winrestview(winview)
+    for lnum in lnums | exe lnum . 'foldopen' | endfor
+    call winrestview(winview) | exe 'normal! zzze'
   else  " keep hlsearch enabled
     call winrestview(winview)
     call fold#update_folds(0, 1)
@@ -305,8 +305,8 @@ function! switch#showmatches(...) abort
   let suppress = a:0 > 1 ? a:2 : 0
   if toggle  " :global previous search
     call fold#update_folds(0, 2)
-    global//silent! normal! zv
-    call winrestview(winview)
+    for lnum in lnums | exe lnum . 'foldopen' | endfor
+    call winrestview(winview) | exe 'normal! zzze'
   else  " keep hlsearch enabled
     call winrestview(winview)
     call fold#update_folds(0, 1)
