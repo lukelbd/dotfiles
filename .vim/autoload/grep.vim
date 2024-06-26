@@ -31,7 +31,7 @@ function! grep#regex(regex) abort  " convert to pcre syntax
   let regex = substitute(regex, '\C\\[IKF]', '[a-zA-Z_]', 'g')  " convert to alphabetic
   let regex = substitute(regex, '\C\\[ikf]', '\\w', 'g')  " convert to alphanumeric
   let regex = substitute(regex, '\%(\\%\?\)\@<!\([(|)+?{]\)', '\\\\\1', 'g')  " double escape magics
-  let regex = substitute(regex, '\\\(%\?[(]\|[|)+?{]\)', '\1', 'g')  " unescape magics
+  let regex = substitute(regex, '\\%\?\([(|)+?{]\)', '\1', 'g')  " unescape magics
   return fzf#shellescape(regex)  " similar to native method but supports other shells
 endfunction
 
