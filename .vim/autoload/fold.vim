@@ -409,7 +409,7 @@ endfunction
 " NOTE: This is called by after/common.vim following Syntax autocommand
 " WARNING: Sometimes run into issue where opening new files or reading updates
 " permanently disables 'expr' folds. Account for this by re-applying fold method.
-function! fold#update_method() abort
+function! fold#update_method(...) abort
   let [method, expr] = ['syntax', '']  " default values
   let current = &l:foldmethod  " active method
   let cached = get(w:, 'lastfdm', 'manual')
@@ -458,13 +458,17 @@ function! fold#update_folds(force, ...) abort
   let toggle = a:0 ? a:1 : -1  " toggle state
   let folds = []  " manual marker folds
   if a:force || queued || method !=# 'manual'  " re-apply or convert
+    let b:fastfold_queued = 0 | unlet! b:fastfold_markers
+    if a:force 
+      call SimpylFold#Recache()
+    endif
     exe 'FastFoldUpdate'
-    unlet! b:fastfold_markers
-    let b:fastfold_queued = 0
   endif
   if &foldmethod ==# 'manual'
     let folds = exists('b:fastfold_markers') ? b:fastfold_markers : fold#get_markers()
-    for [_, line1, line2] in folds | exe line1 . ',' . line2 . 'fold' | exe line1 . 'foldopen' | endfor
+    for [_, line1, line2] in folds
+      exe line1 . ',' . line2 . 'fold' | exe line1 . 'foldopen'
+    endfor
     let b:fastfold_markers = []  " set to empty to avoid re-applying
   endif
   let imethod = &l:foldmethod  " updated fold method

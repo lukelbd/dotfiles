@@ -1,5 +1,5 @@
-"------------------------------------------------------------------------------" {{{1
-" Improve tex syntax. Adapted from vimtex and builds on $VIMRUNTIME/syntax/tex.vim
+"------------------------------------------------------------------------------"
+" Improve tex syntax. Adapted from vimtex and $VIMRUNTIME/syntax/tex.vim  {{{1
 "------------------------------------------------------------------------------"
 " Perform spell checking when no syntax {{{2
 " This will enable spell checking e.g. in toplevel of included files
@@ -101,8 +101,8 @@ syntax cluster texPreambleMatchGroup add=texAuthors
 syntax cluster texPreambleMatchGroup add=texAbstracts
 syntax cluster texPreambleMatchGroup add=texAbstract
 
-"------------------------------------------------------------------------------" {{{1
-" Command improvements
+"------------------------------------------------------------------------------"
+" Command improvements {{{1
 "------------------------------------------------------------------------------"
 " Improve handling of newcommand and newenvironment {{{2
 " Allow arguments in newenvironments
@@ -167,8 +167,8 @@ highlight link texUrlVerb texUrl
 highlight link texHref texUrl
 highlight link texHyperref texRefZone
 
-"-----------------------------------------------------------------------------" {{{1
-" Integration support
+"-----------------------------------------------------------------------------"
+" Integration support {{{1
 "-----------------------------------------------------------------------------"
 " Add support for biblatex and csquotes packages {{{2
 if get(g:, 'tex_fast', 'r') =~# 'r'
@@ -345,8 +345,8 @@ for s:texmath in [
     \ . s:texmath[0] . "' contained conceal cchar=" . s:texmath[1]
 endfor
 
-"-----------------------------------------------------------------------------" {{{1
-" Nested syntax support
+"-----------------------------------------------------------------------------"
+" Nested syntax support {{{1
 "-----------------------------------------------------------------------------"
 " Nested syntax highlighting for dot {{{2
 unlet b:current_syntax

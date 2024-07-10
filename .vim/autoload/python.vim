@@ -261,7 +261,7 @@ endfunction
 function! python#doc_translate(item) abort
   if &l:filetype !=# 'python' | return a:item | endif
   let winview = winsaveview()
-  let parts = split(a:item, '\.')
+  let parts = split(a:item, '\.', 1)
   let module = parts[0]
   let regex = '\(\k\|\.\)\+'
   if search('import\s\+' . regex . '\s\+as\s\+' . module, 'w')

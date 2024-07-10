@@ -622,16 +622,17 @@ cnoremap <silent> <expr> / window#close_wild('/')
 " NOTE: Here fold#update_folds() re-enforces special expr fold settings for markdown
 " and python files then applies default toggle status that differs from buffer-wide
 " &foldlevel for fortran python and tex files (e.g. always open \begin{document}).
-command! -bang -nargs=? UpdateFolds call fold#update_folds(<bang>0, <f-args>)
 for s:key in ['z', 'f', 'F', 'n', 'N'] | silent! exe 'unmap! z' . s:key | endfor
+command! -bang -count -nargs=? UpdateFolds
+  \ call fold#update_folds(<bang>0, <count>) | echom 'Updated folds'
 nnoremap zv zvzzze
 vnoremap zv zvzzze
+nnoremap zV <Cmd>UpdateFolds!<CR>zvzzze
+vnoremap zV <Cmd>UpdateFolds!<CR>zvzzze
 nnoremap zx <Cmd>call fold#update_folds(0, 0)<CR>
 vnoremap zx <Cmd>call fold#update_folds(0, 0)<CR>
 nnoremap zX <Cmd>call fold#update_folds(0, 2)<CR>
 vnoremap zX <Cmd>call fold#update_folds(0, 2)<CR>
-nnoremap zV <Cmd>call fold#update_folds(1, 0)<CR><Cmd>echom 'Updated folds'<CR>zvzzze
-vnoremap zV <Cmd>call fold#update_folds(1, 0)<CR><Cmd>echom 'Updated folds'<CR>zvzzze
 
 " Toggle folds over selection or under matches after updating
 " NOTE: Here fold#toggle_folds_expr() calls fold#update_folds() before toggling.
@@ -680,7 +681,7 @@ vnoremap <expr> zO fold#toggle_parents_expr(0)
 call utils#repeat_map('', '[Z', 'FoldBackward', '<Cmd>keepjumps normal! zkza<CR>')
 call utils#repeat_map('', ']Z', 'FoldForward', '<Cmd>keepjumps normal! zjza<CR>')
 noremap [z <Cmd>keepjumps normal! zk<CR><Cmd>keepjumps normal! [z<CR>
-noremap ]z <Cmd>keepjumps normal! zj<CR><Cmd>keepjumps normal! [z<CR>
+noremap ]z <Cmd>keepjumps normal! zj<CR><Cmd>keepjumps normal! ]z<CR>
 noremap zk <Cmd>keepjumps normal! [z<CR>
 noremap zj <Cmd>keepjumps normal! ]z<CR>
 nnoremap gz <Cmd>call fold#fzf_folds()<CR>
@@ -1631,11 +1632,11 @@ let g:SimpylFold_docstring_preview = 0  " disable foldtext() override
 " See: https://vi.stackexchange.com/a/4892/8084
 " See: https://github.com/preservim/vim-markdown/issues/516 and 489
 " call s:plug('numirias/semshi', {'do': ':UpdateRemotePlugins'})  " neovim required
-" call s:plug('vim-python/python-syntax')  " originally from hdima/python-syntax, manually copied version with match case
 " call s:plug('MortenStabenau/matlab-vim')  " requires tmux installed
 " call s:plug('daeyun/vim-matlab')  " alternative but project seems dead
 " call s:plug('neoclide/jsonc.vim')  " vscode-style expanded json syntax, but overkill
 " call s:plug('AndrewRadev/inline_edit.vim')  " inline syntax highlighting
+" call s:plug('vim-python/python-syntax')  " nicer python syntax (copied instead)
 call s:plug('vim-scripts/applescript.vim')  " applescript syntax support
 call s:plug('andymass/vim-matlab')  " recently updated vim-matlab fork from matchup author
 call s:plug('preservim/vim-markdown')  " see .vim/after/syntax.vim for kludge fix
@@ -1677,15 +1678,15 @@ let g:vim_markdown_math = 1 " turn on $$ math
 " call s:plug('klen/python-mode')  " incompatible with jedi-vim and outdated
 " call s:plug('ivanov/vim-ipython')  " replaced by jupyter-vim
 " call s:plug('davidhalter/jedi-vim')  " use vim-lsp with mamba install python-lsp-server
-" call s:plug('jeetsukumaran/vim-python-indent-black')  " black style indentexpr, but too buggy
 " call s:plug('lukelbd/jupyter-vim', {'branch': 'buffer-local-highlighting'})  " temporary
 " call s:plug('fs111/pydoc.vim')  " python docstring browser, now use custom utility
 " call s:plug('rafaqz/citation.vim')  " unite.vim citation source
 " call s:plug('twsh/unite-bibtex')  " unite.vim python 3 citation source
 " call s:plug('lervag/vimtex')  " giant tex plugin
 " let g:pydiction_location = expand('~') . '/.vim/plugged/Pydiction/complete-dict'  " for pydiction
+" call s:plug('Vimjas/vim-python-pep8-indent')  " pep8 style indentexpr, seems to respect black
+" call s:plug('jeetsukumaran/vim-python-indent-black')  " black style indentexpr (copied instead)
 call s:plug('heavenshell/vim-pydocstring')  " automatic docstring templates
-call s:plug('Vimjas/vim-python-pep8-indent')  " pep8 style indentexpr, actually seems to respect black style?
 call s:plug('goerz/jupytext.vim')  " edit ipython notebooks
 call s:plug('jupyter-vim/jupyter-vim')  " pair with jupyter consoles, support %% highlighting
 call s:plug('quick-lint/quick-lint-js', {'rtp': 'plugin/vim/quick-lint-js.vim'})  " quick linting
@@ -2676,14 +2677,15 @@ if !has('gui_running') && get(g:, 'colors_name', 'default') ==? 'default'  " {{{
 endif  " }}}
 
 " Syntax utilities {{{2
-" Show popup windows and things
+" Apply defaults and add runtime popup mappings
 " NOTE: Here common.vim fails to apply mark fold overrides if called right away,
 " perhaps race condition with syntax fold definitions. Use feedkeys() instead
+" NOTE: Here syntax autocommands triggered by 'set syntax=', always after scripts
+" loaded by $VIMRUNTIME/syntax/synload.vim 'au Syntax * call s:SynSet()' (this works
+" by unletting b:current_syntax variable then finding the syntax and after scripts).
 " NOTE: Here fix 'riv' bug where changing g:riv_python_rst_hl after startup has no
 " effect. Grepped vim runtime and plugged, riv is literally only place where 'syntax'
 " file employs 'loaded' variables with finish block (typically only used for plugins).
-" Also note Syntax triggers after 'set syntax=' and after loading syntax files, since
-" load is triggered by higher-priority 'au Syntax * call s:SynSet()' (see :au Syntax).
 augroup syntax_setup
   au!
   au Syntax * unlet! b:af_py_loaded | unlet! b:af_rst_loaded

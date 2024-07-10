@@ -8,10 +8,12 @@ setlocal shiftwidth=4
 setlocal softtabstop=4
 
 " Syntax settings
+let b:delimitMate_nesting_quotes = ['"', "'"]
 let g:python_slow_sync = 0  " use fast syncing
 let g:python_highlight_all = 1  " builtin python syntax option
 let g:python_highlight_func_calls = 1  " python-syntax syntax option
-let g:python_highlight_builtin_funcs = 0  " python-syntax syntax option
+let g:python_highlight_builtin_funcs = 1  " python-syntax syntax option
+let g:python_highlight_builtin_funcs_kwarg = 0  " python-syntax syntax option
 
 " Add mappings (see also vim.vim)
 noremap <expr> <buffer> <Plug>ExecuteMotion python#run_motion_expr()

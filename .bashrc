@@ -2258,12 +2258,12 @@ _prompt_title() {
   [ -z "$title" ] && _title_set && title=$(_title_get)
   [ -n "$title" ] && echo -ne "\033]0;$title\007"  # re-assert title
 }
-if $_macos; then
+if $_macos; then  # {{{
   _title_path=$HOME/.title
   PROMPT_COMMAND=${PROMPT_COMMAND/_title_get/_prompt_title}
   [[ "$PROMPT_COMMAND" =~ _prompt_title ]] || _prompt_append _prompt_title
   [[ "$ITERM_SESSION_ID" =~ w?t?p0: ]] && _prompt_title
-fi
+fi  # }}}
 
 # Source other commands and print message
 # NOTE: This also fixes bug from restarting iterm sessions
@@ -2275,4 +2275,5 @@ $_macos && [ -z "$OLDPWD" ] && [ "$PWD" == "$HOME" ] \
   && _title_cwd
 [ -z "$_bashrc_loaded" ] && [[ "$(hostname)" =~ "$HOSTNAME" ]] \
   && command curl https://icanhazdadjoke.com/ 2>/dev/null && echo
+alias forecast="command curl wttr.in"
 _bashrc_loaded=true
