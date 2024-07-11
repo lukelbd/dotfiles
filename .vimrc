@@ -469,7 +469,7 @@ augroup END
 " Navigate recent tabs
 " WARNING: The g:tab_stack variable is used by tags#get_recents() to put recently
 " used tabs in stack at higher priority than others. Critical to keep variables.
-silent! exe 'au! recents_setup'
+silent! au! recents_setup
 augroup tabs_setup
   au!
   au BufEnter,BufLeave * call window#update_stack(0)  " next update
@@ -579,16 +579,16 @@ augroup END
 inoremap <silent> <expr> <C-q> window#close_popup('<Cmd>pclose<CR>')
 inoremap <silent> <expr> <C-w> window#close_popup('<Cmd>pclose<CR>')
 inoremap <silent> <expr> <Tab> window#close_popup('<C-]><Tab>', 2, 1)
-inoremap <silent> <expr> <S-Tab> window#close_popup(edit#wrap_delete(0), 0, 1)
+inoremap <silent> <expr> <S-Tab> window#close_popup(edit#insert_delete(0), 0, 1)
 inoremap <silent> <expr> <F2> window#close_popup(ddc#map#manual_complete(), 2, 1)
-inoremap <silent> <expr> <F1> window#close_popup(edit#wrap_delete(0), 0, 1)
-inoremap <silent> <expr> <Delete> window#close_popup(edit#wrap_delete(1), 1)
+inoremap <silent> <expr> <F1> window#close_popup(edit#insert_delete(0), 0, 1)
+inoremap <silent> <expr> <Delete> window#close_popup(edit#insert_delete(1), 1)
 inoremap <silent> <expr> <C-g><CR> window#close_popup('<CR>')
 inoremap <silent> <expr> <C-g><Space> window#close_popup('<Space>')
 inoremap <silent> <expr> <C-g><BackSpace> window#close_popup('<BackSpace>')
-inoremap <silent> <expr> <CR> window#close_popup('<C-]><C-r>=edit#wrap_delims("r")<CR>', 1, 1)
-inoremap <silent> <expr> <Space> window#close_popup('<C-]><C-r>=edit#wrap_delims("s")<CR>', 1)
-inoremap <silent> <expr> <Backspace> window#close_popup('<C-r>=edit#wrap_delims("b")<CR>', 1)
+inoremap <silent> <expr> <CR> window#close_popup('<C-]><C-r>=edit#insert_delims("r")<CR>', 1, 1)
+inoremap <silent> <expr> <Space> window#close_popup('<C-]><C-r>=edit#insert_delims("s")<CR>', 1)
+inoremap <silent> <expr> <Backspace> window#close_popup('<C-r>=edit#insert_delims("b")<CR>', 1)
 
 " Command mode wild menu completion
 " NOTE: This prevents annoyance where multiple old completion options can be shown
@@ -700,7 +700,7 @@ vnoremap z} <Cmd>call fold#update_level('R')<CR>
 " Navigate jumplist {{{2
 " NOTE: This accounts for iterm function-key maps and karabiner arrow-key maps
 " See: https://stackoverflow.com/a/27194972/4970632
-silent! exe 'au! jumplist_setup'
+silent! au! jumplist_setup
 augroup jumps_setup
   au!
   au CursorHold,TextChanged,InsertLeave * if utils#none_pending() | call jump#push_jump() | endif
@@ -955,20 +955,32 @@ noremap ]A <Cmd>call comment#next_label(v:count1, 1, 'note', 'warning', 'error')
 "-----------------------------------------------------------------------------"
 " Normal and insert mode {{{1
 "-----------------------------------------------------------------------------"
-" Override repeat and register {{{2
-" NOTE: Here fix repeat.vim race condition bug where repeat#wrap feedkeys() finishes
-" after b:changedtick is updated and sequence during successive undos/redos is lost.
-" NOTE: Here edit#wrap_undo() returns undo-resetting <C-g>u and resets b:insert_mode
-" based on cursor position. Also run this on InsertEnter e.g. after 'ciw' operator map
-augroup undo_setup
+" Repeats and registers {{{2
+" Override normal mode repititions
+" NOTE: Here repeat_setup and repeat#wrap() are copied from vim-repeat plugin to fix
+" race condition and b:changedtick bugs (see autoload/repeat.vim for details).
+silent! au! repeatPlugin
+augroup repeat_setup
   au!
-  au InsertEnter * call edit#undo_insert()
+  au BufEnter,BufWritePost * if g:repeat_tick == 0 | let g:repeat_tick = b:changedtick | endif
+  au BufLeave,BufWritePre,BufReadPre * let g:repeat_tick = (!g:repeat_tick || g:repeat_tick == b:changedtick) ? 0 : -1
 augroup END
-inoremap <expr> <F7> '<Cmd>undo<CR><Esc>' . edit#wrap_insert()
-inoremap <expr> <F8> edit#undo_insert()
-nnoremap U <Cmd>call edit#undo_repeat("\<C-r>", v:count1)<CR>
-nnoremap u <Cmd>call edit#undo_repeat('u', v:count1)<CR>
+nnoremap U <Cmd>call repeat#wrap("\<C-r>", v:count1)<CR>
+nnoremap u <Cmd>call repeat#wrap('u', v:count1)<CR>
 nnoremap . <Cmd>if !repeat#run(v:count) \| echoerr repeat#errmsg() \| endif<CR>
+
+" Override insert mode undo and register selection
+" NOTE: Here edit#insert_init() returns undo-resetting <C-g>u and resets b:insert_mode
+" based on cursor position. Also run this on InsertEnter e.g. after 'ciw' operator map
+silent! au! undo_setup
+augroup insert_setup
+  au!
+  au InsertEnter * call edit#insert_undo()
+augroup END
+inoremap <expr> <F7> '<Cmd>undo<CR><Esc>' . edit#insert_init()
+inoremap <expr> <F8> edit#insert_undo()
+inoremap <expr> <C-r> parse#get_register('i')
+cnoremap <expr> <C-r> parse#get_register('c')
 
 " Record macro by pressing Q with optional count
 " NOTE: This permits e.g. 1, or '1, for specific macros. Note cannot run 'q' from autoload
@@ -982,10 +994,6 @@ nnoremap <expr> Q empty(reg_recording()) ? parse#get_register('q')
 nnoremap <expr> Q empty(reg_recording()) ? parse#get_register('q')
   \ : 'q<Cmd>call parse#set_translate(' . string(reg_recording()) . ', "q")<CR>'
 
-" Operator register and display utilities
-inoremap <expr> <C-r> parse#get_register('i')
-cnoremap <expr> <C-r> parse#get_register('c')
-
 " Declare alphabetic registers with count (consistent with mark utilities)
 " WARNING: Critical to use 'nmap' and 'vmap' since do not want operator-mode
 " NOTE: Pressing ' or " followed by number uses macro in registers 0 to 9 and
@@ -997,10 +1005,10 @@ vnoremap <expr> " parse#get_register('@', '*')
 
 " Override changes and deletions
 " NOTE: Uppercase registers are same as lowercase but saved in viminfo.
-nnoremap <expr> c (v:count ? '<Esc>zv' : 'zv') . parse#get_register('') . edit#wrap_insert('c')
-nnoremap <expr> C (v:count ? '<Esc>zv' : 'zv') . parse#get_register('') . edit#wrap_insert('C')
-vnoremap <expr> c parse#get_register('') . edit#wrap_insert('c')
-vnoremap <expr> C parse#get_register('') . edit#wrap_insert('C')
+nnoremap <expr> c (v:count ? '<Esc>zv' : 'zv') . parse#get_register('') . edit#insert_init('c')
+nnoremap <expr> C (v:count ? '<Esc>zv' : 'zv') . parse#get_register('') . edit#insert_init('C')
+vnoremap <expr> c parse#get_register('') . edit#insert_init('c')
+vnoremap <expr> C parse#get_register('') . edit#insert_init('C')
 
 " Delete text, specify registers with counts (no more dd mapping)
 " NOTE: Visual counts are ignored, and cannot use <Esc> because that exits visual mode
@@ -1025,9 +1033,9 @@ vnoremap <expr> P parse#get_register('') . 'P'
 
 " Remove single character
 " NOTE: This omits single-character deletions from register by default
-nnoremap <expr> gx edit#wrap_insert('gi')
-nnoremap <expr> cx '"_' . edit#wrap_insert('c') . 'l'
-nnoremap <expr> cX '"_' . edit#wrap_insert('c') . 'h'
+nnoremap <expr> gx edit#insert_init('gi')
+nnoremap <expr> cx '"_' . edit#insert_init('c') . 'l'
+nnoremap <expr> cX '"_' . edit#insert_init('c') . 'h'
 nnoremap dx x
 nnoremap dX X
 nnoremap x "_x
@@ -1104,37 +1112,37 @@ augroup insert_repair
   au!
   au InsertLeave * exe 'silent! keepjumps normal! `^'
 augroup END
-nnoremap <expr> i edit#wrap_insert('i')
-nnoremap <expr> I edit#wrap_insert('I')
-nnoremap <expr> a edit#wrap_insert('a')
-nnoremap <expr> A edit#wrap_insert('A')
-nnoremap <expr> o edit#wrap_insert('o')
-nnoremap <expr> O edit#wrap_insert('O')
+nnoremap <expr> i edit#insert_init('i')
+nnoremap <expr> I edit#insert_init('I')
+nnoremap <expr> a edit#insert_init('a')
+nnoremap <expr> A edit#insert_init('A')
+nnoremap <expr> o edit#insert_init('o')
+nnoremap <expr> O edit#insert_init('O')
 
 " Enter insert mode from visual mode
 " NOTE: Here 'I' goes to start of selection and 'A' end of selection
 exe 'silent! vunmap o' | exe 'silent! vunmap O'
-vnoremap <expr> gi '<Esc>' . edit#wrap_insert('i')
-vnoremap <expr> gI '<Esc>' . edit#wrap_insert('I')
-vnoremap <expr> ga '<Esc>' . edit#wrap_insert('a')
-vnoremap <expr> gA '<Esc>' . edit#wrap_insert('A')
-vnoremap <expr> go '<Esc>' . edit#wrap_insert('o')
-vnoremap <expr> gO '<Esc>' . edit#wrap_insert('O')
+vnoremap <expr> gi '<Esc>' . edit#insert_init('i')
+vnoremap <expr> gI '<Esc>' . edit#insert_init('I')
+vnoremap <expr> ga '<Esc>' . edit#insert_init('a')
+vnoremap <expr> gA '<Esc>' . edit#insert_init('A')
+vnoremap <expr> go '<Esc>' . edit#insert_init('o')
+vnoremap <expr> gO '<Esc>' . edit#insert_init('O')
 vnoremap <expr> I mode() =~# '^[vV]'
-  \ ? '<Esc><Cmd>keepjumps normal! `<<CR>' . edit#wrap_insert('i') : edit#wrap_insert('I')
+  \ ? '<Esc><Cmd>keepjumps normal! `<<CR>' . edit#insert_init('i') : edit#insert_init('I')
 vnoremap <expr> A mode() =~# '^[vV]'
-  \ ? '<Esc><Cmd>keepjumps normal! `><CR>' . edit#wrap_insert('a') : edit#wrap_insert('A')
+  \ ? '<Esc><Cmd>keepjumps normal! `><CR>' . edit#insert_init('a') : edit#insert_init('A')
 
 " Enter insert mode with paste toggle
 " NOTE: Switched easy-align mapping from ga for consistency here
-nnoremap <expr> ga switch#paste() . edit#wrap_insert('a')
-nnoremap <expr> gA switch#paste() . edit#wrap_insert('A')
-nnoremap <expr> gi switch#paste() . edit#wrap_insert('i')
-nnoremap <expr> gI switch#paste() . edit#wrap_insert('I')
-nnoremap <expr> go switch#paste() . edit#wrap_insert('o')
-nnoremap <expr> gO switch#paste() . edit#wrap_insert('O')
-nnoremap <expr> gc switch#paste() . parse#get_register('') . edit#wrap_insert('c')
-nnoremap <expr> gC switch#paste() . parse#get_register('') . edit#wrap_insert('C')
+nnoremap <expr> ga switch#paste() . edit#insert_init('a')
+nnoremap <expr> gA switch#paste() . edit#insert_init('A')
+nnoremap <expr> gi switch#paste() . edit#insert_init('i')
+nnoremap <expr> gI switch#paste() . edit#insert_init('I')
+nnoremap <expr> go switch#paste() . edit#insert_init('o')
+nnoremap <expr> gO switch#paste() . edit#insert_init('O')
+nnoremap <expr> gc switch#paste() . parse#get_register('') . edit#insert_init('c')
+nnoremap <expr> gC switch#paste() . parse#get_register('') . edit#insert_init('C')
 
 " Characters and spelling {{{2
 " NOTE: \x7F-\x9F are actually displayable but not part of ISO standard so not shown
@@ -1379,7 +1387,7 @@ command! -nargs=* AddPlug call s:push(0, <f-args>)
 " call s:plug('xolox/vim-reload')  " easier to write custom reload function
 " call s:plug('Asheq/close-buffers.vim')  " e.g. Bdelete hidden, Bdelete select
 " call s:plug('artnez/vim-wipeout')  " utility overwritten with custom one
-call s:plug('tpope/vim-repeat')  " repeat utility
+" call s:plug('tpope/vim-repeat')  " repeat utility (copied instead)
 call s:plug('tpope/vim-obsession')  " sparse features on top of built-in session behavior
 call s:plug('junegunn/vim-peekaboo')  " register display
 call s:plug('mbbill/undotree')  " undo history display
@@ -2731,9 +2739,9 @@ nnoremap <Leader>0 <Cmd>exe 'Scheme ' . g:colors_default<CR>
 
 " Clear jumps for new tabs and to ignore stuff from vimrc and plugin files.
 " TODO: Fix issue where gitgutter interrupts vim-succinct getchar()
+" silent! exe 'au! gitgutter CursorHoldI'
 " See: https://stackoverflow.com/a/2419692/4970632
 " See: http://vim.1045645.n5.nabble.com/Clearing-Jumplist-td1152727.html
-" silent! exe 'au! gitgutter CursorHoldI'
 augroup jump_setup
   au!
   au BufReadPost * exe line('''"') && line('''"') <= line('$') ? 'keepjumps normal! g`"' : ''
