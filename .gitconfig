@@ -9,7 +9,7 @@
 #   Change the name of arbitrary commit messages. Just provide a SHA1 reference
 #   See: https://blog.filippo.io/git-fixup-amending-an-older-commit/
 # 'amputate':
-#   Use this to amputate history at given SHA
+#   Use this to amputate history at given SHA.
 # 'base':
 #   Show the base directory.
 # 'blame':
@@ -18,24 +18,26 @@
 # 'branches':
 #   List all branches. Prune dead remote branches every time.
 # 'commands':
-#   List of valid commands, used for FZF integration
+#   List of valid commands, used for FZF integration.
 # 'commits':
-#   List all commits including abandoned ones overwritten by e.g. amend
+#   List all commits including abandoned ones overwritten by e.g. amend.
 # 'deleted':
 #   Lists files that were deleted in git history, but were never re-created
-#   or added back in
+#   or added back in.
 # 'delta':
-#   Show difference between two possibly-renamed files.
+#   Get different stats using git diff.
 # 'dictator':
-#   Change user/email information to self through every commit in repository
+#   Change user/email information to self through every commit in repository.
 # 'exec':
-#   Exec arbitrary shell command on top level
+#   Exec arbitrary shell command on top level.
 # 'get':
 #   Fetch all branches, even ones that don't yet exist on local
 #   local (normally those are ignored with git fetch --all).
 #   See: https://stackoverflow.com/a/10312587/4970632
 # 'head':
-#   Show current head branch
+#   Show branch name for current head.
+# 'info':
+#   Show difference stats for current head.
 # 'ignore':
 #   Stop tracking every single regex pattern in your .gitignore
 #   to ignore all subdirectories in another directory, use subdir/*/
@@ -58,9 +60,13 @@
 # 'outdated':
 #   Remove outdated references to remote branches.
 # 'pack':
-#   Show largest 'pack' files in repo
+#   Show largest 'pack' files in repo.
+# 'peek':
+#   Show stash N contents relative to its parent (stash positive).
 # 'pop':
 #   Shortcut for 'git stash pop'
+# 'preview':
+#   Show stash N contents relative to HEAD (stash positive).
 # 'publish':
 #   Push the tags to origin.
 # 'refs':
@@ -70,18 +76,20 @@
 #   Show remote branches.
 # 'remove':
 #   For more information see the script, can be passed a filename or a
-#   regular expression e.g. '*.mov'
+#   regular expression e.g. '*.mov'.
 # 'save':
-#   Shortcut for 'git stash push'
+#   Shortcut for 'git stash push'.
 # 'saved':
 #   Show stash N stats relative to its parent (stash positive).
 # 'search':
 #   Search entire histry for given regex.
 #   See: https://stackoverflow.com/a/2929502/4970632
 # 'summary':
-#   Show stylized most recent git stash
+#   Show stylized most recent git stash.
 # 'staged':
 #   Show staged difference stats.
+# 'state':
+#   Show unstaged and staged difference stats.
 # 'stashed':
 #   Show stash N stats relative to HEAD (stash positive).
 # 'stashes':
@@ -91,21 +99,21 @@
 # 'tags':
 #   List all git tags.
 # 'tree':
-#   Git log including changes
+#   Git log including changes.
 # 'trunk':
-#   Git log excluding changes
+#   Git log excluding changes.
 # 'unset':
 #   Unset upstream branch. Needed after you change the name of a local branch
-#   with git branch -m name because git tracks the old remote branch name
+#   with git branch -m name because git tracks the old remote branch name.
 # 'upstream':
 #   Set upstream branch. Same as 'git branch -u'.
 # 'unstaged':
 #   Show unstaged difference stats.
 # 'vim':
-#   List the vim processes running inside directory
+#   List the vim processes running inside directory.
 # 'wtf':
 #   Queries the remote server to test whether we are synced
-#   also prints current branch and remote branch, with extra info
+#   also prints current branch and remote branch, with extra info.
 #------------------------------------------------------------------------------;
 # TODO
 # 'opts':
@@ -138,10 +146,10 @@
 	outdated = remote prune origin
 	oops     = "!f(){ if [ \"$#\" -eq 0 ]; then git commit --amend --no-edit; else git commit --amend \"$@\"; fi; }; f"
 	pack     = "!git-pack \"$@\""
+	peek     = diff stash@{${1:-0}}^ stash@{${1:-0}}
 	pop      = stash pop
+	preview  = diff HEAD stash@{${1:-0}}
 	publish  = push origin --tags
-	previous = "!f() { git diff stash@{${1:-0}}^ stash@{${1:-0}} 2>/dev/null; }; f"
-	preview  = "!f() { git diff HEAD stash@{${1:-0}} 2>/dev/null; }; f"
 	refs     = reflog show --all
 	remotes  = remote --verbose
 	remove   = "!git-remove \"$@\""
@@ -150,6 +158,7 @@
 	search   = "!f() { git grep \"$@\" $(git rev-list --all --abbrev-commit); }; f"
 	summary  = "!git stashes | head -1 | sed 's/^/## /' && git stash show --name-status 2>/dev/null"
 	staged   = delta --staged
+	state    = delta HEAD
 	stashed  = delta HEAD stash@{${1:-0}}
 	stashes  = stash list
 	stream   = "!git checkout master && pull upstream master"
