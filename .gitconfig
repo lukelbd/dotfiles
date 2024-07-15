@@ -124,9 +124,11 @@
 	commits  = "!git log --graph --abbrev-commit --date=relative --branches --oneline --decorate --color $(git rev-list -g --all) 2>/dev/null"
 	deleted  = "!git-deleted \"$@\""
 	dictator = "!git-dictator \"$@\""
+	delta    = diff --compact-summary --stat=80
 	exec     = "!exec \"$@\""
 	get      = "!git-get \"$@\""
 	head     = "!git rev-parse --abbrev-ref HEAD 2>/dev/null"
+	info     = show --compact-summary --stat=80
 	ignore   = "!git-ignore \"$@\""
 	ls       = ls-tree -r HEAD --name-only :/
 	ll       = ls-tree -r HEAD --abbrev :/
@@ -138,26 +140,25 @@
 	pack     = "!git-pack \"$@\""
 	pop      = stash pop
 	publish  = push origin --tags
-	previous = show --stat=80
+	previous = "!f() { git diff stash@{${1:-0}}^ stash@{${1:-0}} 2>/dev/null; }; f"
+	preview  = "!f() { git diff HEAD stash@{${1:-0}} 2>/dev/null; }; f"
 	refs     = reflog show --all
 	remotes  = remote --verbose
 	remove   = "!git-remove \"$@\""
 	save     = stash push
-	saved    = "!f() { git diff stash@{${1:-0}}^ stash@{${1:-0}} --stat=80 2>/dev/null; }; f"
+	saved    = delta stash@{${1:-0}}^ stash@{${1:-0}}
 	search   = "!f() { git grep \"$@\" $(git rev-list --all --abbrev-commit); }; f"
 	summary  = "!git stashes | head -1 | sed 's/^/## /' && git stash show --name-status 2>/dev/null"
-	staged   = diff --stat=80 --staged
-	stashed  = "!f() { git diff HEAD stash@{${1:-0}} --stat=80 2>/dev/null; }; f"
+	staged   = delta --staged
+	stashed  = delta HEAD stash@{${1:-0}}
 	stashes  = stash list
-	stored   = "!f() { git diff stash@{${1:-0}}^ stash@{${1:-0}} 2>/dev/null; }; f"
-	stowed   = "!f() { git diff HEAD stash@{${1:-0}} 2>/dev/null; }; f"
 	stream   = "!git checkout master && pull upstream master"
 	tags     = tag --list
 	top      = rev-parse --show-toplevel
 	tree     = log --graph --abbrev-commit --date=relative --branches --stat --decorate --color
 	trunk    = log --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color
 	unset    = branch --unset-upstream
-	unstaged = diff --stat=80
+	unstaged = delta
 	upstream = branch --set-upstream-to
 	vim      = "!git-vim \"$@\""
 	wtf      = "!git-wtf \"$@\""
@@ -198,14 +199,10 @@
 	keepBackup = false
 [pager]
 	branch = false
-	previous = false
-	saved = false
-	staged = false
+	delta = false
+	info = false
 	stash = false
-	stashed = false
 	status = false
-	summary = false
-	unstaged = false
 	tag = false
 [push]
 	autoSetupRemote = true
