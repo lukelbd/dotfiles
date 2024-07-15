@@ -120,17 +120,18 @@ function! grep#complete_search(lead, line, cursor)
   return reverse([@/] + opts[1:])  " match to user input
 endfunction
 function! grep#call_grep(cmd, global, level) abort
-  let name = a:level > 2 ? 'root' : a:level > 1 ? 'project' : a:level ? 'folder' : 'buffer'
   let paths = parse#get_paths(1, a:global, a:level)
-  let action = a:cmd ==# 'lines' ? 'Search' : toupper(a:cmd[0]) . a:cmd[1:]
+  let head = a:cmd ==# 'lines' ? 'Search' : toupper(a:cmd[0]) . a:cmd[1:]
+  let name = a:level > 2 ? 'directory' : a:level > 1 ? 'project' : a:level ? 'folder' : 'buffer'
+  let name = len(paths) > 1 ? a:level > 2 ? 'directories' : name . 's' : name
   if a:global && len(paths) > 1  " open files or folders across session
-    let label = len(paths) . ' ' . name . 's'
+    let label = len(paths) . ' ' . name
   elseif a:cmd ==# 'lines'
     let label = 'current buffer'
   else  " specific paths
-    let label = join(paths, ' ')
+    let label = name . ' ' . join(paths, ' ')
   endi
-  let prompt = action . ' ' . label
+  let prompt = head . ' ' . label
   let regex = utils#input_default(prompt, @/, 'grep#complete_search')
   if empty(regex) | return | endif
   let args = [a:global, a:level, regex]

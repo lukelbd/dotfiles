@@ -65,17 +65,17 @@ function! file#glob_paths(lead, ...) abort
 endfunction
 
 " Open recently edited file
-" TODO: Add command to select arbitrary project roots within open buffer paths
-" and trigger gutentags tag-file generation (or use synchronous fzf auto-generation
-" by temporarily setting g:tags_command to project directory)
-" NOTE: This is companion to :History with nicer behavior. Files tracked
-" in ~/.vim_mru_files across different open vim sessions.
-function! file#fzf_history(arg, ...)
+" NOTE: This is companion to :History with nicer behavior. Files
+" tracked in ~/.vim_mru_files across different open vim sessions.
+" TODO: Add command to select arbitrary project roots within open buffer
+" paths and trigger gutentags tag-file generation (or synchronous fzf auto
+" generation by temporarily setting g:tags_command to project directory)
+function! file#fzf_history(arg, ...) abort
   let bang = a:0 && a:1 || a:arg[len(a:arg) - 1] ==# '!'
   let opts = fzf#vim#with_preview()
   let opts.dir = getcwd()
   let opts.options = get(opts, 'options', [])
-  call add(opts.options, '--scheme=' . scheme)
+  call add(opts.options, '--scheme=history')
   if a:arg[0] ==# ':'
     call fzf#vim#command_history(bang)
   elseif a:arg[0] ==# '/'
