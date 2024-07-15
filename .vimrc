@@ -2029,10 +2029,16 @@ if s:has_plug('vim-gutentags')  " {{{
 endif  " }}}
 
 " Vim syntax folding and fastfold settings
-" WARNING: Have to refresh after VimEnter since fastfold does bunch of setup stuff
-" that affects current buffer. When opening sessions windows not-in-focus have
-" correct fold-open status and marker updates but main window does not.
-" NOTE: Use native mappings. zr reduces fold level by 1, zm folds more by 1 level,
+" WARNING: Converting syntax and expr folds to manual is very slow, so FastFold plugin
+" applies autocommands that reset manual folds on FileType and BufRead or BufWinEnter
+" after VimEnter has completed. Must define foldmethod-updating and fastfold-upating
+" autocommands before and after respective VimEnter-defined FastFold autocommands.
+" NOTE: Use custom autocommands. Native fastfold only changes foldmethod after opening
+" new window via BufWinEnter (or BufRead if b:fastfold_fdm_hook = 1). Thus after
+" starting sessions with multiple tabs, folds in other tabs will be 'slow' until
+" a mapping or savehook is triggered. Workaround is to trigger fold#updaetfolds(0)
+" on BufRead that runs FastFoldUpdate if foldmethod has not been changed to 'manual'.
+" NOTE: Use custom mappings. zr reduces fold level by 1, zm folds more by 1 level,
 " zR is big reduction (opens everything), zM is big increase (closes everything),
 " zj and zk jump to start/end of *this* fold, [z and ]z jump to next/previous fold,
 " zv is open folds enough to view cursor (useful when jumping lines or searching), and
@@ -2040,6 +2046,20 @@ endif  " }}}
 " See: https://www.reddit.com/r/vim/comments/c5g6d4/why_is_folding_so_slow/
 " See: https://github.com/Konfekt/FastFold and https://github.com/tmhedberg/SimpylFold
 if s:has_plug('FastFold')  " {{{
+  function! s:fold_setup() abort
+    augroup fold_setup
+      au!
+      au FileType,BufEnter,VimEnter * call fold#update_method()
+      au TextChanged,TextChangedI * let b:fastfold_queued = 2
+    augroup END
+  endfunction
+  function! s:fold_update() abort
+    augroup fold_update
+      au!
+      au BufEnter * call fold#update_folds(0)
+      au FileType * let b:fastfold_queued = 1 | call fold#update_folds(0, 1)
+    augroup END
+  endfunction
   function! s:fold_init(...) abort
     if !a:0 || !a:1  " autocommands preceding fastfold
       augroup fastfold_setup
@@ -2050,20 +2070,6 @@ if s:has_plug('FastFold')  " {{{
         au! | au VimEnter * call fold#update_folds(0, 1) | call s:fold_update()
       augroup END
     endif
-  endfunction
-  function! s:fold_setup() abort
-    augroup fold_setup
-      au!
-      au FileType,BufEnter,VimEnter * call fold#update_method()
-      au TextChanged,TextChangedI * let b:fastfold_queued = 1 | unlet! b:fastfold_markers
-    augroup END
-  endfunction
-  function! s:fold_update() abort
-    augroup fold_update
-      au!
-      au BufEnter * call fold#update_folds(0)
-      au FileType * unlet! b:fastfold_markers | call fold#update_folds(0, 1)
-    augroup END
   endfunction
   let g:baan_fold = 1
   let g:clojure_fold = 1
@@ -2084,8 +2090,9 @@ if s:has_plug('FastFold')  " {{{
   let g:xml_syntax_folding = 1
   let g:zsh_fold_enable = 1
   let g:fastfold_minlines = 0
-  let g:fastfold_fdmhook = 0
-  let g:fastfold_savehook = 0
+  let g:fastfold_force = 0  " enable only for syntax and expr folds
+  let g:fastfold_fdmhook = 0  " disable foldmethod OptionSet hook
+  let g:fastfold_savehook = 0  " disable default BufWritePost hook
   let g:fastfold_skip_filetypes = s:panel_filetypes
   let g:fastfold_fold_command_suffixes =  []
   let g:fastfold_fold_movement_commands = []

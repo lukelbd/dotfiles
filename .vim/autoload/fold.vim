@@ -102,9 +102,9 @@ function! fold#get_ignores(...) abort range
 endfunction
 
 " Return text object ranges
-" NOTE: Similar to how 'vaw' on last word on line includes preceding spaces and
-" elsewhere includes following spaces, here include space below folds of same
-" level or the space above if not available.
+" NOTE: Here, similar to how 'vaw' on last word on line includes preceding spaces
+" and elsewhere includes following spaces, have 'vaz' include space below folds of
+" same level if available or the space above if not available.
 function! s:get_range(outer, ...) abort
   let result = a:0 && a:1 ? fold#get_parent() : fold#get_fold()
   let result = empty(result) ? [line('.'), line('.'), 0] : result
@@ -217,14 +217,14 @@ function! fold#get_markers() abort
     if parts[1] =~# mark2  " close previously defined fold
       let level = empty(level) ? max(keys(heads)) : str2nr(level)
       if has_key(heads, string(level))
-        call add(folds, [level, heads[level], lnum])
+        call add(folds, [heads[level], lnum, level])
         call remove(heads, level)
       endif
     else  " open fold after deleting previous and closing inner
       let level = empty(level) ? max(keys(heads)) + 1 : str2nr(level)
       for ilevel in range(level, 10)
         if has_key(heads, string(ilevel))
-          call add(folds, [ilevel, heads[ilevel], lnum - 1])
+          call add(folds, [heads[ilevel], lnum - 1, ilevel])
           call remove(heads, ilevel)
         endif
       endfor
@@ -232,10 +232,10 @@ function! fold#get_markers() abort
     endif
   endwhile
   for level in keys(heads)
-    call add(folds, [str2nr(level), heads[level], line('$')])
+    call add(folds, [heads[level], line('$'), str2nr(level)])
   endfor
   call winrestview(winview)
-  return sort(folds)
+  return sort(folds, {i1, i2 -> i1[2] - i2[2]})
 endfunction
 
 " Return default fold label
@@ -325,7 +325,7 @@ endfunction
 " Helper functions for returning all folds
 " NOTE: Necessary to temporarily open outer folds before toggling inner folds. No way
 " to target them with :fold commands or distinguish adjacent children with same level
-function! s:fold_sort(line1, line2, level, ...) abort
+function! s:fold_source(line1, line2, level, ...) abort
   let [outer, inner] = [[], []]
   for lnum in range(a:line1, a:line2)
     let ilevel = foldlevel(lnum)
@@ -340,7 +340,7 @@ function! s:fold_sort(line1, line2, level, ...) abort
 endfunction
 function! fold#fold_source(...) abort
   let [lmin, lmax, level] = a:0 ? a:000 : [1, line('$'), 1]
-  let [outer, inner] = s:fold_sort(lmin, lmax, level)
+  let [outer, inner] = s:fold_source(lmin, lmax, level)
   let [folds, ifolds] = [[], fold#get_folds(lmin, lmax, level)]
   for [_, lnum] in outer | exe lnum . 'foldopen' | endfor
   for [line1, line2, level] in ifolds  " guaranteed to match level
@@ -355,7 +355,7 @@ function! fold#fold_source(...) abort
   return folds
 endfunction
 
-" Generate lists of folds
+" Select buffer folds rendered with foldtext()
 " NOTE: This was adapted from fzf-folds plugin. This includes folds inside closed
 " parent folds and uses custom fold-text function instead of foldtextresult().
 " See: https://github.com/roosta/fzf-folds.vim
@@ -374,25 +374,25 @@ endfunction
 function! fold#fzf_folds(...) abort
   let bang = a:0 ? a:1 : 0  " fullscreen
   let folds = fold#fold_source()
-  let [texts, pairs1, pairs2] = [[], [], []]
+  let [texts1, texts2, texts] = [[], [], []]
   for [line1, line2, level] in folds
+    let [count1, count2] = s:get_flags(text)
     let [text, _, stats] = s:fold_text(line1, line2, level)
-    let [locs, hunks] = s:get_flags(text)
     let stats = substitute(stats, '^\(\d\):\+', '\1:', '')
     let stats = substitute(stats, '·', ' ', 'g')
     let text = substitute(text, '^\s*', '', '')
     let text = bufname() . ':' . line1 . ':' . stats . ' ' . text
-    if locs  " ale.vim locations
-      call add(pairs1, [locs, text])
-    elseif hunks  " gitgutter hunk
-      call add(pairs2, [hunks, text])
+    if count1  " ale.vim locations
+      call add(texts1, [text, count1])
+    elseif count2  " gitgutter changes
+      call add(texts2, [text, count2])
     else  " standard label
       call add(texts, text)
     endif
   endfor
-  let pairs1 = sort(pairs1, {i1, i2 -> i2[0] - i1[0]})
-  let pairs2 = sort(pairs2, {i1, i2 -> i2[0] - i1[0]})
-  let texts = map(pairs1, 'v:val[1]') + map(pairs2, 'v:val[1]') + texts
+  let texts1 = sort(texts1, {i1, i2 -> i2[1] - i1[1]})
+  let texts2 = sort(texts2, {i1, i2 -> i2[1] - i1[1]})
+  let texts = map(texts1, 'v:val[0]') + map(texts2, 'v:val[0]') + texts
   let opts = fzf#vim#with_preview({'placeholder': '{1}:{2}'})
   let opts = join(map(get(opts, 'options', []), 'fzf#shellescape(v:val)'), ' ')
   let opts .= ' -d : --with-nth 3.. --preview-window +{2}-/2 --layout=reverse-list'
@@ -451,41 +451,54 @@ function! fold#update_level(...) abort
   echom 'Fold level: ' . &l:foldlevel
 endfunction
 function! fold#update_folds(force, ...) abort
+  " Initial stuff
+  let markers = []  " manual markers
   let winview = winsaveview()
-  let closed = foldlevel('.') ? foldclosed('.') : 0
-  let method = &l:foldmethod  " previous method
+  let method0 = &l:foldmethod  " previous method
+  let level0 = &l:foldlevel
+  let closed0 = foldlevel('.') ? foldclosed('.') : 0
+  let init = a:force || method0 =~# 'syntax\|expr'
   let queued = get(b:, 'fastfold_queued', 0)
-  let toggle = a:0 ? a:1 : -1  " toggle state
-  let folds = []  " manual marker folds
-  if a:force || queued || method !=# 'manual'  " re-apply or convert
-    let b:fastfold_queued = 0 | unlet! b:fastfold_markers
-    if a:force 
+  let remark = queued == 1 && method0 ==# 'manual'
+  let refold = queued >= 1 && method0 =~# 'manual\|syntax\|expr'
+  if init || refold || remark  " re-apply or convert
+    for [line1, line2, _] in fold#get_markers()
+      let iclose = foldclosed(line1) == line1
+      call add(markers, [line1, line2, iclose])
+    endfor
+  endif
+  " Optionally update folds
+  if init || refold  " re-apply or convert
+    if a:force
       call SimpylFold#Recache()
     endif
     exe 'FastFoldUpdate'
+    let b:fastfold_queued = 0
   endif
-  if &foldmethod ==# 'manual'
-    let folds = exists('b:fastfold_markers') ? b:fastfold_markers : fold#get_markers()
-    for [_, line1, line2] in folds
-      exe line1 . ',' . line2 . 'fold' | exe line1 . 'foldopen'
+  if &l:foldmethod ==# 'manual'  " i.e. not skipped
+    for [line1, line2, iclose] in reverse(markers)
+      exe line1 . ',' . line2 . 'fold'
+      exe iclose ? '' : line1 . 'foldopen'
     endfor
-    let b:fastfold_markers = []  " set to empty to avoid re-applying
+    let b:fastfold_queued = 0
   endif
-  let imethod = &l:foldmethod  " updated fold method
-  let level = &l:filetype ==# 'json' ? 2 : empty(get(b:, 'fugitive_type', '')) ? 0 : 1
-  let level = !level && imethod ==# 'manual' ? search('{{{1\s*$', 'wn') > 0 : level
-  let level = !level && imethod ==# 'marker' ? search('{{{2\s*$', 'wn') > 0 : level
-  let keys = winview.lnum . 'G'  " additional toggles
-  if toggle >= 0 || method !=# imethod || !empty(folds)  " update fold level
-    let &l:foldlevel = a:0 ? level : &l:foldlevel
+  " Optionally apply foldlevel
+  let keys = winview.lnum . 'G'  " additional resets
+  let reset = a:0 ? a:1 : -1  " fold level reset state
+  let method1 = &l:foldmethod
+  let level1 = &l:filetype ==# 'json' ? 2 : empty(get(b:, 'fugitive_type', '')) ? 0 : 1
+  let level1 = !level1 && method1 ==# 'manual' ? search('{{{1\s*$', 'wn') > 0 : level1
+  let level1 = !level1 && method1 ==# 'marker' ? search('{{{2\s*$', 'wn') > 0 : level1
+  let closed1 = foldlevel(winview.lnum) ? foldclosed(winview.lnum) : 0
+  if reset >= 0 || method0 !=# method1  " update fold level
+    let &l:foldlevel = a:0 ? level1 : level0
     for lnum in fold#get_ignores() | exe lnum . 'foldopen' | endfor
-    let iclosed = foldlevel(winview.lnum) ? foldclosed(winview.lnum) : 0
-    let reopen = closed < 0 && iclosed > 0 || closed == 0 && iclosed !=# winview.lnum
-    let reclose = toggle > 0 && closed > 0 && iclosed < 0
-    let keys .= reopen || toggle == 0 ? 'zv' : ''  " restore open
-    let keys .= reclose || reopen && toggle == 2 ? 'zc' : ''  " restore close
+    let reopen = closed0 < 0 && closed1 > 0 || closed0 == 0 && closed1 !=# winview.lnum
+    let reclose = reset > 0 && closed0 > 0 && closed1 < 0
+    let keys .= reopen || reset == 0 ? 'zv' : ''  " restore open
+    let keys .= reclose || reopen && reset == 2 ? 'zc' : ''  " restore close
   endif
-  exe empty(keys) ? '' : 'silent! normal! ' . keys
+  exe 'keepjumps silent! normal! ' . keys
   call winrestview(winview)
 endfunction
 
@@ -509,7 +522,7 @@ endfunction
 function! s:toggle_inner(line1, line2, level, ...)
   let [fold1, fold2] = [foldclosed(a:line1), foldclosedend(a:line2)]
   let [line1, line2] = [fold1 > 0 ? fold1 : a:line1, fold2 > 0 ? fold2 : a:line2]
-  let [outer, inner] = s:fold_sort(line1, line2, a:level)
+  let [outer, inner] = s:fold_source(line1, line2, a:level)
   for [_, lnum] in outer | exe lnum . 'foldopen' | endfor
   let toggle = a:0 ? a:1 : 1 - s:toggle_state(a:line1, a:line2, a:level + 1)
   let [recurse, toggled] = [a:0 > 0 ? a:2 : 0, []]
