@@ -700,6 +700,7 @@ vnoremap z} <Cmd>call fold#update_level('R')<CR>
 " Navigate jumplist {{{2
 " NOTE: This accounts for iterm function-key maps and karabiner arrow-key maps
 " See: https://stackoverflow.com/a/27194972/4970632
+exe 'silent! unmap! gJ' | exe 'silent! unmap! gK'
 silent! au! jumplist_setup
 augroup jumps_setup
   au!
@@ -1077,14 +1078,14 @@ command! -range -nargs=? Format <line1>,<line2>call edit#format_lines(<args>)
 nnoremap gqq <Cmd>call edit#format_lines(v:count)<CR>
 nnoremap <expr> gq edit#format_lines_expr(v:count)
 vnoremap <expr> gq edit#format_lines_expr(v:count)
-nnoremap J <Cmd>call edit#join_lines('J', 0)<CR>
-nnoremap K <Cmd>call edit#join_lines('J', 1)<CR>
-nnoremap gJ <Cmd>call edit#join_lines('gJ', 0)<CR>
-nnoremap gK <Cmd>call edit#join_lines('gJ', 1)<CR>
-vnoremap <expr> J edit#join_lines_expr('J', 0)
-vnoremap <expr> K edit#join_lines_expr('J', 1)
-vnoremap <expr> gJ edit#join_lines_expr('gJ', 0)
-vnoremap <expr> gK edit#join_lines_expr('gJ', 1)
+nnoremap J <Cmd>call edit#join_lines(0, 0)<CR>
+nnoremap K <Cmd>call edit#join_lines(1, 0)<CR>
+vnoremap <expr> J edit#join_lines_expr(0, 0)
+vnoremap <expr> K edit#join_lines_expr(1, 0)
+nnoremap gJ <Cmd>call edit#join_lines(0, 1)<CR>
+nnoremap gK <Cmd>call edit#join_lines(1, 1)<CR>
+vnoremap <expr> gJ edit#join_lines_expr(0, 1)
+vnoremap <expr> gK edit#join_lines_expr(1, 1)
 
 " Copying caps and insert mode {{{2
 " NOTE: This enforces defaults without requiring 'set' in vimrc or ftplugin that

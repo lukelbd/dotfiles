@@ -124,13 +124,19 @@ endfunction
 " with e.g. 'd2k', so instead use count to denote indentation level.
 " NOTE: Native vim join uses count to join n lines including parent line, so e.g.
 " 1J and 2J have the same effect. This adds to count to make join more intuitive
-function! edit#join_lines(key, back) range abort
+function! edit#join_lines(backward, ...) range abort
   let [line1, line2, cnum] = [a:firstline, a:lastline, col('.')]
-  let line2 += line2 > line1 ? v:count : v:count1
+  if a:backward  " reverse join
+    let line1 -= line2 > line1 ? v:count : v:count1
+  else  " forward join
+    let line2 += line2 > line1 ? v:count : v:count1
+  endif
   let regex = '\S\zs\s\(' . comment#get_regex() . '\)'
   let args = [regex, 'cnW', line1, 0, "!tags#get_skip(0, 'Comment')"]
   call cursor(line1, 1) | let [_, col1] = call('searchpos', args)
-  exe line1 . ',' . line2 . (exists(':Join') ? 'Join' : 'join')
+  let bang = a:0 && a:1 ? '!' : ''
+  let cmd = exists(':Join') ? 'Join' : 'join'
+  exe line1 . ',' . line2 . cmd . bang
   call cursor(line1, 1) | let [_, col2] = call('searchpos', args)
   exe !col1 && col2 ?  line1 . 'substitute/' . regex . '/  \1/e' : ''
   call cursor(line1, cnum)
