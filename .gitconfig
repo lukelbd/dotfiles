@@ -138,6 +138,7 @@
 	pack     = "!git-pack \"$@\""
 	pop      = stash pop
 	publish  = push origin --tags
+	previous = show --stat=80
 	refs     = reflog show --all
 	remotes  = remote --verbose
 	remove   = "!git-remove \"$@\""
@@ -197,6 +198,7 @@
 	keepBackup = false
 [pager]
 	branch = false
+	previous = false
 	saved = false
 	staged = false
 	stash = false
