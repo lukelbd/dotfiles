@@ -74,7 +74,7 @@ set foldclose=  " use foldclose=all to auto-close folds when leaving
 set foldcolumn=0  " do not show folds, since fastfold dynamically updates
 set foldlevelstart=0  " hide folds when opening (then 'foldlevel' sets current status)
 set foldnestmax=8  " allow only some folds
-set foldopen=insert,mark,quickfix,tag,undo  " opening folds on cursor movement, disallow block folds
+set foldopen=insert,jump,quickfix,tag,undo  " exclude: block, hor, mark, percent, search
 set foldtext=fold#fold_text()  " default function for generating text shown on fold line
 set guicursor+=a:blinkon0  " skip blinking cursor
 set guifont=Menlo:h12  " match iterm settings
@@ -525,10 +525,10 @@ nnoremap <Tab>< <Cmd>call window#move_tab(tabpagenr() - v:count1)<CR>
 " NOTE: Use parentheses since g0/g$ are navigation and z0/z9 used for color schemes
 " NOTE: Mapped jumping commands do not open folds by default, hence the expr below
 silent! exe 'runtime autoload/utils.vim'
-for s:lhs in ['gg', 'G', 'H', 'L', 'J', 'K']
-  let s:rhs = (s:lhs =~? '^[jk]$' ? 'M' : s:lhs)
-  let s:rhs = "'" . s:rhs . "' . (v:count ? 'zv' : '')"
-  exe 'noremap <expr> ' . s:lhs . ' ' . s:rhs
+for s:key in ['gg', 'G', 'H', 'L', 'J', 'K']
+  let s:key1 = string(s:key =~? '^[jk]$' ? 'M' : s:key)
+  let s:key2 = '(&l:foldopen =~# ''jump\\|all'' ? ''zv'' : '''')'
+  exe 'noremap <expr> ' . s:key . ' ' . s:key1 . ' . ' . s:key2
 endfor
 for s:mode in ['n', 'v']
   exe s:mode . 'noremap _ zzze'
@@ -784,10 +784,10 @@ nnoremap / <Cmd>let b:open_search = 0<CR>/
 nnoremap ? <Cmd>let b:open_search = 0<CR>?
 nnoremap g/ <Cmd>call grep#call_grep('lines', 0, 0)<CR>
 nnoremap g? <Cmd>call grep#call_grep('lines', 1, 0)<CR>
-nnoremap z; <Cmd>call switch#showmatches()<CR>
-nnoremap z: <Cmd>call switch#showchanges()<CR>
-vnoremap z; <Cmd>call switch#showmatches()<CR>
-vnoremap z: <Cmd>call switch#showchanges()<CR>
+nnoremap z; <Cmd>call switch#showmatches(1)<CR>
+nnoremap z: <Cmd>call switch#showchanges(1)<CR>
+vnoremap z; <Cmd>call switch#showmatches(1)<CR>
+vnoremap z: <Cmd>call switch#showchanges(1)<CR>
 
 " Search over current scope or selected line range
 " NOTE: This overrides default vim-tags g/ and g? maps. Allows selecting range with
@@ -1010,8 +1010,8 @@ vnoremap <expr> " parse#get_register('@', '*')
 
 " Override changes and deletions
 " NOTE: Uppercase registers are same as lowercase but saved in viminfo.
-nnoremap <expr> c (v:count ? '<Esc>zv' : 'zv') . parse#get_register('') . edit#insert_init('c')
-nnoremap <expr> C (v:count ? '<Esc>zv' : 'zv') . parse#get_register('') . edit#insert_init('C')
+nnoremap <expr> c (v:count ? '<Esc>' : '') . (&l:foldopen =~# 'insert\|all' ? 'zv' : '') . parse#get_register('') . edit#insert_init('c')
+nnoremap <expr> C (v:count ? '<Esc>' : '') . (&l:foldopen =~# 'insert\|all' ? 'zv' : '') . parse#get_register('') . edit#insert_init('C')
 vnoremap <expr> c parse#get_register('') . edit#insert_init('c')
 vnoremap <expr> C parse#get_register('') . edit#insert_init('C')
 
@@ -1953,7 +1953,8 @@ endif  " }}}
 " note / and ? update jumplist but cannot override without keeping interactivity.
 if s:has_plug('taglist')  " {{{
   augroup taglist_setup
-    au! | au BufEnter *__Tag_List__* call tag#setup_taglist() | call window#setup_panel()
+    au!
+    au BufEnter *__Tag_List__* call tag#setup_taglist() | call window#setup_panel()
   augroup END
   let g:Tlist_Compact_Format = 1
   let g:Tlist_Enable_Fold_Column = 1
@@ -2163,6 +2164,7 @@ endif  " }}}
 " cause insert mode slowdowns even with g:lsp_fold_enabled = 0. Now use fast fold with
 " native syntax foldmethod. Also tried tagfunc=lsp#tagfunc but now use LspDefinition
 if s:has_plug('vim-lsp')  " {{{
+  let g:_foldopen = 'call feedkeys(&foldopen =~# ''quickfix\|all'' ? "zv" : "", "n")'
   command! -nargs=? LspToggle call switch#lsp(<args>)
   command! -nargs=? ClearDoc call stack#clear_stack('doc')
   command! -nargs=? ListDoc call stack#print_stack('doc')
@@ -2182,8 +2184,8 @@ if s:has_plug('vim-lsp')  " {{{
   vnoremap gD <Cmd>LspSignatureHelp<CR>
   vnoremap zd <Cmd>LspPeekDefinition<CR>
   vnoremap zD <Cmd>LspPeekDeclaration<CR>
-  nnoremap g<CR> <Cmd>call lsp#ui#vim#definition(0, "call feedkeys('zv', 'n') \| tab")<CR>
-  nnoremap z<CR> <Cmd>silent! normal! gdzv<CR><Cmd>noh<CR>
+  nnoremap g<CR> <Cmd>call lsp#ui#vim#definition(0, g:_foldopen . ' \| tab')<CR>
+  nnoremap z<CR> gd<Cmd>exe g:_foldopen<CR><Cmd>noh<CR>
   nnoremap <Leader>a <Cmd>LspInstallServer<CR>
   nnoremap <Leader>A <Cmd>LspUninstallServer<CR>
   nnoremap <Leader>f <Cmd>call edit#auto_format(0)<CR>
@@ -2443,7 +2445,7 @@ endif  " }}}
 if s:has_plug('vim-fugitive')  " {{{
   augroup fugitive_setup
     au!
-    au BufEnter * call git#setup_commands()
+    au BufWinEnter * call git#setup_commands()
   augroup END
   nnoremap gl <Cmd>BCommits<CR>
   nnoremap gL <Cmd>Commits<CR>
@@ -2626,7 +2628,9 @@ endif  " }}}
 if s:has_plug('undotree')  " {{{
   function! Undotree_Augroup() abort  " autoload/undotree.vim s:undotree.Toggle()
     if !undotree#UndotreeIsVisible() | return | endif
-    augroup Undotree | au! | au InsertLeave,TextChanged * call undotree#UndotreeUpdate() | augroup END
+    augroup Undotree
+      au! | au InsertLeave,TextChanged * call undotree#UndotreeUpdate()
+    augroup END
   endfunction
   function! Undotree_CustomMap() abort  " autoload/undotree.vim s:undotree.BindKey()
     call window#default_width(0)

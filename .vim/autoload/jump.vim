@@ -29,9 +29,10 @@ function! s:get_list(mode, ...) abort  " return location list with unique lines
 endfunction
 
 " Navigate jump and change lists
-" NOTE: This improves on native bug where e.g. going backwards in jumplist (changelist)
-" from top of changelist (jumplist) keeps the 'current position' at top of stack so
-" cannot return with forward press. Note 'col' stored in lists is relative to zero.
+" NOTE: Native vim jump/change motions are sensitive to foldopen 'mark' not 'jump',
+" and 'col' returned by getjumplist (getchangelist) is relative to zero not one.
+" NOTE: This fixes bug where e.g. going to previous jump (change) from latest change
+" (jump) keeps 'current position' at top of stack so cannot return with forward press.
 " NOTE: The getjumplist (getchangelist) functions return the length of the list
 " instead of the current position for external windows, so when switching from
 " current window, jump to top of the list before the requested user position. Also
@@ -47,9 +48,9 @@ function! s:feed_list(mode, iloc, ...) abort
   let [tnr, wnr; rest] = a:0 ? a:000 : [tabpagenr(), winnr(), 0]
   silent exe tnr . 'tabnext' | silent exe wnr . 'wincmd w'
   let keys = tnr == tabpagenr() && wnr == winnr() ? '' : '1000' . key2  " initial
-  let keys .= a:iloc == 0 ? '' : abs(a:iloc)  " count
-  let keys .= a:iloc > 0 ? key2 : key1  " motion
-  let keys .= &l:foldopen =~# 'jump\|all' ? 'zv' : ''
+  let keys .= a:iloc == 0 ? '' : abs(a:iloc)  " motion count
+  let keys .= a:iloc > 0 ? key2 : key1  " previous or next
+  let keys .= &l:foldopen =~# 'mark\|all' ? 'zv' : ''  " consistent with vim
   call feedkeys(keys . 'zzze', 'n')
 endfunction
 function! s:next_list(mode, count) abort  " navigate to nth location in list
@@ -300,13 +301,15 @@ endfunction
 function! jump#next_search(count) abort
   let forward = get(g:, 'indexed_search_n_always_searches_forward', 0)  " default
   if forward && !v:searchforward  " implement 'always forward'
-    let map = a:count > 0 ? 'N' : 'n'
+    let key = a:count > 0 ? 'N' : 'n'
   else  " standard direction
-    let map = a:count > 0 ? 'n' : 'N'
+    let key = a:count > 0 ? 'n' : 'N'
   endif
+  let keys = abs(a:count) . key
+  let keys .= &l:foldopen =~# 'search\|all' ? 'zv' : ''
   let b:curpos = getcurpos()
   if !empty(@/)
-    call feedkeys("\<Cmd>keepjumps normal! " . abs(a:count) . map . "\<CR>", 'n')
+    call feedkeys("\<Cmd>keepjumps normal! " . keys . "\<CR>", 'n')
   else
     echohl ErrorMsg | echom 'Error: Pattern not set' | echohl None
   endif

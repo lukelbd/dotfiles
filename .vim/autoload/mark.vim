@@ -24,7 +24,7 @@ function! mark#goto_mark(...) abort
   else  " note this does not affect jumplist
     silent call file#drop_file(mrks[0].file)
     call setpos('.', mrks[0].pos)
-    exe 'normal! ' . (&l:foldopen =~# 'mark\|all' ? 'zvzzze' : 'zzze')
+    exe 'normal! ' . (&l:foldopen =~# 'mark\|all' ? 'zv' : '') . 'zzze'
   endif
   let g:mark_name = mrk  " mark stack navigation
 endfunction
