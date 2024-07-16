@@ -59,7 +59,7 @@ set cmdwinheight=13  " i.e. show 12 previous commands (but changed by maps below
 set colorcolumn=89,121  " color column after recommended length of 88
 set complete=.,w,b,u,t,i,k  " prevent slowdowns with ddc
 set completeopt-=preview  " use custom denops-popup-preview plugin
-set concealcursor=nc  " conceal away from cursor and in normal mode (see also common.vim)
+set concealcursor=nc  " conceal in normal mode and during incsearch (see also common.vim)
 set conceallevel=2  " hide conceal text completely (see also common.vim)
 set formatoptions=rojclqn  " comment and wrapping (see fo-table and common.vim)
 set linebreak  " see also common.vim
@@ -525,14 +525,18 @@ nnoremap <Tab>< <Cmd>call window#move_tab(tabpagenr() - v:count1)<CR>
 " NOTE: Use parentheses since g0/g$ are navigation and z0/z9 used for color schemes
 " NOTE: Mapped jumping commands do not open folds by default, hence the expr below
 silent! exe 'runtime autoload/utils.vim'
-for s:key in ['0', '^'] | exe 'noremap ' . s:key . ' ' . s:key . 'ze' | endfor
-for s:key in ['g0', 'g^'] | exe 'noremap ' . s:key . ' ' . s:key . 'ze' | endfor
-noremap <expr> gg 'gg' . (v:count ? 'zv' : '')
-noremap <expr> G 'G' . (v:count ? 'zv' : '')
-noremap g( ze
-noremap g) zs
-noremap z( zb
-noremap z) zt
+for s:lhs in ['gg', 'G', 'H', 'L', 'J', 'K']
+  let s:rhs = (s:lhs =~? '^[jk]$' ? 'M' : s:lhs)
+  let s:rhs = "'" . s:rhs . "' . (v:count ? 'zv' : '')"
+  exe 'noremap <expr> ' . s:lhs . ' ' . s:rhs
+endfor
+for s:mode in ['n', 'v']
+  exe s:mode . 'noremap _ zzze'
+  exe s:mode . 'noremap z9 zb'
+  exe s:mode . 'noremap z0 zt'
+  exe s:mode . 'noremap z( ze'
+  exe s:mode . 'noremap z) zs'
+endfor
 
 " Repair modifier-arrow key presses. Use iTerm to remap <BS> and <Del> to Shift-Arrow
 " presses, then convert to no-op in normal mode and deletions for insert/command mode.
@@ -633,14 +637,15 @@ nnoremap zx <Cmd>call fold#update_folds(0, 0)<CR>
 vnoremap zx <Cmd>call fold#update_folds(0, 0)<CR>
 nnoremap zX <Cmd>call fold#update_folds(0, 2)<CR>
 vnoremap zX <Cmd>call fold#update_folds(0, 2)<CR>
+nnoremap zZ <Cmd>UpdateFolds!<CR>
+vnoremap zZ <Cmd>UpdateFolds!<CR>
+nnoremap <expr> zz (foldclosed('.') > 0 ? 'zvzz' : foldlevel('.') > 0 ? 'zc' : 'zz') . 'ze'
+vnoremap <expr> zz fold#toggle_folds_expr() . (foldclosed('.') > 0 ? 'zz' : '') . 'ze'
 
 " Toggle folds over selection or under matches after updating
 " NOTE: Here fold#toggle_folds_expr() calls fold#update_folds() before toggling.
 " NOTE: These will overwrite 'fastfold_fold_command_suffixes' generated fold-updating
 " maps. However now use even faster / more conservative fold#update_folds() method.
-nnoremap <expr> _ (foldclosed('.') > 0 ? 'zvzz' : foldlevel('.') > 0 ? 'zc' : 'zz') . 'ze'
-vnoremap <expr> _ fold#toggle_folds_expr() . 'zzze'
-nnoremap zz <Cmd>call fold#toggle_folds()<CR>
 nnoremap zaa <Cmd>call fold#toggle_folds()<CR>
 nnoremap zcc <Cmd>call fold#toggle_folds(1)<CR>
 nnoremap zoo <Cmd>call fold#toggle_folds(0)<CR>
@@ -648,7 +653,6 @@ nnoremap <expr> za fold#toggle_folds_expr()
 nnoremap <expr> zc fold#toggle_folds_expr(1)
 nnoremap <expr> zo fold#toggle_folds_expr(0)
 vnoremap <expr> za fold#toggle_folds_expr()
-vnoremap <expr> zz fold#toggle_folds_expr()
 vnoremap <expr> zc fold#toggle_folds_expr(1)
 vnoremap <expr> zo fold#toggle_folds_expr(0)
 
@@ -663,13 +667,13 @@ exe 'silent! unmap zn'
 nnoremap zN zN<Cmd>call fold#update_folds(0)<CR>
 nnoremap zi <Cmd>call fold#toggle_children(0)<CR>
 nnoremap zI <Cmd>call fold#toggle_children(1)<CR>
-nnoremap zZ <Cmd>call fold#toggle_parents()<CR>
+nnoremap zA <Cmd>call fold#toggle_parents()<CR>
 nnoremap zC <Cmd>call fold#toggle_parents(1)<CR>
 nnoremap zO <Cmd>call fold#toggle_parents(0)<CR>
 vnoremap zN zN<Cmd>call fold#update_folds(0)<CR>
 vnoremap <expr> zi fold#toggle_children_expr(0)
 vnoremap <expr> zI fold#toggle_children_expr(1)
-vnoremap <expr> zZ fold#toggle_parents_expr()<CR>
+vnoremap <expr> zA fold#toggle_parents_expr()<CR>
 vnoremap <expr> zC fold#toggle_parents_expr(1)
 vnoremap <expr> zO fold#toggle_parents_expr(0)
 
@@ -776,10 +780,10 @@ nnoremap ]y <Cmd>exe v:count1 . 'pop'<CR>
 for s:map in ['//', '/?', '?/', '??'] | silent! exe 'unmap g' . s:map | endfor
 command! -bang -nargs=* BLines call grep#call_lines(0, 0, <q-args>, <bang>0)
 command! -bang -nargs=* Lines call grep#call_lines(1, 0, <q-args>, <bang>0)
-nnoremap g/ <Cmd>call grep#call_grep('lines', 0, 0)<CR>
-nnoremap g? <Cmd>call grep#call_grep('lines', 1, 0)<CR>
 nnoremap / <Cmd>let b:open_search = 0<CR>/
 nnoremap ? <Cmd>let b:open_search = 0<CR>?
+nnoremap g/ <Cmd>call grep#call_grep('lines', 0, 0)<CR>
+nnoremap g? <Cmd>call grep#call_grep('lines', 1, 0)<CR>
 nnoremap z; <Cmd>call switch#showmatches()<CR>
 nnoremap z: <Cmd>call switch#showchanges()<CR>
 vnoremap z; <Cmd>call switch#showmatches()<CR>
@@ -917,9 +921,9 @@ call utils#repeat_map('v', 'z=', 'VEqualDouble', '<Cmd>call comment#append_line(
 
 " Insert various comment blocks
 " NOTE: This disables repitition of title insertions
+for s:key in ';:/?''"' | silent! exe 'unmap gc' . s:key | endfor
 let s:author = '"Author: Luke Davis (lukelbd@gmail.com)"'
 let s:edited = '"Edited: " . strftime("%Y-%m-%d")'
-for s:key in ';:/?''"' | silent! exe 'unmap gc' . s:key | endfor
 call utils#repeat_map('n', 'z.;', 'HeadLine', '<Cmd>call comment#header_line("-", 77, 0)<CR>')
 call utils#repeat_map('n', 'z./', 'HeadAuth', '<Cmd>call comment#append_note(' . s:author . ')<CR>')
 call utils#repeat_map('n', 'z.?', 'HeadEdit', '<Cmd>call comment#append_note(' . s:edited . ')<CR>')
@@ -1078,14 +1082,14 @@ command! -range -nargs=? Format <line1>,<line2>call edit#format_lines(<args>)
 nnoremap gqq <Cmd>call edit#format_lines(v:count)<CR>
 nnoremap <expr> gq edit#format_lines_expr(v:count)
 vnoremap <expr> gq edit#format_lines_expr(v:count)
-nnoremap J <Cmd>call edit#join_lines(0, 0)<CR>
-nnoremap K <Cmd>call edit#join_lines(1, 0)<CR>
-vnoremap <expr> J edit#join_lines_expr(0, 0)
-vnoremap <expr> K edit#join_lines_expr(1, 0)
-nnoremap gJ <Cmd>call edit#join_lines(0, 1)<CR>
-nnoremap gK <Cmd>call edit#join_lines(1, 1)<CR>
-vnoremap <expr> gJ edit#join_lines_expr(0, 1)
-vnoremap <expr> gK edit#join_lines_expr(1, 1)
+nnoremap gJ <Cmd>call edit#join_lines(0, 0)<CR>
+nnoremap gK <Cmd>call edit#join_lines(1, 0)<CR>
+vnoremap <expr> gJ edit#join_lines_expr(0, 0)
+vnoremap <expr> gK edit#join_lines_expr(1, 0)
+nnoremap zJ <Cmd>call edit#join_lines(0, 1)<CR>
+nnoremap zK <Cmd>call edit#join_lines(1, 1)<CR>
+vnoremap <expr> zJ edit#join_lines_expr(0, 1)
+vnoremap <expr> zK edit#join_lines_expr(1, 1)
 
 " Copying caps and insert mode {{{2
 " NOTE: This enforces defaults without requiring 'set' in vimrc or ftplugin that
@@ -2740,8 +2744,8 @@ nnoremap <Leader>8 <Cmd>Colorize<CR>
 command! -nargs=? -complete=color Scheme call syntax#next_scheme(<f-args>)
 command! -count=1 Sprev call syntax#next_scheme(-<count>)
 command! -count=1 Snext call syntax#next_scheme(<count>)
-call utils#repeat_map('n', 'z9', 'Sprev', ':<C-u>Sprev<CR>')
-call utils#repeat_map('n', 'z0', 'Snext', ':<C-u>Snext<CR>')
+call utils#repeat_map('n', 'g{', 'Sprev', ':<C-u>Sprev<CR>')
+call utils#repeat_map('n', 'g}', 'Snext', ':<C-u>Snext<CR>')
 nnoremap <Leader>9 <Cmd>Colors<CR>
 nnoremap <Leader>0 <Cmd>exe 'Scheme ' . g:colors_default<CR>
 

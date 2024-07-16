@@ -23,10 +23,10 @@ noremap <buffer> <Plug>ExecuteFile2 <Cmd>JupyterDisconnect<CR>
 
 " Insert docstring or translate dicts (see autoload/python.vim)
 noremap <buffer> g\| <Cmd>call python#insert_docstring()<CR>
-noremap <expr> <buffer> g{ python#dict_to_kw_expr(0)
-noremap <expr> <buffer> g} python#dict_to_kw_expr(1)
-noremap <buffer> g{{ <Cmd>call feedkeys('g{ic', 'm')<CR><Cmd>call feedkeys("cscfdict\r", 'tm')<CR>
-noremap <buffer> g}} <Cmd>call feedkeys('g}ib', 'm')<CR><Cmd>call feedkeys('csfc', 'tm')<CR>
+noremap <buffer> g(( <Cmd>call feedkeys('g(ib', 'm')<CR><Cmd>call feedkeys('csfc', 'tm')<CR>
+noremap <buffer> g)) <Cmd>call feedkeys('g)ic', 'm')<CR><Cmd>call feedkeys("cscfdict\r", 'tm')<CR>
+noremap <expr> <buffer> g( python#dict_to_kw_expr(1)
+noremap <expr> <buffer> g) python#dict_to_kw_expr(0)
 
 " Add indention-based 'm' text objects
 " BracelessEnable +indent  " bug causes screen view to jump
