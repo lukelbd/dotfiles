@@ -962,7 +962,7 @@ noremap ]A <Cmd>call comment#next_label(v:count1, 1, 'note', 'warning', 'error')
 "-----------------------------------------------------------------------------"
 " Repeats and registers {{{2
 " Override normal mode repititions
-" NOTE: Here repeat_setup and repeat#wrap() are copied from vim-repeat plugin to fix
+" NOTE: Here repeat_setup and repeat#undo() are copied from vim-repeat plugin to fix
 " race condition and b:changedtick bugs (see autoload/repeat.vim for details).
 silent! au! repeatPlugin
 augroup repeat_setup
@@ -970,8 +970,8 @@ augroup repeat_setup
   au BufEnter,BufWritePost * if g:repeat_tick == 0 | let g:repeat_tick = b:changedtick | endif
   au BufLeave,BufWritePre,BufReadPre * let g:repeat_tick = (!g:repeat_tick || g:repeat_tick == b:changedtick) ? 0 : -1
 augroup END
-nnoremap U <Cmd>call repeat#wrap("\<C-r>", v:count1)<CR>
-nnoremap u <Cmd>call repeat#wrap('u', v:count1)<CR>
+nnoremap u <Cmd>call repeat#undo(0, v:count1)<CR>
+nnoremap U <Cmd>call repeat#undo(1, v:count1)<CR>
 nnoremap . <Cmd>if !repeat#run(v:count) \| echoerr repeat#errmsg() \| endif<CR>
 
 " Override insert mode undo and register selection
@@ -2066,7 +2066,7 @@ if s:has_plug('FastFold')  " {{{
     augroup END
   endfunction
   function! s:fold_init(...) abort
-    if !a:0 || !a:1  " autocommands preceding fastfold
+    if a:0 && a:1  " autocommands preceding fastfold
       augroup fastfold_setup
         au! | au VimEnter * call fold#update_method() | call s:fold_setup()
       augroup END
@@ -2101,7 +2101,7 @@ if s:has_plug('FastFold')  " {{{
   let g:fastfold_skip_filetypes = s:panel_filetypes
   let g:fastfold_fold_command_suffixes =  []
   let g:fastfold_fold_movement_commands = []
-  call s:fold_init(0) | runtime plugin/fastfold.vim | call s:fold_init(1)
+  call s:fold_init(1) | runtime plugin/fastfold.vim | call s:fold_init(0)
 endif  " }}}
 
 " Lsp server settings {{{2

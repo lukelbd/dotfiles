@@ -8,7 +8,7 @@
 let g:repeat_tick = -1
 let g:repeat_reg = ['', '']
 function! repeat#invalidate()
-  autocmd! repeat_custom_motion
+  autocmd! repeat_set
   let g:repeat_tick = -1
 endfunction
 function! repeat#getreg()
@@ -23,38 +23,11 @@ function! repeat#set(sequence, ...)
   let g:repeat_sequence = a:sequence
   let g:repeat_count = a:0 ? a:1 : v:count
   let g:repeat_tick = b:changedtick
-  augroup repeat_custom_motion
+  augroup repeat_set
     au!
-    au CursorMoved,InsertEnter,TextChanged <buffer>
-      \ let g:repeat_tick = b:changedtick | autocmd! repeat_custom_motion
+    au CursorHold,CursorMoved,InsertEnter,TextChanged <buffer>
+      \ let g:repeat_tick = b:changedtick | autocmd! repeat_set
   augroup END
-endfunction
-
-" Repair insert mode undo and repeat
-" NOTE: Here implement vim-tags support for restoring view after undoing changes
-" NOTE: This repairs race condition bug where feedkeys() from vim-repeat repeat#wrap()
-" finishes after b:changedtick is updated and sequence during undos/redos is lost.
-function! repeat#wrap(key, ...) abort
-  let cnt = a:0 && a:1 ? a:1 : ''
-  let seq = get(g:, 'repeat_sequence', '')
-  let rtick = get(g:, 'repeat_tick', -1)
-  let btick = b:changedtick
-  exe 'normal! ' . cnt . a:key
-  exe &l:foldopen =~# 'undo\|all' ? 'normal! zv' : ''
-  if rtick == btick
-    let g:repeat_tick = b:changedtick
-  endif
-  if seq =~# "\<Plug>TagsChangeForce"
-    call winrestview(get(g:, 'tags_change_view', {}))
-  endif
-  if seq =~# "\<Plug>TagsChangeAgain"
-    let key = get(g:, 'tags_change_key', 'n')
-    let cnt = get(g:, 'repeat_count', 1)
-    let sign = a:key ==# "\<C-r>" ? 1 : -1
-    let repeat = a:key ==# "\<C-r>" && btick != b:changedtick
-    let @/ = tags#sub_scope(@/, cnt * sign)
-    call feedkeys(repeat ? key . 'zv' : 'zv', 'n')
-  endif
 endfunction
 
 " Run repeat and wrap undo
@@ -90,4 +63,37 @@ function! repeat#run(count)
     return 0
   endtry
   return 1
+endfunction
+
+" Repair insert mode undo and repeat
+" WARNING: Running 'normal!' instead of feedkeys() suppresses built-in undo message
+" so use temporary augroup. Must avoid CursorMoved (can trigger before TextChanged).
+" NOTE: Here implement vim-tags support for restoring view after undoing changes and
+" preserve vim messages about number of lines added/removed (normal! commands fail)
+" finishes after b:changedtick is updated and sequence during undos/redos is lost.
+function! repeat#undo(redo, ...) abort
+  let tick = b:changedtick
+  let tick0 = get(g:, 'repeat_tick', -1)
+  let seq = get(g:, 'repeat_sequence', '')
+  let key = get(g:, 'tags_change_key', 'n')
+  let s:arg = (a:redo ? 1 : -1) * get(g:, 'repeat_count', 1)
+  let s:key = key . (&l:foldopen =~# 'undo\|all' ? 'zv' : '')
+  augroup repeat_undo
+    au!
+    if &l:foldopen =~# 'undo\|all'
+      au TextChanged <buffer> exe 'normal! zv'
+    endif
+    if tick == tick0  " ensure repeat status preserved
+      au TextChanged <buffer> let g:repeat_tick = b:changedtick
+      if seq =~# "\<Plug>TagsChangeForce"
+        au TextChanged <buffer> call winrestview(get(g:, 'tags_change_view', {}))
+      elseif a:redo && seq =~# "\<Plug>TagsChangeAgain"
+        au TextChanged <buffer> exe 'normal! ' . s:key | let @/ = tags#rescope(@/, s:arg)
+      endif
+    endif
+    au CursorHold,InsertEnter,TextChanged <buffer> autocmd! repeat_undo
+  augroup END
+  let cnt = a:0 && a:1 ? a:1 : ''
+  let keys = a:redo ? cnt . "\<C-r>" : cnt . 'u'
+  call feedkeys(keys, 'n')
 endfunction
