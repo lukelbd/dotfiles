@@ -218,8 +218,8 @@ function! switch#lang(...) abort
   call call('s:echo_state', ['UK English', toggle, suppress])
 endfunction
 
-" Toggle temporary paste mode
-" NOTE: Removed automatically when insert mode finishes
+" Toggle paste mode
+" NOTE: Automatically untoggle when insert mode finishes
 function! s:paste_restore() abort
   if exists('s:paste_options')
     echom 'Paste mode disabled.'
@@ -237,24 +237,25 @@ function! switch#paste() abort
   augroup END | return ''
 endfunction
 
-" Toggle temporary conceal reveal
-" NOTE: This is similar to switch#conceal() but auto-restores
+" Toggle temporary fold/conceal reveal
+" NOTE: Automatically untoggle after editing or inserting
 function! s:reveal_restore() abort
-  if exists('s:reveal_option')
-    let &l:conceallevel = s:reveal_option
-    exe 'unlet s:reveal_option'
+  if exists('g:reveal_cache')
+    let &l:foldopen = g:reveal_cache[0]
+    let &l:conceallevel = g:reveal_cache[1]
   endif
 endfunction
 function! switch#reveal(...) abort
-  let state = exists('s:reveal_option')
+  let state = exists('g:reveal_cache')
   let toggle = a:0 > 0 ? a:1 : 1 - state
-  if !toggle && exists('s:reveal_option')
+  if !toggle && exists('g:reveal_cache')
     echom 'Reveal mode disabled.'
     doautocmd reveal_restore TextChanged
-  elseif toggle && !exists('s:reveal_option')
+  elseif toggle && !exists('g:reveal_cache')
     echom 'Reveal mode enabled.'
-    let s:reveal_option = &l:conceallevel
-    setlocal conceallevel=0  " incsearch only
+    let g:reveal_cache = [&l:foldopen, &l:conceallevel]
+    setlocal foldopen=block,insert,jump,mark,percent,quickfix,search,tag,undo
+    setlocal conceallevel=0  " reveal concealed characters and closed folds
     augroup reveal_restore
       au!
       au TextChanged,InsertEnter,InsertLeave * call s:reveal_restore() | autocmd! reveal_restore

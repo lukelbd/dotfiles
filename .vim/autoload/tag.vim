@@ -109,7 +109,7 @@ function! tag#next_stack(...) abort
     let ipos = s:get_from(item[0], item[2], iloc == 0)
     call call('s:goto_pos', ipos)  " possibly empty
   endif
-  exe &l:foldopen =~# '\<tag\>' ? 'normal! zv' : ''
+  exe &l:foldopen =~# 'tag\|all' ? 'normal! zv' : ''
   if !result | call stack#print_item('tag') | endif
 endfunction
 

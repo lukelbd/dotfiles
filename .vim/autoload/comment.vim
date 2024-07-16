@@ -108,7 +108,7 @@ function! comment#next_comment(count, ...) abort
   for _ in range(abs(a:count))
     call search(regex, flags, 0, 0, "tags#get_skip(0, 'Comment')")
   endfor
-  if &foldopen =~# 'block' | exe 'normal! zv' | endif
+  exe &foldopen =~# 'block\|all' ? 'normal! zv' : ''
 endfunction
 function! comment#next_header(count, ...) abort
   let comment = comment#get_regex()
@@ -120,7 +120,7 @@ function! comment#next_header(count, ...) abort
   for _ in range(abs(a:count))
     call search(regex, flags, 0, 0, "tags#get_skip(0, 'Comment')")
   endfor
-  if &foldopen =~# 'block' | exe 'normal! zv' | endif
+  exe &foldopen =~# 'block\|all' ? 'normal! zv' : ''
 endfunction
 function! comment#next_label(count, ...) abort
   let [flag, opts] = a:0 && !type(a:1) ? [a:1, a:000[1:]] : [0, a:000]
@@ -132,7 +132,7 @@ function! comment#next_label(count, ...) abort
   for _ in range(abs(a:count))
     call search(regex, flags, 0, 0, "tags#get_skip(0, 'Comment')")
   endfor
-  if &foldopen =~# 'quickfix' | exe 'normal! zv' | endif
+  exe &foldopen =~# 'quickfix\|all' ? 'normal! zv' : ''
 endfunction
 
 " Comment toggling and table comments

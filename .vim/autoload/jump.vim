@@ -49,7 +49,7 @@ function! s:feed_list(mode, iloc, ...) abort
   let keys = tnr == tabpagenr() && wnr == winnr() ? '' : '1000' . key2  " initial
   let keys .= a:iloc == 0 ? '' : abs(a:iloc)  " count
   let keys .= a:iloc > 0 ? key2 : key1  " motion
-  let keys .= &l:foldopen =~# '\<jump\>' ? 'zv' : ''
+  let keys .= &l:foldopen =~# 'jump\|all' ? 'zv' : ''
   call feedkeys(keys . 'zzze', 'n')
 endfunction
 function! s:next_list(mode, count) abort  " navigate to nth location in list
@@ -238,7 +238,7 @@ function! jump#next_loc(count, list, ...) abort
   else  " jump to error
     exe cmd . ' ' . idx
   endif
-  if &l:foldopen =~# '\<quickfix\>' | exe 'normal! zv' | endif
+  exe &l:foldopen =~# 'quickfix\|all' ? 'normal! zv' : ''
 endfunction
 
 " Navigate words with restricted &iskeyword

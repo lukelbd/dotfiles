@@ -31,7 +31,7 @@ function! repeat#set(sequence, ...)
 endfunction
 
 " Repair insert mode undo and repeat
-" NOTE: Here implement vim-tags support for 
+" NOTE: Here implement vim-tags support for restoring view after undoing changes
 " NOTE: This repairs race condition bug where feedkeys() from vim-repeat repeat#wrap()
 " finishes after b:changedtick is updated and sequence during undos/redos is lost.
 function! repeat#wrap(key, ...) abort
