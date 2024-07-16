@@ -970,9 +970,9 @@ augroup repeat_setup
   au BufEnter,BufWritePost * if g:repeat_tick == 0 | let g:repeat_tick = b:changedtick | endif
   au BufLeave,BufWritePre,BufReadPre * let g:repeat_tick = (!g:repeat_tick || g:repeat_tick == b:changedtick) ? 0 : -1
 augroup END
-nnoremap u <Cmd>call repeat#undo(0, v:count1)<CR>
-nnoremap U <Cmd>call repeat#undo(1, v:count1)<CR>
-nnoremap . <Cmd>if !repeat#run(v:count) \| echoerr repeat#errmsg() \| endif<CR>
+nnoremap . <Cmd>call repeat#run(v:count)<CR>
+nnoremap u <Cmd>call repeat#undo(0, v:count)<CR>
+nnoremap U <Cmd>call repeat#undo(1, v:count)<CR>
 
 " Override insert mode undo and register selection
 " NOTE: Here edit#insert_init() returns undo-resetting <C-g>u and resets b:insert_mode

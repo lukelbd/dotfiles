@@ -5,8 +5,6 @@
 " NOTE: This repairs vim-repeat bug where repeat tick spuriously not incremented
 " NOTE: Here repeat#invalidate() avoids spurious repeats in a related, naturally
 " repeating mapping when your repeatable mapping doesn't increase b:changedtick.
-let g:repeat_tick = -1
-let g:repeat_reg = ['', '']
 function! repeat#invalidate()
   autocmd! repeat_set
   let g:repeat_tick = -1
@@ -33,36 +31,31 @@ endfunction
 " Run repeat and wrap undo
 " NOTE: Here take the original register, unless another (non-default) register has
 " been supplied to the repeat command (as an explicit override).
-function! repeat#errmsg()
-  return s:errmsg
-endfunction
-function! repeat#run(count)
+function! repeat#run(...)
+  let tick = b:changedtick
+  let tick0 = get(g:, 'repeat_tick', -1)
+  let seq = get(g:, 'repeat_sequence', '')
+  let [seq0, reg0] = get(g:, 'repeat_reg', ['', ''])
   let s:errmsg = ''
   try
-    if g:repeat_tick == b:changedtick
-      let keys = ''
-      if g:repeat_reg[0] ==# g:repeat_sequence && !empty(g:repeat_reg[1])
-        let regname = v:register ==# repeat#getreg() ? g:repeat_reg[1] : v:register
-        if regname ==# '='  " re-evaluate register
-          let keys = '"=' . getreg('=', 1) . "\<CR>"
-        else  " return register
-          let keys = '"' . regname
-        endif
+    if tick == tick0
+      let cnt = get(g:, 'repeat_count', 1)
+      let cnt = cnt < 0 ? '' : a:0 && a:1 ? a:1 : cnt ? cnt : ''
+      let reg = ''
+      if seq ==# seq0 && !empty(reg0)
+        let name = v:register ==# repeat#getreg() ? reg0 : v:register
+        let reg = '"' . name . (name ==# '=' ? getreg('=', 1) . "\<CR>" : '')
       endif
-      let cnt = g:repeat_count
-      let seq = g:repeat_sequence
-      let cnt = cnt == -1 ? '' : (a:count ? a:count : (cnt ? cnt : ''))
       call feedkeys(seq, 'i')
-      call feedkeys(keys . cnt, 'ni')
+      call feedkeys(reg . cnt, 'ni')
     else
-      let cnt = a:count ? a:count : ''
+      let cnt = a:0 && a:1 ? a:1 : ''
       call feedkeys(cnt . '.', 'ni')
     endif
   catch /^Vim(normal):/
-    let s:errmsg = v:errmsg
-    return 0
+    let feed = "\<Cmd>echoerr " . v:errmsg . "\<CR>"
+    call feedkeys(feed, 'n')  " avoid function message
   endtry
-  return 1
 endfunction
 
 " Repair insert mode undo and repeat
@@ -72,12 +65,15 @@ endfunction
 " preserve vim messages about number of lines added/removed (normal! commands fail)
 " finishes after b:changedtick is updated and sequence during undos/redos is lost.
 function! repeat#undo(redo, ...) abort
+  let sign = a:redo ? 1 : -1
   let tick = b:changedtick
   let tick0 = get(g:, 'repeat_tick', -1)
+  let cnt = get(g:, 'repeat_count', 1)
   let seq = get(g:, 'repeat_sequence', '')
-  let key = get(g:, 'tags_change_key', 'n')
-  let s:arg = (a:redo ? 1 : -1) * get(g:, 'repeat_count', 1)
-  let s:key = key . (&l:foldopen =~# 'undo\|all' ? 'zv' : '')
+  let key1 = get(g:, 'tags_change_key', 'n')
+  let key2 = &l:foldopen =~# 'undo\|all' ? 'zv' : ''
+  let s:expr = a:redo ? 'normal! ' . key1 . key2 : ''
+  let s:count = (a:redo ? 1 : -1) * (cnt < 0 ? 0 : a:0 && a:1 ? a:1 : cnt)
   augroup repeat_undo
     au!
     if &l:foldopen =~# 'undo\|all'
@@ -85,15 +81,15 @@ function! repeat#undo(redo, ...) abort
     endif
     if tick == tick0  " ensure repeat status preserved
       au TextChanged <buffer> let g:repeat_tick = b:changedtick
-      if seq =~# "\<Plug>TagsChangeForce"
+      if seq ==# "\<Plug>TagsChangeForce"
         au TextChanged <buffer> call winrestview(get(g:, 'tags_change_view', {}))
-      elseif a:redo && seq =~# "\<Plug>TagsChangeAgain"
-        au TextChanged <buffer> exe 'normal! ' . s:key | let @/ = tags#rescope(@/, s:arg)
+      elseif seq ==# "\<Plug>TagsChangeAgain"
+        au TextChanged <buffer> let @/ = tags#rescope(@/, s:count) | exe s:expr
       endif
     endif
     au CursorHold,InsertEnter,TextChanged <buffer> autocmd! repeat_undo
   augroup END
   let cnt = a:0 && a:1 ? a:1 : ''
-  let keys = a:redo ? cnt . "\<C-r>" : cnt . 'u'
-  call feedkeys(keys, 'n')
+  let key = a:redo ? "\<C-r>" : 'u'
+  call feedkeys(cnt . key, 'n')
 endfunction
