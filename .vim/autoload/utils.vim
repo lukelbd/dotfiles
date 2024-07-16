@@ -172,16 +172,16 @@ function! utils#map_from(...) abort
 endfunction
 
 " Call over the visual line range or user motion line range (see e.g. python.vim)
-" NOTE: :call call(function, args) with range seems to execute line-by-line instead of
+" NOTE: Using :call call(function, args) with range executes line-by-line instead of
 " entire block which causes issues with some functions. So use below clunky method.
-" Also ensure functions accept :[range]call function(args) for consistency with vim
+" NOTE: Ensure functions accept :[range]call function(args) for consistency with vim
 " standard paradigm and so they can be called with e.g. V<motion>:call func().
 function! utils#motion_func(name, args, ...) abort
   let signature = string(a:args)[1:-2]  " remove square brackets
   let operator = a:name . '(' . signature . ')'
   let s:operator_view = a:0 && a:1 ? winsaveview() : {}
   let s:operator_func = operator
-  if mode() =~# '^\(v\|V\|\)$'  " call operator function with line range
+  if mode() =~# '^\(v\|V\|\)$'  " call operator function with current line range
     return ":call utils#operator_func('')\<CR>"
   elseif mode() ==# 'n'  " await motion and call operator function over those lines
     set operatorfunc=utils#operator_func
@@ -193,21 +193,27 @@ function! utils#motion_func(name, args, ...) abort
 endfunction
 
 " Execute the function name and call signature passed to utils#motion_func.
-" This is generally invoked inside an <expr> mapping (see e.g. python.vim) .
+" NOTE: This is generally invoked inside an <expr> mapping (see e.g. python.vim) .
 " NOTE: Only motions can cause backwards firstline to lastline order. Manual calls
 " to the function will have sorted lines. This sorts the range for safety.
 function! utils#operator_func(type, ...) range abort
-  if empty(a:type) " default behavior
+  if empty(a:type)  " default behavior
+    let locs = ["'<", "'>"]
     let line1 = a:firstline
     let line2 = a:lastline
-  elseif a:type =~? 'line\|char\|block' " builtin g@ type strings
+  elseif a:type =~? 'line\|char\|block'  " builtin g@ type strings
+    let locs = ["'[", "']"]
     let line1 = line("'[")
     let line2 = line("']")
-  else
+  else  " fallback
     echoerr 'E474: Invalid argument: ' . string(a:type)
     return ''
   endif
   let [line1, line2] = sort([line1, line2], 'n')
+  let [col1, col2] = map(copy(locs), 'col(v:val)')
+  if line1 == line2 && col1 >= col2  " e.g. cancelled motion, invalid object
+    return ''
+  endif
   exe line1 . ',' . line2 . 'call ' . s:operator_func
   call winrestview(s:operator_view) | return ''
 endfunction

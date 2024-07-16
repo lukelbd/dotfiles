@@ -38,24 +38,24 @@ endfunction
 " bug where if opening bracket is immediately followed by newline, then 'inner'
 " bracket range incorrectly sets the closing bracket column position to '1'.
 function! python#dict_to_kw(invert, ...) range abort
-  let winview = winsaveview()
-  let lines = []
-  let marks = a:0 && a:1 ==# 'n' ? '[]' : '<>'
-  let col1 = col("'" . marks[0]) - 1  " first column, note ' really means ` here
-  let col2 = len(getline("'" . marks[1])) - 1  " last selection column
-  let [line1, line2] = sort([a:firstline, a:lastline], 'n')
+  let locs = a:0 && a:1 ==# 'n' ? '[]' : '<>'
+  let locs = ["'" . locs[0], "'" . locs[1]]
+  let [col1, col2] = map(copy(locs), 'col(v:val)')
+  let [idx1, idx2] = [col1 - 1, col([line(col2), '$']) - 1]  " kludge (see above)
+  let [line1, line2] = [a:firstline, a:lastline]  " sorted by utils operator_func
+  let [lines, winview] = [[], winsaveview()]
   for lnum in range(line1, line2)
     let [line, prefix, suffix] = [getline(lnum), '', '']
     if lnum == line1 && lnum == line2  " vint: -ProhibitUsingUndeclaredVariable
-      let prefix = col1 > 0 ? line[:col1 - 1] : ''
-      let suffix = line[col2 + 1:]
-      let line = line[col1:col2]  " must come last
+      let prefix = idx1 > 0 ? line[:idx1 - 1] : ''
+      let suffix = line[idx2 + 1:]
+      let line = line[idx1:idx2]  " must come last
     elseif lnum == line1
-      let prefix = col1 > 0 ? line[:col1 - 1] : ''
-      let line = line[col1:]  " must come last
+      let prefix = idx1 > 0 ? line[:idx1 - 1] : ''
+      let line = line[idx1:]  " must come last
     elseif lnum == line2
-      let suffix = line[col2 + 1:]
-      let line = line[:col2]  " must come last
+      let suffix = line[idx2 + 1:]
+      let line = line[:idx2]  " must come last
     endif
     if !empty(matchstr(line, ':')) && !empty(matchstr(line, '='))
       echohl WarningMsg
@@ -76,7 +76,7 @@ function! python#dict_to_kw(invert, ...) range abort
   exe line1 . ',' . line2 . 'd _'
   call append(line1 - 1, lines)  " replace with fixed lines
   call winrestview(winview)
-  call cursor(line1, col1)
+  call cursor(line1, idx1 + 1)
 endfunction
 " For <expr> map accepting motion
 function! python#dict_to_kw_expr(invert) abort
