@@ -479,7 +479,7 @@ augroup END
 command! -nargs=0 ClearTabs call stack#clear_stack('tab') | call window#update_stack(0)
 command! -nargs=0 ListTabs call stack#print_stack('tab')
 command! -nargs=? PopTabs call stack#pop_stack('tab', <q-args>, 1)
-nnoremap <Tab><CR> <Cmd>call window#update_stack(0, -1, 2)<CR>
+nnoremap <C-Space> <Cmd>call window#update_stack(0, -1, 2)<CR>
 nnoremap <F1> <Cmd>call window#scroll_stack(-v:count1)<CR>
 nnoremap <F2> <Cmd>call window#scroll_stack(v:count1)<CR>
 
@@ -967,8 +967,10 @@ noremap ]A <Cmd>call comment#next_label(v:count1, 1, 'note', 'warning', 'error')
 silent! au! repeatPlugin
 augroup repeat_setup
   au!
-  au BufEnter,BufWritePost * if g:repeat_tick == 0 | let g:repeat_tick = b:changedtick | endif
-  au BufLeave,BufWritePre,BufReadPre * let g:repeat_tick = (!g:repeat_tick || g:repeat_tick == b:changedtick) ? 0 : -1
+  au BufEnter,BufWritePost *
+    \ if g:repeat_tick == 0 | let g:repeat_tick = b:changedtick | endif
+  au BufLeave,BufWritePre,BufReadPre *
+    \ let g:repeat_tick = (!exists('g:repeat_tick') || g:repeat_tick == b:changedtick) ? 0 : -1
 augroup END
 nnoremap . <Cmd>call repeat#run(v:count)<CR>
 nnoremap u <Cmd>call repeat#undo(0, v:count)<CR>
@@ -1245,7 +1247,7 @@ nnoremap <expr> \U edit#sort_lines_expr('ui')
 " NOTE: Undo goes to first changed line: https://stackoverflow.com/a/52308371/4970632
 for s:mode in ['n', 'v'] | exe s:mode . 'map \w \t' | endfor  " ambiguous maps
 let g:sub_trail = ['Removed trailing spaces', '\s\+\ze$', '']  " analogous to surround
-let g:sub_tabs = ['Translated tabs', '\t', {-> repeat(' ', &l:tabstop)}]
+let g:sub_tabs = ['Translated tabs', '\t', {-> repeat(' ', shiftwidth())}]
 nnoremap <expr> \t call('edit#search_replace_expr', g:sub_trail)
 vnoremap <expr> \t call('edit#search_replace_expr', g:sub_trail)
 nnoremap <expr> \<Tab> call('edit#search_replace_expr', g:sub_tabs)
@@ -1845,13 +1847,21 @@ if s:has_plug('vim-sneak')  " {{{
 endif  " }}}
 
 " Text object settings
+" TODO: Convert word boundary text objects to function refs, e.g. select blocks of
+" contiguous word characters matching case under cursor and possibly include [_-].
 " NOTE: Here use mnemonic 'v' for 'value' and 'C' for comment. The first avoids
 " conflicts with ftplugin/tex.vim and the second with 'c' curly braces.
+" '\([0-9a-z]\@<![0-9a-z]\@=\|[^0-9A-Z]\@<=[0-9A-Z]\@=\)\r\([0-9a-z]\@<=[0-9a-z]\@!\|[0-9A-Z]\@<=[0-9A-Z]\@!\)',
 if s:has_plug('vim-textobj-user')  " {{{
+  " Mappings and settings
   augroup textobj_setup
     au!
     au VimEnter * call textobj#sentence#init()
   augroup END
+  let g:vim_textobj_parameter_mapping = 'k'  " i.e. 'keyword' or 'keyword argument'
+  let g:textobj#sentence#select = 's'  " smarter sentence selection FooBarBaz
+  let g:textobj#sentence#move_p = '('
+  let g:textobj#sentence#move_n = ')'
   omap an <Plug>(textobj-numeral-a)
   vmap an <Plug>(textobj-numeral-a)
   omap in <Plug>(textobj-numeral-i)
@@ -1860,15 +1870,22 @@ if s:has_plug('vim-textobj-user')  " {{{
   vmap a. <Plug>(textobj-comment-a)
   omap i. <Plug>(textobj-comment-i)
   vmap i. <Plug>(textobj-comment-i)
-  let g:textobj#sentence#select = 's'  " smarter sentence selection FooBarBaz
-  let g:textobj#sentence#move_p = '('  " smarter sentence navigation
-  let g:textobj#sentence#move_n = ')'  " smarter sentence navigation
-  let g:vim_textobj_parameter_mapping = 'k'  " i.e. 'keyword' or 'keyword argument'
+  " Alphanumeric plugin
+  for s:key in ['i', 'a'] | exe 'silent! unmap ' s:key . 'z' | endfor
+  for s:key in ['i', 'a'] | exe 'silent! unmap ' s:key . 'Z' | endfor
+  let s:textobj_word1 = '[0-9A-Za-z]\@<![0-9A-Za-z]\@=\|^'  " alphanumeric regex
+  let s:textobj_word2 = '[0-9A-Za-z]\@<=[0-9A-Za-z]\@!\|$'
+  let s:textobj_part1 = '[0-9a-z]\@<=[A-Z]\@=\|' . s:textobj_word1  " partcase regex
+  let s:textobj_part2 = '[0-9a-z]\@<=[A-Z]\@=\|' . s:textobj_word2
+  let s:textobj_var1 = '\(\k\|[&*:.-]\)\@<!\(\k\|[&*:.-]\)'
+  let s:textobj_var2 = '\(\k\|[&*:.-]\)\@<=\(\k\|[&*:.-]\)\@!'
   let s:textobj_alpha = {
-    \ 'g': '\(\<\|[^0-9A-Za-z]\@<=[0-9A-Za-z]\@=\)\r\(\>\|[^0-9A-Za-z]\@=\)',
-    \ 'h': '\(\<\|[0-9a-z]\@<=[^0-9a-z]\@=\)\r\(\>\|[0-9a-z]\@<=[^0-9a-z]\@=\)',
-    \ 'v': '\(\k\|[*:.-]\)\@<!\(\k\|[*:.-]\)\@=\r\(\k\|[*:.-]\)\@<=\(\k\|[*:.-]\)\@!\s*',
+    \ 'g': '\(' . s:textobj_word1 . '\)\r\(' . s:textobj_word2 . '\)',
+    \ 'h': '\(' . s:textobj_part1 . '\)\r\(' . s:textobj_part2 . '\)',
+    \ 'v': '\(' . s:textobj_var1 . '\)\r\(' . s:textobj_var2 . '\)',
   \ }  " 'ag' includes e.g. trailing underscore similar to 'a word'
+  call succinct#add_objects('alpha', s:textobj_alpha, 0, 1)  " do not escape
+  " Plugin overrides
   let s:textobj_entire = {
     \ 'select-a': 'aE',  'select-a-function': 'textobj#entire#select_a',
     \ 'select-i': 'iE',  'select-i-function': 'textobj#entire#select_i'
@@ -1877,19 +1894,17 @@ if s:has_plug('vim-textobj-user')  " {{{
     \ 'select-i': 'iC', 'select-i-function': 'textobj#comment#select_i',
     \ 'select-a': 'aC', 'select-a-function': 'textobj#comment#select_big_a',
   \ }
-  let s:textobj_fold = {
+  let s:textobj_fold1 = {
     \ 'select-i': 'iz', 'select-i-function': 'fold#get_fold_i',
     \ 'select-a': 'az', 'select-a-function': 'fold#get_fold_a',
   \ }
-  let s:textobj_parent = {
+  let s:textobj_fold2 = {
     \ 'select-i': 'iZ', 'select-i-function': 'fold#get_parent_i',
     \ 'select-a': 'aZ', 'select-a-function': 'fold#get_parent_a',
   \ }
-  call succinct#add_objects('alpha', s:textobj_alpha, 0, 1)  " do not escape
   call textobj#user#plugin('comment', {'-': s:textobj_comment})  " no <Plug> suffix
   call textobj#user#plugin('entire', {'-': s:textobj_entire})  " no <Plug> suffix
-  call textobj#user#plugin('fold', {'-': s:textobj_fold})  " no <Plug> suffix
-  call textobj#user#plugin('parent', {'-': s:textobj_fold})  " no <Plug> suffix
+  call textobj#user#plugin('fold', {'z': s:textobj_fold1, 'Z': s:textobj_fold2})
 endif  " }}}
 
 " Easy-align settings. Support case/esac block parentheses and seimcolons, chained

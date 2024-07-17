@@ -146,7 +146,7 @@ endfunction
 function! fold#get_parent_i() abort
   return s:get_range(0, 1)
 endfunction
-function! fold#get_parent_i() abort
+function! fold#get_parent_a() abort
   return s:get_range(1, 1)
 endfunction
 
@@ -376,8 +376,8 @@ function! fold#fzf_folds(...) abort
   let folds = fold#fold_source()
   let [texts1, texts2, texts] = [[], [], []]
   for [line1, line2, level] in folds
-    let [count1, count2] = s:get_flags(text)
     let [text, _, stats] = s:fold_text(line1, line2, level)
+    let [count1, count2] = s:get_flags(text)
     let stats = substitute(stats, '^\(\d\):\+', '\1:', '')
     let stats = substitute(stats, '·', ' ', 'g')
     let text = substitute(text, '^\s*', '', '')

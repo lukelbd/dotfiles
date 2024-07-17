@@ -19,7 +19,7 @@ function! s:get_indent(lnum) abort
   if has_key(opts, 'indent')
     let indent = opts.indent
   else  " manual detection (slower)
-    let indent = strdisplaywidth(matchstr(getline(a:lnum), '^\s*')) / &l:tabstop
+    let indent = strdisplaywidth(matchstr(getline(a:lnum), '^\s*')) / shiftwidth()
   endif
   return indent
 endfunction
@@ -356,7 +356,7 @@ let s:regex_doc = '["'']\{3}'
 function! python#next_docstring(count, ...) abort
   let flags = a:count >= 0 ? 'w' : 'wb'
   if a:0 && a:1
-    let head = '^\(\|\t\| \{' . &tabstop . '\}\)'
+    let head = '^\(\|\t\| \{' . shiftwidth() . '\}\)'
   else  " include comments
     let head = '\(' . comment#get_regex() . '.*\)\@<!'
   endif

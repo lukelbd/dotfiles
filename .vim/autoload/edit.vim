@@ -175,8 +175,8 @@ function! edit#insert_delims(key, ...) abort
 endfunction
 function! edit#insert_delete(...) abort  " vint: -ProhibitUsingUndeclaredVariable
   let [idx, text] = [col('.') - 1, getline('.')]
-  let text = text[idx:idx + &tabstop - 1]  " forward-delete-by-tab
-  let regex = '^\(\t\| \{,' . &tabstop . '}\).*$'
+  let text = text[idx:idx + shiftwidth() - 1]  " forward-delete-by-tab
+  let regex = '^\(\t\| \{,' . shiftwidth() . '}\).*$'
   let pad = substitute(text, regex, '\1', '')
   let cnt = empty(pad) ? a:0 && a:1 : len(pad)
   let head = cnt && pumvisible() ? "\<C-e>" : ''

@@ -65,6 +65,7 @@ noremap <buffer> <Plug>ExecuteFile2 <Cmd>call <sid>latexmk('--pdf')<CR>
 " NOTE: Internal utility translates \r[^a-z]\@! and \1..\7 to literals. Recall that
 " vim-surround interprets '\r' as separator and '\1[prompt]\r[match]\r[replace]\1' for
 " requesting user-input and optionally formatting the input with regex (often using &).
+" Snippet definitions: {{{
 " \ '''': tex#make_snippet(tex#fzf_graphics_ref(), '\includegraphics{', '}'),
 " \ '"': tex#make_snippet(tex#fzf_graphics_ref(), '\makebox[\textwidth][c]{\includegraphics{', '}}'),
 " \ '/': tex#make_snippet(tex#fzf_labels_ref(), '\cref{', '}'),
@@ -148,7 +149,7 @@ let b:succinct_snippets = {
   \ 'y': tex#ensure_math_ref('\psi'),
   \ 'z': tex#ensure_math_ref('\zeta'),
   \ '~': tex#ensure_math_ref('\sim'),
-\ }
+\ }  " }}}
 
 " Add delimiters. Currently only overwrite 'r' and 'a' global bracket surrounds, the
 " 'f' and 'A' succinct surrounds, and the '(', '[', '{', and '<' native surrounds.
@@ -157,7 +158,8 @@ let b:succinct_snippets = {
 " e.g. \citep[prefix][]{cite1,cite2}. In ams this is \cite[suffix]{cite1,cite2} and
 " \cite<prefix>{cite1,cite2} and commands are \cite and \citeA instead of \citep and
 " \citep. Solution is to add \renewcommand to preamble and do not auto-insert empty
-" brackets for filling later since synmtax is dependent on citation engine. Rejected:
+" brackets for filling later since synmtax is dependent on citation engine.
+" Delimiter definitions:  " {{{
 " \ 'F': '\begin{wrapfigure}{r}{0.5\textwidth}\n\centering\r\end{wrapfigure}',
 " \ 'G': '\hidecontent{\includegraphics{\r}}',
 " \ 'L': '\href{\1Link: \1}{\r}',
@@ -247,4 +249,4 @@ let b:succinct_delims = {
   \ 'x': '\boxed{\r}',
   \ 'y': '\verb$\r$',
   \ 'z': '\begin{column}{0.5\textwidth}\r\end{column}',
-\ }
+\ }  " }}}
