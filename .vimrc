@@ -311,7 +311,7 @@ endfor
 " require manual closure with :qall or :quitall.
 command! -nargs=? Autosave call switch#autosave(<args>)
 nnoremap q <Cmd>call window#close_panes()<CR>
-nnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)') \| call switch#reveal(0)<CR>
+nnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)') \| call switch#reveal(0, 1)<CR>
 vnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
 vnoremap <CR> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
 nnoremap <C-s> <Cmd>call file#update()<CR>
@@ -968,9 +968,9 @@ silent! au! repeatPlugin
 augroup repeat_setup
   au!
   au BufEnter,BufWritePost *
-    \ if g:repeat_tick == 0 | let g:repeat_tick = b:changedtick | endif
+    \ if get(g:, 'repeat_tick', 0) == 0 | let g:repeat_tick = b:changedtick | endif
   au BufLeave,BufWritePre,BufReadPre *
-    \ let g:repeat_tick = (!exists('g:repeat_tick') || g:repeat_tick == b:changedtick) ? 0 : -1
+    \ let g:repeat_tick = get(g:, 'repeat_tick', b:changedtick) == b:changedtick ? 0 : -1
 augroup END
 nnoremap . <Cmd>call repeat#run(v:count)<CR>
 nnoremap u <Cmd>call repeat#undo(0, v:count)<CR>
