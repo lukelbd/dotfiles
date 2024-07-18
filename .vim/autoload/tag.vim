@@ -166,8 +166,8 @@ function! tag#fzf_btags(bang, query, ...) abort
   let cmd = printf(cmd, fzf#shellescape(expand('%')))
   let opts = fzf#vim#with_preview({'placeholder': '{2}:{3..}'})
   let opts = join(map(get(opts, 'options', []), 'fzf#shellescape(v:val)'), ' ')
-  let opts .= " -m -d '\t' --with-nth 1,4.. --nth 1"
   let opts .= ' --preview-window +{3}-/2 --query ' . shellescape(a:query)
+  let opts .= " -m -d '\t' --nth 1 --with-nth 1,4.. --tiebreak chunk,index"
   try
     let source = call(snr . 'btags_source', [[cmd]])
   catch /.*/
@@ -248,7 +248,7 @@ function! tag#fzf_tags(type, bang, ...) abort
   let read = join(map(['perl', script, ''] + args, 'shellescape(v:val)'), ' ')
   let opts = fzf#vim#with_preview({'placeholder': '--tag {2}:{-1}:{3..}'})
   let opts = join(map(get(opts, 'options', []), 'fzf#shellescape(v:val)'), ' ')
-  let opts .= " -m -d '\t' --with-nth ..4 --nth ..2"
+  let opts .= " -m -d '\t' --nth ..2 --with-nth ..4 --tiebreak index"
   let opts .= nbytes > maxbytes ? ' --algo=v1' : ''
   let prompt = string(empty(a:type) ? 'Tags> ' : 'FTags> ')
   let options = {

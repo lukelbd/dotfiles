@@ -33,7 +33,7 @@ function! mark#fzf_marks(...) abort
   if empty(snr) | return | endif
   let source = split(execute('silent marks'), "\n")
   call extend(source[0:0], map(source[1:], {idx, val -> call(snr . 'format_mark', [v:val])}))
-  let opts = '+m -x --ansi --header-lines 1 --tiebreak=begin '
+  let opts = '+m -x --ansi --header-lines 1 --tiebreak begin,index '
   let options = {
     \ 'source': source,
     \ 'options': opts . ' --prompt "Marks> "',

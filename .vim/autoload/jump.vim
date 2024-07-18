@@ -146,7 +146,7 @@ function! s:change_sink(arg) abort  " first item is key binding
 endfunction
 function! jump#fzf_jumps(...)
   let opts = '+m -x --ansi --cycle --scroll-off 999'
-  let opts .= ' --sync --header-lines 1 --tiebreak=index'
+  let opts .= ' --sync --header-lines 1 --tiebreak chunk,index'
   let options = {
     \ 'source': s:list_source(0),
     \ 'sink*': function('s:jump_sink'),
@@ -156,7 +156,7 @@ function! jump#fzf_jumps(...)
 endfunction
 function! jump#fzf_changes(...) abort
   let opts = '+m -x --ansi --cycle --scroll-off 999'
-  let opts .= ' --sync --header-lines=1 --tiebreak=index'
+  let opts .= ' --sync --header-lines 1 --tiebreak chunk,index'
   let options = {
     \ 'source': s:list_source(1),
     \ 'sink*': function('s:change_sink'),

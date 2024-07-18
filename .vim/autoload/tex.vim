@@ -28,9 +28,10 @@ function! s:label_sink(items) abort
   endif
 endfunction
 function! tex#fzf_labels() abort
+  let opts = '--height 100% --tiebreak length,index'
   call fzf#run({
     \ 'source': s:label_source(),
-    \ 'options': '--height=100% --prompt="Label> "',
+    \ 'options': opts . ' --prompt="Label> "',
     \ 'sink*': function('s:label_sink'),
   \ }) | return ''  " text inserted by sink function
 endfunction
@@ -129,10 +130,11 @@ function! s:cite_sink(items) abort
   endif
 endfunction
 function! tex#fzf_cite() abort
+  let opts = '--multi --height 100% --tiebreak length,index'
   call fzf#run({
     \ 'sink*': function('s:cite_sink'),
     \ 'source': s:cite_source(),
-    \ 'options': '--multi --height=100% --prompt="Source> "',
+    \ 'options': opts . ' --prompt="Source> "',
   \ }) | return ''  " text inserted by sink function
 endfunction
 function! tex#fzf_cite_ref(...) abort
@@ -191,10 +193,11 @@ function! s:graphic_sink(items) abort
   endif
 endfunction
 function! tex#fzf_graphics() abort
+  let opts = '--multi --height=100% --tiebreak=length,index'
   call fzf#run({
     \ 'sink*': function('s:graphic_sink'),
     \ 'source': s:graphic_source(),
-    \ 'options': '--multi --height=100% --prompt="Figure> "',
+    \ 'options': opts . ' --prompt="Figure> "',
     \ })
   return ''  " text inserted by sink function
 endfunction

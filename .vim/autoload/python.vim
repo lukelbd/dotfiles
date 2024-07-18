@@ -341,7 +341,7 @@ endfunction
 function! python#fzf_doc() abort
   let options = {
     \ 'source': python#doc_list(),
-    \ 'options': '--no-sort --prompt="doc> "',
+    \ 'options': '--tiebreak length,index --prompt="doc> "',
     \ 'sink': function('stack#push_stack', ['doc', 'python#doc_page'])
   \ }
   call fzf#run(fzf#wrap(options))

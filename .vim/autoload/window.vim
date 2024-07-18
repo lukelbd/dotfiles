@@ -230,7 +230,7 @@ function! window#fzf_goto(...) abort
   let bang = a:0 ? a:1 : 0
   let opts = fzf#vim#with_preview({'placeholder': '{4}:{3..}'})
   let opts = join(map(get(opts, 'options', []), 'fzf#shellescape(v:val)'), ' ')
-  let opts .= " -d : --with-nth 1,5.. --preview-window '+{3}-/2' --no-sort"
+  let opts .= " -d : --with-nth 1,5.. --preview-window '+{3}-/2' --tiebreak index"
   let options = {
     \ 'sink': function('window#goto_tab'),
     \ 'source' : s:tab_source(1),
@@ -242,7 +242,7 @@ function! window#fzf_move(...) abort
   let bang = a:0 ? a:1 : 0
   let opts = fzf#vim#with_preview({'placeholder': '{4}:{3..}'})
   let opts = join(map(get(opts, 'options', []), 'fzf#shellescape(v:val)'), ' ')
-  let opts .= " -d : --with-nth 1,5.. --preview-window '+{3}-/2' --no-sort"
+  let opts .= " -d : --with-nth 1,5.. --preview-window '+{3}-/2' --tiebreak index"
   let options = {
     \ 'sink': function('window#move_tab'),
     \ 'source' : s:tab_source(1),

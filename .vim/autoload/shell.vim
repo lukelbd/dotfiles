@@ -53,7 +53,7 @@ endfunction
 function! shell#fzf_help() abort
   let options = {
     \ 'source': getcompletion('', 'shellcmd'),
-    \ 'options': '--no-sort --prompt="--help> "',
+    \ 'options': '--tiebreak length,index --prompt="--help> "',
     \ 'sink': function('stack#push_stack', ['help', 'shell#help_page'])
   \ }
   call fzf#run(fzf#wrap(options))
@@ -111,7 +111,7 @@ endfunction
 function! shell#fzf_man() abort
   let options = {
     \ 'source': getcompletion('', 'shellcmd'),
-    \ 'options': '--no-sort --prompt="man> "',
+    \ 'options': '--tiebreak length,index --prompt="man> "',
     \ 'sink': function('stack#push_stack', ['man', 'shell#man_page'])
   \ }
   call fzf#run(fzf#wrap(options))

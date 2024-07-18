@@ -175,7 +175,7 @@ function! file#fzf_files(bang, ...) abort
     \ 'dir': fnamemodify(bases[0], ':p'),
     \ 'sink*': function('file#fzf_open', [a:bang, 'Drop', bases[0]]),
     \ 'source': source,
-    \ 'options': opts . ' --no-sort --prompt=' . prompt,
+    \ 'options': opts . ' --tiebreak chunk,index --prompt=' . prompt,
   \ }
   return fzf#run(fzf#wrap('files', options, 0))
 endfunction
@@ -243,7 +243,7 @@ function! file#fzf_open(bang, cmd, ...) abort
       \ 'dir': base,
       \ 'sink*': function('file#fzf_open', [a:bang, a:cmd, base]),
       \ 'source': file#glob_files(base) + [s:new_file],
-      \ 'options': opts . ' --no-sort --prompt=' . prompt,
+      \ 'options': opts . ' --tiebreak chunk,index --prompt=' . prompt,
     \ }
     let paths = []  " only continue in recursion
     call fzf#run(fzf#wrap('open', options, a:bang))
