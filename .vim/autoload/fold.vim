@@ -405,10 +405,32 @@ function! fold#fzf_folds(...) abort
   return fzf#run(fzf#wrap('folds', options, bang))
 endfunction
 
-" Update the default fold options
-" NOTE: This is called by after/common.vim following Syntax autocommand
+" Update buffer-local fold level and method
+" NOTE: Here use zm/zr instead of :set foldlevel in order to truncate at maximum level
+" NOTE: Update method is triggered by a FileType autocommand that runs before FastFold
 " WARNING: Sometimes run into issue where opening new files or reading updates
 " permanently disables 'expr' folds. Account for this by re-applying fold method.
+function! fold#update_level(...) abort
+  let cnt = v:count
+  let level = &l:foldlevel
+  let ilevel = foldlevel('.')
+  call fold#update_folds(0)
+  if a:0  " input direction
+    let keys = (cnt ? cnt : '') . 'z' . a:1
+  elseif cnt && cnt != &l:foldlevel  " preserve level
+    let keys = abs(cnt - level) . (cnt > level ? 'zr' : 'zm')
+  else  " do nothing
+    let keys = ''
+  endif
+  if a:0 && ilevel > 0 && abs(ilevel - level - 1) > 1
+    let level = a:0 && a:1 ==? 'r' ? ilevel - 1 : ilevel
+  endif
+  if !empty(keys)
+    let &l:foldlevel = level
+    silent! exe 'normal! ' . keys
+  endif
+  echom 'Fold level: ' . &l:foldlevel
+endfunction
 function! fold#update_method(...) abort
   let [method, expr] = ['syntax', '']  " default values
   let current = &l:foldmethod  " active method
@@ -436,20 +458,10 @@ function! fold#update_method(...) abort
   endif
 endfunction
 
-" Update the fold bound, level, and open-close status
-" NOTE: Use normal mode zm/zr instead of :set foldlevel to truncate at maximum level
+" Update the fold definitions and open-close status
 " NOTE: Here 'zX' will show at most one nested fold underneath cursor
 " WARNING: Regenerating b:SimPylFold_cache with manual SimpylFold#FoldExpr() call
 " can produce strange internal bug. Instead rely on FastFoldUpdate to fill the cache.
-function! fold#update_level(...) abort
-  let level = &l:foldlevel
-  if a:0  " input direction
-    silent! exe 'normal! ' . v:count1 . 'z' . a:1
-  elseif v:count && v:count != level  " preserve level
-    silent! exe 'normal! ' . abs(v:count - level) . (v:count > level ? 'zr' : 'zm')
-  endif
-  echom 'Fold level: ' . &l:foldlevel
-endfunction
 function! fold#update_folds(force, ...) abort
   " Initial stuff
   let markers = []  " manual markers
