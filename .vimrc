@@ -311,7 +311,7 @@ endfor
 " require manual closure with :qall or :quitall.
 command! -nargs=? Autosave call switch#autosave(<args>)
 nnoremap q <Cmd>call window#close_panes()<CR>
-nnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)') \| call switch#reveal(0, 1)<CR>
+nnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR>
 vnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
 vnoremap <CR> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
 nnoremap <C-s> <Cmd>call file#update()<CR>
@@ -680,8 +680,9 @@ vnoremap <expr> zO fold#toggle_parents_expr(0)
 " Change fold level and jump between or inside folds
 " NOTE: The bracket maps fail without silent! when inside first fold in file
 " NOTE: Recursive map required for [Z or ]Z or else way more complicated
-" NOTE: Here fold#update_level() without arguments calls fold#update_folds()
-" if the level was changed and prints the level change.
+" NOTE: Here fold#update_level() without arguments updates folds if the level was
+" changed and prints thefold#update_folds() if
+" the level was changed and prints the level change.
 call utils#repeat_map('', '[Z', 'FoldBackward', '<Cmd>keepjumps normal! zkza<CR>')
 call utils#repeat_map('', ']Z', 'FoldForward', '<Cmd>keepjumps normal! zjza<CR>')
 noremap [z <Cmd>keepjumps normal! zk<CR><Cmd>keepjumps normal! [z<CR>
@@ -1888,6 +1889,10 @@ if s:has_plug('vim-textobj-user')  " {{{
   let g:textobj#sentence#select = 's'  " improved sentence text object
   let g:textobj#sentence#move_p = '('  " improved sentence navigation
   let g:textobj#sentence#move_n = ')'  " improved sentence navigation
+  let s:textobj_variable = [
+    \ '\(\k\|[#&*:.-]\)\@<!\(\k\|[#&*:.-]\)\@=',
+    \ '\(\k\|[#&*:.-]\)\@<=\(\k\|[#&*:.-]\)\@!',
+  \ ]
   let s:textobj_alpha = {
     \ 'select-i': 'ig',  'select-i-function': 'textobj#variable_segment#select_i',
     \ 'select-a': 'ag',  'select-a-function': 'textobj#variable_segment#select_a',
@@ -1908,6 +1913,7 @@ if s:has_plug('vim-textobj-user')  " {{{
     \ 'select-i': 'iZ', 'select-i-function': 'fold#get_parent_i',
     \ 'select-a': 'aZ', 'select-a-function': 'fold#get_parent_a',
   \ }
+  call succinct#add_objects('variable', {'v': join(s:textobj_variable, '\r')}, 0, 1)
   call textobj#user#plugin('comment', {'-': s:textobj_comment})  " no <Plug> suffix
   call textobj#user#plugin('entire', {'-': s:textobj_entire})  " no <Plug> suffix
   call textobj#user#plugin('alpha', {'-': s:textobj_alpha})  " no <Plug> suffix
