@@ -31,11 +31,10 @@ function! vim#config_refresh(bang, ...) abort
       call add(paths, ipath)
     endif
   endfor
-  let fold1 = foldclosed('.')
-  filetype detect  " update syntax, filetype, folds
-  let fold2 = foldclosed('.')
-  exe 'silent! normal! ' . (fold1 > 0 ? fold2 > 0 ? '' : 'zc' : 'zv')
+  let folds = filter(fold#get_folds(), 'foldclosed(v:val[0]) < 0')
   call map(paths, "fnamemodify(v:val, ':~')[2:]")
+  filetype detect  " update syntax, filetype, folds
+  for fold in folds | silent! exe fold[0] . 'foldopen' | endfor
   redraw | echom 'Loaded: ' . join(paths, ', ') . '.'
   let g:refresh = localtime()
 endfunction
