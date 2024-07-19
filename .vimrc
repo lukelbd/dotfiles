@@ -1577,7 +1577,9 @@ call s:plug('sgur/vim-textobj-parameter')  " argument, object is '='
 call s:plug('glts/vim-textobj-comment')  " comment blocks, object is 'C' (see below)
 call s:plug('tkhren/vim-textobj-numeral')  " numerals, e.g. 1.1234e-10
 call s:plug('preservim/vim-textobj-sentence')  " sentence objects
+call s:plug('Julian/vim-textobj-variable-segment')  " underscore or colon segments
 let g:textobj_numeral_no_default_key_mappings = 1  " defined in vim-succinct block
+let g:loaded_textobj_variable_segment = 1  " avoid default mappings (see below)
 let g:loaded_textobj_comment = 1  " avoid default mappings (see below)
 let g:loaded_textobj_entire = 1  " avoid default mappings (see below)
 
@@ -1853,15 +1855,10 @@ endif  " }}}
 " conflicts with ftplugin/tex.vim and the second with 'c' curly braces.
 " '\([0-9a-z]\@<![0-9a-z]\@=\|[^0-9A-Z]\@<=[0-9A-Z]\@=\)\r\([0-9a-z]\@<=[0-9a-z]\@!\|[0-9A-Z]\@<=[0-9A-Z]\@!\)',
 if s:has_plug('vim-textobj-user')  " {{{
-  " Mappings and settings
   augroup textobj_setup
     au!
     au VimEnter * call textobj#sentence#init()
   augroup END
-  let g:vim_textobj_parameter_mapping = 'k'  " i.e. 'keyword' or 'keyword argument'
-  let g:textobj#sentence#select = 's'  " smarter sentence selection FooBarBaz
-  let g:textobj#sentence#move_p = '('
-  let g:textobj#sentence#move_n = ')'
   omap an <Plug>(textobj-numeral-a)
   vmap an <Plug>(textobj-numeral-a)
   omap in <Plug>(textobj-numeral-i)
@@ -1870,29 +1867,23 @@ if s:has_plug('vim-textobj-user')  " {{{
   vmap a. <Plug>(textobj-comment-a)
   omap i. <Plug>(textobj-comment-i)
   vmap i. <Plug>(textobj-comment-i)
-  " Alphanumeric plugin
   for s:key in ['i', 'a'] | exe 'silent! unmap ' s:key . 'z' | endfor
   for s:key in ['i', 'a'] | exe 'silent! unmap ' s:key . 'Z' | endfor
-  let s:textobj_word1 = '[0-9A-Za-z]\@<![0-9A-Za-z]\@=\|^'  " alphanumeric regex
-  let s:textobj_word2 = '[0-9A-Za-z]\@<=[0-9A-Za-z]\@!\|$'
-  let s:textobj_part1 = '[0-9a-z]\@<=[A-Z]\@=\|' . s:textobj_word1  " partcase regex
-  let s:textobj_part2 = '[0-9a-z]\@<=[A-Z]\@=\|' . s:textobj_word2
-  let s:textobj_var1 = '\(\k\|[&*:.-]\)\@<!\(\k\|[&*:.-]\)'
-  let s:textobj_var2 = '\(\k\|[&*:.-]\)\@<=\(\k\|[&*:.-]\)\@!'
+  let g:vim_textobj_parameter_mapping = 'k'  " i.e. 'keyword' or 'keyword argument'
+  let g:textobj#sentence#select = 's'  " improved sentence text object
+  let g:textobj#sentence#move_p = '('  " improved sentence navigation
+  let g:textobj#sentence#move_n = ')'  " improved sentence navigation
   let s:textobj_alpha = {
-    \ 'g': '\(' . s:textobj_word1 . '\)\r\(' . s:textobj_word2 . '\)',
-    \ 'h': '\(' . s:textobj_part1 . '\)\r\(' . s:textobj_part2 . '\)',
-    \ 'v': '\(' . s:textobj_var1 . '\)\r\(' . s:textobj_var2 . '\)',
-  \ }  " 'ag' includes e.g. trailing underscore similar to 'a word'
-  call succinct#add_objects('alpha', s:textobj_alpha, 0, 1)  " do not escape
-  " Plugin overrides
-  let s:textobj_entire = {
-    \ 'select-a': 'aE',  'select-a-function': 'textobj#entire#select_a',
-    \ 'select-i': 'iE',  'select-i-function': 'textobj#entire#select_i'
+    \ 'select-i': 'ig',  'select-i-function': 'textobj#variable_segment#select_i',
+    \ 'select-a': 'ag',  'select-a-function': 'textobj#variable_segment#select_a',
   \ }
   let s:textobj_comment = {
     \ 'select-i': 'iC', 'select-i-function': 'textobj#comment#select_i',
     \ 'select-a': 'aC', 'select-a-function': 'textobj#comment#select_big_a',
+  \ }
+  let s:textobj_entire = {
+    \ 'select-a': 'aE',  'select-a-function': 'textobj#entire#select_a',
+    \ 'select-i': 'iE',  'select-i-function': 'textobj#entire#select_i'
   \ }
   let s:textobj_fold1 = {
     \ 'select-i': 'iz', 'select-i-function': 'fold#get_fold_i',
@@ -1904,6 +1895,7 @@ if s:has_plug('vim-textobj-user')  " {{{
   \ }
   call textobj#user#plugin('comment', {'-': s:textobj_comment})  " no <Plug> suffix
   call textobj#user#plugin('entire', {'-': s:textobj_entire})  " no <Plug> suffix
+  call textobj#user#plugin('alpha', {'-': s:textobj_alpha})  " no <Plug> suffix
   call textobj#user#plugin('fold', {'z': s:textobj_fold1, 'Z': s:textobj_fold2})
 endif  " }}}
 
@@ -2508,13 +2500,17 @@ if s:has_plug('vim-gitgutter')  " {{{
   command! -bang -range Hunks call git#stat_hunks(<range> ? <line1> : 0, <range> ? <line2> : 0, <bang>0)
   exe 'silent! unmap zgg'
   let g:gitgutter_async = 1  " ensure enabled
-  let g:gitgutter_map_keys = 0  " disable all maps yo
+  let g:gitgutter_map_keys = 0  " disable defaults
   let g:gitgutter_max_signs = -1  " maximum number of signs
   let g:gitgutter_preview_win_floating = 1  " toggle preview window
   let g:gitgutter_floating_window_options = {'minwidth': g:linelength}
   let g:gitgutter_use_location_list = 0  " use for errors instead
   call utils#repeat_map('', '[G', 'HunkBackward', '<Cmd>call git#next_hunk(-v:count1, 1)<CR>')
   call utils#repeat_map('', ']G', 'HunkForward', '<Cmd>call git#next_hunk(v:count1, 1)<CR>')
+  omap ih <Plug>(GitGutterTextObjectInnerPending)
+  omap ah <Plug>(GitGutterTextObjectOuterPending)
+  xmap ih <Plug>(GitGutterTextObjectInnerVisual)
+  xmap ah <Plug>(GitGutterTextObjectOuterVisual)
   noremap [g <Cmd>call git#next_hunk(-v:count1, 0)<CR>
   noremap ]g <Cmd>call git#next_hunk(v:count1, 0)<CR>
   nnoremap <Leader>g <Cmd>call git#show_hunk()<CR>
