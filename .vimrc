@@ -1220,6 +1220,16 @@ function! s:feed_replace() abort
 endfunction
 nnoremap \\ <Cmd>call <sid>feed_replace()<CR>
 
+" Replace with register
+" This is consistent with visual selection
+" See: https://github.com/inkarkat/vim-ReplaceWithRegister
+nmap \p <Plug>ReplaceWithRegisterOperator
+xmap \p <Plug>ReplaceWithRegisterVisual
+xmap \P <Plug>ReplaceWithRegisterVisual
+nmap \P <Plug>ReplaceWithRegisterLine
+nmap \\p <Plug>ReplaceWithRegisterLine
+nmap \\P <Plug>ReplaceWithRegisterLine
+
 " Sort or reverse lines using variety of :sort arguments
 " Here 'i' ignores case, 'n' is numeric, 'f' is by float
 " See: https://superuser.com/a/189956/506762
@@ -1229,8 +1239,8 @@ vnoremap <expr> \A edit#sort_lines_expr('i')
 nnoremap <expr> \A edit#sort_lines_expr('i')
 vnoremap <expr> \n edit#sort_lines_expr('n')
 nnoremap <expr> \n edit#sort_lines_expr('n')
-vnoremap <expr> \N edit#sort_lines_expr('f')
-nnoremap <expr> \N edit#sort_lines_expr('f')
+vnoremap <expr> \f edit#sort_lines_expr('f')
+nnoremap <expr> \f edit#sort_lines_expr('f')
 
 " Reverse or filter to unique lines
 " Here 'i' ignores case, 'u' is unique sort
@@ -1441,6 +1451,7 @@ let g:fzf_tags_command = 'ctags -R -f .vimtags ' . join(parse#get_ignores(0, 0, 
 " call s:plug('vim-scripts/EnhancedJumps')  " jump list, unnecessary
 " call s:plug('easymotion/vim-easymotion')  " extremely slow and overkill
 " call s:plug('mhinz/vim-grepper')  " for ag/rg but seems like easymotion, too much
+call s:plug('inkarkat/vim-ReplaceWithRegister')
 call s:plug('henrik/vim-indexed-search')
 call s:plug('andymass/vim-matchup')
 call s:plug('justinmk/vim-sneak')  " simple and clean
