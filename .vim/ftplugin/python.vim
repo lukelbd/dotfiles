@@ -10,10 +10,11 @@ setlocal softtabstop=4
 " Syntax settings
 let b:delimitMate_nesting_quotes = ['"', "'"]
 let g:python_slow_sync = 0  " use fast syncing
-let g:python_highlight_all = 1  " builtin python syntax option
-let g:python_highlight_func_calls = 1  " python-syntax syntax option
-let g:python_highlight_builtin_funcs = 1  " python-syntax syntax option
-let g:python_highlight_builtin_funcs_kwarg = 0  " python-syntax syntax option
+let g:python_highlight_all = 1  " enable python-syntax options
+let g:python_highlight_operators = 1  " avoid highlighting operators (messes up decorators)
+let g:python_highlight_func_calls = 1  " highlight parenthetical function calls
+let g:python_highlight_builtin_funcs = 1  " highlight builtins (including variables)
+let g:python_highlight_builtin_funcs_kwarg = 0  " avoid highlighting within kwargs
 
 " Add mappings (see also vim.vim)
 noremap <expr> <buffer> <Plug>ExecuteMotion python#run_motion_expr()

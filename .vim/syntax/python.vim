@@ -93,7 +93,7 @@ else
 endif
 
 " Decorators (python 2.4+)
-syn match pythonDecorator '^\s*\zs@' display nextgroup=pythonDottedName skipwhite
+syn match pythonDecorator '^\s*\zs@\S\@=' display nextgroup=pythonDottedName skipwhite
 if s:python2()
   syn match pythonDottedName
     \ '[a-zA-Z_][a-zA-Z0-9_]*\%(\.[a-zA-Z_][a-zA-Z0-9_]*\)*' display contained
@@ -104,9 +104,10 @@ endif
 syn match pythonDot '\.' display containedin=pythonDottedName
 
 " Operators
-syn keyword pythonOperator and in is not or
+syn keyword pythonOperator
+  \ and in is not or
 if s:enabled('g:python_highlight_operators')
-  syn match pythonOperator '\V=\|-\|+\|*\|@\|/\|%\|&\||\|^\|~\|<\|>\|!=\|:='
+  syn match pythonOperator '\V=\|-\|+\|*\|@\%(\s\@=\|$\)\|/\|%\|&\||\|^\|~\|<\|>\|!=\|:='
 endif
 syn match pythonError
   \ '[$?]\|\([-+@%&|^~]\)\1\{1,}\|\([=*/<>]\)\2\{2,}\|\([+@/%&|^~<>]\)\3\@![-+*@/%&|^~<>]\|\*\*[*@/%&|^<>]\|=[*@/%&|^<>]\|-[+*@/%&|^~<]\|[<!>]\+=\{2,}\|!\{2,}=\+' display
