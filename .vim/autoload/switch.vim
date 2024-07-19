@@ -249,7 +249,7 @@ function! switch#reveal(...) abort
   let state = exists('g:reveal_cache')
   let toggle = a:0 > 0 ? a:1 : 1 - state
   let suppress = a:0 > 1 ? a:2 : 0
-  if !toggle && exists('g:reveal_cache') && exists('#reveal_restore')
+  if !toggle && exists('g:reveal_cache') && exists('#reveal_restore#TextChanged')
     doautocmd reveal_restore TextChanged
   elseif toggle && !exists('g:reveal_cache')
     let g:reveal_cache = [&l:foldopen, &l:conceallevel]

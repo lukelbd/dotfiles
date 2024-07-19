@@ -23,7 +23,6 @@
 " See: https://github.com/c-bata/go-prompt/blob/82a9122/input.go#L94-L125
 " See: https://eevblog.com/forum/microcontrollers/mystery-of-vt100-keyboard-codes/
 " See: https://stackoverflow.com/a/44473667/4970632 (terminal cursor overrides)
-
 " vint: -ProhibitSetNoCompatible
 set nocompatible
 set encoding=utf-8
@@ -38,6 +37,7 @@ let &t_SR = "\e[4 q"  " underline cursor (replace mode)
 let &t_EI = "\e[2 q"  " block cursor (normal mode)
 let &t_ZH = "\e[3m"  " italics mode
 let &t_ZR = "\e[23m"  " italics end
+exe 'runtime autoload/utils.vim'
 scriptencoding utf-8
 
 " Global settings {{{2
@@ -524,12 +524,6 @@ nnoremap <Tab>< <Cmd>call window#move_tab(tabpagenr() - v:count1)<CR>
 " General motions and scrolling {{{2
 " NOTE: Use parentheses since g0/g$ are navigation and z0/z9 used for color schemes
 " NOTE: Mapped jumping commands do not open folds by default, hence the expr below
-silent! exe 'runtime autoload/utils.vim'
-for s:key in ['gg', 'G', 'H', 'L', 'J', 'K']
-  let s:key1 = string(s:key =~? '^[jk]$' ? 'M' : s:key)
-  let s:key2 = '(&l:foldopen =~# ''jump\\|all'' ? ''zv'' : '''')'
-  exe 'noremap <expr> ' . s:key . ' ' . s:key1 . ' . ' . s:key2
-endfor
 for s:mode in ['n', 'v']
   exe s:mode . 'noremap _ zzze'
   exe s:mode . 'noremap z9 zb'
@@ -537,6 +531,12 @@ for s:mode in ['n', 'v']
   exe s:mode . 'noremap z( ze'
   exe s:mode . 'noremap z) zs'
 endfor
+noremap <expr> G 'G' . (&l:foldopen =~# 'jump\|all' ? 'zv' : '')
+noremap <expr> gg 'gg' . (&l:foldopen =~# 'jump\|all' ? 'zv' : '')
+noremap <expr> gK 'H' . (&l:foldopen =~# 'jump\|all' ? 'zv' : '')
+noremap <expr> gJ 'M' . (&l:foldopen =~# 'jump\|all' ? 'zv' : '')
+noremap <expr> zK 'M' . (&l:foldopen =~# 'jump\|all' ? 'zv' : '')
+noremap <expr> zJ 'L' . (&l:foldopen =~# 'jump\|all' ? 'zv' : '')
 
 " Repair modifier-arrow key presses. Use iTerm to remap <BS> and <Del> to Shift-Arrow
 " presses, then convert to no-op in normal mode and deletions for insert/command mode.
@@ -1084,14 +1084,14 @@ command! -range -nargs=? Format <line1>,<line2>call edit#format_lines(<args>)
 nnoremap gqq <Cmd>call edit#format_lines(v:count)<CR>
 nnoremap <expr> gq edit#format_lines_expr(v:count)
 vnoremap <expr> gq edit#format_lines_expr(v:count)
-nnoremap gJ <Cmd>call edit#join_lines(0, 0)<CR>
-nnoremap gK <Cmd>call edit#join_lines(1, 0)<CR>
-vnoremap <expr> gJ edit#join_lines_expr(0, 0)
-vnoremap <expr> gK edit#join_lines_expr(1, 0)
-nnoremap zJ <Cmd>call edit#join_lines(0, 1)<CR>
-nnoremap zK <Cmd>call edit#join_lines(1, 1)<CR>
-vnoremap <expr> zJ edit#join_lines_expr(0, 1)
-vnoremap <expr> zK edit#join_lines_expr(1, 1)
+nnoremap J <Cmd>call edit#join_lines(0, 0)<CR>
+nnoremap K <Cmd>call edit#join_lines(1, 0)<CR>
+vnoremap <expr> J edit#join_lines_expr(0, 0)
+vnoremap <expr> K edit#join_lines_expr(1, 0)
+nnoremap L <Cmd>call edit#join_lines(0, 1)<CR>
+nnoremap H <Cmd>call edit#join_lines(1, 1)<CR>
+vnoremap <expr> L edit#join_lines_expr(0, 1)
+vnoremap <expr> H edit#join_lines_expr(1, 1)
 
 " Copying caps and insert mode {{{2
 " NOTE: This enforces defaults without requiring 'set' in vimrc or ftplugin that
