@@ -1497,7 +1497,7 @@ if s:enable_lsp
   let g:lsp_preview_max_height = 2 * g:linelength
 endif
 
-" Insert completion engines {{{2
+" Auto-completion engines {{{2
 " NOTE: Autocomplete requires deno (install with mamba). Older verison requires pynvim
 " WARNING: denops.vim frequently upgrades requirements to most recent vim
 " distribution but conda-forge version is slower to update. Workaround by pinning
@@ -1518,15 +1518,15 @@ endif
 " let g:deoplete#enable_at_startup = 1  " needed inside plug#begin block
 " call s:plug('vim-denops/denops.vim', {'commit': 'e641727'})  " ddc dependency
 " call s:plug('Shougo/ddc.vim', {'commit': 'db28c7d'})  " fourth generation (requires deno)
-" call s:plug('Shougo/ddc-ui-native', {'commit': 'cc29db3'})  " matching words near cursor
+" call s:plug('Shougo/ddc-ui-pum')  " non-native user interface
 if s:enable_ddc
-  call s:plug('matsui54/denops-popup-preview.vim')  " show previews during pmenu selection
   call s:plug('vim-denops/denops.vim')  " ddc dependency
   call s:plug('Shougo/ddc.vim', {'commit': '74743f5'})  " fourth generation (requires deno)
-  call s:plug('Shougo/ddc-ui-native')  " matching words near cursor
+  call s:plug('Shougo/ddc-ui-native')  " native user interface
+  call s:plug('matsui54/denops-popup-preview.vim')  " show previews during pmenu selection
 endif
 
-" Omnifunc sources not provided by engines
+" Omnifunc sources sorters and matchers
 " See: https://github.com/Shougo/deoplete.nvim/wiki/Completion-Sources
 " call s:plug('neovim/nvim-lspconfig')  " nvim-cmp source
 " call s:plug('hrsh7th/cmp-nvim-lsp')  " nvim-cmp source
@@ -1542,8 +1542,12 @@ endif
 " call s:plug('Shougo/ddc-source-omni')  " include &omnifunc results
 " call s:plug('delphinus/ddc-ctags')  " completion using 'ctags' command
 " call s:plug('akemrir/ddc-tags-exec')  " completion using tagfiles() lines
+" call s:plug('Shougo/ddc-source-cmdline-history')  " command history (requires ddc-ui-pum)
+" call s:plug('Shougo/ddc-source-cmdline')  " valid commands (requires ddc-ui-pum)
+" call s:plug('Shougo/ddc-filter-sorter_rank')  " sorting for sources (use fuzzy instead)
+" call s:plug('matsui54/ddc-postfilter_score')  " sorting for postFilter (use fuzzy instead)
 if s:enable_ddc
-  call s:plug('tani/ddc-fuzzy')  " filter for fuzzy matching similar to fzf
+  call s:plug('tani/ddc-fuzzy')  " fuzzy matcher and sorter similar to fzf
   call s:plug('matsui54/ddc-buffer')  " matching words from buffer (as in neocomplete)
   call s:plug('shun/ddc-source-vim-lsp')  " language server protocol completion for vim 8+
   call s:plug('Shougo/ddc-source-around')  " matching words near cursor
@@ -2230,6 +2234,7 @@ endif  " }}}
 " ['around', 'buffer', 'file', 'ctags', 'vim-lsp', 'vsnip']
 " 'vsnip': {'mark': 'S', 'maxItems': 5}}
 " 'ctags': {'mark': 'T', 'isVolatile': v:true, 'maxItems': 5}}
+" call ddc#custom#patch_global('cmdlineSources', s:ddc_cmdline)
 if s:has_plug('ddc.vim')  " {{{
   augroup ddc_setup
     au!
@@ -2250,7 +2255,17 @@ if s:has_plug('ddc.vim')  " {{{
     \ '--v8-flags=--max-heap-size=100,--max-old-space-size=100',
   \ ]
   let g:ddc_sources = ['around', 'buffer', 'file', 'tags', 'vim-lsp']
+  let s:ddc_cmdline = {
+    \ ':': ['cmdline-history', 'cmdline', 'around'],
+    \ '@': ['cmdline-history', 'input', 'file', 'around'],
+    \ '>': ['cmdline-history', 'input', 'file', 'around'],
+    \ '/': ['around', 'line'],
+    \ '?': ['around', 'line'],
+    \ '-': ['around', 'line'],
+    \ '=': ['input'],
+  \ }  " requires non-native ddc-ui-pum
   let g:ddc_options = {
+    \ 'postFilters': ['sorter_fuzzy'],
     \ 'sourceParams': {'around': {'maxSize': 500}},
     \ 'filterParams': {'matcher_fuzzy': {'splitMode': 'word'}},
     \ 'sourceOptions': {
