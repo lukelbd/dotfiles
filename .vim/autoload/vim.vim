@@ -13,7 +13,8 @@ let s:config_ignore = [
   \ '/\.\?vimsession*', '/\.\?vim/autoload/vim.vim', '/\.\?vim/after/common.vim',
 \ ]  " common.vim sourced by filetype detect, others managed externally
 function! vim#config_refresh(bang, ...) abort
-  let time = get(g:, 'refresh', localtime())
+  let winview = winsaveview()
+  let refresh = get(g:, 'refresh', localtime())
   let regex = join(s:config_ignore, '\|')
   let paths = []
   for ipath in utils#get_scripts(a:0 ? a:1 : '')
@@ -26,15 +27,16 @@ function! vim#config_refresh(bang, ...) abort
     if path =~# '/syntax/\|/ftplugin/'  " sourced by :filetype detect
       let ftype = fnamemodify(path, ':t:r')  " e.g. ftplugin/python.vim --> python
       if &filetype ==# ftype | call add(paths, ipath) | endif
-    elseif a:bang || getftime(path) > time || path =~# '/\.\?vimrc\|/init\.vim'
+    elseif a:bang || getftime(path) > refresh || path =~# '/\.\?vimrc\|/init\.vim'
       exe 'source ' . path
       call add(paths, ipath)
     endif
   endfor
-  let folds = filter(fold#get_folds(), 'foldclosed(v:val[0]) < 0')
+  let folds = filter(fold#fold_source(), 'foldclosed(v:val[0]) < 0')
   call map(paths, "fnamemodify(v:val, ':~')[2:]")
   filetype detect  " update syntax, filetype, folds
-  for fold in folds | silent! exe fold[0] . 'foldopen' | endfor
+  for fold in folds | exe fold[0] . 'foldopen' | endfor
+  call winrestview(winview)
   redraw | echom 'Loaded: ' . join(paths, ', ') . '.'
   let g:refresh = localtime()
 endfunction

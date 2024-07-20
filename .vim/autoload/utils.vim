@@ -179,8 +179,9 @@ endfunction
 function! utils#motion_func(name, args, ...) abort
   let signature = string(a:args)[1:-2]  " remove square brackets
   let operator = a:name . '(' . signature . ')'
-  let s:operator_view = a:0 && a:1 ? winsaveview() : {}
   let s:operator_func = operator
+  let s:operator_view = a:0 && a:1 ? winsaveview() : {}
+  let s:operator_view['bufnr'] = bufnr()
   if mode() =~# '^\(v\|V\|\)$'  " call operator function with current line range
     return ":call utils#operator_func('')\<CR>"
   elseif mode() ==# 'n'  " await motion and call operator function over those lines
@@ -214,8 +215,9 @@ function! utils#operator_func(type, ...) range abort
   if line1 == line2 && col1 >= col2  " e.g. cancelled motion, invalid object
     return ''
   endif
+  let view = s:operator_view.bufnr ==# bufnr() ? s:operator_view : {}
   exe line1 . ',' . line2 . 'call ' . s:operator_func
-  call winrestview(s:operator_view) | return ''
+  call winrestview(view) | return ''
 endfunction
 
 " Generate repeatable mappings for arbitrary modes

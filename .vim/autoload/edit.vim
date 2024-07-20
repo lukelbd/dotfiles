@@ -4,6 +4,9 @@
 " Auto-format with external plugin
 " NOTE: Not all servers support auto formtting. Seems 'pylsp' uses autopep8 consistent
 " with flake8 warnings. Use below function to print active servers.
+function! s:echo_range(msg, num) range abort
+  redraw | echom a:msg . (a:msg =~# '\s' ? ' on ' : ' ')  . a:num . ' line(s)'
+endfunction
 function! s:auto_servers() abort
   let servers = lsp#get_allowed_servers()
   let table = split(lsp#get_server_status(), "\n")
@@ -119,6 +122,37 @@ function! edit#format_lines_expr(...) abort
   return utils#motion_func('edit#format_lines', a:000)
 endfunction
 
+" Get error messages and segment text objects
+" NOTE: This is used to show error messages on closed folds similar
+" to method used to show git-gutter hunk summaries on closed folds.
+function! edit#get_segment_i() abort
+  return call('edit#get_segment', ['i'] + a:000)
+endfunction
+function! edit#get_segment_a() abort
+  return call('edit#get_segment', ['a'] + a:000)
+endfunction
+function! edit#get_segment(char, ...) abort
+  let name = 'textobj#variable_segment#select_' . a:char
+  let keys = &l:iskeyword
+  try
+    setlocal iskeyword=@,48-57,_,192-255
+    return call('textobj#variable_segment#select_i', a:000)
+  finally
+    let &l:iskeyword = keys
+  endtry
+endfunction
+function! edit#get_errors(...) range abort
+  let flags = {'E': '!', 'W': '@', 'I': '#'}
+  let counts = {}  " flag counts
+  let [line1, line2] = a:0 ? a:000 : [a:firstline, a:lastline]
+  for item in get(b:, 'ale_highlight_items', {})
+    if item.bufnr == bufnr() && item.lnum >= line1 && item.lnum <= line2
+      let flag = get(flags, item.type, '?')
+      let counts[flag] = get(counts, flag, 0) + 1
+    endif
+  endfor | return join(map(items(counts), 'v:val[0] . v:val[1]'), '')
+endfunction
+
 " Indent or join lines by count
 " NOTE: Native vim indent uses count to move over number of lines, but redundant
 " with e.g. 'd2k', so instead use count to denote indentation level.
@@ -183,43 +217,28 @@ function! edit#insert_delete(...) abort  " vint: -ProhibitUsingUndeclaredVariabl
   let keys = repeat("\<Delete>", cnt) | return keys
 endfunction
 
-" Return error messages and replacement message
-" NOTE: This is used to show error messages on closed folds similar
-" to method used to show git-gutter hunk summaries on closed folds.
-function! s:stat_range(msg, num, ...) range abort
-  let head = a:msg =~# '\s' ? ' on ' : ' '
-  let tail = join(a:000, '')
-  let tail = empty(tail) ? '' : ' (args ' . tail . ')'
-  redraw | echom a:msg . head  . a:num . ' line(s)' . tail
-endfunction
-function! edit#stat_errors(...) range abort
-  let [line1, line2] = a:0 ? a:000 : [a:firstline, a:lastline]
-  let [info, cnts, flags] = ['', {}, {'E': '!', 'W': '@', 'I': '#'}]
-  for item in get(b:, 'ale_highlight_items', {})
-    if item.bufnr == bufnr() && item.lnum >= line1 && item.lnum <= line2
-      let flag = get(flags, item.type, '?')
-      let cnts[flag] = get(cnts, flag, 0) + 1
-    endif
-  endfor | return join(map(items(cnts), 'v:val[0] . v:val[1]'), '')
-endfunction
-
 " Search sort or reverse the input lines
 " NOTE: Adaptation of hard-to-remember :g command shortcut. Adapted
 " from super old post: https://vim.fandom.com/wiki/Reverse_order_of_lines
+function! s:echo_range(msg, num) range abort
+  let head = a:msg . (a:msg =~# '\s' ? ' on ' : ' ')
+  let tail = a:num . ' line(s)'
+  redraw | echom head . ' ' . tail
+endfunction
 function! edit#sel_lines(...) range abort
   let range = printf('\%%>%dl\%%<%dl', a:firstline - 1, a:lastline + 1)
   call feedkeys((a:0 && a:1 ? '?' : '/') . range, 'n')
-  call s:stat_range('Searching', a:lastline - a:firstline - 1)
+  call s:echo_range('Searching', a:lastline - a:firstline - 1)
 endfunction
 function! edit#sort_lines(...) range abort  " vint: -ProhibitUnnecessaryDoubleQuote
   let range = a:firstline == a:lastline ? '' : a:firstline . ',' . a:lastline
   exe 'silent ' . range . 'sort ' . join(a:000, '')
-  call s:stat_range('Sorted', a:lastline - a:firstline + 1)
+  call s:echo_range('Sorted', a:lastline - a:firstline + 1)
 endfunction
 function! edit#reverse_lines() range abort  " vint: -ProhibitUnnecessaryDoubleQuote
   let range = a:firstline == a:lastline ? '' : a:firstline . ',' . a:lastline
   exe 'silent ' . range . 'g/^/m' . (empty(range) ? 0 : a:firstline - 1)
-  call s:stat_range('Reversed', a:lastline - a:firstline + 1)
+  call s:echo_range('Reversed', a:lastline - a:firstline + 1)
 endfunction
 " For <expr> map accepting motion
 function! edit#sel_lines_expr(...) abort
@@ -284,7 +303,7 @@ function! edit#search_replace(msg, ...) range abort
   endfor
   let @/ = pattern
   call winrestview(winview)
-  call s:stat_range(a:msg, cnt)
+  call s:echo_range(a:msg, cnt)
 endfunction
 " For <expr> map accepting motion
 function! edit#search_replace_expr(...) abort

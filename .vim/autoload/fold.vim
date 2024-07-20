@@ -151,6 +151,7 @@ function! fold#get_parent_a() abort
 endfunction
 
 " Return folds and properties across line range
+" NOTE: This ignores 'inner' folds within closed folds (see also fold#fold_source)
 " NOTE: This ignores folds defined in s:folds_ignore, e.g. python classes and
 " tex documents. Used to close-open smaller fold blocks ignoring huge blocks.
 function! s:get_folds(func, ...) abort
@@ -295,8 +296,8 @@ function! s:fold_text(line1, line2, level)
   let level = a:level . repeat(':', a:level)  " fold level
   let lines = string(a:line2 - a:line1 + 1)  " number of lines
   let maxlen = get(g:, 'linelength', 88) - 1  " default maximum
-  let flags = edit#stat_errors(a:line1, a:line2)  " lintint messages
-  let flags .= git#stat_hunks(a:line1, a:line2, 0, 1)  " abbreviate with '1'
+  let flags = edit#get_errors(a:line1, a:line2)  " lintint messages
+  let flags .= git#get_hunks(a:line1, a:line2, 0, 1)  " abbreviate with '1'
   let dots = repeat('·', len(string(line('$'))) - len(lines))
   let stats = level . dots . lines  " default statistics
   if &l:diff  " fill with maximum width
@@ -412,18 +413,20 @@ endfunction
 " permanently disables 'expr' folds. Account for this by re-applying fold method.
 function! fold#update_level(...) abort
   let cnt = v:count
+  let key = a:0 ? a:1 : ''
+  let keys = ''
   let level = &l:foldlevel
   let ilevel = foldlevel('.')
   call fold#update_folds(0)
-  if a:0  " input direction
-    let keys = (cnt ? cnt : '') . 'z' . a:1
-  elseif cnt && cnt != &l:foldlevel  " preserve level
-    let keys = abs(cnt - level) . (cnt > level ? 'zr' : 'zm')
-  else  " do nothing
-    let keys = ''
+  if key ==? 'r' && ilevel > level
+    let level = ilevel - 1
+  elseif key ==? 'm' && ilevel < level
+    let level = ilevel
   endif
-  if a:0 && ilevel > 0 && abs(ilevel - level - 1) > 1
-    let level = a:0 && a:1 ==? 'r' ? ilevel - 1 : ilevel
+  if !empty(key)  " input direction
+    let keys = (cnt ? cnt : '') . 'z' . a:1
+  elseif cnt && cnt != level  " preserve level
+    let keys = abs(cnt - level) . (cnt > level ? 'zr' : 'zm')
   endif
   if !empty(keys)
     let &l:foldlevel = level

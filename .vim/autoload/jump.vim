@@ -65,13 +65,13 @@ function! s:next_list(mode, count) abort  " navigate to nth location in list
   let head = toupper(name[0]) . name[1:] . ' location: '
   if jdx >= 0 && jdx < len(opts)  " jump to location
     call s:feed_list(a:mode, opts[jdx]['loc'], tabpagenr(), winnr())
-    call feedkeys("\<Cmd>redraw | echom '" . head . (jdx + 1) . '/' . len(opts) . "'\<CR>", 'n')
+    call feedkeys("\<Cmd>redraw | echo '" . head . (jdx + 1) . '/' . len(opts) . "'\<CR>", 'n')
   elseif !iend && a:count == 1 && jdx == len(opts)  " silently restore position
     if bnum != bufnr() | exe bnum . 'buffer' | endif | call cursor(lnum, cnum + 1)
-    call feedkeys("\<Cmd>redraw | echom '" . head . jdx . '/' . len(opts) . "'\<CR>", 'n')
+    call feedkeys("\<Cmd>redraw | echo '" . head . jdx . '/' . len(opts) . "'\<CR>", 'n')
   else  " no-op warning message
-    redraw | let direc = a:count < 0 ? 'start' : 'end'
-    echohl WarningMsg | echom 'Error: At ' . direc . ' of ' . name . 'list' | echohl None
+    let msg = 'Error: At ' . (a:count >= 0 ? 'end' : 'start') . ' of ' . name . 'list'
+    redraw | echohl WarningMsg | echom msg | echohl None
   endif
 endfunction
 
@@ -103,9 +103,8 @@ function! s:list_sink(mode, line) abort
   let parts = matchlist(a:line, regex, '', '')
   let g:length = len(parts)
   if empty(parts)
-    redraw | echohl ErrorMsg
-    echom "Error: Invalid selection '" . a:line . "'"
-    echohl None | return
+    let msg = 'Error: Invalid selection ' . string(a:line)
+    redraw | echohl ErrorMsg | echom msg | echohl None | return
   endif
   let [iloc, tnr, wnr, _, _, item; rest] = map(parts[1:], 'str2nr(v:val)')
   return s:feed_list(a:mode, -iloc, tnr, wnr)
@@ -222,9 +221,8 @@ function! jump#next_loc(count, list, ...) abort
   call map(items, "extend(v:val, {'idx': v:key + 1})")
   if backward | call reverse(items) | endif
   if empty(items)
-    redraw | echohl ErrorMsg
-    echom 'Error: No locations'
-    echohl None | return
+    let msg = 'Error: No locations found'
+    redraw | echohl ErrorMsg | echom msg | echohl None | return
   endif
   let [lnum, cnum] = [line('.'), col('.')]
   let [cmps, oper] = [[], backward ? '<' : '>']
@@ -311,7 +309,7 @@ function! jump#next_search(count) abort
   if !empty(@/)
     call feedkeys("\<Cmd>keepjumps normal! " . keys . "\<CR>", 'n')
   else
-    echohl ErrorMsg | echom 'Error: Pattern not set' | echohl None
+    redraw | echohl ErrorMsg | echom 'Error: Pattern not set' | echohl None
   endif
   if !empty(@/)
     call feedkeys("\<Cmd>exe b:curpos == getcurpos() ? '' : 'ShowSearchIndex'\<CR>", 'n')

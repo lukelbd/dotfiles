@@ -351,7 +351,7 @@ function! window#setup_preview(...) abort
     let info = popup_getpos(winid)
     if !info.visible | continue | endif
     let scroll = line('$', winid) > info.core_height
-    let opts = {'dragall': 1, 'scrollbar': scroll}
+    let opts = {'dragall': 1, 'scrollbar': scroll, 'close': 'none'}
     if a:0 && a:1  " previously if empty(pum_getpos())
       let opts.border  = [0, 1, 0, 1]
       let opts.borderchars  = [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']
@@ -386,6 +386,25 @@ function! window#setup_panel(...) abort
       exe 'nmap <buffer> g' . char . ' <Nop>'
     endif
   endfor
+endfunction
+
+" Setup csv data windows
+" NOTE: See :help CSV and https://github.com/chrisbra/csv.vim
+function! window#setup_values() abort
+  if !exists(':CSVInit') | return | endif
+  let winview = winsaveview()
+  let char = matchstr(getline(1), '^[#%"]')
+  let char = empty(char) ? '#' : char
+  goto | let head1 = search('^\s*\a', 'W')
+  let head2 = head1 ? search('^\s*[.+-]\?\d', 'W') : head1
+  let g:csv_delim = expand('%:e') ==# 'txt' ? ' ' : ','
+  let b:csv_headerline = head2 ? head2 - 1 : head1  " header above numeric
+  let &l:commentstring = char . '%s'
+  goto | let info = search('^\s*[^' . char . ']', 'nW') - 1
+  let expr = info > 1 && !foldlevel(1) ? 1 . ',' . info . 'fold' : ''
+  exe 'CSVInit' | setlocal foldenable
+  call feedkeys("\<Cmd>" . expr . "\<CR>", 'n')
+  call winrestview(winview)
 endfunction
 
 " Setup or show specific panel windows

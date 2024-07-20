@@ -268,8 +268,8 @@ endfunction
 function! s:get_changes() abort
   let lnums = []
   for [line1, line2, _] in fold#fold_source()
-    let hunks = git#stat_hunks(line1, line2, 0, 1)
-    let errors = edit#stat_errors(line1, line2)
+    let hunks = git#get_hunks(line1, line2, 0, 1)
+    let errors = edit#get_locs(line1, line2)
     if !empty(hunks) || !empty(errors) | call add(lnums, line1) | endif
   endfor | return lnums
 endfunction

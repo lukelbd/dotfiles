@@ -459,8 +459,8 @@ augroup panel_setup
   au FileType qf call jump#setup_loc()
   au FileType man call shell#setup_man()
   au FileType gitcommit call git#setup_commit()
-  au FileType fugitiveblame call git#setup_blame() | call git#setup_panel()
-  au FileType git,diff,fugitive call git#setup_panel()
+  au FileType fugitiveblame call git#setup_blame() | call git#setup_general()
+  au FileType git,diff,fugitive call git#setup_general()
   for s:type in s:panel_filetypes | let s:arg = s:type ==# 'gitcommit'
     exe 'au FileType ' . s:type . ' call window#setup_panel(' . s:arg . ')'
   endfor
@@ -531,12 +531,12 @@ for s:mode in ['n', 'v']
   exe s:mode . 'noremap z( ze'
   exe s:mode . 'noremap z) zs'
 endfor
-noremap <expr> G 'G' . (&l:foldopen =~# 'jump\|all' ? 'zv' : '')
-noremap <expr> gg 'gg' . (&l:foldopen =~# 'jump\|all' ? 'zv' : '')
-noremap <expr> gK 'H' . (&l:foldopen =~# 'jump\|all' ? 'zv' : '')
-noremap <expr> gJ 'M' . (&l:foldopen =~# 'jump\|all' ? 'zv' : '')
-noremap <expr> zK 'M' . (&l:foldopen =~# 'jump\|all' ? 'zv' : '')
-noremap <expr> zJ 'L' . (&l:foldopen =~# 'jump\|all' ? 'zv' : '')
+noremap <expr> G 'G' . (&l:foldopen =~# 'jump\\|all' ? 'zv' : '')
+noremap <expr> gg 'gg' . (&l:foldopen =~# 'jump\\|all' ? 'zv' : '')
+noremap <expr> gK 'H' . (&l:foldopen =~# 'jump\\|all' ? 'zv' : '')
+noremap <expr> gJ 'M' . (&l:foldopen =~# 'jump\\|all' ? 'zv' : '')
+noremap <expr> zK 'M' . (&l:foldopen =~# 'jump\\|all' ? 'zv' : '')
+noremap <expr> zJ 'L' . (&l:foldopen =~# 'jump\\|all' ? 'zv' : '')
 
 " Repair modifier-arrow key presses. Use iTerm to remap <BS> and <Del> to Shift-Arrow
 " presses, then convert to no-op in normal mode and deletions for insert/command mode.
@@ -793,8 +793,8 @@ vnoremap z: <Cmd>call switch#showchanges(1)<CR>
 " Search over current scope or selected line range
 " NOTE: This overrides default vim-tags g/ and g? maps. Allows selecting range with
 " input motion. Useful for debugging text objexts or when scope algorithm fails.
-nnoremap z// <Cmd>call tags#set_search('', 1)<CR><Cmd>call feedkeys(empty(@/) ? '' : '/' . @/, 'n')<CR>
-nnoremap z?? <Cmd>call tags#set_search('', 1)<CR><Cmd>call feedkeys(empty(@/) ? '' : '?' . @/, 'n')<CR>
+nnoremap z// <Cmd>call tags#search('', 1)<CR><Cmd>call feedkeys(empty(@/) ? '' : '/' . @/, 'n')<CR>
+nnoremap z?? <Cmd>call tags#search('', 1)<CR><Cmd>call feedkeys(empty(@/) ? '' : '?' . @/, 'n')<CR>
 vnoremap <expr> / edit#sel_lines_expr(0)
 vnoremap <expr> ? edit#sel_lines_expr(1)
 nnoremap <expr> z/ edit#sel_lines_expr(0)
@@ -811,9 +811,9 @@ command! -range=0 -bang -nargs=* -complete=file Grep call call('grep#call_rg', [
 command! -range=0 -bang -nargs=* -complete=file Find call call('grep#call_rg', [<bang>0, <count>, tags#get_search(1), <f-args>])
 command! -range=0 -bang -nargs=+ -complete=file Ag call grep#call_ag(<bang>0, <count>, <f-args>)
 command! -range=0 -bang -nargs=+ -complete=file Rg call grep#call_rg(<bang>0, <count>, <f-args>)
-nnoremap g' <Cmd>call grep#call_grep('rg', 1, 0)<CR>
-nnoremap g" <Cmd>call grep#call_grep('rg', 0, 2)<CR>
-nnoremap z' <Cmd>call grep#call_grep('rg', 1, 2)<CR>
+nnoremap g' <Cmd>call grep#call_grep('rg', 0, 2)<CR>
+nnoremap g" <Cmd>call grep#call_grep('rg', 1, 2)<CR>
+nnoremap z' <Cmd>call grep#call_grep('rg', 0, 3)<CR>
 nnoremap z" <Cmd>call grep#call_grep('rg', 1, 3)<CR>
 
 " Grepping uncommented print statements
@@ -1052,12 +1052,12 @@ vnoremap x "_x
 vnoremap X "_X
 
 " Indents wrapping and spaces {{{2
-" NOTE: This enforces defaults without requiring 'set' during session refresh.
-" NOTE: To avoid overwriting fugitive inline-diff maps also add these to common.vim
+" NOTE: Use both FileType and BufWinEnter here to account for e.g. other FileType
+" autocommands overriding this or e.g. BufWinEnter called before filetype changed.
 silent! au! expandtab_setup
 augroup tab_setup
   au!
-  au BufWinEnter * call switch#tabs(index(s:tab_filetypes, &l:filetype) >= 0, 1)
+  au FileType,BufWinEnter * call switch#tabs(index(s:tab_filetypes, &l:filetype) >= 0, 1)
 augroup END
 command! -nargs=? TabToggle call switch#tabs(<args>)
 nnoremap <Leader><Tab> <Cmd>call switch#tabs()<CR>
@@ -1100,14 +1100,14 @@ vnoremap <expr> H edit#join_lines_expr(1, 1)
 let s:copy_filetypes = s:data_filetypes + s:info_filetypes + s:panel_filetypes
 augroup copy_setup
   au!
-  au BufWinEnter * call switch#copy(0, index(s:copy_filetypes, &l:filetype) >= 0, 1)
+  au FileType,BufWinEnter * call switch#copy(0, index(s:copy_filetypes, &l:filetype) >= 0, 1)
 augroup END
 command! -nargs=? CopyToggle call switch#copy(1, <args>)
 command! -nargs=? ConcealToggle call switch#conceal(<args>)  " mainly just for tex
 cnoremap <expr> <C-v> switch#caps()
 inoremap <expr> <C-v> switch#caps()
 nnoremap <Leader>c <Cmd>call switch#copy(1)<CR>
-nnoremap <Leader>C <Cmd>doautocmd BufWinEnter<CR>
+nnoremap <Leader>C <Cmd>doautocmd copy_setup FileType<CR>
 nnoremap g[ <Cmd>call switch#reveal(0)<CR>
 nnoremap g] <Cmd>call switch#reveal(1)<CR>
 vnoremap g[ <Cmd>call switch#reveal(0)<CR>
@@ -1188,7 +1188,7 @@ endfor
 " NOTE: This enforces defaults without requiring 'set' during session refresh.
 augroup spell_setup
   au!
-  au BufWinEnter * let &l:spell = index(s:lang_filetypes, &l:filetype) >= 0
+  au FileType * let &l:spell = index(s:lang_filetypes, &l:filetype) >= 0
 augroup END
 command! SpellToggle call switch#spell(<args>)
 command! LangToggle call switch#lang(<args>)
@@ -1894,8 +1894,8 @@ if s:has_plug('vim-textobj-user')  " {{{
     \ '\(\k\|[#&*:.-]\)\@<=\(\k\|[#&*:.-]\)\@!',
   \ ]
   let s:textobj_alpha = {
-    \ 'select-i': 'ig',  'select-i-function': 'textobj#variable_segment#select_i',
-    \ 'select-a': 'ag',  'select-a-function': 'textobj#variable_segment#select_a',
+    \ 'select-i': 'ig',  'select-i-function': 'edit#get_segment_i',
+    \ 'select-a': 'ag',  'select-a-function': 'edit#get_segment_a',
   \ }
   let s:textobj_comment = {
     \ 'select-i': 'iC', 'select-i-function': 'textobj#comment#select_i',
@@ -1949,7 +1949,7 @@ endif  " }}}
 if s:has_plug('tcomment_vim')  " {{{
   augroup comment_setup
     au!
-    au FileType csv,text call comment#setup_table()
+    au FileType csv,text call window#setup_values()
   augroup END
   for s:key1 in ['>', '<'] | for s:key2 in ['b', 'c', '>', '<>']
     silent! exe 'unmap g' . s:key1 . s:key2
@@ -2336,6 +2336,7 @@ if s:has_plug('ale')  " {{{
   augroup ale_setup
     au!
     au BufRead ipython_*config.py,jupyter_*config.py let b:ale_enabled = 0
+    au FileType ale-preview call window#setup_preview()
   augroup END
   command! -nargs=? AleToggle call switch#ale(<args>)
   nnoremap <Leader>x <Cmd>call window#show_list(0)<CR>
@@ -2360,12 +2361,18 @@ if s:has_plug('ale')  " {{{
   let g:ale_change_sign_column_color = 0  " do not change entire column
   let g:ale_completion_enabled = 0
   let g:ale_completion_autoimport = 0
-  let g:ale_cursor_detail = 0
+  let g:ale_cursor_detail = 1  " enable showing errors in preview window
   let g:ale_disable_lsp = 'auto'  " permit lsp-powered linters e.g. quick-lint-js
+  let g:ale_echo_cursor = 0  " disable echoing errors under cursor
+  let g:ale_echo_delay = 500  " delay in milliseconds
+  let g:ale_echo_msg_error_str = 'Err'
+  let g:ale_echo_msg_info_str = 'Info'
+  let g:ale_echo_msg_warning_str = 'Warn'
+  let g:ale_echo_msg_format = '[%linter%] %code:% %s [%severity%]'
   let g:ale_fixers = {'*': ['remove_trailing_lines', 'trim_whitespace']}
-  let g:ale_hover_cursor = 0
+  let g:ale_floating_preview = 1
   let g:ale_linters_explicit = 1
-  let g:ale_lint_on_enter = 1
+  let g:ale_lint_on_enter = 1  " lint on bufwinenter
   let g:ale_lint_on_filetype_changed = 1
   let g:ale_lint_on_insert_leave = 1
   let g:ale_lint_on_save = 0
@@ -2378,10 +2385,6 @@ if s:has_plug('ale')  " {{{
   let g:ale_sign_info = 'I>'
   let g:ale_set_loclist = 1  " keep default
   let g:ale_set_quickfix = 0  " require manual population
-  let g:ale_echo_msg_error_str = 'Err'
-  let g:ale_echo_msg_info_str = 'Info'
-  let g:ale_echo_msg_warning_str = 'Warn'
-  let g:ale_echo_msg_format = '[%linter%] %code:% %s [%severity%]'
   let g:ale_python_flake8_options =  '--max-line-length=' . g:linelength . ' --ignore=' . s:flake8_ignore
   let g:ale_set_balloons = 0  " no ballons
   let g:ale_sh_bashate_options = '-i E003 --max-line-length=' . g:linelength
@@ -2449,11 +2452,15 @@ endif  " }}}
 " See: https://vi.stackexchange.com/q/31623/8084
 " See: https://github.com/rhysd/conflict-marker.vim
 if s:has_plug('conflict-marker.vim')  " {{{
-  augroup conflict_marker_setup
-    au!
-    au BufWinEnter * if conflict_marker#detect#markers() | syntax clear
-      \ ConflictMarkerOurs ConflictMarkerTheirs ConflictMarkerCommonAncestorsHunk | endif
-  augroup END
+  function! s:conflict_setup() abort
+    augroup conflict_marker_setup
+      au!
+      au Syntax * doautocmd ConflictMarkerDetect BufReadPost | doautocmd conflict_marker_setup BufReadPost
+      au BufReadPost * if conflict_marker#detect#markers() | exe 'syntax clear ' . s:groups  | endif
+    augroup END
+  endfunction
+  let s:groups = ['Ours', 'Theirs', 'CommonAncestorsHunk']
+  let s:groups = join(map(s:groups, '"ConflictMarker" . v:val'))
   command! -count=1 Cprev call git#next_conflict(<count>, 1)
   command! -count=1 Cnext call git#next_conflict(<count>, 0)
   call utils#repeat_map('', '[F', 'ConflictBackward', '<Cmd>exe v:count1 . "Cprev" \| ConflictMarkerThemselves<CR>')
@@ -2472,6 +2479,7 @@ if s:has_plug('conflict-marker.vim')  " {{{
   let g:conflict_marker_end = '^>>>>>>> .*$'
   let g:conflict_marker_separator = '^=======$'
   let g:conflict_marker_common_ancestors = '^||||||| .*$'
+  runtime plugin/conflict_marker.vim | call s:conflict_setup()
   highlight ConflictMarker cterm=inverse gui=inverse
 endif  " }}}
 
@@ -2484,36 +2492,36 @@ endif  " }}}
 if s:has_plug('vim-fugitive')  " {{{
   augroup fugitive_setup
     au!
-    au BufWinEnter * call git#setup_commands()
+    au BufCreate * call git#setup_commands()
   augroup END
   nnoremap gl <Cmd>BCommits<CR>
   nnoremap gL <Cmd>Commits<CR>
-  nnoremap zL <Cmd>call git#run_map(0, 0, '', 'blame')<CR>
-  nnoremap zll <Cmd>call git#run_map(2, 0, '', 'blame ')<CR>
-  nnoremap <expr> zl git#run_map_expr(2, 0, '', 'blame ')
-  vnoremap <expr> zl git#run_map_expr(2, 0, '', 'blame ')
-  nnoremap <Leader>' <Cmd>call git#run_map(0, 0, '', '')<CR>
-  nnoremap <Leader>" <Cmd>call git#run_map(0, 0, '', 'status')<CR>
-  nnoremap <Leader>y <Cmd>call git#run_map(0, 0, '', 'commits')<CR>
-  nnoremap <Leader>Y <Cmd>call git#run_map(0, 0, '', 'tree')<CR>
-  nnoremap <Leader>u <Cmd>call git#run_map(0, 0, '', 'push origin')<CR>
-  nnoremap <Leader>U <Cmd>call git#run_map(0, 0, '', 'pull origin')<CR>
-  nnoremap <Leader>i <Cmd>call git#run_commit(0, 'oops')<CR>
-  nnoremap <Leader>I <Cmd>call git#run_commit(1, 'oops')<CR>
-  nnoremap <Leader>o <Cmd>call git#run_commit(0, 'commit')<CR>
-  nnoremap <Leader>O <Cmd>call git#run_commit(1, 'commit')<CR>
-  nnoremap <Leader>p <Cmd>call git#run_commit(0, 'stash push --include-untracked')<CR>
-  nnoremap <Leader>P <Cmd>call git#run_commit(1, 'stash push --include-untracked')<CR>
-  nnoremap <Leader>h <Cmd>call git#run_map(0, 0, '', 'diff --staged -- :/')<CR>
-  nnoremap <Leader>H <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- :/')<CR>
-  nnoremap <Leader>j <Cmd>call git#run_map(0, 0, '', 'diff -- %')<CR>
-  nnoremap <Leader>J <Cmd>call git#run_map(0, 0, '', 'stage -- %')<CR>
-  nnoremap <Leader>k <Cmd>call git#run_map(0, 0, '', 'diff --staged -- %')<CR>
-  nnoremap <Leader>K <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- %')<CR>
-  nnoremap <Leader>l <Cmd>call git#run_map(0, 0, '', 'diff -- :/')<CR>
-  nnoremap <Leader>L <Cmd>call git#run_map(0, 0, '', 'stage -- :/')<CR>
-  nnoremap <Leader>b <Cmd>call git#run_map(0, 0, '', 'branches')<CR>
-  nnoremap <Leader>B <Cmd>call git#run_map(0, 0, '', 'switch -')<CR>
+  nnoremap zL <Cmd>call git#call_git(0, 0, '', 'blame')<CR>
+  nnoremap zll <Cmd>call git#call_git(2, 0, '', 'blame ')<CR>
+  nnoremap <expr> zl git#call_git_expr(2, 0, '', 'blame ')
+  vnoremap <expr> zl git#call_git_expr(2, 0, '', 'blame ')
+  nnoremap <Leader>' <Cmd>call git#call_git(0, 0, '', '')<CR>
+  nnoremap <Leader>" <Cmd>call git#call_git(0, 0, '', 'status')<CR>
+  nnoremap <Leader>y <Cmd>call git#call_git(0, 0, '', 'commits')<CR>
+  nnoremap <Leader>Y <Cmd>call git#call_git(0, 0, '', 'tree')<CR>
+  nnoremap <Leader>u <Cmd>call git#call_git(0, 0, '', 'push origin')<CR>
+  nnoremap <Leader>U <Cmd>call git#call_git(0, 0, '', 'pull origin')<CR>
+  nnoremap <Leader>i <Cmd>call git#call_commit(0, 'oops')<CR>
+  nnoremap <Leader>I <Cmd>call git#call_commit(1, 'oops')<CR>
+  nnoremap <Leader>o <Cmd>call git#call_commit(0, 'commit')<CR>
+  nnoremap <Leader>O <Cmd>call git#call_commit(1, 'commit')<CR>
+  nnoremap <Leader>p <Cmd>call git#call_commit(0, 'stash push --include-untracked')<CR>
+  nnoremap <Leader>P <Cmd>call git#call_commit(1, 'stash push --include-untracked')<CR>
+  nnoremap <Leader>h <Cmd>call git#call_git(0, 0, '', 'diff --staged -- :/')<CR>
+  nnoremap <Leader>H <Cmd>call git#call_git(0, 0, '', 'reset --quiet -- :/')<CR>
+  nnoremap <Leader>j <Cmd>call git#call_git(0, 0, '', 'diff -- %')<CR>
+  nnoremap <Leader>J <Cmd>call git#call_git(0, 0, '', 'stage -- %')<CR>
+  nnoremap <Leader>k <Cmd>call git#call_git(0, 0, '', 'diff --staged -- %')<CR>
+  nnoremap <Leader>K <Cmd>call git#call_git(0, 0, '', 'reset --quiet -- %')<CR>
+  nnoremap <Leader>l <Cmd>call git#call_git(0, 0, '', 'diff -- :/')<CR>
+  nnoremap <Leader>L <Cmd>call git#call_git(0, 0, '', 'stage -- :/')<CR>
+  nnoremap <Leader>b <Cmd>call git#call_git(0, 0, '', 'branches')<CR>
+  nnoremap <Leader>B <Cmd>call git#call_git(0, 0, '', 'switch -')<CR>
   let g:fugitive_legacy_commands = 1  " include deprecated :Git status to go with :Git
   let g:fugitive_dynamic_colors = 1  " fugitive has no HighlightRecent option
 endif  " }}}
@@ -2529,7 +2537,7 @@ endif  " }}}
 " by spell maps ]s, ]S (navigate to spell error, or navigate and fix error).
 if s:has_plug('vim-gitgutter')  " {{{
   command! -nargs=? GitGutterToggle call switch#gitgutter(<args>)
-  command! -bang -range Hunks call git#stat_hunks(<range> ? <line1> : 0, <range> ? <line2> : 0, <bang>0)
+  command! -bang -range Hunks call git#get_hunks(<range> ? <line1> : 0, <range> ? <line2> : 0, <bang>0)
   exe 'silent! unmap zgg'
   let g:gitgutter_async = 1  " ensure enabled
   let g:gitgutter_map_keys = 0  " disable defaults
@@ -2547,15 +2555,15 @@ if s:has_plug('vim-gitgutter')  " {{{
   noremap ]g <Cmd>call git#next_hunk(v:count1, 0)<CR>
   nnoremap <Leader>g <Cmd>call git#show_hunk()<CR>
   nnoremap <Leader>G <Cmd>call switch#gitgutter()<CR>
-  nnoremap <expr> zh git#stat_hunks_expr()
-  nnoremap <expr> gh git#stage_hunks_expr(1)
-  nnoremap <expr> gH git#stage_hunks_expr(0)
-  vnoremap <expr> zh git#stat_hunks_expr()
-  vnoremap <expr> gh git#stage_hunks_expr(1)
-  vnoremap <expr> gH git#stage_hunks_expr(0)
-  nnoremap <nowait> zhh <Cmd>call git#stat_hunks(0, 0)<CR>
-  nnoremap <nowait> ghh <Cmd>call git#stage_hunks(1)<CR>
-  nnoremap <nowait> gHH <Cmd>call git#stage_hunks(0)<CR>
+  nnoremap <expr> zh git#get_hunks_expr()
+  vnoremap <expr> zh git#get_hunks_expr()
+  nnoremap <expr> gh git#process_hunks_expr(1)
+  nnoremap <expr> gH git#process_hunks_expr(0)
+  vnoremap <expr> gh git#process_hunks_expr(1)
+  vnoremap <expr> gH git#process_hunks_expr(0)
+  nnoremap <nowait> zhh <Cmd>call git#get_hunks(0, 0)<CR>
+  nnoremap <nowait> ghh <Cmd>call git#process_hunks(1)<CR>
+  nnoremap <nowait> gHH <Cmd>call git#process_hunks(0)<CR>
   nnoremap zg <Cmd>GitGutter \| echom 'Updated buffer hunks'<CR>
   nnoremap zG <Cmd>GitGutterAll \| echom 'Updated global hunks'<CR>
 endif  " }}}
@@ -2755,8 +2763,8 @@ endif  " }}}
 " file employs 'loaded' variables with finish block (typically only used for plugins).
 augroup syntax_setup
   au!
-  au Syntax * unlet! b:af_py_loaded | unlet! b:af_rst_loaded
-  au Syntax * unlet! b:common_syntax | exe 'runtime after/common.vim'
+  au Syntax * unlet! b:af_py_loaded | unlet! b:af_rst_loaded | unlet! b:common_syntax
+    \ | exe 'runtime after/common.vim'
 augroup END
 command! -nargs=? ShowGroups call syntax#show_stack(<f-args>)
 command! -nargs=0 ShowNames exe 'help highlight-groups' | exe 'normal! zt'

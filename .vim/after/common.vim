@@ -44,9 +44,6 @@ let b:common_syntax = 1
 call syntax#update_groups()
 call syntax#update_matches()
 call syntax#update_highlights()
-for s:autocmd in ['ConflictMarkerDetect BufReadPost', 'conflict_marker_setup BufWinEnter']
-  silent! exe 'doautocmd ' . s:autocmd
-endfor
 for s:suffix in ['g', 's', 'S', '%']  " instead use <C-g> to insert literals
   exe 'silent! iunmap <C-g>' . s:suffix
   exe 'silent! iunmap <buffer><C-g>' . s:suffix

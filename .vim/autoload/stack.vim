@@ -36,8 +36,8 @@ function! s:get_index(head, ...) abort  " remove in future
 endfunction
 
 " Stack printing operations
-" NOTE: Use e.g. ShowTabs ClearTabs commands in vimrc with these. All other
-" functions are for autocommands or normal mode mappings
+" NOTE: Use this with Show/Clear vimrc commands. Print the entire table
+" or print current position in the stack with auto-formatted label.
 function! stack#print_item(head, ...) abort
   let [stack, idx] = s:get_stack(a:head)
   let item = a:0 ? a:1 : stack#get_item(a:head)
@@ -74,7 +74,8 @@ function! s:get_label(arg) abort
 endfunction
 
 " Update the requested buffer stack
-" NOTE: This is used for man/pydoc in shell.vim and window jumps in vimrc
+" NOTE: Use this with man/pydoc in shell.vim and window jumps in vimrc. Updates
+" the stack by scrolling, adding entries, or floating entries to the top.
 function! stack#clear_stack(head) abort
   try
     call remove(g:, a:head . '_stack')
