@@ -137,9 +137,8 @@ function! tag#fzf_stack() abort
     call map(items, '[v:val.cmd, v:val.name, v:val.kind]')
   endif
   if empty(items)
-    redraw | echohl WarningMsg
-    echom 'Error: Tag stack is empty'
-    echohl None | return
+    let msg = 'Error: Tag stack is empty'
+    redraw | echohl WarningMsg | echom msg | echohl None | return
   endif
   return tags#select_tag(level, reverse(items), 1)
 endfunction
@@ -148,9 +147,8 @@ endfunction
 " NOTE: This is similar to fzf except uses custom sink that adds results to window
 " tag stack for navigation with ctrl-bracket maps and tag/pop commands.
 function! s:raise() abort
-  redraw | echohl ErrorMsg
-  echom 'Error: Tags not found or not available.'
-  echohl None | return
+  let msg = 'Error: Tags not found or not available.'
+  redraw | echohl ErrorMsg | echom msg | echohl None | return
 endfunction
 function! s:format(size, ...) abort
   let path = a:0 ? "\t" . a:1 . '.vimtags' : ''  " see fzf.vim/bin/tagpreview.sh
@@ -210,9 +208,8 @@ function! s:get_files(...) abort
       if filereadable(file)
         call add(files, file)
       else
-        redraw | echohl WarningMsg
-        echom 'Warning: Failed to generate tag file ' . string(path)
-        echohl None
+        let msg = 'Warning: Failed to generate tag file ' . string(path)
+        redraw | echohl WarningMsg | echom msg | echohl None
       endif
     endfor
   endif
@@ -240,9 +237,8 @@ function! tag#fzf_tags(type, bang, ...) abort
   let regex = substitute(regex, '\\\@<![(|)]', '\\\\\&', 'g')
   let regex = substitute(regex, '\\\([(|)]\)', '\1', 'g')
   if empty(regex) && !empty(a:type)
-    redraw | echohl WarningMsg
-    echom 'Warning: Unable to filter file type ' . string(a:type) . '.'
-    echohl None
+    let msg = 'Warning: Unable to filter file type ' . string(a:type) . '.'
+    redraw | echohl WarningMsg | echom msg | echohl None
   endif
   let post = empty(regex) ? '' : " | awk -F'\t' '$2 ~ /" . regex . "/'"
   let read = join(map(['perl', script, ''] + args, 'shellescape(v:val)'), ' ')

@@ -44,17 +44,17 @@ function! stack#print_item(head, ...) abort
   let label = s:get_label(item)
   let head = toupper(a:head[0]) . tolower(a:head[1:])
   let iloc = (idx + 1) . '/' . len(stack)
-  redraw | echom head . ': ' . label . ' (' . iloc . ')'
+  redraw | echo head . ': ' . label . ' (' . iloc . ')'
 endfunction
 function! stack#print_stack(head) abort
   let [stack, idx] = s:get_stack(a:head)
   let digits = len(string(len(stack)))
-  redraw | echom "Current '" . a:head . "' stack:"
+  redraw | echo "Current '" . a:head . "' stack:"
   for jdx in range(len(stack))  " iterate entries
     let pad = repeat(' ', digits - len(string(jdx)) + 1)
     let flag = idx == jdx ? '>' : ' '
     let label = s:get_label(stack[jdx])
-    echom flag . pad . jdx . ': ' . label
+    echo flag . pad . jdx . ': ' . label
   endfor
 endfunction
 function! s:get_label(arg) abort
@@ -80,11 +80,10 @@ function! stack#clear_stack(head) abort
   try
     call remove(g:, a:head . '_stack')
     call remove(g:, a:head . '_loc')
-    redraw | echom "Cleared '" . a:head . "' location stack"
+    redraw | echom 'Cleared ' . string(a:head) . ' location stack'
   catch
-    redraw | echohl WarningMsg
-    echom "Error: Location stack '" . a:head . "' does not exist"
-    echohl None
+    let msg = 'Error: Location stack ' . string(a:head) . ' does not exist'
+    redraw | echohl WarningMsg | echom msg | echohl None
   endtry
 endfunction
 function! stack#update_stack(head, scroll, ...) abort
@@ -147,9 +146,8 @@ function! stack#push_stack(head, func, ...) abort
     let delta = a:1 > 0 ? 1 : a:1 < 0 ? -1 : 0  " error condition
     if idx + delta < 0 || idx + delta >= len(stack)
       let direc = a:1 < 0 ? 'bottom' : 'top'
-      redraw | echohl WarningMsg
-      echom 'Error: At ' . direc . ' of ' . a:head . ' stack'
-      echohl None | return 1
+      let msg = 'Error: At ' . direc . ' of ' . string(a:head) . ' stack'
+      redraw | echohl WarningMsg | echom msg | echohl None | return 1
     endif
     let jdx = min([max([jdx, 0]), len(stack) - 1])
     let item = stack[jdx]

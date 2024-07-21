@@ -167,6 +167,7 @@
 	tree     = log --graph --abbrev-commit --date=relative --branches --stat --decorate --color
 	trunk    = log --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color
 	unset    = branch --unset-upstream
+	unstage  = reset
 	unstaged = delta
 	upstream = branch --set-upstream-to
 	vim      = "!git-vim \"$@\""

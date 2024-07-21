@@ -114,9 +114,9 @@ function! s:get_range(outer, ...) abort
     let paren = '(level ' . level . ')'
     redraw | echom 'Selected ' . range . ' ' . paren
   else
-    redraw | echohl ErrorMsg
-    echom 'E490: No fold found'
-    echohl None | return ['v', getpos('.'), getpos('.')]
+    let msg = 'E490: No fold found'
+    redraw | echohl ErrorMsg | echom msg | echohl None
+    return ['v', getpos('.'), getpos('.')]
   endif
   if a:outer  " include lines below or above
     let winview = winsaveview()
@@ -202,16 +202,16 @@ function! fold#get_markers() abort
   let regex = head . '\(' . mark1 . '\|' . mark2 . '\)' . tail
   let folds = []  " fold queue
   let heads = {}  " mark lines
-  goto | while v:true
+  keepjumps goto  " start search
+  while v:true
     let flags = line('.') == 1 && col('.') == 1 ? 'cW' : 'W'
-    let [lnum, cnum] = searchpos(regex, flags, "tags#get_skip(0, 'Comment')")
+    let [lnum, cnum] = searchpos(regex, flags, "!tags#get_inside(0, 'Comment')")
     if lnum == 0 || cnum == 0 | break | endif
     let line = getline(lnum)
     let parts = matchlist(line, regex, cnum - 1)
     if empty(parts)
-      echohl WarningMsg
-      echom 'Warning: Failed to setup mark folds.'
-      echohl None | break
+      let msg = 'Warning: Failed to setup mark folds.'
+      redraw | echohl WarningMsg | echom msg | echohl None | break
     endif
     let lnum -= s:is_divider(lnum - 1) && s:is_divider(lnum + 1)
     let [mark, level] = parts[1:2]
@@ -296,8 +296,11 @@ function! s:fold_text(line1, line2, level)
   let level = a:level . repeat(':', a:level)  " fold level
   let lines = string(a:line2 - a:line1 + 1)  " number of lines
   let maxlen = get(g:, 'linelength', 88) - 1  " default maximum
-  let flags = edit#get_errors(a:line1, a:line2)  " lintint messages
-  let flags .= git#get_hunks(a:line1, a:line2, 0, 1)  " abbreviate with '1'
+  let errors = edit#get_errors(a:line1, a:line2)  " quickfix items
+  let hunks = git#get_hunks(a:line1, a:line2, 1)  " gitgutter hunks
+  let flags = empty(errors) ? '' : errors  " errors return zero
+  let flags .= empty(hunks) ? '' : hunks  " errors return zero
+  let flags = ''
   let dots = repeat('·', len(string(line('$'))) - len(lines))
   let stats = level . dots . lines  " default statistics
   if &l:diff  " fill with maximum width

@@ -294,11 +294,10 @@ function! s:gobble_map(prefix, mode)
   return empty(maparg(a:prefix . char, a:mode)) ? '' : a:prefix . char
 endfunction
 for s:pair in [['\', 'nv'], ['<Tab>', 'n'], ['<Leader>', 'nv']]
-  let s:key = s:pair[0]
   for s:mode in split(s:pair[1], '\zs')  " construct list
-    if empty(maparg(s:key, s:mode))
-      let s:func = "<sid>gobble_map('" . s:key . "', '" . s:mode . "')"
-      exe s:mode . 'map <expr> ' . s:key . ' ' . s:func
+    if empty(maparg(s:pair[0], s:mode))
+      let s:func = "<sid>gobble_map('" . s:pair[0] . "', '" . s:mode . "')"
+      exe s:mode . 'map <expr> ' . s:pair[0] . ' ' . s:func
     endif
   endfor
 endfor
@@ -349,33 +348,33 @@ command! -nargs=? Local call switch#localdir(<args>)
 nnoremap zp <Cmd>Paths<CR>
 nnoremap zP <Cmd>Local<CR>
 nnoremap gp <Cmd>call file#show_cfile()<CR>
-nnoremap gP <Cmd>call call('file#drop_file', file#expand_cfile())<CR>
+nnoremap gP <Cmd>call call('file#drop_file', file#get_cfile())<CR>
 
 " Open file in current directory or some input directory
 " NOTE: Anything that is not :Files gets passed to :Drop command
 " nnoremap <C-g> <Cmd>Locate<CR>  " uses giant database from Unix 'locate'
 " command! -bang -nargs=* -complete=file Files call file#fzf_files(<bang>0, <f-args>)
 command! -bang -nargs=* -complete=file Files call file#fzf_files(<bang>0, <f-args>)
-command! -bang -nargs=* -complete=file Vsplit call file#fzf_init(<bang>0, 0, 0, 'botright vsplit', <f-args>)
-command! -bang -nargs=* -complete=file Split call file#fzf_init(<bang>0, 0, 0, 'botright split', <f-args>)
-command! -bang -nargs=* -complete=file Open call file#fzf_init(<bang>0, 0, 0, 'Drop', <f-args>)
-nnoremap <C-e> <Cmd>call file#fzf_init(0, 0, 0, 'Split')<CR>
-nnoremap <C-r> <Cmd>call file#fzf_init(0, 0, 0, 'Vsplit')<CR>
-nnoremap <C-y> <Cmd>call file#fzf_init(0, 0, 1, 'Files')<CR>
-nnoremap <F7> <Cmd>call file#fzf_init(0, 0, 0, 'Drop')<CR>
-nnoremap <C-o> <Cmd>call file#fzf_init(0, 0, 1, 'Drop')<CR>
-nnoremap <C-p> <Cmd>call file#fzf_init(0, 1, 1, 'Files')<CR>
+command! -bang -nargs=* -complete=file Vsplit call file#init_find(<bang>0, 0, 0, 'botright vsplit', <f-args>)
+command! -bang -nargs=* -complete=file Split call file#init_find(<bang>0, 0, 0, 'botright split', <f-args>)
+command! -bang -nargs=* -complete=file Open call file#init_find(<bang>0, 0, 0, 'Drop', <f-args>)
+nnoremap <C-e> <Cmd>call file#init_find(0, 0, 0, 'Split')<CR>
+nnoremap <C-r> <Cmd>call file#init_find(0, 0, 0, 'Vsplit')<CR>
+nnoremap <C-y> <Cmd>call file#init_find(0, 0, 1, 'Files')<CR>
+nnoremap <F7> <Cmd>call file#init_find(0, 0, 0, 'Drop')<CR>
+nnoremap <C-o> <Cmd>call file#init_find(0, 0, 1, 'Drop')<CR>
+nnoremap <C-p> <Cmd>call file#init_find(0, 1, 1, 'Files')<CR>
 nnoremap <C-g> <Cmd>exe fugitive#Command(0, 0, 0, 0, '', '') =~# '^echoerr' ? 'Git' : 'GFiles'<CR>
 
 " Open file with optional user input
 " NOTE: The <Leader> maps open up views of the current file directory
 for s:key in ['q', 'w', 'e', 'r'] | silent! exe 'unmap <Tab>' . s:key | endfor
-nnoremap <Tab>o <Cmd>call file#fzf_input('Open', parse#get_root())<CR>
-nnoremap <Tab>i <Cmd>call file#fzf_input('Open', expand('%:p:h'))<CR>
-nnoremap <Tab>p <Cmd>call file#fzf_input('Files', parse#get_root())<CR>
-nnoremap <Tab>y <Cmd>call file#fzf_input('Files', expand('%:p:h'))<CR>
-nnoremap <Tab>e <Cmd>call file#fzf_input('Split', expand('%:p:h'))<CR>
-nnoremap <Tab>r <Cmd>call file#fzf_input('Vsplit', expand('%:p:h'))<CR>
+nnoremap <Tab>o <Cmd>call file#call_find('Open', parse#get_root())<CR>
+nnoremap <Tab>i <Cmd>call file#call_find('Open', expand('%:p:h'))<CR>
+nnoremap <Tab>p <Cmd>call file#call_find('Files', parse#get_root())<CR>
+nnoremap <Tab>y <Cmd>call file#call_find('Files', expand('%:p:h'))<CR>
+nnoremap <Tab>e <Cmd>call file#call_find('Split', expand('%:p:h'))<CR>
+nnoremap <Tab>r <Cmd>call file#call_find('Vsplit', expand('%:p:h'))<CR>
 
 " Mapping and command windows {{{2
 " This uses iterm mapping of <F6> to <C-;> and works in all modes
@@ -459,8 +458,8 @@ augroup panel_setup
   au FileType qf call jump#setup_loc()
   au FileType man call shell#setup_man()
   au FileType gitcommit call git#setup_commit()
-  au FileType fugitiveblame call git#setup_blame() | call git#setup_general()
-  au FileType git,diff,fugitive call git#setup_general()
+  au FileType fugitiveblame call git#setup_blame() | call git#setup_deltas()
+  au FileType git,diff,fugitive call git#setup_deltas()
   for s:type in s:panel_filetypes | let s:arg = s:type ==# 'gitcommit'
     exe 'au FileType ' . s:type . ' call window#setup_panel(' . s:arg . ')'
   endfor
@@ -630,7 +629,7 @@ for s:key in ['z', 'f', 'F', 'n', 'N'] | silent! exe 'unmap! z' . s:key | endfor
 command! -bang -count -nargs=? UpdateFolds
   \ call fold#update_folds(<bang>0, <count>) | echom 'Updated folds'
 nnoremap zv zvzzze
-vnoremap zv zvzzze
+vnoremap zv <Esc><Cmd>'<,'>foldopen!<CR>zzze
 nnoremap zV <Cmd>UpdateFolds!<CR>zvzzze
 vnoremap zV <Cmd>UpdateFolds!<CR>zvzzze
 nnoremap zx <Cmd>call fold#update_folds(0, 0)<CR>
@@ -664,12 +663,14 @@ vnoremap <expr> zo fold#toggle_folds_expr(0)
 " inside class (special case for python). For recursive motion mapping similar
 " to 'zc' and 'zo' could use e.g. noremap <expr> zC fold#toggle_folds_expr(1, 1)
 exe 'silent! unmap zn'
+nnoremap zn znzzze
 nnoremap zN zN<Cmd>call fold#update_folds(0)<CR>
 nnoremap zi <Cmd>call fold#toggle_children(0)<CR>
 nnoremap zI <Cmd>call fold#toggle_children(1)<CR>
 nnoremap zA <Cmd>call fold#toggle_parents()<CR>
 nnoremap zC <Cmd>call fold#toggle_parents(1)<CR>
 nnoremap zO <Cmd>call fold#toggle_parents(0)<CR>
+vnoremap zn znzzze
 vnoremap zN zN<Cmd>call fold#update_folds(0)<CR>
 vnoremap <expr> zi fold#toggle_children_expr(0)
 vnoremap <expr> zI fold#toggle_children_expr(1)
@@ -691,13 +692,13 @@ noremap zk <Cmd>keepjumps normal! [z<CR>
 noremap zj <Cmd>keepjumps normal! ]z<CR>
 nnoremap gz <Cmd>call fold#fzf_folds()<CR>
 nnoremap z[ <Cmd>call fold#update_level('m')<CR>
-nnoremap z] <Cmd>call fold#update_level('r')<CR>
-nnoremap z{ <Cmd>call fold#update_level('M')<CR>
-nnoremap z} <Cmd>call fold#update_level('R')<CR>
 vnoremap z[ <Cmd>call fold#update_level('m')<CR>
-vnoremap z] <Cmd>call fold#update_level('r')<CR>
+nnoremap z{ <Cmd>call fold#update_level('M')<CR>
 vnoremap z{ <Cmd>call fold#update_level('M')<CR>
-vnoremap z} <Cmd>call fold#update_level('R')<CR>
+nnoremap z] <Cmd>call fold#update_level('r')<CR>zzze
+vnoremap z] <Cmd>call fold#update_level('r')<CR>zzze
+nnoremap z} <Cmd>call fold#update_level('R')<CR>zzze
+vnoremap z} <Cmd>call fold#update_level('R')<CR>zzze
 
 "-----------------------------------------------------------------------------"
 " Searching and jumping {{{1
@@ -840,12 +841,14 @@ let s:regex_code = '\(print(.*)\|echom\?\>\)'
 command! -bang -nargs=* -complete=file Notes call grep#call_rg(<bang>0, 2, s:regex_note, <f-args>)
 command! -bang -nargs=* -complete=file Todos call grep#call_rg(<bang>0, 2, s:regex_todo, <f-args>)
 command! -bang -nargs=* -complete=file Warnings call grep#call_rg(<bang>0, 2, s:regex_warn, <f-args>)
-nnoremap gE <Cmd>Todos<CR>
+nnoremap gQ <Cmd>Todos<CR>
 nnoremap gM <Cmd>Notes<CR>
 nnoremap gW <Cmd>Warnings<CR>
-nnoremap zE <Cmd>Todos!<CR>
+nnoremap gE <Cmd>Warnings<CR>
+nnoremap zQ <Cmd>Todos!<CR>
 nnoremap zM <Cmd>Notes!<CR>
 nnoremap zW <Cmd>Warnings!<CR>
+nnoremap zE <Cmd>Warnings!<CR>
 
 " Visual mode and general motions {{{2
 " NOTE: Select mode (e.g. by typing 'gh') is same as visual but enters insert mode
@@ -1339,6 +1342,7 @@ vnoremap <expr> \" call('edit#search_replace_expr', g:sub_ddouble)
 " from Shougo/neobundle.vim which was based on vundle. Just a bit faster.
 call plug#begin('~/.vim/plugged')
 let s:forks = ['vim-syntaxMarkerFold']  " previous attempt
+let s:enable_ale = 1  " ale integration
 let s:enable_ddc = 1  " popup completion
 let s:enable_lsp = 1  " lsp integration
 let g:filetype_m = 'matlab'  " default .m filetype
@@ -1361,9 +1365,8 @@ function! s:plug(plug, ...) abort
   elseif isdirectory(path)
     call s:push(0, path)
   else
-    redraw | echohl WarningMsg
-    echom 'Warning: Fork ' . string(name) . ' not found.'
-    echohl None
+    let msg = 'Warning: Fork ' . string(name) . ' not found.'
+    redraw | echohl WarningMsg | echom msg | echohl None
   endif
 endfunction
 command! -nargs=1 GetPlug echom 'Plugins: ' . join(s:get_plug(<q-args>), ', ')
@@ -1383,9 +1386,8 @@ function! s:push(auto, arg) abort
   let plug = 'lukelbd/' . name
   let item = escape(path, ' ~')
   if !a:auto && !isdirectory(path)
-    redraw | echohl WarningMsg
-    echom 'Warning: Plugin ' . string(name) . ' not found.'
-    echohl None
+    let msg = 'Warning: Plugin ' . string(name) . ' not found.'
+    redraw | echohl WarningMsg | echom msg | echohl None
   elseif a:auto && !isdirectory(path)
     return s:plug(plug)
   elseif &runtimepath !~# item  " remaining tildes
@@ -1436,7 +1438,7 @@ let g:MRU_file = '~/.vim_mru_files'  " default (custom was ignored for some reas
 " call s:plug('roosta/fzf-folds.vim')  " replaced with custom utility
 call s:plug('~/.fzf')  " fzf installation location, will add helptags and runtimepath
 call s:plug('junegunn/fzf.vim')  " pin to version supporting :Drop
-let g:fzf_action = {'ctrl-m': 'Drop', 'ctrl-e': 'split', 'ctrl-r': 'vsplit' }  " have file search and grep open to existing window if possible
+let g:fzf_action = {'ctrl-m': 'Drop', 'ctrl-e': 'split', 'ctrl-r': 'vsplit', 'ctrl-o': 'edit'}  " have file search and grep open to existing window if possible
 let g:fzf_buffers_jump = 1  " jump to existing window if already open
 let g:fzf_history_dir = expand('~/.fzf-hist')  " navigate searches with ctrl-n, ctrl-p
 let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
@@ -1467,11 +1469,13 @@ let g:indexed_search_mappings = 0  " note this also disables <Plug>(mappings)
 " call plut#('scrooloose/syntastic')  " out of date: https://github.com/vim-syntastic/syntastic/issues/2319
 " call s:plug('tweekmonster/impsort.vim') " conflicts with isort plugin, also had major issues
 if has('python3') | call s:plug('fisadev/vim-isort') | endif
-call s:plug('vim-test/vim-test')
-call s:plug('dense-analysis/ale')
-call s:plug('Chiel92/vim-autoformat')
-call s:plug('tell-k/vim-autopep8')
-call s:plug('psf/black')
+if s:enable_ale
+  call s:plug('vim-test/vim-test')
+  call s:plug('dense-analysis/ale')
+  call s:plug('Chiel92/vim-autoformat')
+  call s:plug('tell-k/vim-autopep8')
+  call s:plug('psf/black')
+endif
 let g:autoformat_autoindent = 0
 let g:autoformat_retab = 0
 let g:autoformat_remove_trailing_spaces = 0
@@ -1690,6 +1694,7 @@ let g:colorizer_nomap = 1  " use custom mapping
 let g:colorizer_startup = 0  " too expensive to enable at startup
 let g:latex_to_unicode_file_types = ['julia']  " julia-vim feature
 let g:riv_python_rst_hl = 0  " highlight rest in python docstrings
+let g:riv_global_leader = "\1"  " disable in lieu of nomap option
 let g:vim_markdown_conceal = 1  " conceal stuff
 let g:vim_markdown_conceal_code_blocks = 0  " show code fences
 let g:vim_markdown_fenced_languages = ['html', 'python']
@@ -2082,14 +2087,14 @@ if s:has_plug('FastFold')  " {{{
   function! s:fold_setup() abort
     augroup fold_setup
       au!
-      au FileType,BufEnter,VimEnter * call fold#update_method()
+      au FileType,BufEnter * call fold#update_method()
       au TextChanged,TextChangedI * let b:fastfold_queued = 2
     augroup END
   endfunction
   function! s:fold_update() abort
     augroup fold_update
       au!
-      au BufEnter * call fold#update_folds(0)
+      " au BufEnter * call fold#update_folds(0)
       au FileType * let b:fastfold_queued = 1 | call fold#update_folds(0, 1)
     augroup END
   endfunction
@@ -2364,7 +2369,7 @@ if s:has_plug('ale')  " {{{
   let g:ale_cursor_detail = 1  " enable showing errors in preview window
   let g:ale_disable_lsp = 'auto'  " permit lsp-powered linters e.g. quick-lint-js
   let g:ale_echo_cursor = 0  " disable echoing errors under cursor
-  let g:ale_echo_delay = 500  " delay in milliseconds
+  let g:ale_echo_delay = 750  " delay in milliseconds
   let g:ale_echo_msg_error_str = 'Err'
   let g:ale_echo_msg_info_str = 'Info'
   let g:ale_echo_msg_warning_str = 'Warn'
@@ -2492,7 +2497,7 @@ endif  " }}}
 if s:has_plug('vim-fugitive')  " {{{
   augroup fugitive_setup
     au!
-    au BufCreate * call git#setup_commands()
+    au BufWinEnter * call git#setup_commands()
   augroup END
   nnoremap gl <Cmd>BCommits<CR>
   nnoremap gL <Cmd>Commits<CR>
@@ -2512,13 +2517,13 @@ if s:has_plug('vim-fugitive')  " {{{
   nnoremap <Leader>O <Cmd>call git#call_commit(1, 'commit')<CR>
   nnoremap <Leader>p <Cmd>call git#call_commit(0, 'stash push --include-untracked')<CR>
   nnoremap <Leader>P <Cmd>call git#call_commit(1, 'stash push --include-untracked')<CR>
-  nnoremap <Leader>h <Cmd>call git#call_git(0, 0, '', 'diff --staged -- :/')<CR>
+  nnoremap <Leader>h <Cmd>call git#call_git(0, 0, '', 'reset --quiet -- %')<CR>
   nnoremap <Leader>H <Cmd>call git#call_git(0, 0, '', 'reset --quiet -- :/')<CR>
-  nnoremap <Leader>j <Cmd>call git#call_git(0, 0, '', 'diff -- %')<CR>
-  nnoremap <Leader>J <Cmd>call git#call_git(0, 0, '', 'stage -- %')<CR>
-  nnoremap <Leader>k <Cmd>call git#call_git(0, 0, '', 'diff --staged -- %')<CR>
-  nnoremap <Leader>K <Cmd>call git#call_git(0, 0, '', 'reset --quiet -- %')<CR>
-  nnoremap <Leader>l <Cmd>call git#call_git(0, 0, '', 'diff -- :/')<CR>
+  nnoremap <Leader>j <Cmd>call git#call_git(0, 0, '', 'diff --staged -- %')<CR>
+  nnoremap <Leader>J <Cmd>call git#call_git(0, 0, '', 'diff --staged -- :/')<CR>
+  nnoremap <Leader>k <Cmd>call git#call_git(0, 0, '', 'diff -- %')<CR>
+  nnoremap <Leader>K <Cmd>call git#call_git(0, 0, '', 'diff -- :/')<CR>
+  nnoremap <Leader>l <Cmd>call git#call_git(0, 0, '', 'stage -- %')<CR>
   nnoremap <Leader>L <Cmd>call git#call_git(0, 0, '', 'stage -- :/')<CR>
   nnoremap <Leader>b <Cmd>call git#call_git(0, 0, '', 'branches')<CR>
   nnoremap <Leader>B <Cmd>call git#call_git(0, 0, '', 'switch -')<CR>
@@ -2539,33 +2544,35 @@ if s:has_plug('vim-gitgutter')  " {{{
   command! -nargs=? GitGutterToggle call switch#gitgutter(<args>)
   command! -bang -range Hunks call git#get_hunks(<range> ? <line1> : 0, <range> ? <line2> : 0, <bang>0)
   exe 'silent! unmap zgg'
+  let s:opts = {'line': 'cursor+1', 'moved': 'any', 'minwidth': g:linelength}
   let g:gitgutter_async = 1  " ensure enabled
   let g:gitgutter_map_keys = 0  " disable defaults
   let g:gitgutter_max_signs = -1  " maximum number of signs
   let g:gitgutter_preview_win_floating = 1  " toggle preview window
-  let g:gitgutter_floating_window_options = {'minwidth': g:linelength}
+  let g:gitgutter_floating_window_options = s:opts  " defaults plus minwidth
   let g:gitgutter_use_location_list = 0  " use for errors instead
   call utils#repeat_map('', '[G', 'HunkBackward', '<Cmd>call git#next_hunk(-v:count1, 1)<CR>')
   call utils#repeat_map('', ']G', 'HunkForward', '<Cmd>call git#next_hunk(v:count1, 1)<CR>')
+  nmap zH <Cmd>Hunks<CR>
   omap ih <Plug>(GitGutterTextObjectInnerPending)
   omap ah <Plug>(GitGutterTextObjectOuterPending)
   xmap ih <Plug>(GitGutterTextObjectInnerVisual)
   xmap ah <Plug>(GitGutterTextObjectOuterVisual)
-  noremap [g <Cmd>call git#next_hunk(-v:count1, 0)<CR>
-  noremap ]g <Cmd>call git#next_hunk(v:count1, 0)<CR>
-  nnoremap <Leader>g <Cmd>call git#show_hunk()<CR>
-  nnoremap <Leader>G <Cmd>call switch#gitgutter()<CR>
+  nmap <expr> <nowait> zhh git#get_hunks_expr() . 'ih'
+  nmap <expr> <nowait> ghh git#process_hunks_expr(1) . 'ih'
+  nmap <expr> <nowait> gHH git#process_hunks_expr(0) . 'ih'
   nnoremap <expr> zh git#get_hunks_expr()
-  vnoremap <expr> zh git#get_hunks_expr()
   nnoremap <expr> gh git#process_hunks_expr(1)
   nnoremap <expr> gH git#process_hunks_expr(0)
+  vnoremap <expr> zh git#get_hunks_expr()
   vnoremap <expr> gh git#process_hunks_expr(1)
   vnoremap <expr> gH git#process_hunks_expr(0)
-  nnoremap <nowait> zhh <Cmd>call git#get_hunks(0, 0)<CR>
-  nnoremap <nowait> ghh <Cmd>call git#process_hunks(1)<CR>
-  nnoremap <nowait> gHH <Cmd>call git#process_hunks(0)<CR>
+  noremap [g <Cmd>call git#next_hunk(-v:count1, 0)<CR>
+  noremap ]g <Cmd>call git#next_hunk(v:count1, 0)<CR>
   nnoremap zg <Cmd>GitGutter \| echom 'Updated buffer hunks'<CR>
   nnoremap zG <Cmd>GitGutterAll \| echom 'Updated global hunks'<CR>
+  nnoremap <Leader>g <Cmd>call git#show_hunk()<CR>
+  nnoremap <Leader>G <Cmd>call switch#gitgutter()<CR>
 endif  " }}}
 
 " Utility plugin settings {{{2
@@ -2605,8 +2612,8 @@ if s:has_plug('codi.vim')  " {{{
     au User CodiLeavePost call calc#setup_codi(0)
   augroup END
   command! -nargs=* CodiNew call calc#init_codi(<f-args>)
-  nnoremap <Leader>+ <Cmd>CodiNew<CR>
-  nnoremap <Leader>= <Cmd>silent! Codi!!<CR>
+  nnoremap <Leader>= <Cmd>CodiNew<CR>
+  nnoremap <Leader>+ <Cmd>silent! Codi!!<CR>
   let g:codi#autocmd = 'None'
   let g:codi#rightalign = 0
   let g:codi#rightsplit = 0
@@ -2650,7 +2657,8 @@ if s:has_plug('vim-obsession')  " {{{
     au!
     au VimEnter * exe !empty(v:this_session) ? 'Obsession ' . v:this_session : ''
   augroup END
-  command! -nargs=* -complete=customlist,vim#complete_sessions Session call vim#init_session(<q-args>)
+  command! -nargs=* -complete=customlist,vim#complete_sessions
+    \ Session call vim#init_session(<q-args>)
   nnoremap <Leader>$ <Cmd>Session<CR>
 endif  " }}}
 if s:has_plug('vim-eunuch') || s:has_plug('vim-obsession')  " {{{
@@ -2659,7 +2667,9 @@ if s:has_plug('vim-eunuch') || s:has_plug('vim-obsession')  " {{{
     au!
     au FileType netrw call shell#setup_netrw()
   augroup END
-  command! -nargs=* -complete=file -bang Rename call file#rename(<q-args>, '<bang>')
+  " command! -bang -nargs=* -complete=customlist,file#glob_ldir
+  "   \ Rename call file#rename(<q-args>, '<bang>')
+  cnoreabbrev Move Rename
   nnoremap <Tab>\ <Cmd>call shell#show_netrw('topleft vsplit', 1)<CR>
   nnoremap <Tab>= <Cmd>call shell#show_netrw('topleft vsplit', 0)<CR>
   nnoremap <Tab>- <Cmd>call shell#show_netrw('botright split', 1)<CR>
@@ -2763,8 +2773,8 @@ endif  " }}}
 " file employs 'loaded' variables with finish block (typically only used for plugins).
 augroup syntax_setup
   au!
-  au Syntax * unlet! b:af_py_loaded | unlet! b:af_rst_loaded | unlet! b:common_syntax
-    \ | exe 'runtime after/common.vim'
+  au Syntax * unlet! b:af_py_loaded | unlet! b:af_rst_loaded
+  au Syntax * unlet! b:common_syntax | exe 'runtime after/common.vim'
 augroup END
 command! -nargs=? ShowGroups call syntax#show_stack(<f-args>)
 command! -nargs=0 ShowNames exe 'help highlight-groups' | exe 'normal! zt'

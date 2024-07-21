@@ -198,18 +198,16 @@ function! python#init_jupyter() abort
     let pattern = 'kernel-' . folder . '-[0-9][0-9].json'
     if !empty(glob(runtime . '/' . pattern)) | return jupyter#Connect(pattern) | endif
   endwhile
-  redraw | echohl WarningMsg
-  echom "Error: No connection files found for path '" . expand('%:p:h') . "'."
-  echohl None
+  let msg = 'Error: No connection files found for path ' . string(expand('%:p:h')) . '.'
+  redraw | echohl WarningMsg | echom msg | echohl None
 endfunction
 
 " Run current file with conda python (important for macvim)
 " TODO: More robust checking for conda python in other places
 function! python#run_file() abort
   if !exists('$CONDA_PREFIX')
-    redraw | echohl WarningMsg
-    echom 'Error: Cannot find conda prefix.'
-    echohl None | return
+    let msg = 'Error: Cannot find conda prefix.'
+    redraw | echohl WarningMsg | echom msg | echohl None | return
   endif
   let exe = $CONDA_PREFIX . '/bin/python'
   let proj = $CONDA_PREFIX . '/share/proj'
@@ -362,7 +360,7 @@ function! python#next_docstring(count, ...) abort
   endif
   let regex = head . '[frub]*' . s:regex_doc . '\_s*\zs'
   for _ in range(abs(a:count))  " cursor is on first non-whitespace after triple-quote
-    call search(regex, flags, 0, 0, "tags#get_skip(-1, 'Constant')")
+    call search(regex, flags, 0, 0, "!tags#get_inside(-1, 'Constant')")
   endfor
   exe &foldopen =~# 'quickfix\|all' ? 'normal! zv' : ''
 endfunction

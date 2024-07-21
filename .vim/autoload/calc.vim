@@ -44,7 +44,7 @@ function! calc#init_codi(...) abort
     let path = a:1
   else
     let base = fnamemodify(resolve(@%), ':p:h')
-    let base = file#format_dir(base, 1)  " trailing slash
+    let base = file#get_base(base, 1)  " trailing slash
     let path = file#input_path('Calculator', 'calc.py', base)
   endif
   if !empty(path)

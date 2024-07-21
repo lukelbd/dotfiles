@@ -2,7 +2,7 @@
 " Utilities for formatting text
 "-----------------------------------------------------------------------------"
 " Auto-format with external plugin
-" NOTE: Not all servers support auto formtting. Seems 'pylsp' uses autopep8 consistent
+" NOTE: Not all servers support auto formatting. Seems 'pylsp' uses autopep8 consistent
 " with flake8 warnings. Use below function to print active servers.
 function! s:echo_range(msg, num) range abort
   redraw | echom a:msg . (a:msg =~# '\s' ? ' on ' : ' ')  . a:num . ' line(s)'
@@ -23,10 +23,54 @@ function! edit#auto_format(...) abort
     exe 'Autoformat' | call fold#update_folds(1)
     redraw | echom 'Autoformatted with ' . string(formatters[0])
   else
-    redraw | echohl WarningMsg
-    echom 'Error: No formatters available'
-    echohl None
+    let msg = 'Error: No formatters available'
+    redraw | echohl WarningMsg | echom msg | echohl None
   endif
+endfunction
+
+" Get number of error messages under the cursor
+" NOTE: This is used to show error messages on closed folds similar
+" to method used to show git-gutter hunk summaries on closed folds.
+function! edit#_get_errors(range1, range2, ...) abort
+  let flags = {'E': '!', 'W': '*', 'I': '^'}
+  let counts = {}  " flag counts
+  let items = get(b:, 'ale_highlight_items', [])
+  for item in items
+    if item.bufnr == bufnr() && item.lnum >= a:range1 && item.lnum <= a:range2
+      let flag = get(flags, item.type, '?')
+      let counts[flag] = get(counts, flag, 0) + 1
+    endif
+  endfor
+  let items = map(items(counts), 'v:val[0] . v:val[1]')
+  return join(items, '')
+endfunction
+" For optional range arguments
+function! edit#get_errors(...) range abort
+  return utils#range_func('edit#_get_errors', a:000, [a:firstline, a:lastline])
+endfunction
+" For <expr> map accepting motion
+function! edit#get_errors_expr() abort
+  return utils#motion_func('edit#get_errors_range', [])
+endfunction
+
+" Get variable segment text objects
+" NOTE: Native plugin works well but includes \k iskeyword boundaries instead of
+" strictly alphanumeric characters. Workaround by temporarily changing iskeyword
+function! edit#get_segment_i() abort
+  return call('edit#get_segment', ['i'] + a:000)
+endfunction
+function! edit#get_segment_a() abort
+  return call('edit#get_segment', ['a'] + a:000)
+endfunction
+function! edit#get_segment(char, ...) abort
+  let name = 'textobj#variable_segment#select_' . a:char
+  let keys = &l:iskeyword
+  try
+    setlocal iskeyword=@,48-57,_,192-255
+    return call('textobj#variable_segment#select_i', a:000)
+  finally
+    let &l:iskeyword = keys
+  endtry
 endfunction
 
 " Change order of adjacent characters
@@ -80,7 +124,7 @@ function! edit#change_lines(...) abort
   call winrestview(winview) | redraw
 endfunction
 
-" Format using &formatoptions setting
+" Format lines using the &formatoptions setting
 " NOTE: This implements line wrapping and joining settings, and accounts for comment
 " continuation and automatic indentation based on shiftwidth or formatlistpat.
 " NOTE: This wraps to optional input count column rather than text width, and
@@ -122,38 +166,8 @@ function! edit#format_lines_expr(...) abort
   return utils#motion_func('edit#format_lines', a:000)
 endfunction
 
-" Get error messages and segment text objects
-" NOTE: This is used to show error messages on closed folds similar
-" to method used to show git-gutter hunk summaries on closed folds.
-function! edit#get_segment_i() abort
-  return call('edit#get_segment', ['i'] + a:000)
-endfunction
-function! edit#get_segment_a() abort
-  return call('edit#get_segment', ['a'] + a:000)
-endfunction
-function! edit#get_segment(char, ...) abort
-  let name = 'textobj#variable_segment#select_' . a:char
-  let keys = &l:iskeyword
-  try
-    setlocal iskeyword=@,48-57,_,192-255
-    return call('textobj#variable_segment#select_i', a:000)
-  finally
-    let &l:iskeyword = keys
-  endtry
-endfunction
-function! edit#get_errors(...) range abort
-  let flags = {'E': '!', 'W': '@', 'I': '#'}
-  let counts = {}  " flag counts
-  let [line1, line2] = a:0 ? a:000 : [a:firstline, a:lastline]
-  for item in get(b:, 'ale_highlight_items', {})
-    if item.bufnr == bufnr() && item.lnum >= line1 && item.lnum <= line2
-      let flag = get(flags, item.type, '?')
-      let counts[flag] = get(counts, flag, 0) + 1
-    endif
-  endfor | return join(map(items(counts), 'v:val[0] . v:val[1]'), '')
-endfunction
-
 " Indent or join lines by count
+" NOTE: Here join comments with two spaces instead of one (pep8 consistency)
 " NOTE: Native vim indent uses count to move over number of lines, but redundant
 " with e.g. 'd2k', so instead use count to denote indentation level.
 " NOTE: Native vim join uses count to join n lines including parent line, so e.g.
@@ -165,14 +179,15 @@ function! edit#join_lines(backward, ...) range abort
   else  " forward join
     let line2 += line2 > line1 ? v:count : v:count1
   endif
-  let regex = '\S\zs\s\(' . comment#get_regex() . '\)'
-  let args = [regex, 'cnW', line1, 0, "!tags#get_skip(0, 'Comment')"]
+  let regex = escape(comment#get_regex(), '@')
+  let regex = '\S\zs\s\(' . regex . '\)'  " \zs comes before comment
+  let args = [regex, 'cnW', line1, 0, "tags#get_inside(0, 'Comment')"]
   call cursor(line1, 1) | let [_, col1] = call('searchpos', args)
   let bang = a:0 && a:1 ? '!' : ''
   let cmd = exists(':Join') ? 'Join' : 'join'
   exe line1 . ',' . line2 . cmd . bang
   call cursor(line1, 1) | let [_, col2] = call('searchpos', args)
-  exe !col1 && col2 ?  line1 . 'substitute/' . regex . '/  \1/e' : ''
+  exe !col1 && col2 ?  line1 . 's@' . regex . '@  \1@e' : ''
   call cursor(line1, cnum)
 endfunction
 " Indent input lines
@@ -280,28 +295,28 @@ function! edit#spell_check(...) abort
 endfunction
 
 " Search replace without history
-" NOTE: Using substitute(..., 'n') alsogives count but have to repeat twice, too slow
+" NOTE: Using substitute(..., 'n') also gives count but have to repeat twice, too slow
 " NOTE: Critical to replace reverse line-by-line in case substitution has newlines
 function! edit#search_replace(msg, ...) range abort
   let winview = winsaveview()
   let pairs = copy(a:000[a:0 % 2:])
-  let skip = a:0 % 2 ? a:1 : ''
+  let group = a:0 % 2 ? a:1 : ''
+  let skip = "!tags#get_inside('$', group)"
   let cnt = 0  " pattern count
-  let pattern = @/  " previous pattern
+  let search = @/  " previous pattern
   for line in range(a:lastline, a:firstline, -1)
     exe line | for idx in range(0, a:0 - 2, 2)
       let jdx = idx + 1  " replacement index
       let regex = type(pairs[idx]) == 2 ? pairs[idx]() : pairs[idx]
       let replace = jdx >= a:0 ? '' : type(pairs[jdx]) == 2 ? pairs[jdx]() : pairs[jdx]
-      if !empty(skip) && !search(regex, 'cnW', line, 0, "tags#get_skip('$', skip)")
+      if !empty(group) && !search(regex, 'cnW', line, 0, skip)
         continue  " e.g. not inside comment
       endif
       let cmd = 's@' . regex . '@' . replace . '@gel'
       let cnt += !empty(execute('keepjumps ' . cmd))  " or exact with 'n'?
-      call histdel('/', -1)  " preserve history
     endfor
   endfor
-  let @/ = pattern
+  let @/ = search
   call winrestview(winview)
   call s:echo_range(a:msg, cnt)
 endfunction

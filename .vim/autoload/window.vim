@@ -395,12 +395,14 @@ function! window#setup_values() abort
   let winview = winsaveview()
   let char = matchstr(getline(1), '^[#%"]')
   let char = empty(char) ? '#' : char
-  goto | let head1 = search('^\s*\a', 'W')
+  keepjumps goto  " start from top
+  let head1 = search('^\s*\a', 'W')
   let head2 = head1 ? search('^\s*[.+-]\?\d', 'W') : head1
   let g:csv_delim = expand('%:e') ==# 'txt' ? ' ' : ','
   let b:csv_headerline = head2 ? head2 - 1 : head1  " header above numeric
   let &l:commentstring = char . '%s'
-  goto | let info = search('^\s*[^' . char . ']', 'nW') - 1
+  keepjumps goto  " start from top
+  let info = search('^\s*[^' . char . ']', 'nW') - 1
   let expr = info > 1 && !foldlevel(1) ? 1 . ',' . info . 'fold' : ''
   exe 'CSVInit' | setlocal foldenable
   call feedkeys("\<Cmd>" . expr . "\<CR>", 'n')

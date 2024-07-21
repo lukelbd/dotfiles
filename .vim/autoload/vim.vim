@@ -22,8 +22,7 @@ function! vim#config_refresh(bang, ...) abort
     if path !~# expand('~') || path =~# regex || index(paths, ipath) != -1
       continue  " skip files not edited by user or matching regex
     endif
-    let state = 'g:loaded_' . fnamemodify(ipath, ':t:r')
-    if exists(state) | exe 'unlet! ' . state | endif
+    call s:unlet_loaded(ipath)
     if path =~# '/syntax/\|/ftplugin/'  " sourced by :filetype detect
       let ftype = fnamemodify(path, ':t:r')  " e.g. ftplugin/python.vim --> python
       if &filetype ==# ftype | call add(paths, ipath) | endif
@@ -118,10 +117,23 @@ function! vim#setup_cmdwin() abort
 endfunction
 
 " Source current file or lines
+" NOTE: Have to remove loaded variables or :finish may be called early
 " NOTE: This fails when calling from current script so use expr mapping
+function! s:unlet_loaded(...) abort
+  let name = a:0 ? fnamemodify(a:1, ':t:r') : expand('%:t:r')
+  for fmt in ['loaded_%s', 'autoloaded_%s', '_%s_loaded']
+    let var = 'g:' . printf(fmt, name)
+    if exists(var) | exe 'unlet! ' . var | endif
+  endfor
+endfunction
+" Source motion or entire path
+function! vim#source_motion() range abort
+  update | let range = a:firstline . ',' . a:lastline
+  exe range . 'source'
+  redraw | echom 'Sourced lines ' . a:firstline . ' to ' . a:lastline
+endfunction
 function! vim#source_general() abort
-  let state = 'g:loaded_' . expand('%:t:r')
-  if exists(state) | exe 'unlet! ' . state | endif
+  call s:unlet_loaded()
   if v:count
     exe line('.') . ',' . (line('.') + v:count) . 'source'
     echom 'Sourced ' . v:count . ' lines'
@@ -130,20 +142,10 @@ function! vim#source_general() abort
     redraw | echom 'Sourced current file'
   endif
 endfunction
-" For <expr> execution map
-function! vim#source_general_expr() abort
-  let cmd = expand('%:p') =~# 'autoload/vim\.vim$' ? 'source %' : 'call vim#source_general()'
-  return "\<Cmd>" . cmd . "\<CR>"
-endfunction
-
-" Source input motion or selection
-" TODO: Add generalization for running chunks of arbitrary filetypes?
-function! vim#source_motion() range abort
-  update | let range = a:firstline . ',' . a:lastline
-  exe range . 'source'
-  redraw | echom 'Sourced lines ' . a:firstline . ' to ' . a:lastline
-endfunction
-" For <expr> map accepting motion
+" For <expr> motion or entire path
 function! vim#source_motion_expr(...) abort
   return utils#motion_func('vim#source_motion', a:000)
+endfunction
+function! vim#source_general_expr() abort
+  return "\<Cmd>" . (expand('%:p') =~# 'autoload/vim\.vim$' ? 'source %' : 'call vim#source_general()') . "\<CR>"
 endfunction

@@ -87,7 +87,7 @@ function! comment#header_line(fill, count, ...) abort  " inserts above by defaul
   let string .= string =~# '%s$' ? join(reverse(split(leader, '\zs')), '') : ''
   let repeat = (a:count - strchars(indent)) / strchars(a:fill)  " divide by width
   let append = indent . printf(string, repeat(a:fill, repeat))
-  if double
+  if double  " add header above and label in-between
     let string = comment#get_string(1)
     let header = s:get_header() | if empty(header) | return | endif
     let header = indent . printf(string, header)
@@ -96,51 +96,26 @@ function! comment#header_line(fill, count, ...) abort  " inserts above by defaul
   call append(line('.') - 1, append)
 endfunction
 
-" Jump between comment labels and headers
+" Helper comment functions
 " NOTE: The '$' is required for lookbehind for some reason
-function! comment#next_label(count, ...) abort
-  let [flag, opts] = a:0 && !type(a:1) ? [a:1, a:000[1:]] : [0, a:000]
-  let comment = comment#get_regex()
-  let head = (flag ? '^\s*' : '') .comment . '\s*'
-  let tail = '\c\zs\(' . join(opts, '\|') . '\).*$'
-  let regex = head . '\zs' . tail
+function! s:next_comment(count, regex)
   let flags = a:count >= 0 ? 'w' : 'bw'
   for _ in range(abs(a:count))
-    call search(regex, flags, 0, 0, "tags#get_skip(0, 'Comment')")
-  endfor
-  exe &foldopen =~# 'quickfix\|all' ? 'normal! zv' : ''
-endfunction
-function! comment#next_header(count, ...) abort
-  let comment = comment#get_regex()
-  let head = a:0 && a:1 ? '' : '\s*'  " include indented
-  let back = '^\(' . head . comment . '.\+$\n\)\@<!'
-  let tail = comment . '\s*[-=]\{3,}' . comment . '\?'
-  let regex = back . head . '\zs' . tail .'\(\s\|$\)'
-  let flags = a:count >= 0 ? 'w' : 'bw'
-  for _ in range(abs(a:count))
-    call search(regex, flags, 0, 0, "tags#get_skip(0, 'Comment')")
-  endfor
-  exe &foldopen =~# 'block\|all' ? 'normal! zv' : ''
-endfunction
-
-" Toggle and jump between comments
-" NOTE: Required since default 'gcc' maps to g@$ operator function call
-function! comment#next_comment(count, ...) abort
-  let comment = comment#get_regex()
-  let head = a:0 && a:1 ? '' : '\s*'  " include indented
-  let tail = comment . '.\+$\n'
-  let back = '^\(' . head . tail . '\)\@<!'
-  let regex = back . head . '\zs' . tail . '\(' . head . tail . '\)*'
-  let flags = a:count >= 0 ? 'w' : 'bw'
-  for _ in range(abs(a:count))
-    call search(regex, flags, 0, 0, "tags#get_skip(0, 'Comment')")
+    let inum = foldclosed('.')
+    let skip = "!tags#get_inside(0, 'Comment')"
+    let skip .= inum > 0 ? " || foldclosed('.') == " . inum : ''
+    call search(a:regex, flags, 0, 0, skip)
   endfor
   exe &foldopen =~# 'block\|all' ? 'normal! zv' : ''
 endfunction
 function! comment#toggle_comment(...) abort
+  " NOTE: foo
   call tcomment#ResetOption()
+  " NOTE: foo
   if v:count > 0 | call tcomment#SetOption('count', v:count) | endif
+  " NOTE: foo
   let suffix = !a:0 ? 'gcc' : a:1 ? 'Commentc' : 'Uncommentc'
+  " NOTE: foo
   let w:tcommentPos = getpos('.')
   let &operatorfunc = 'TCommentOpFunc_' . suffix
   let line1 = foldclosed('.')
@@ -150,4 +125,31 @@ function! comment#toggle_comment(...) abort
   else  " toggle fold
     call feedkeys(line1 . 'ggg@$', 'n')
   endif
+endfunction
+
+" Jump between comment blocks
+" NOTE: Required since default 'gcc' maps to g@$ operator function call
+function! comment#next_comment(count, ...) abort
+  let comment = comment#get_regex()
+  let head = a:0 && a:1 ? '' : '\s*'  " include indented
+  let tail = comment . '.\+$\n'
+  let back = '^\(^' . head . tail . '\)\@<!'
+  let regex = back . head . '\zs' . tail . '\(' . head . tail . '\)*'
+  call s:next_comment(a:count, regex)
+endfunction
+function! comment#next_header(count, ...) abort
+  let comment = comment#get_regex()
+  let head = a:0 && a:1 ? '' : '\s*'  " include indented
+  let back = '^\(^' . head . comment . '.\+$\n\)\@<!'
+  let tail = comment . '\s*[-=]\{3,}' . comment . '\?'
+  let regex = back . head . '\zs' . tail .'\(\s\|$\)'
+  call s:next_comment(a:count, regex)
+endfunction
+function! comment#next_label(count, ...) abort
+  let [flag, opts] = a:0 && !type(a:1) ? [a:1, a:000[1:]] : [0, a:000]
+  let comment = comment#get_regex()
+  let head = (flag ? '^\s*' : '') . comment . '\s*'
+  let tail = '\c\zs\(' . join(opts, '\|') . '\).*$'
+  let regex = head . '\zs' . tail
+  call s:next_comment(a:count, regex)
 endfunction
