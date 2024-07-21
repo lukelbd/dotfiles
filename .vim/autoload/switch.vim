@@ -240,29 +240,32 @@ endfunction
 " Toggle temporary fold/conceal reveal
 " NOTE: Automatically untoggle after editing or inserting
 function! s:reveal_restore() abort
-  if exists('g:reveal_cache')
-    let &l:foldopen = g:reveal_cache[0]
-    let &l:conceallevel = g:reveal_cache[1]
-    let &l:relativenumber = g:reveal_cache[2]
-  endif | unlet! g:reveal_cache
+  if exists('b:reveal_cache')
+    let &g:foldopen = b:reveal_cache[0]  " global only
+    let &l:conceallevel = b:reveal_cache[1]
+    let &l:relativenumber = b:reveal_cache[2]
+  endif | unlet! b:reveal_cache
 endfunction
 function! switch#reveal(...) abort
-  let state = exists('g:reveal_cache')
+  let state = exists('b:reveal_cache')
   let toggle = a:0 > 0 ? a:1 : 1 - state
   let suppress = a:0 > 1 ? a:2 : 0
-  if toggle && !exists('g:reveal_cache')
-    let g:reveal_cache = [&l:foldopen, &l:conceallevel, &l:relativenumber]
-    setlocal foldopen=block,insert,jump,mark,percent,quickfix,search,tag,undo
-    setlocal conceallevel=0  " reveal concealed characters and closed folds
-    setlocal norelativenumber  " reveal absolute line numbers
+  if toggle && !exists('b:reveal_cache')
+    let b:reveal_folds = 'block,insert,jump,mark,percent,quickfix,search,tag,undo'
+    let b:reveal_cache = [&g:foldopen, &l:conceallevel, &l:relativenumber]
+    let &g:foldopen = b:reveal_folds  " setting is global only
+    let &l:conceallevel = 0  " reveal concealed characters and closed folds
+    let &l:relativenumber = 0  " reveal absolute line numbers
     augroup reveal_restore
       au!
-      au TextChanged,InsertEnter,InsertLeave * call s:reveal_restore() | autocmd! reveal_restore
+      au BufEnter <buffer> let &g:foldopen = b:reveal_folds
+      au BufLeave <buffer> let &g:foldopen = b:reveal_cache[0]
+      au TextChanged,InsertEnter,InsertLeave <buffer> call s:reveal_restore() | autocmd! reveal_restore
     augroup END
   elseif !toggle && exists('#reveal_restore#TextChanged')
     doautocmd reveal_restore TextChanged
   elseif !toggle  " fallback or else state is permanent
-    unlet! g:reveal_cache
+    unlet! b:reveal_cache
   endif
   call s:echo_state('Reveal mode', toggle, suppress)
 endfunction
@@ -272,9 +275,9 @@ endfunction
 function! s:get_changes() abort
   let lnums = []
   for [line1, line2, _] in fold#fold_source()
-    let hunks = git#get_hunks(line1, line2, 0, 1)
-    let errors = edit#get_locs(line1, line2)
-    if !empty(hunks) || !empty(errors) | call add(lnums, line1) | endif
+    let flags = git#get_hunks(line1, line2, 1)
+    let flags .= edit#get_errors(line1, line2)
+    if !empty(flags) | call add(lnums, line1) | endif
   endfor | return lnums
 endfunction
 function! switch#showchanges(...) abort
