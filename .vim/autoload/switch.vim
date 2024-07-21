@@ -243,22 +243,26 @@ function! s:reveal_restore() abort
   if exists('g:reveal_cache')
     let &l:foldopen = g:reveal_cache[0]
     let &l:conceallevel = g:reveal_cache[1]
-  endif
+    let &l:relativenumber = g:reveal_cache[2]
+  endif | unlet! g:reveal_cache
 endfunction
 function! switch#reveal(...) abort
   let state = exists('g:reveal_cache')
   let toggle = a:0 > 0 ? a:1 : 1 - state
   let suppress = a:0 > 1 ? a:2 : 0
-  if !toggle && exists('g:reveal_cache') && exists('#reveal_restore#TextChanged')
-    doautocmd reveal_restore TextChanged
-  elseif toggle && !exists('g:reveal_cache')
-    let g:reveal_cache = [&l:foldopen, &l:conceallevel]
+  if toggle && !exists('g:reveal_cache')
+    let g:reveal_cache = [&l:foldopen, &l:conceallevel, &l:relativenumber]
     setlocal foldopen=block,insert,jump,mark,percent,quickfix,search,tag,undo
     setlocal conceallevel=0  " reveal concealed characters and closed folds
+    setlocal norelativenumber  " reveal absolute line numbers
     augroup reveal_restore
       au!
       au TextChanged,InsertEnter,InsertLeave * call s:reveal_restore() | autocmd! reveal_restore
     augroup END
+  elseif !toggle && exists('#reveal_restore#TextChanged')
+    doautocmd reveal_restore TextChanged
+  elseif !toggle  " fallback or else state is permanent
+    unlet! g:reveal_cache
   endif
   call s:echo_state('Reveal mode', toggle, suppress)
 endfunction
