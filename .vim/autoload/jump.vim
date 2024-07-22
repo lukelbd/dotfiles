@@ -1,6 +1,27 @@
 "-----------------------------------------------------------------------------"
 " Utilities for scrolling and iterating
 "-----------------------------------------------------------------------------"
+" Helper function for showing location list info
+" NOTE: This is adapted from ale.vim, shows truncated message without 'hit enter
+" to continue prompt' while navigating errors via bracket maps. Instead rely upon
+" popup windows or location list panel to show full message if it is truncated.
+function! s:echo_loc(nr, ...) abort
+  let quickfix = a:0 ? a:1 : 0
+  let items = quickfix ? getqflist() : getloclist(0)
+  if a:nr < 1 || a:nr > len(items) | return | endif
+  let msg = items[a:nr - 1].text
+  let msg = substitute(msg, "\n", '', 'g')
+  let msg = substitute(msg, "\t", ' ', 'g')
+  let msg = substitute(msg, ' \+', ' ', 'g')
+  let shortmess = &l:shortmess
+  let width0 = winwidth(0) - 12  " showcmd region
+  let width = strdisplaywidth(msg)
+  if width0 < width  " 12 for showcmd region 3 for ellipsis
+    let idx = width0 / 2 - 2  " vint: next-line -ProhibitUsingUndeclaredVariable
+    let msg = msg[:idx - 1] . '...' . msg[-idx:]
+  endif | echo msg
+endfunction
+
 " Generate jump and change lists
 " NOTE: Similar to how stack.vim 'floats' recent tab stack entries to the top of the
 " stack of the current tab is in the most recent five, this filters jump and change
@@ -208,17 +229,14 @@ endfunction
 " Navigate location list errors cyclically (see: https://vi.stackexchange.com/a/14359)
 " NOTE: Adding '+ 1 - backward' fixes vint issue where cursor remains stationary
 " NOTE: Unlike e.g. n/N jumping here permit jumping to match in fold under cursor
-function! jump#setup_loc() abort
-  exe 'nnoremap <buffer> <CR> <CR>zv'
-endfunction
-function! jump#next_loc(count, list, ...) abort
-  let backward = a:0 > 0 ? a:1 : 0
-  let string = a:0 > 1 ? a:2 : ''
-  let skip = a:0 > 2 ? a:3 : 0
-  let cmd = a:list ==# 'loc' ? 'll' : 'cc'
-  let func = 'get' . a:list . 'list'
-  let items = call(func, a:list ==# 'loc' ? [0] : [])
-  call map(items, "extend(v:val, {'idx': v:key + 1})")
+function! jump#next_loc(count, ...) abort
+  let quickfix = a:0 > 0 ? a:1 : 0
+  let backward = a:0 > 1 ? a:2 : 0
+  let string = a:0 > 2 ? a:3 : ''
+  let skip = a:0 > 3 ? a:4 : 0
+  let items = quickfix ? getqflist() : getloclist(0)
+  let cmd = quickfix ? 'silent cc' : 'silent ll'
+  call map(items, "extend(v:val, {'idx': v:key})")
   if empty(items)
     let msg = 'Error: No locations found'
     redraw | echohl ErrorMsg | echom msg | echohl None | return
@@ -235,14 +253,15 @@ function! jump#next_loc(count, list, ...) abort
   let opts = backward ? reverse(copy(items)) : copy(items)
   call filter(opts, 'empty(string) || v:val.type ==? string')
   let idx = get(get(filter(opts, filt), 0, {}), 'idx', '')
-  if !skip && type(idx)  " cyclic restart
-    silent exe backward ? '$' : 1
-    return jump#next_loc(a:count, a:list, backward, string, 1)
+  let inr = type(idx) ? 0 : idx + 1
+  if !skip && empty(inr)  " cyclic restart
+    exe backward ? '$' : 1
+    return jump#next_loc(a:count, quickfix, backward, string, 1)
   elseif a:count > 1  " repeat jumping
-    silent exe cmd . ' ' . idx
-    return jump#next_loc(a:count - 1, a:list, backward, string, 0)
+    exe cmd . ' ' . inr
+    return jump#next_loc(a:count - 1, quickfix, backward, string, 0)
   else  " jump to error
-    exe cmd . ' ' . idx
+    exe cmd . ' ' . inr | call s:echo_loc(inr)
     exe &l:foldopen =~# 'quickfix\|all' ? 'normal! zv' : ''
   endif
 endfunction
@@ -253,11 +272,11 @@ endfunction
 function! jump#next_part(key, mode, ...) abort
   let cmd = 'setlocal iskeyword=' . &l:iskeyword  " vint: next-line -ProhibitUnnecessaryDoubleQuote
   let &l:iskeyword = a:mode ? "a-z,48-57" : "@,48-57,192-255"
-  let cnt = a:mode ? s:get_count(a:key) : v:count1
+  let cnt = a:mode ? s:next_count(a:key) : v:count1
   let action = a:0 ? a:1 ==# 'c' ? "\<Esc>c" : a:1 : ''
   call feedkeys(action . cnt . a:key . "\<Cmd>" . cmd . "\<CR>", 'm')
 endfunction
-function! s:get_count(key) abort
+function! s:next_count(key) abort
   let [line, idx] = [getline('.'), col('.') - 1]
   let forward = a:key =~# '^[we]$'
   let regex = a:key ==# 'w' ? '\u\+\l\+' : a:key ==# 'b' ? '\a\l\+\u\+' : '\l\+\u\+'

@@ -310,7 +310,7 @@ endfor
 " require manual closure with :qall or :quitall.
 command! -nargs=? Autosave call switch#autosave(<args>)
 nnoremap q <Cmd>call window#close_panes()<CR>
-nnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR>
+nnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><Cmd>echo<CR>
 vnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
 vnoremap <CR> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
 nnoremap <C-s> <Cmd>call file#update()<CR>
@@ -456,7 +456,7 @@ augroup panel_setup
   au BufRead,BufEnter fugitive://* if &filetype !=# 'fugitive' | call window#setup_panel() | endif
   au FileType ale-info doautocmd BufWinEnter
   au FileType help call vim#setup_help()
-  au FileType qf call jump#setup_loc()
+  au FileType qf nnoremap <buffer> <CR> <CR>zv
   au FileType man call shell#setup_man()
   au FileType gitcommit call git#setup_commit()
   au FileType fugitiveblame call git#setup_blame() | call git#setup_deltas()
@@ -764,16 +764,20 @@ command! -count=1 -nargs=? Lprev call jump#next_loc(<count>, 'loc', 1, <f-args>)
 command! -count=1 -nargs=? Lnext call jump#next_loc(<count>, 'loc', 0, <f-args>)
 command! -count=1 -nargs=? Qprev call jump#next_loc(<count>, 'qf', 1, <f-args>)
 command! -count=1 -nargs=? Qnext call jump#next_loc(<count>, 'qf', 0, <f-args>)
-nnoremap [y <Cmd>exe v:count1 . 'tag'<CR>
-nnoremap ]y <Cmd>exe v:count1 . 'pop'<CR>
-nnoremap [Y <Cmd>exe v:count1 . 'tag!'<CR>
-nnoremap ]Y <Cmd>exe v:count1 . 'pop!'<CR>
+nnoremap [{ <Cmd>exe v:count1 . 'Qprev'<CR><Cmd>call window#show_list(1)<CR><Cmd>wincmd p<CR>
+nnoremap ]} <Cmd>exe v:count1 . 'Qnext'<CR><Cmd>call window#show_list(1)<CR><Cmd>wincmd p<CR>
 nnoremap [x <Cmd>exe v:count1 . 'Lprev'<CR>
 nnoremap ]x <Cmd>exe v:count1 . 'Lnext'<CR>
 nnoremap [X <Cmd>exe v:count1 . 'Lprev E'<CR>
 nnoremap ]X <Cmd>exe v:count1 . 'Lnext E'<CR>
-nnoremap [{ <Cmd>exe v:count1 . 'Qprev'<CR><Cmd>call window#show_list(1)<CR><Cmd>wincmd p<CR>
-nnoremap ]} <Cmd>exe v:count1 . 'Qnext'<CR><Cmd>call window#show_list(1)<CR><Cmd>wincmd p<CR>
+vnoremap [x <Cmd>exe v:count1 . 'Lprev'<CR>
+vnoremap ]x <Cmd>exe v:count1 . 'Lnext'<CR>
+vnoremap [X <Cmd>exe v:count1 . 'Lprev E'<CR>
+vnoremap ]X <Cmd>exe v:count1 . 'Lnext E'<CR>
+nnoremap [y <Cmd>exe v:count1 . 'tag'<CR>
+nnoremap ]y <Cmd>exe v:count1 . 'pop'<CR>
+nnoremap [Y <Cmd>exe v:count1 . 'tag!'<CR>
+nnoremap ]Y <Cmd>exe v:count1 . 'pop!'<CR>
 
 " Line searching and grepping {{{2
 " NOTE: This is only useful when 'search' excluded from &foldopen. Use to quickly
@@ -1911,13 +1915,13 @@ if s:has_plug('vim-textobj-user')  " {{{
     \ 'select-i': 'ig',  'select-i-function': 'edit#object_segment_i',
     \ 'select-a': 'ag',  'select-a-function': 'edit#object_segment_a',
   \ }
-  for s:mode in ['n', 'x']  " numeral mappings
-    exe s:mode . 'map in <Plug>(textobj-numeral-i)'
-    exe s:mode . 'map an <Plug>(textobj-numeral-a)'
-  endfor
-  for s:key in ['.', 'h', 'C', 'z', 'Z']  " required after renaming
+  for s:key in ['.', 'n', 'h', 'C', 'z', 'Z']  " required after renaming
     exe 'silent! unmap i' . s:key
     exe 'silent! unmap a' . s:key
+  endfor
+  for s:mode in ['o', 'x']  " numeral mappings
+    exe s:mode . 'map in <Plug>(textobj-numeral-i)'
+    exe s:mode . 'map an <Plug>(textobj-numeral-a)'
   endfor
   call succinct#add_objects('variable', {'v': join(s:textobj_variable, '\r')}, 0, 1)
   call textobj#user#plugin('comment', {'c': s:textobj_comment1, 'C': s:textobj_comment2})
@@ -2374,7 +2378,7 @@ if s:has_plug('ale')  " {{{
   let g:ale_cursor_detail = 1  " enable showing errors in preview window
   let g:ale_disable_lsp = 'auto'  " permit lsp-powered linters e.g. quick-lint-js
   let g:ale_echo_cursor = 0  " disable echoing errors under cursor
-  let g:ale_echo_delay = 750  " delay in milliseconds
+  let g:ale_echo_delay = 1000  " delay in milliseconds
   let g:ale_echo_msg_error_str = 'Err'
   let g:ale_echo_msg_info_str = 'Info'
   let g:ale_echo_msg_warning_str = 'Warn'
