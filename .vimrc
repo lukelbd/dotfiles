@@ -2612,7 +2612,7 @@ if s:has_plug('codi.vim')  " {{{
     au User CodiEnterPre call calc#setup_codi(1)
     au User CodiLeavePost call calc#setup_codi(0)
   augroup END
-  command! -nargs=* CodiNew call calc#init_codi(<f-args>)
+  command! -nargs=* CodiNew call calc#show_codi(<f-args>)
   nnoremap <Leader>= <Cmd>CodiNew<CR>
   nnoremap <Leader>+ <Cmd>silent! Codi!!<CR>
   let g:codi#autocmd = 'None'
@@ -2626,15 +2626,15 @@ if s:has_plug('codi.vim')  " {{{
       \ 'bin': ['python3', '-i', '-c', 'import readline; readline.set_auto_history(False)'],
       \ 'prompt': '^\(>>>\|\.\.\.\) ',
       \ 'quitcmd': 'exit()',
-      \ 'preprocess': function('calc#codi_preprocess'),
-      \ 'rephrase': function('calc#codi_rephrase'),
+      \ 'preprocess': function('calc#preprocess_codi'),
+      \ 'rephrase': function('calc#rephrase_codi'),
     \ },
     \ 'julia': {
       \ 'bin': ['julia', '-q', '-i', '--color=no', '--history-file=no'],
       \ 'prompt': '^\(julia>\|      \)',
       \ 'quitcmd': 'exit()',
-      \ 'preprocess': function('calc#codi_preprocess'),
-      \ 'rephrase': function('calc#codi_rephrase'),
+      \ 'preprocess': function('calc#preprocess_codi'),
+      \ 'rephrase': function('calc#rephrase_codi'),
     \ },
   \ }
 endif  " }}}
