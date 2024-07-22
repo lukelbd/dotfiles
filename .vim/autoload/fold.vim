@@ -479,7 +479,7 @@ function! fold#update_folds(force, ...) abort
   let force = a:force || method0 =~# 'syntax\|expr'
   let queued = get(b:, 'fastfold_queued', -1)  " add markers after fastfold
   let remark = queued < 0 && method0 ==# 'manual'
-  let refold = queued > 1 && method0 =~# 'manual\|syntax\|expr'
+  let refold = queued > 0 && method0 =~# 'manual\|syntax\|expr'
   if force || refold || remark  " re-apply or convert
     for [line1, line2, _] in fold#get_markers()
       let iclose = remark || foldclosed(line1) == line1
@@ -505,12 +505,12 @@ function! fold#update_folds(force, ...) abort
   let keys = ''  " additional updates
   let reset = a:0 ? a:1 : -1  " fold level reset state
   let method1 = &l:foldmethod
-  let level1 = &l:filetype ==# 'json' ? 2 : empty(get(b:, 'fugitive_type', '')) ? 0 : 1
+  let level1 = &l:filetype ==# 'json' ? 2 : !empty(get(b:, 'fugitive_type', '')) ? 1 : 0
   let level1 = !level1 && method1 ==# 'manual' ? search('{{{1\s*$', 'wn') > 0 : level1
   let level1 = !level1 && method1 ==# 'marker' ? search('{{{2\s*$', 'wn') > 0 : level1
   let closed1 = foldlevel(winview.lnum) ? foldclosed(winview.lnum) : 0
   if reset >= 0 || method0 !=# method1  " update fold level
-    let &l:foldlevel = a:0 ? level1 : level0
+    let &l:foldlevel = a:0 || method0 !=# method1 ? level1 : level0
     for lnum in fold#get_matches() | exe lnum . 'foldopen' | endfor
     let reopen = closed0 < 0 && closed1 > 0 || closed0 == 0 && closed1 !=# winview.lnum
     let reclose = reset > 0 && closed0 > 0 && closed1 < 0

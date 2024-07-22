@@ -269,29 +269,39 @@ endfunction
 " Spell check under cursor
 " NOTE: This improves '1z=' to return nothing when called on valid words.
 " NOTE: If nothing passed and no manual count then skip otherwise continue.
-function! s:spell_check(...) abort
+function! s:run_check(...) abort
   let word = a:0 ? a:1 : expand('<cword>')
   let [fixed, which] = spellbadword(word)
   return !empty(fixed)
 endfunction
-function! edit#spell_next(count) abort
-  let keys = a:count < 0 ? '[s' : ']s'
-  for _ in range(abs(a:count))
-    exe s:spell_check() ? '' : 'keepjumps normal! ' . keys
-    call edit#spell_check(1)
-  endfor
-endfunction
 function! edit#spell_check(...) abort
-  if a:0 || v:count || s:spell_check()
-    let nr = a:0 ? a:1 : v:count1
-    let nr = nr ? string(nr) : ''
-    echom 'Spell check: ' . expand('<cword>')
-    if empty(nr)  " specific entry
-      call feedkeys('z=', 'n')
-    else  " user entry
-      exe 'normal! ' . nr . 'z='
-    endif
+  let word = expand('<cword>')
+  let cnt = a:0 ? a:1 : v:count
+  if cnt || s:run_check()  " automatic check
+    exe 'normal! ' . max([cnt, 1]) . 'z='
+    let msg = word . ' -> ' . expand('<cword>')
+    redraw | echom 'Spell check: ' . msg
+  elseif !a:0  " user selection
+    let msg = 'Error: ' . string(word) . ' is not misspelled'
+    redraw | echohl WarningMsg | echo msg | echohl None
+  else  " user selection
+    call feedkeys('z=', 'n')
   endif
+endfunction
+function! edit#spell_next(count, ...) abort
+  let &l:spell = 1  " auto-enable spell checking
+  let forward = a:count >= 0
+  let correct = a:0 ? a:1 : 0
+  let regex = correct ? 'quickfix\|all' : 'block\|all'
+  let keys = forward ? ']S' : '[S'  " ignore rare and regional words
+  let keys .= &l:foldopen =~# regex ? 'zv' : ''
+  let msg = "echo 'Misspelled: ' . expand('<cword>')"
+  for _ in range(abs(a:count))
+    let lnum = forward ? foldclosedend('.') : foldclosed('.')  " see also tags.vim
+    exe !correct && lnum > 0 ? forward ? lnum + 1 : lnum - 1 : ''
+    exe correct && s:run_check() ? '' : 'keepjumps normal! ' . keys
+    exe correct && s:run_check() ? 'call edit#spell_check(1)' : msg
+  endfor
 endfunction
 
 " Search replace without history

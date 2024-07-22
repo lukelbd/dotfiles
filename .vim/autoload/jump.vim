@@ -205,9 +205,9 @@ function! jump#push_jump() abort
   endif
 endfunction
 
-" Navigate location list errors cyclically
-" Adding '+ 1 - reverse' fixes vint issue where ]x does not move from final error
-" See: https://vi.stackexchange.com/a/14359
+" Navigate location list errors cyclically (see: https://vi.stackexchange.com/a/14359)
+" NOTE: Adding '+ 1 - backward' fixes vint issue where cursor remains stationary
+" NOTE: Unlike e.g. n/N jumping here permit jumping to match in fold under cursor
 function! jump#setup_loc() abort
   exe 'nnoremap <buffer> <CR> <CR>zv'
 endfunction
@@ -224,20 +224,27 @@ function! jump#next_loc(count, list, ...) abort
     let msg = 'Error: No locations found'
     redraw | echohl ErrorMsg | echom msg | echohl None | return
   endif
-  let [lnum, cnum] = [line('.'), col('.')]
-  let [cmps, oper] = [[], backward ? '<' : '>']
-  call add(cmps, 'v:val.lnum ' . oper . ' lnum')
-  call add(cmps, 'v:val.col ' . oper . ' cnum + 1 - backward')
-  call filter(items, join(cmps, ' || v:val.lnum == lnum && '))
-  let idx = get(get(items, 0, {}), 'idx', '')
-  if type(idx) && !recursed
-    exe backward ? '$' : '1' | call jump#next_loc(a:count, a:list, backward, 1)
-  elseif a:count > 1
-    exe cmd . ' ' . idx | call jump#next_loc(a:count - 1, a:list, backward)
+  let lnum = backward ? foldclosed('.') : foldclosedend('.')
+  if lnum > 0 && !recursed && &l:foldopen !~# 'quickfix\|all'  " ignore current fold
+    let [lnum, cnum] = [lnum, backward ? 1 : col([lnum, '$'])]
+  else  " include current fold
+    let [lnum, cnum] = [line('.'), col('.')]
+  endif
+  let oper = backward ? '<' : '>'
+  let filt = 'v:val.lnum ' . oper . ' lnum'
+  let filt .= ' || v:val.lnum == lnum && '
+  let filt .= 'v:val.col ' . oper . ' cnum + 1 - backward'
+  let idx = get(get(filter(items, filt), 0, {}), 'idx', '')
+  if type(idx) && !recursed  " cyclic restart
+    silent exe backward ? '$' : 1
+    return jump#next_loc(a:count, a:list, backward, 1)
+  elseif a:count > 1  " repeat jumping
+    silent exe cmd . ' ' . idx
+    return jump#next_loc(a:count - 1, a:list, backward, 0)
   else  " jump to error
     exe cmd . ' ' . idx
+    exe &l:foldopen =~# 'quickfix\|all' ? 'normal! zv' : ''
   endif
-  exe &l:foldopen =~# 'quickfix\|all' ? 'normal! zv' : ''
 endfunction
 
 " Navigate words with restricted &iskeyword
@@ -273,9 +280,6 @@ endfunction
 " Jump to next word or WORD accunting for conceal
 " NOTE: For some reason running separate normal mode command for adjustment solves
 " issue where deleting to end-of-line with 'e' either omits character includes newline
-" TODO: Support conceal-aware word objects. Use function that cancels operation, runs a
-" new 'g@aw' operation to record '[ and '], then augments the positions to account for
-" concealed characters with new operator (via a supplementary textobj-user mapping).
 function! jump#next_word(key, ...) abort
   let adjust = mode(1) =~# '^no' && a:key ==? 'e' ? 'l' : ''
   let [lnum, cols] = [line('.'), syntax#_concealed()]

@@ -1194,10 +1194,10 @@ endfor
 
 " Spell checking navigation and modifications
 " NOTE: This enforces defaults without requiring 'set' during session refresh.
-call utils#repeat_map('', '[S', 'SpellBackward', '<Cmd>call edit#spell_next(-v:count1)<CR>')
-call utils#repeat_map('', ']S', 'SpellForward', '<Cmd>call edit#spell_next(v:count1)<CR>')
-noremap [s <Cmd>keepjumps normal! [s<CR>
-noremap ]s <Cmd>keepjumps normal! ]s<CR>
+call utils#repeat_map('', '[S', 'SpellBackward', '<Cmd>call edit#spell_next(-v:count1, 1)<CR>')
+call utils#repeat_map('', ']S', 'SpellForward', '<Cmd>call edit#spell_next(v:count1, 1)<CR>')
+noremap [s <Cmd>call edit#spell_next(-v:count1)<CR>
+noremap ]s <Cmd>call edit#spell_next(v:count1)<CR>
 nnoremap gs <Cmd>call edit#spell_check()<CR>
 nnoremap gS <Cmd>call edit#spell_check(v:count)<CR>
 vnoremap gs <Cmd>call edit#spell_check()<CR>
@@ -1865,27 +1865,16 @@ if s:has_plug('vim-sneak')  " {{{
 endif  " }}}
 
 " Text object settings
-" TODO: Convert word boundary text objects to function refs, e.g. select blocks of
-" contiguous word characters matching case under cursor and possibly include [_-].
 " NOTE: Here use mnemonic 'v' for 'value' and 'C' for comment. The first avoids
-" conflicts with ftplugin/tex.vim and the second with 'c' curly braces.
-" '\([0-9a-z]\@<![0-9a-z]\@=\|[^0-9A-Z]\@<=[0-9A-Z]\@=\)\r\([0-9a-z]\@<=[0-9a-z]\@!\|[0-9A-Z]\@<=[0-9A-Z]\@!\)',
+" conflicts with ftplugin/tex.vim and the second conflicts with 'c' curly braces.
+" TODO: Support conceal-aware word objects. Use function that cancels operation, runs
+" a new 'g@aw' operation to record '[ and '], then augments the positions to account
+" for concealed characters with new operator (via a supplementary textobj-user mapping)
 if s:has_plug('vim-textobj-user')  " {{{
   augroup textobj_setup
     au!
     au VimEnter * call textobj#sentence#init()
   augroup END
-  omap an <Plug>(textobj-numeral-a)
-  vmap an <Plug>(textobj-numeral-a)
-  omap in <Plug>(textobj-numeral-i)
-  vmap in <Plug>(textobj-numeral-i)
-  omap a. <Plug>(textobj-comment-a)
-  vmap a. <Plug>(textobj-comment-a)
-  omap i. <Plug>(textobj-comment-i)
-  vmap i. <Plug>(textobj-comment-i)
-  for s:key in ['i', 'a'] | exe 'silent! unmap ' s:key . 'h' | endfor
-  for s:key in ['i', 'a'] | exe 'silent! unmap ' s:key . 'z' | endfor
-  for s:key in ['i', 'a'] | exe 'silent! unmap ' s:key . 'Z' | endfor
   let g:vim_textobj_parameter_mapping = 'k'  " i.e. 'keyword' or 'keyword argument'
   let g:textobj#sentence#select = 's'  " improved sentence text object
   let g:textobj#sentence#move_p = '('  " improved sentence navigation
@@ -1894,12 +1883,12 @@ if s:has_plug('vim-textobj-user')  " {{{
     \ '\(\k\|[#&*:.-]\)\@<!\(\k\|[#&*:.-]\)\@=',
     \ '\(\k\|[#&*:.-]\)\@<=\(\k\|[#&*:.-]\)\@!',
   \ ]
-  let s:textobj_segment = {
-    \ 'select-i': 'ig',  'select-i-function': 'edit#object_segment_i',
-    \ 'select-a': 'ag',  'select-a-function': 'edit#object_segment_a',
+  let s:textobj_comment1 = {
+    \ 'select-i': 'i.', 'select-i-function': 'textobj#comment#select_i',
+    \ 'select-a': 'a.', 'select-a-function': 'textobj#comment#select_big_a',
   \ }
-  let s:textobj_comment = {
-    \ 'select-i': 'iC', 'select-i-function': 'textobj#comment#select_i',
+  let s:textobj_comment2 = {
+    \ 'select-i': 'iC', 'select-i-function': 'textobj#comment#select_a',
     \ 'select-a': 'aC', 'select-a-function': 'textobj#comment#select_big_a',
   \ }
   let s:textobj_entire = {
@@ -1918,12 +1907,24 @@ if s:has_plug('vim-textobj-user')  " {{{
     \ 'select-i': 'ih', 'select-i-function': 'git#object_hunk_i',
     \ 'select-a': 'ah', 'select-a-function': 'git#object_hunk_a',
   \ }
+  let s:textobj_alpha = {
+    \ 'select-i': 'ig',  'select-i-function': 'edit#object_segment_i',
+    \ 'select-a': 'ag',  'select-a-function': 'edit#object_segment_a',
+  \ }
+  for s:mode in ['n', 'x']  " numeral mappings
+    exe s:mode . 'map in <Plug>(textobj-numeral-i)'
+    exe s:mode . 'map an <Plug>(textobj-numeral-a)'
+  endfor
+  for s:key in ['.', 'h', 'C', 'z', 'Z']  " required after renaming
+    exe 'silent! unmap i' . s:key
+    exe 'silent! unmap a' . s:key
+  endfor
   call succinct#add_objects('variable', {'v': join(s:textobj_variable, '\r')}, 0, 1)
-  call textobj#user#plugin('segment', {'-': s:textobj_segment})  " no <Plug> suffix
-  call textobj#user#plugin('comment', {'-': s:textobj_comment})  " no <Plug> suffix
+  call textobj#user#plugin('comment', {'c': s:textobj_comment1, 'C': s:textobj_comment2})
+  call textobj#user#plugin('fold', {'z': s:textobj_fold1, 'Z': s:textobj_fold2})
   call textobj#user#plugin('entire', {'-': s:textobj_entire})  " no <Plug> suffix
   call textobj#user#plugin('hunk', {'-': s:textobj_hunk})  " no <Plug> suffix
-  call textobj#user#plugin('fold', {'z': s:textobj_fold1, 'Z': s:textobj_fold2})
+  call textobj#user#plugin('alpha', {'-': s:textobj_alpha})  " no <Plug> suffix
 endif  " }}}
 
 " Easy-align settings. Support case/esac block parentheses and seimcolons, chained
@@ -2135,7 +2136,10 @@ if s:has_plug('FastFold')  " {{{
   let g:fastfold_skip_filetypes = s:panel_filetypes
   let g:fastfold_fold_command_suffixes =  []
   let g:fastfold_fold_movement_commands = []
-  call s:fold_init(1) | runtime plugin/fastfold.vim | call s:fold_init(0)
+  unlet! g:loaded_fastfold
+  call s:fold_init(1)  " setup fold method
+  runtime plugin/fastfold.vim
+  call s:fold_init(0)  " add custom updates
 endif  " }}}
 
 " Lsp server settings {{{2

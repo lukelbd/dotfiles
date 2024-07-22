@@ -104,9 +104,9 @@ function! s:next_comment(count, regex)
     let inum = foldclosed('.')
     let skip = "!tags#get_inside(0, 'Comment')"
     let skip .= inum > 0 ? " || foldclosed('.') == " . inum : ''
-    call search(a:regex, flags, 0, 0, skip)
+    let lnum = search(a:regex, flags, 0, 0, skip)
   endfor
-  exe &foldopen =~# 'block\|all' ? 'normal! zv' : ''
+  exe &foldopen =~# 'block\|all' ? 'normal! zv' : '' | return lnum > 0
 endfunction
 function! comment#toggle_comment(...) abort
   " NOTE: foo
@@ -143,7 +143,10 @@ function! comment#next_header(count, ...) abort
   let back = '^\(^' . head . comment . '.\+$\n\)\@<!'
   let tail = comment . '\s*[-=]\{3,}' . comment . '\?'
   let regex = back . head . '\zs' . tail .'\(\s\|$\)'
-  call s:next_comment(a:count, regex)
+  let lnum = s:next_comment(a:count, regex)
+  if lnum <= 0 | return | endif
+  let msg = substitute(getline('.'), head, '', '')
+  redraw | echo msg
 endfunction
 function! comment#next_label(count, ...) abort
   let [flag, opts] = a:0 && !type(a:1) ? [a:1, a:000[1:]] : [0, a:000]
@@ -151,5 +154,8 @@ function! comment#next_label(count, ...) abort
   let head = (flag ? '^\s*' : '') . comment . '\s*'
   let tail = '\c\zs\(' . join(opts, '\|') . '\).*$'
   let regex = head . '\zs' . tail
-  call s:next_comment(a:count, regex)
+  let lnum = s:next_comment(a:count, regex)
+  if lnum <= 0 | return | endif
+  let msg = substitute(getline('.'), head, '', '')
+  redraw | echo substitute(msg, '^\(\a\)\(\a*\)', '\u\1\l\2', '')
 endfunction
