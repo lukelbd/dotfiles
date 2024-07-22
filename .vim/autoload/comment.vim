@@ -30,7 +30,7 @@ function! s:get_header() abort
   let regex = '^\s*\(' . comment#get_regex() . '\s*\)\?'
   let cursor = substitute(getline('.'), regex, '', '')
   let header = utils#input_default('Header text', cursor, '')
-  call feedkeys(header ==# cursor ? '"_dd' : '', 'n') | return header
+  exe header ==# cursor ? 'delete _' : '' | return header
 endfunction
 function! comment#append_note(note) abort
   let indent = matchstr(getline('.'), '^\s*')
@@ -98,6 +98,15 @@ endfunction
 
 " Helper comment functions
 " NOTE: The '$' is required for lookbehind for some reason
+function! comment#next_comment(count, ...) abort
+  let comment = comment#get_regex()
+  let head = a:0 && a:1 ? '' : '\s*'  " include indented
+  let tail = comment . '.\+$\n'
+  let back = '^\(^' . head . tail . '\)\@<!'
+  let regex = back . head . '\zs' . tail . '\(' . head . tail . '\)*'
+  let lnum = s:next_comment(a:count, regex)
+  return lnum > 0
+endfunction
 function! s:next_comment(count, regex)
   let flags = a:count >= 0 ? 'w' : 'bw'
   for _ in range(abs(a:count))
@@ -106,38 +115,22 @@ function! s:next_comment(count, regex)
     let skip .= inum > 0 ? " || foldclosed('.') == " . inum : ''
     let lnum = search(a:regex, flags, 0, 0, skip)
   endfor
-  exe &foldopen =~# 'block\|all' ? 'normal! zv' : '' | return lnum > 0
+  exe &foldopen =~# 'block\|all' ? 'normal! zv' : '' | return lnum
 endfunction
 function! comment#toggle_comment(...) abort
-  " NOTE: foo
   call tcomment#ResetOption()
-  " NOTE: foo
   if v:count > 0 | call tcomment#SetOption('count', v:count) | endif
-  " NOTE: foo
   let suffix = !a:0 ? 'gcc' : a:1 ? 'Commentc' : 'Uncommentc'
-  " NOTE: foo
   let w:tcommentPos = getpos('.')
   let &operatorfunc = 'TCommentOpFunc_' . suffix
   let line1 = foldclosed('.')
   let line2 = foldclosedend('.')
-  if line1 == line2  " e.g. both -1
-    call feedkeys('g@$', 'n')
-  else  " toggle fold
-    call feedkeys(line1 . 'ggg@$', 'n')
-  endif
+  call feedkeys(line1 == line2 ? 'g@il' : 'g@iz', 'm')
 endfunction
 
 " Jump between comment blocks
 " NOTE: Required since default 'gcc' maps to g@$ operator function call
-function! comment#next_comment(count, ...) abort
-  let comment = comment#get_regex()
-  let head = a:0 && a:1 ? '' : '\s*'  " include indented
-  let tail = comment . '.\+$\n'
-  let back = '^\(^' . head . tail . '\)\@<!'
-  let regex = back . head . '\zs' . tail . '\(' . head . tail . '\)*'
-  call s:next_comment(a:count, regex)
-endfunction
-function! comment#next_header(count, ...) abort
+function! comment#next_block(count, ...) abort
   let comment = comment#get_regex()
   let head = a:0 && a:1 ? '' : '\s*'  " include indented
   let back = '^\(^' . head . comment . '.\+$\n\)\@<!'
@@ -145,17 +138,20 @@ function! comment#next_header(count, ...) abort
   let regex = back . head . '\zs' . tail .'\(\s\|$\)'
   let lnum = s:next_comment(a:count, regex)
   if lnum <= 0 | return | endif
-  let msg = substitute(getline('.'), head, '', '')
-  redraw | echo msg
+  let text = getline(lnum + 1)
+  let msg = substitute(text, head . comment . '\s*', '', '')
+  redraw | echo 'Header: ' . msg
 endfunction
 function! comment#next_label(count, ...) abort
   let [flag, opts] = a:0 && !type(a:1) ? [a:1, a:000[1:]] : [0, a:000]
   let comment = comment#get_regex()
   let head = (flag ? '^\s*' : '') . comment . '\s*'
-  let tail = '\c\zs\(' . join(opts, '\|') . '\).*$'
+  let tail = '\c\zs\(' . join(opts, '\|') . '\):.*$'
   let regex = head . '\zs' . tail
   let lnum = s:next_comment(a:count, regex)
   if lnum <= 0 | return | endif
-  let msg = substitute(getline('.'), head, '', '')
-  redraw | echo substitute(msg, '^\(\a\)\(\a*\)', '\u\1\l\2', '')
+  let msg = substitute(getline(lnum), head, '', '')
+  let msg = split(msg, '^[^:]*\zs:', 1)
+  let msg[0] = substitute(tolower(msg[0]), '^\a', '\u&', '')
+  redraw | echo join(msg, ':') . '...'
 endfunction

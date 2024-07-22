@@ -938,30 +938,26 @@ call utils#repeat_map('n', "z.'", '', '<Cmd>call comment#header_inchar()<CR>')
 call utils#repeat_map('n', 'z."', '', '<Cmd>call comment#header_inline(5)<CR>')
 
 " Navigate docstrings comments and methods
-" Capital uses only non-variable-assignment or zero-indent
-noremap [d <Cmd>call python#next_docstring(-v:count1, 0)<CR>
-noremap ]d <Cmd>call python#next_docstring(v:count1, 0)<CR>
-noremap [D <Cmd>call python#next_docstring(-v:count1, 1)<CR>
-noremap ]D <Cmd>call python#next_docstring(v:count1, 1)<CR>
+" Capital uses only non-variable-assignment or zero-indent headers
 noremap [c <Cmd>call comment#next_comment(-v:count1, 0)<CR>
 noremap ]c <Cmd>call comment#next_comment(v:count1, 0)<CR>
 noremap [C <Cmd>call comment#next_comment(-v:count1, 1)<CR>
 noremap ]C <Cmd>call comment#next_comment(v:count1, 1)<CR>
+noremap [d <Cmd>call python#next_docstring(-v:count1, 0)<CR>
+noremap ]d <Cmd>call python#next_docstring(v:count1, 0)<CR>
+noremap [D <Cmd>call python#next_docstring(-v:count1, 1)<CR>
+noremap ]D <Cmd>call python#next_docstring(v:count1, 1)<CR>
 
 " Navigate notes and todos
-" Capital uses only top-level zero-indent headers
-noremap [b <Cmd>call comment#next_header(-v:count1, 0)<CR>
-noremap ]b <Cmd>call comment#next_header(v:count1, 0)<CR>
-noremap [B <Cmd>call comment#next_header(-v:count1, 1)<CR>
-noremap ]B <Cmd>call comment#next_header(v:count1, 1)<CR>
-noremap [q <Cmd>call comment#next_label(-v:count1, 0, 'todo', 'fixme')<CR>
-noremap ]q <Cmd>call comment#next_label(v:count1, 0, 'todo', 'fixme')<CR>
-noremap [Q <Cmd>call comment#next_label(-v:count1, 1, 'todo', 'fixme')<CR>
-noremap ]Q <Cmd>call comment#next_label(v:count1, 1, 'todo', 'fixme')<CR>
-noremap [a <Cmd>call comment#next_label(-v:count1, 0, 'note', 'warning', 'error')<CR>
-noremap ]a <Cmd>call comment#next_label(v:count1, 0, 'note', 'warning', 'error')<CR>
-noremap [A <Cmd>call comment#next_label(-v:count1, 1, 'note', 'warning', 'error')<CR>
-noremap ]A <Cmd>call comment#next_label(v:count1, 1, 'note', 'warning', 'error')<CR>
+" Capital uses only todo labels or zero-indent headers
+noremap [a <Cmd>call comment#next_block(-v:count1, 0)<CR>
+noremap ]a <Cmd>call comment#next_block(v:count1, 0)<CR>
+noremap [A <Cmd>call comment#next_block(-v:count1, 1)<CR>
+noremap ]A <Cmd>call comment#next_block(v:count1, 1)<CR>
+noremap [q <Cmd>call comment#next_label(-v:count1, 0, 'todo', 'fixme', 'note', 'warning')<CR>
+noremap ]q <Cmd>call comment#next_label(v:count1, 0, 'todo', 'fixme', 'note', 'warning')<CR>
+noremap [Q <Cmd>call comment#next_label(-v:count1, 0, 'todo', 'fixme')<CR>
+noremap ]Q <Cmd>call comment#next_label(v:count1, 0, 'todo', 'fixme')<CR>
 
 "-----------------------------------------------------------------------------"
 " Normal and insert mode {{{1
