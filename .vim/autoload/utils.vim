@@ -171,6 +171,7 @@ function! utils#map_from(...) abort
 endfunction
 
 " Call function with range supplied by motion
+" WARNING: Plugin text objects may be single-line linewise so avoid check below
 " NOTE: Only motions can cause backwards firstline to lastline order. Manual calls
 " to the function will have sorted lines. This wrapper sorts the range for safety
 " NOTE: Calling :[range]call call(...) for functions declared without range flag
@@ -205,7 +206,7 @@ function! utils#operator_func(type, ...) range abort
   endif
   let [line1, line2] = sort(nums, 'n')
   let [col1, col2] = map(copy(locs), 'col(v:val)')
-  if line1 == line2 && col1 >= col2  " e.g. cancelled motion, invalid object
+  if a:type !=# 'line' && line1 == line2 && col1 >= col2  " keep single-line hunks
     return ''
   endif
   let view = s:operator_view.bufnr ==# bufnr() ? s:operator_view : {}
@@ -244,6 +245,8 @@ function! utils#range_func(name, args, ...) abort range
 endfunction
 
 " Generate repeatable mappings for arbitrary modes
+" WARNING: Normal mode commands issued from right-hand-side functions can reset count,
+" so v:prevcount could be e.g. line number if 'G' was called. Careful to avoid this
 " NOTE: This supports arbitrary operator-pending modifications, e.g. text changes
 " that prompt for user input, like vim-tags utility. Should try more ideas
 " NOTE: GUI vim raises error when combining <Plug> maps with <Cmd> so have to disable
@@ -263,6 +266,7 @@ function! utils#repeat_map(mode, lhs, name, rhs) abort
   let mrep = '"\<Plug>' . a:name . '", v:prevcount'
   let orep = 'utils#repeat_op(' . string(a:name) . ', v:prevcount)'
   let iset = empty(a:name) ? '"\<Ignore>"' : a:mode ==# 'o' ? orep : mrep
+  let setup = "\<Cmd>let g:repeat_count = v:count\<CR>"
   let repeat = empty(icmd) ? '' : icmd . 'call repeat#set(' . iset . ')<CR>'
   if empty(a:name)  " disable repetition (e.g. require user input)
     exe noremap . ' ' . a:lhs . ' ' . a:rhs . repeat

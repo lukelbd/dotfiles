@@ -178,6 +178,200 @@ function! git#call_commit(editor, ...) abort
   call s:call_git(0, line('.'), -1, 0, 0, '', cmd)
 endfunction
 
+" Helper functions for git gutter utilities
+" NOTE: Git gutter works by triggering on &updatetime after CursorHold only if
+" text was changed and starts async process. Here temporarily make synchronous.
+function! s:echo_hunk(hunk) abort
+  if empty(a:hunk) | return [] | endif
+  let line1 = a:hunk[2]
+  let nline = max([a:hunk[3], 1])
+  let line2 = line1 + nline - 1
+  let fold1 = foldclosed(line1)
+  let fold2 = foldclosedend(line2)
+  let range1 = fold1 > 0 ? fold1 : line1
+  let range2 = fold2 > 0 ? fold2 : line2
+  call git#_get_hunks(range1, range2)
+endfunction
+function! s:get_hunks(...) abort
+  let quiet = a:0 ? a:1 : 0
+  let bnr = bufnr()
+  if &l:diff
+    return 0
+  endif
+  if !quiet
+    try  " synchronous update
+      let g:gitgutter_async = 0
+      call gitgutter#process_buffer(bnr, 0)
+    finally
+      let g:gitgutter_async = 1
+    endtry
+  endif
+  if !pumvisible() && !gitgutter#utility#is_active(bnr)
+    return 0  " ignore gitgutter pumvisible() condition
+  endif
+  let hunks = gitgutter#hunk#hunks(bnr)
+  if !quiet && empty(hunks)
+    let msg = 'Error: No hunks in file'
+    redraw | echohl WarningMsg | echom msg | echohl None
+  endif
+  return hunks
+endfunction
+
+" Create git gutter hunk description
+" NOTE: Here g:gitgutter['hunks'] are [from_start, from_count, to_start, to_count]
+" lists i.e. starting line and counts before and after changes. Adapated s:isadded()
+" s:isremoved() etc. methods from autoload/gitgutter/diff.vim for partitioning into
+" simple added/changed/removed groups (or just 'changed') as shown below.
+function! git#_get_hunks(range1, range2, ...) abort
+  let locs = []  " hunk indices
+  let cnts = [0, 0, 0]  " change counts
+  let quiet = a:0 ? a:1 : 0  " quicker version
+  let hunks = s:get_hunks(quiet)
+  if empty(hunks) | return | endif
+  for idx in range(len(hunks))
+    let [hunk0, count0, hunk1, count1] = hunks[idx]
+    let hunk2 = count1 ? hunk1 + count1 - 1 : hunk1
+    let clip1 = max([hunk1, a:range1])
+    let clip2 = min([hunk2, a:range2])
+    if clip2 < clip1 | continue | endif
+    let offset = (hunk2 - clip2) + (clip1 - hunk1)  " count change
+    let cnt0 = max([count0 - offset, 0])
+    let cnt1 = max([count1 - offset, 0])
+    let cnts[0] += max([cnt1 - cnt0, 0])  " added
+    let cnts[1] += min([cnt0, cnt1])  " modified
+    let cnts[2] += max([cnt0 - cnt1, 0])  " removed
+    call add(locs, idx + 1)  " included hunk
+  endfor
+  let delta = cnts[0] ? '+' . cnts[0] : ''
+  let delta .= cnts[1] ? '~' . cnts[1] : ''
+  let delta .= cnts[2] ? '-' . cnts[2] : ''
+  if !quiet && !empty(locs) " show message
+    let index = min(locs) == max(locs) ? locs[0] : min(locs) . '-' . max(locs)
+    let index = '(' . index . ' of ' . len(hunks) . ')'
+    redraw | echo 'Hunk(s): ' . delta . ' ' . index
+  endif
+  return delta
+endfunction
+" For optional range arguments
+function! git#get_hunks(...) range abort
+  return utils#range_func('git#_get_hunks', a:000, [a:firstline, a:lastline])
+endfunction
+" For <expr> map accepting motion
+function! git#get_hunks_expr(...) abort
+  return utils#motion_func('git#get_hunks', [-1, -1] + a:000, 1)
+endfunction
+
+" Git gutter staging and unstaging over input lines
+" NOTE: Currently GitGutterStageHunk only supports partial staging of additions
+" specified by visual selection, not different hunks. This supports both, iterates in
+" reverse in case lines change. See: https://github.com/airblade/vim-gitgutter/issues/279
+" NOTE: Created below by studying s:get_hunks() and gitgutter#diff#exe_hunks()
+" in autoload/gitgutter/diff.vim. Addition-only hunks have from_count '0' and to_count
+" non-zero since no text was present before the change. Also note gitgutter#hunk#stage()
+" requires cursor inside lines and fails when specifying lines outside of addition hunk
+" (see s:hunk_op) so explicitly navigate lines below before calling stage commands.
+function! git#_exe_hunks(range1, range2, ...) range abort
+  let name = a:0 && a:1 ? 'Undo' : 'Stage'
+  let undo = a:0 && a:1 ? 1 : 0
+  let locs = []  " hunk locations
+  let ranges = []  " ranges staged
+  let offset = 0  " offset after undo
+  let hunks = s:get_hunks()  " general update
+  let winview = winsaveview()
+  if empty(hunks) | return | endif
+  for idx in range(len(hunks))
+    let [hunk0, count0, hunk1, count1] = hunks[idx]
+    let [iline, jline] = [a:range1 + offset, a:range2 + offset]
+    let [line0, line1] = [hunk0 + offset, hunk1 + offset]
+    let line2 = count1 ? line1 + count1 - 1 : line1  " changed closing line
+    if iline <= line1 && jline >= line2
+      let range = []  " selection encapsulates hunk
+    elseif iline >= line1 && jline <= line2
+      let range = count0 || a:0 && a:1 ? [] : [iline, jline]
+    elseif iline <= line2 && jline >= line2  " starts inside goes outside
+      let range = count0 || a:0 && a:1 ? [] : [iline, line2]
+    elseif iline <= line1 && jline >= line1  " starts outside goes inside
+      let range = count0 || a:0 && a:1 ? [] : [line1, jline]
+    else  " no update needed
+      continue
+    endif
+    exe line1 | exe join(range, ',') . 'GitGutter' . name . 'Hunk'
+    let range = empty(range) ? [line1, line2] : range
+    let range = map(uniq(range), 'v:val - offset')
+    let offset += a:0 && a:1 ? count0 - count1 : 0
+    call add(locs, idx + 1)  " included hunk
+    call add(ranges, join(range, '-'))
+  endfor
+  let range = join(ranges, ', ')  " line ranges
+  call winrestview(winview)
+  if !empty(range)  " synchronous update fails here for some reason
+    let index = min(locs) == max(locs) ? locs[0] : min(locs) . '-' . max(locs)
+    let index = '(' . index . ' of ' . len(hunks) . ')'
+    redraw | echom name . ' hunk(s): ' . range . ' ' . index
+    call timer_start(200, 'git#_exe_buffer')
+  endif
+endfunction
+" For delayed updates after staging
+function! git#_exe_buffer(...) abort
+  return gitgutter#process_buffer(bufnr(), 1)
+endfunction
+" For optional range arguments
+function! git#exe_hunks(...) range abort
+  return utils#range_func('git#_exe_hunks', a:000, [a:firstline, a:lastline])
+endfunction
+" For <expr> map accepting motion
+function! git#exe_hunks_expr(...) abort
+  return utils#motion_func('git#exe_hunks', [-1, -1] + a:000)
+endfunction
+
+" Update gitgutter hunks and show hunks under cursor
+" NOTE: Here skip hunks beneath current closed fold. This is consistent with native
+" vim behavior, since n/N do not open fold under cursor to access inner match even if
+" foldopen contains 'search' (but may open match in another fold). See also tags.vim
+function! s:next_hunk(hunk, ...) abort
+  let stage = a:0 ? a:1 : 0
+  exe a:hunk[2] == 0 ? 1 : a:hunk[2]
+  if !stage | return | endif
+  let keys = git#exe_hunks_expr(0)  " see vimrc maps
+  let keys .= (foldclosed('.') > 0 ? 'iz' : 'ih')
+  exe 'keepjumps normal ' . keys
+endfunction
+function! git#next_hunk(count, ...) abort
+  let cnt = a:count
+  let stage = a:0 ? a:1 : 0
+  let forward = cnt >= 0
+  if empty(cnt) | return | endif
+  if &l:diff  " native vim jumps
+    let keys = abs(cnt) . (forward ? ']c' : '[c')
+    exe 'normal! ' . keys | return
+  endif
+  let hunk = s:get_hunk()  " hunk under cursor
+  if stage && !empty(hunk)
+    let cnt += forward ? -1 : 1
+    call s:next_hunk(hunk, 1)
+  endif
+  let lnum = forward ? foldclosedend('.') : foldclosed('.')
+  let lnum = lnum > 0 ? lnum : line('.')  " ignore within fold
+  let hunks = s:get_hunks()
+  let hunks = forward ? hunks : reverse(copy(hunks))
+  if empty(hunks) | return | endif
+  for ihunk in hunks
+    if cnt == 0 | break | endif
+    if cnt > 0 ? ihunk[2] > lnum : ihunk[2] < lnum
+      let cnt += forward ? -1 : 1
+      let hunk = ihunk  " stop if count zero
+      call s:next_hunk(hunk, stage)
+    endif
+  endfor
+  if cnt == a:count  " no jumps or stages so echo message
+    let msg = 'Warning: No more hunks'
+    redraw | echohl WarningMsg | echom msg | echohl None
+  elseif !stage  " WARNING: 'G' changes v:count1 which messes up repeat.vim [G/]G
+    exe &l:foldopen =~# 'block\|all' ? 'normal! zv' : ''
+    call s:echo_hunk(hunk)
+  endif
+endfunction
+
 " Conflict jumping and delta folding
 " NOTE: This is adapted from conflict-marker.vim/autoload/conflict_marker.vim. Only
 " searches for complete blocks, ignores false-positive matches e.g. markdown ===
@@ -213,10 +407,40 @@ function! git#next_conflict(count, ...) abort
   endif
 endfunction
 
-" Helper functions for git gutter utilities
-" NOTE: Git gutter works by triggering on &updatetime after CursorHold only if
-" text was changed and starts async process. Here temporarily make synchronous.
-function! git#current_hunk() abort
+" Git gutter hunk objects (compare with fold.vim)
+" WARNING: Native gitgutter changes lines with 'G' which resets count and causes
+" utils#repeat_map() invocation of v:prevcount to use giant line number.
+function! git#object_hunk_i() abort
+  return s:object_hunk(0)
+endfunction
+function! git#object_hunk_a() abort
+  return s:object_hunk(1)
+endfunction
+function! s:object_hunk(...) abort
+  let hunk = s:get_hunk()
+  if empty(hunk)
+    let msg = 'E490: No hunk found'
+    redraw | echohl ErrorMsg | echom msg | echohl None
+    return ['v', getpos('.'), getpos('.')]
+  endif
+  let [line1, line2] = [hunk[2], hunk[2] + hunk[3] - 1]
+  if a:0 && a:1
+    let inum = line('$')
+    let lnum = line2
+    while lnum < inum && empty(trim(getline(lnum + 1)))
+      let lnum += 1
+    endwhile
+    let line2 = lnum
+  endif
+  let pos1 = [0, line1, 1, 0]
+  let pos2 = [0, line2, col([line2, '$']), 0]
+  return ['V', pos1, pos2]
+endfunction
+
+" Show hunk under cursor
+" NOTE: Compare to vim-lsp and ale.vim utilities. Here we do not auto-open
+" hunk difference popups since they are way bigger than those plugins.
+function! s:get_hunk() abort
   let hunks = s:get_hunks(1)
   if empty(hunks) | return [] | endif
   let hunk = []
@@ -226,51 +450,12 @@ function! git#current_hunk() abort
     endif
   endfor | return hunk
 endfunction
-function! s:get_hunks(...) abort
-  let quiet = a:0 ? a:1 : 0
-  let bnr = bufnr()
-  if &l:diff
-    return 0
-  endif
-  if !quiet
-    try  " synchronous update
-      let g:gitgutter_async = 0
-      call gitgutter#process_buffer(bnr, 0)
-    finally
-      let g:gitgutter_async = 1
-    endtry
-  endif
-  if !gitgutter#utility#is_active(bnr)
-    return 0
-  endif
-  let hunks = gitgutter#hunk#hunks(bufnr())
-  if !quiet && empty(hunks)
-    let msg = 'Error: No hunks in file'
-    redraw | echohl WarningMsg | echom msg | echohl None
-  endif
-  return hunks
-endfunction
-
-" Update gitgutter hunks and show hunks under cursor
-" NOTE: Here skip hunks beneath current closed fold. This is consistent with native
-" vim behavior, since n/N do not open fold under cursor to access inner match even if
-" foldopen contains 'search' (but may open match in another fold). See also tags.vim
-function! s:show_hunk(hunk) abort
-  if empty(a:hunk) | return [] | endif
-  let line1 = a:hunk[2]
-  let line2 = line1 + a:hunk[3] - 1
-  let fold1 = foldclosed(line1)
-  let fold2 = foldclosedend(line2)
-  let range1 = fold1 > 0 ? fold1 : line1
-  let range2 = fold2 > 0 ? fold2 : line2
-  call git#_get_hunks(range1, range2)
-endfunction
 function! git#show_hunk() abort
   call map(popup_list(), 'popup_close(v:val)')
   call switch#gitgutter(1, 1)  " turn on if possible
   let hunks = s:get_hunks()
   if empty(hunks) | return | endif
-  let hunk = git#current_hunk()
+  let hunk = s:get_hunk()
   if empty(hunk)
     let msg = 'Error: No hunk under cursor'
     redraw | echohl ErrorMsg | echom msg | echohl None | return
@@ -279,141 +464,7 @@ function! git#show_hunk() abort
   call window#setup_preview()
   let winids = popup_list()
   if empty(winids) | return | endif
-  call s:show_hunk(hunk)
-endfunction
-function! git#next_hunk(count, stage) abort
-  if &l:diff  " native vim jumps
-    let keys = abs(a:count)
-    let keys .= forward ? ']c' : '[c'
-    exe 'normal! ' . keys | return
-  endif
-  let forward = a:count >= 0
-  let lnum = forward ? foldclosedend('.') : foldclosed('.')  " ignore current fold
-  let lnum = lnum > 0 ? lnum : line('.')
-  let hunks = s:get_hunks()
-  let hunks = forward ? hunks : reverse(copy(hunks))
-  if empty(hunks) | return | endif
-  let cnt = 0
-  for ihunk in hunks
-    if forward ? ihunk[2] > lnum : ihunk[2] < lnum
-      let cnt += 1
-      let hunk = ihunk
-      let lnum = hunk[2] == 0 ? 1 : hunk[2]
-      exe a:stage ? lnum : ''
-      exe a:stage ? 'GitGutterStageHunk' : ''
-      if cnt == abs(a:count) | break | endif
-    endif
-  endfor
-  if cnt == 0  " cursor unchanged
-    let msg = 'Warning: No more hunks'
-    echohl WarningMsg | echom msg | echohl None | return 1
-  else  " final jump to hunk
-    let keys = lnum . 'G' . (&l:foldopen =~# 'block\|all' ? 'zv' : '')
-    exe 'keepjump normal! ' . keys | call s:show_hunk(hunk)
-  endif
-endfunction
-
-" Create git gutter hunk description
-" NOTE: Here g:gitgutter['hunks'] are [from_start, from_count, to_start, to_count]
-" lists i.e. starting line and counts before and after changes. Adapated s:isadded()
-" s:isremoved() etc. methods from autoload/gitgutter/diff.vim for partitioning into
-" simple added/changed/removed groups (or just 'changed') as shown below.
-function! git#_get_hunks(range1, range2, ...) abort
-  let locs = []  " hunk indices
-  let cnts = [0, 0, 0]  " change counts
-  let quiet = a:0 ? a:1 : 0  " quicker version
-  let hunks = s:get_hunks(quiet)
-  if empty(hunks) | return | endif
-  for idx in range(len(hunks))
-    let [hunk0, count0, hunk1, count1] = hunks[idx]
-    let hunk2 = count1 ? hunk1 + count1 - 1 : hunk1
-    let clip1 = max([hunk1, a:range1])
-    let clip2 = min([hunk2, a:range2])
-    if clip2 < clip1 | continue | endif
-    let offset = (hunk2 - clip2) + (clip1 - hunk1)  " count change
-    let cnt0 = max([count0 - offset, 0])
-    let cnt1 = max([count1 - offset, 0])
-    let cnts[0] += max([cnt1 - cnt0, 0])  " added
-    let cnts[1] += min([cnt0, cnt1])  " modified
-    let cnts[2] += max([cnt0 - cnt1, 0])  " removed
-    call add(locs, idx + 1)  " included hunk
-  endfor
-  let delta = cnts[0] ? '+' . cnts[0] : ''
-  let delta .= cnts[1] ? '~' . cnts[1] : ''
-  let delta .= cnts[2] ? '-' . cnts[2] : ''
-  if !quiet  " show message
-    let index = min(locs) == max(locs) ? locs[0] : min(locs) . '-' . max(locs)
-    let index = '(' . index . ' of ' . len(hunks) . ')'
-    redraw | echo 'Hunk(s): ' . delta . ' ' . index
-  endif
-  return delta
-endfunction
-" For optional range arguments
-function! git#get_hunks(...) range abort
-  return utils#range_func('git#_get_hunks', a:000, [a:firstline, a:lastline])
-endfunction
-" For <expr> map accepting motion
-function! git#get_hunks_expr(...) abort
-  return utils#motion_func('git#get_hunks', [-1, -1] + a:000, 1)
-endfunction
-
-" Git gutter staging and unstaging over input lines
-" NOTE: Currently GitGutterStageHunk only supports partial staging of additions
-" specified by visual selection, not different hunks. This supports both, iterates in
-" reverse in case lines change. See: https://github.com/airblade/vim-gitgutter/issues/279
-" NOTE: Created below by studying s:get_hunks() and gitgutter#diff#process_hunks()
-" in autoload/gitgutter/diff.vim. Addition-only hunks have from_count '0' and to_count
-" non-zero since no text was present before the change. Also note gitgutter#hunk#stage()
-" requires cursor inside lines and fails when specifying lines outside of addition hunk
-" (see s:hunk_op) so explicitly navigate lines below before calling stage commands.
-function! git#_process_hunks(range1, range2, stage) range abort
-  let str = a:stage ? 'Stage' : 'Undo'
-  let cmd = 'GitGutter' . str . 'Hunk'
-  let locs = []  " hunk locations
-  let ranges = []  " ranges staged
-  let offset = 0  " offset after undo
-  let hunks = s:get_hunks()  " general update
-  if empty(hunks) | return | endif
-  for idx in range(len(hunks))
-    let [hunk0, count0, hunk1, count1] = hunks[idx]
-    let [iline, jline] = [a:range1 + offset, a:range2 + offset]
-    let [line0, line1] = [hunk0 + offset, hunk1 + offset]
-    let line2 = count1 ? line1 + count1 - 1 : line1  " changed closing line
-    if iline <= line1 && jline >= line2
-      let range = []  " selection encapsulates hunk
-    elseif iline >= line1 && jline <= line2
-      let range = count0 || !a:stage ? [] : [iline, jline]
-    elseif iline <= line2 && jline >= line2  " starts inside goes outside
-      let range = count0 || !a:stage ? [] : [iline, line2]
-    elseif iline <= line1 && jline >= line1  " starts outside goes inside
-      let range = count0 || !a:stage ? [] : [line1, jline]
-    else  " no update needed
-      continue
-    endif
-    let winview = winsaveview()
-    exe line1 | exe join(range, ',') . cmd
-    call winrestview(winview)
-    let range = empty(range) ? [line1, line2] : range
-    let range = map(uniq(range), 'v:val - offset')
-    let offset += a:stage ? 0 : count0 - count1
-    call add(locs, idx + 1)  " included hunk
-    call add(ranges, join(range, '-'))
-  endfor
-  if !empty(ranges)  " synchronous update fails here for some reason
-    let range = join(ranges, ', ')  " line ranges
-    let index = min(locs) == max(locs) ? locs[0] : min(locs) . '-' . max(locs)
-    let index = '(' . index . ' of ' . len(hunks) . ')'
-    redraw | echom str . ' hunk(s): ' . range . ' ' . index
-    call timer_start(200, function('gitgutter#process_buffer', [bufnr(), 1]))
-  endif
-endfunction
-" For optional range arguments
-function! git#process_hunks(...) range abort
-  return utils#range_func('git#_process_hunks', a:000, [a:firstline, a:lastline])
-endfunction
-" For <expr> map accepting motion
-function! git#process_hunks_expr(...) abort
-  return utils#motion_func('git#process_hunks', [-1, -1] + a:000, 1)
+  call s:echo_hunk(hunk)
 endfunction
 
 " Helper functions for fugitive commands
@@ -440,11 +491,10 @@ function! git#setup_sink(lines)
   endif
   let cmd = get(get(g:, 'fzf_action', {}), a:lines[0], '')
   let cmd = type(cmd) == 1 && !empty(cmd) ? cmd : 'Drop'
-  let buf = bufnr('')
   for idx in range(1, len(a:lines) - 1)
     let sha = matchstr(a:lines[idx], regex)
     if empty(sha) | continue | endif
-    execute cmd . ' ' . FugitiveFind(sha)
+    exe cmd . ' ' . FugitiveFind(sha)
   endfor
 endfunction
 

@@ -53,26 +53,6 @@ function! edit#get_errors_expr() abort
   return utils#motion_func('edit#get_errors_range', [])
 endfunction
 
-" Get variable segment text objects
-" NOTE: Native plugin works well but includes \k iskeyword boundaries instead of
-" strictly alphanumeric characters. Workaround by temporarily changing iskeyword
-function! edit#get_segment_i() abort
-  return call('edit#get_segment', ['i'] + a:000)
-endfunction
-function! edit#get_segment_a() abort
-  return call('edit#get_segment', ['a'] + a:000)
-endfunction
-function! edit#get_segment(char, ...) abort
-  let name = 'textobj#variable_segment#select_' . a:char
-  let keys = &l:iskeyword
-  try
-    setlocal iskeyword=@,48-57,_,192-255
-    return call('textobj#variable_segment#select_i', a:000)
-  finally
-    let &l:iskeyword = keys
-  endtry
-endfunction
-
 " Change order of adjacent characters
 " NOTE: This accounts for multi-byte characters and preserves current column. Common
 " touch-typing error is to hit keys in wrong order so this is really helpful.
@@ -232,6 +212,26 @@ function! edit#insert_delete(...) abort  " vint: -ProhibitUsingUndeclaredVariabl
   let keys = repeat("\<Delete>", cnt) | return keys
 endfunction
 
+" Get variable segment text objects
+" NOTE: Native plugin works well but includes \k iskeyword boundaries instead of
+" strictly alphanumeric characters. Workaround by temporarily changing iskeyword
+function! edit#object_segment_i() abort
+  return call('edit#object_segment', ['i'] + a:000)
+endfunction
+function! edit#object_segment_a() abort
+  return call('edit#object_segment', ['a'] + a:000)
+endfunction
+function! edit#object_segment(char, ...) abort
+  let name = 'textobj#variable_segment#select_' . a:char
+  let keys = &l:iskeyword
+  try
+    setlocal iskeyword=@,48-57,_,192-255
+    return call('textobj#variable_segment#select_i', a:000)
+  finally
+    let &l:iskeyword = keys
+  endtry
+endfunction
+
 " Search sort or reverse the input lines
 " NOTE: Adaptation of hard-to-remember :g command shortcut. Adapted
 " from super old post: https://vim.fandom.com/wiki/Reverse_order_of_lines
@@ -286,9 +286,9 @@ function! edit#spell_check(...) abort
     let nr = a:0 ? a:1 : v:count1
     let nr = nr ? string(nr) : ''
     echom 'Spell check: ' . expand('<cword>')
-    if empty(nr)
+    if empty(nr)  " specific entry
       call feedkeys('z=', 'n')
-    else
+    else  " user entry
       exe 'normal! ' . nr . 'z='
     endif
   endif

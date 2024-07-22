@@ -6,7 +6,7 @@ function! s:echo_state(text, toggle, ...)
   if !a:0 || !a:1
     let [str1, str2] = a:text =~# 'folds' ? ['open', 'clos'] : ['enabl', 'disabl']
     let state = a:toggle ? str1 . 'ed' : str2 . 'ed'
-    redraw | echom toupper(a:text[0]) . a:text[1:] . ' ' . state . '.'
+    redraw | echo toupper(a:text[0]) . a:text[1:] . ' ' . state . '.'
   endif
 endfunction
 
@@ -168,8 +168,7 @@ function! switch#localdir(...) abort
   let root = empty(v:this_session) ? getcwd(-1) : fnamemodify(v:this_session, ':p:h')
   let local = expand('%:p:h')
   if getcwd(-1) !=# root  " enforce in case it changed
-    exe 'cd ' . root
-    echom "Global directory '" . root . "'"
+    exe 'cd ' . root | echo  'Global directory ' . string(root)
   endif
   if state == toggle
     return
@@ -178,7 +177,7 @@ function! switch#localdir(...) abort
   else
     exe 'cd ' . root
   endif
-  call s:echo_state("local directory '" . local . "'", toggle, suppress)
+  call s:echo_state('local directory ' . string(local), toggle, suppress)
 endfunction
 
 " Enable and disable LSP engines
@@ -222,13 +221,13 @@ endfunction
 " NOTE: Automatically untoggle when insert mode finishes
 function! s:paste_restore() abort
   if exists('s:paste_options')
-    echom 'Paste mode disabled.'
+    echo 'Paste mode disabled.'
     let [&l:paste, &l:mouse] = s:paste_options
     exe 'unlet s:paste_options'
   endif
 endfunction
 function! switch#paste() abort
-  echom 'Paste mode enabled.'
+  echo 'Paste mode enabled.'
   let s:paste_options = [&l:paste, &l:mouse]
   setlocal paste mouse=
   augroup paste_mode
@@ -280,7 +279,7 @@ function! s:get_changes() abort
     if !empty(flags) | call add(lnums, line1) | endif
   endfor | return lnums
 endfunction
-function! switch#showchanges(...) abort
+function! switch#changes(...) abort
   let winview = winsaveview()
   let lnums = s:get_changes()
   let state = empty(filter(copy(lnums), 'foldclosed(v:val) > 0'))
@@ -305,7 +304,7 @@ function! s:get_matches() abort
     exe line1 | if search(@/, 'nW', line2) | call add(lnums, line1) | endif
   endfor | return lnums
 endfunction
-function! switch#showmatches(...) abort
+function! switch#matches(...) abort
   let winview = winsaveview()
   let lnums = s:get_matches()
   let state = empty(filter(copy(lnums), 'foldclosed(v:val) > 0'))

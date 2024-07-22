@@ -454,6 +454,7 @@ augroup panel_setup
   au CmdwinEnter * call vim#setup_cmdwin() | call window#setup_panel(1)
   au TerminalWinOpen * call window#setup_panel(1)
   au BufRead,BufEnter fugitive://* if &filetype !=# 'fugitive' | call window#setup_panel() | endif
+  au FileType ale-info doautocmd BufWinEnter
   au FileType help call vim#setup_help()
   au FileType qf call jump#setup_loc()
   au FileType man call shell#setup_man()
@@ -626,18 +627,17 @@ cnoremap <silent> <expr> / window#close_wild('/')
 " and python files then applies default toggle status that differs from buffer-wide
 " &foldlevel for fortran python and tex files (e.g. always open \begin{document}).
 for s:key in ['z', 'f', 'F', 'n', 'N'] | silent! exe 'unmap! z' . s:key | endfor
-command! -bang -count -nargs=? UpdateFolds
-  \ call fold#update_folds(<bang>0, <count>) | echom 'Updated folds'
+command! -bang -count -nargs=? UpdateFolds call fold#update_folds(<bang>0, <count>)
 nnoremap zv zvzzze
 vnoremap zv <Esc><Cmd>'<,'>foldopen!<CR>zzze
-nnoremap zV <Cmd>UpdateFolds!<CR>zvzzze
-vnoremap zV <Cmd>UpdateFolds!<CR>zvzzze
 nnoremap zx <Cmd>call fold#update_folds(0, 0)<CR>
 vnoremap zx <Cmd>call fold#update_folds(0, 0)<CR>
+nnoremap zV <Cmd>UpdateFolds!<CR><Cmd>echo 'Updated folds'<CR>zvzzze
+vnoremap zV <Cmd>UpdateFolds!<CR><Cmd>echo 'Updated folds'<CR>zvzzze
 nnoremap zX <Cmd>call fold#update_folds(0, 2)<CR>
 vnoremap zX <Cmd>call fold#update_folds(0, 2)<CR>
-nnoremap zZ <Cmd>UpdateFolds!<CR>
-vnoremap zZ <Cmd>UpdateFolds!<CR>
+nnoremap zZ <Cmd>UpdateFolds!<CR><Cmd>echo 'Updated folds'<CR>
+vnoremap zZ <Cmd>UpdateFolds!<CR><Cmd>echo 'Updated folds'<CR>
 nnoremap <expr> zz (foldclosed('.') > 0 ? 'zvzz' : foldlevel('.') > 0 ? 'zc' : 'zz') . 'ze'
 vnoremap <expr> zz fold#toggle_folds_expr() . (foldclosed('.') > 0 ? 'zz' : '') . 'ze'
 
@@ -682,14 +682,13 @@ vnoremap <expr> zO fold#toggle_parents_expr(0)
 " NOTE: The bracket maps fail without silent! when inside first fold in file
 " NOTE: Recursive map required for [Z or ]Z or else way more complicated
 " NOTE: Here fold#update_level() without arguments updates folds if the level was
-" changed and prints thefold#update_folds() if
-" the level was changed and prints the level change.
-call utils#repeat_map('', '[Z', 'FoldBackward', '<Cmd>keepjumps normal! zkza<CR>')
-call utils#repeat_map('', ']Z', 'FoldForward', '<Cmd>keepjumps normal! zjza<CR>')
-noremap [z <Cmd>keepjumps normal! zk<CR><Cmd>keepjumps normal! [z<CR>
-noremap ]z <Cmd>keepjumps normal! zj<CR><Cmd>keepjumps normal! ]z<CR>
-noremap zk <Cmd>keepjumps normal! [z<CR>
-noremap zj <Cmd>keepjumps normal! ]z<CR>
+" changed and prints the change, otherwise changes level by count.
+noremap zk <Cmd>call fold#update_folds(0)<CR><Cmd>keepjumps normal! [z<CR>
+noremap zj <Cmd>call fold#update_folds(0)<CR><Cmd>keepjumps normal! ]z<CR>
+noremap [z <Cmd>call fold#next_fold(-v:count1, 0)<CR>
+noremap ]z <Cmd>call fold#next_fold(v:count1, 0)<CR>
+noremap [Z <Cmd>call fold#next_fold(-v:count1, 1)<CR>
+noremap ]Z <Cmd>call fold#next_fold(v:count1, 1)<CR>
 nnoremap gz <Cmd>call fold#fzf_folds()<CR>
 nnoremap z[ <Cmd>call fold#update_level('m')<CR>
 vnoremap z[ <Cmd>call fold#update_level('m')<CR>
@@ -786,10 +785,10 @@ nnoremap / <Cmd>let b:open_search = 0<CR>/
 nnoremap ? <Cmd>let b:open_search = 0<CR>?
 nnoremap g/ <Cmd>call grep#call_grep('lines', 0, 0)<CR>
 nnoremap g? <Cmd>call grep#call_grep('lines', 1, 0)<CR>
-nnoremap z; <Cmd>call switch#showmatches(1)<CR>
-nnoremap z: <Cmd>call switch#showchanges(1)<CR>
-vnoremap z; <Cmd>call switch#showmatches(1)<CR>
-vnoremap z: <Cmd>call switch#showchanges(1)<CR>
+nnoremap z; <Cmd>call switch#matches(1)<CR>
+nnoremap z: <Cmd>call switch#changes(1)<CR>
+vnoremap z; <Cmd>call switch#matches(1)<CR>
+vnoremap z: <Cmd>call switch#changes(1)<CR>
 
 " Search over current scope or selected line range
 " NOTE: This overrides default vim-tags g/ and g? maps. Allows selecting range with
@@ -820,9 +819,9 @@ nnoremap z" <Cmd>call grep#call_grep('rg', 1, 3)<CR>
 " Grepping uncommented print statements
 " NOTE: These searches all open projects by default
 " NOTE: Regexes are assigned to @/ and translated with grep#regex()
-let s:regex_code = '\%(^\s*\|[*;&|]\s\+\)'
-let s:regex_bugs = s:regex_code . '\(ic(.*)\|echo\>.*2>&1\|unsilent\s\+echom\?\>\)'
-let s:regex_echo = s:regex_code . '\(print(.*)\|echom\?\>\)'
+let s:regex_head = '\%(^\s*\|[*;&|]\s\+\)'
+let s:regex_bugs = s:regex_head . '\(ic(.*)\|unsilent\s\+echom\?\>\)'
+let s:regex_echo = s:regex_head . '\(print(.*)\|echom\?\>\)'
 let s:regex_diff = '^' . repeat('[<>=|]', 7) . '\($\|\s\)'
 command! -bang -nargs=* -complete=file Debugs call grep#call_rg(<bang>0, 2, s:regex_bugs <f-args>)
 command! -bang -nargs=* -complete=file Prints call grep#call_rg(<bang>0, 2, s:regex_echo, <f-args>)
@@ -837,7 +836,6 @@ nnoremap gG <Cmd>Conflicts!<CR>
 let s:regex_note = '\<\(Note\|NOTE\):'
 let s:regex_todo = '\<\(Todo\|TODO\|Fixme\|FIXME\):'
 let s:regex_warn = '\<\(Warning\|WARNING\|Error\|ERROR\):'
-let s:regex_code = '\(print(.*)\|echom\?\>\)'
 command! -bang -nargs=* -complete=file Notes call grep#call_rg(<bang>0, 2, s:regex_note, <f-args>)
 command! -bang -nargs=* -complete=file Todos call grep#call_rg(<bang>0, 2, s:regex_todo, <f-args>)
 command! -bang -nargs=* -complete=file Warnings call grep#call_rg(<bang>0, 2, s:regex_warn, <f-args>)
@@ -1055,12 +1053,12 @@ vnoremap x "_x
 vnoremap X "_X
 
 " Indents wrapping and spaces {{{2
-" NOTE: Use both FileType and BufWinEnter here to account for e.g. other FileType
-" autocommands overriding this or e.g. BufWinEnter called before filetype changed.
+" NOTE: Use BufWinEnter here so user can override settings then refresh config without
+" overwriting. Can workaround cases where filetype changes after bufwinenter
 silent! au! expandtab_setup
 augroup tab_setup
   au!
-  au FileType,BufWinEnter * call switch#tabs(index(s:tab_filetypes, &l:filetype) >= 0, 1)
+  au BufWinEnter * call switch#tabs(index(s:tab_filetypes, &l:filetype) >= 0, 1)
 augroup END
 command! -nargs=? TabToggle call switch#tabs(<args>)
 nnoremap <Leader><Tab> <Cmd>call switch#tabs()<CR>
@@ -1070,7 +1068,7 @@ vnoremap <expr> > edit#indent_lines_expr(0, v:count1)
 vnoremap <expr> < edit#indent_lines_expr(1, v:count1)
 
 " Insert empty lines or swap lines
-" Mnemonic is 'cut line' at cursor, character under cursor will be deleted
+" NOTE: Here mnemonic is 'cut line' at cursor, character under cursor will be deleted
 " NOTE: See 'vim-unimpaired' for original. This is similar to vim-succinct 'e' object
 call utils#repeat_map('n', '[e', 'BlankUp', '<Cmd>put!=repeat(nr2char(10), v:count1) \| '']+1<CR>')
 call utils#repeat_map('n', ']e', 'BlankDown', '<Cmd>put=repeat(nr2char(10), v:count1) \| ''[-1<CR>')
@@ -1103,7 +1101,7 @@ vnoremap <expr> H edit#join_lines_expr(1, 1)
 let s:copy_filetypes = s:data_filetypes + s:info_filetypes + s:panel_filetypes
 augroup copy_setup
   au!
-  au FileType,BufWinEnter * call switch#copy(0, index(s:copy_filetypes, &l:filetype) >= 0, 1)
+  au BufWinEnter * call switch#copy(0, index(s:copy_filetypes, &l:filetype) >= 0, 1)
 augroup END
 command! -nargs=? CopyToggle call switch#copy(1, <args>)
 command! -nargs=? ConcealToggle call switch#conceal(<args>)  " mainly just for tex
@@ -1165,7 +1163,7 @@ nnoremap g` /[^\x00-\x7F]<CR>
 nnoremap g~ /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
 
 " Change case for word or motion
-" NOTE: Here 'zu' is analgogous to 'zb' used for boolean toggle
+" NOTE: Here 'zu' is analogous to 'zb' used for boolean toggle
 for s:key in ['u', 'U'] | silent! exe 'unmap g' . s:key | endfor
 for s:key in ['u', 'U'] | silent! exe 'unmap z' . repeat(s:key, 2) | endfor
 call utils#repeat_map('n', 'zu', 'CaseToggle', 'my~h`y<Cmd>delmark y<CR>')
@@ -1175,30 +1173,27 @@ nnoremap gUU gUiw
 vnoremap zu g~
 vnoremap zU gu<Esc>`<~h
 
-" Update binary spell file
+" Setup spell checking and update binary file
 " See: https://vi.stackexchange.com/a/5052/8084
-for s:spellfile in glob('~/.vim/spell/*.add', 1, 1)
-  if filereadable(s:spellfile) && (
-  \ !filereadable(s:spellfile . '.spl') ||
-  \ getftime(s:spellfile) > getftime(s:spellfile . '.spl')
-  \ )
-    echom 'Update spellfile: ' . s:spellfile
-    silent! exec 'mkspell! ' . fnameescape(s:spellfile)
-  endif
-endfor
-
-" Toggle and navigate spell checking
-" NOTE: This enforces defaults without requiring 'set' during session refresh.
 augroup spell_setup
   au!
-  au FileType * let &l:spell = index(s:lang_filetypes, &l:filetype) >= 0
+  au BufWinEnter * let &l:spell = index(s:lang_filetypes, &l:filetype) >= 0
 augroup END
 command! SpellToggle call switch#spell(<args>)
 command! LangToggle call switch#lang(<args>)
 nnoremap <Leader>s <Cmd>call switch#spell()<CR>
 nnoremap <Leader>S <Cmd>call switch#lang()<CR>
+for s:path in glob('~/.vim/spell/*.add', 1, 1)
+  let s:spell = s:path . '.spl'
+  if !filereadable(s:path) | continue | endif
+  if !filereadable(s:spell) || getftime(s:path) > getftime(s:spell)
+    echom 'Update spellfile: ' . s:path
+    silent! exe 'mkspell! ' . fnameescape(s:path)
+  endif
+endfor
 
-" Replace misspelled words or define or identify words
+" Spell checking navigation and modifications
+" NOTE: This enforces defaults without requiring 'set' during session refresh.
 call utils#repeat_map('', '[S', 'SpellBackward', '<Cmd>call edit#spell_next(-v:count1)<CR>')
 call utils#repeat_map('', ']S', 'SpellForward', '<Cmd>call edit#spell_next(v:count1)<CR>')
 noremap [s <Cmd>keepjumps normal! [s<CR>
@@ -1888,6 +1883,7 @@ if s:has_plug('vim-textobj-user')  " {{{
   vmap a. <Plug>(textobj-comment-a)
   omap i. <Plug>(textobj-comment-i)
   vmap i. <Plug>(textobj-comment-i)
+  for s:key in ['i', 'a'] | exe 'silent! unmap ' s:key . 'h' | endfor
   for s:key in ['i', 'a'] | exe 'silent! unmap ' s:key . 'z' | endfor
   for s:key in ['i', 'a'] | exe 'silent! unmap ' s:key . 'Z' | endfor
   let g:vim_textobj_parameter_mapping = 'k'  " i.e. 'keyword' or 'keyword argument'
@@ -1898,9 +1894,9 @@ if s:has_plug('vim-textobj-user')  " {{{
     \ '\(\k\|[#&*:.-]\)\@<!\(\k\|[#&*:.-]\)\@=',
     \ '\(\k\|[#&*:.-]\)\@<=\(\k\|[#&*:.-]\)\@!',
   \ ]
-  let s:textobj_alpha = {
-    \ 'select-i': 'ig',  'select-i-function': 'edit#get_segment_i',
-    \ 'select-a': 'ag',  'select-a-function': 'edit#get_segment_a',
+  let s:textobj_segment = {
+    \ 'select-i': 'ig',  'select-i-function': 'edit#object_segment_i',
+    \ 'select-a': 'ag',  'select-a-function': 'edit#object_segment_a',
   \ }
   let s:textobj_comment = {
     \ 'select-i': 'iC', 'select-i-function': 'textobj#comment#select_i',
@@ -1911,17 +1907,22 @@ if s:has_plug('vim-textobj-user')  " {{{
     \ 'select-i': 'iE',  'select-i-function': 'textobj#entire#select_i'
   \ }
   let s:textobj_fold1 = {
-    \ 'select-i': 'iz', 'select-i-function': 'fold#get_fold_i',
-    \ 'select-a': 'az', 'select-a-function': 'fold#get_fold_a',
+    \ 'select-i': 'iz', 'select-i-function': 'fold#object_fold_i',
+    \ 'select-a': 'az', 'select-a-function': 'fold#object_fold_a',
   \ }
   let s:textobj_fold2 = {
-    \ 'select-i': 'iZ', 'select-i-function': 'fold#get_parent_i',
-    \ 'select-a': 'aZ', 'select-a-function': 'fold#get_parent_a',
+    \ 'select-i': 'iZ', 'select-i-function': 'fold#object_parent_i',
+    \ 'select-a': 'aZ', 'select-a-function': 'fold#object_parent_a',
+  \ }
+  let s:textobj_hunk = {
+    \ 'select-i': 'ih', 'select-i-function': 'git#object_hunk_i',
+    \ 'select-a': 'ah', 'select-a-function': 'git#object_hunk_a',
   \ }
   call succinct#add_objects('variable', {'v': join(s:textobj_variable, '\r')}, 0, 1)
+  call textobj#user#plugin('segment', {'-': s:textobj_segment})  " no <Plug> suffix
   call textobj#user#plugin('comment', {'-': s:textobj_comment})  " no <Plug> suffix
   call textobj#user#plugin('entire', {'-': s:textobj_entire})  " no <Plug> suffix
-  call textobj#user#plugin('alpha', {'-': s:textobj_alpha})  " no <Plug> suffix
+  call textobj#user#plugin('hunk', {'-': s:textobj_hunk})  " no <Plug> suffix
   call textobj#user#plugin('fold', {'z': s:textobj_fold1, 'Z': s:textobj_fold2})
 endif  " }}}
 
@@ -2009,7 +2010,7 @@ if s:has_plug('vim-tags')  " {{{
   nnoremap gy <Cmd>call tags#select_tag(0)<CR>
   nnoremap gY <Cmd>call tags#select_tag(2)<CR>
   nnoremap zy <Cmd>call tags#select_tag(1)<CR>
-  nnoremap zY <Cmd>UpdateFolds \| UpdateFiles \| UpdateTags \| GutentagsUpdate<CR><Cmd>echom 'Updated buffer tags'<CR>
+  nnoremap zY <Cmd>UpdateFolds \| UpdateFiles \| UpdateTags \| GutentagsUpdate<CR><Cmd>echo 'Updated buffer tags'<CR>
   let s:major = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
   let s:minor = {'fortran': 'ekltvEL', 'python': 'xviI', 'vim': 'vnC', 'tex': 'gioetBCN'}
   let g:tags_keep_jumps = 1  " default is zero
@@ -2042,7 +2043,7 @@ if s:has_plug('vim-gutentags')  " {{{
   nnoremap gt <Cmd>BTags<CR>
   nnoremap gT <Cmd>Tags<CR>
   nnoremap zt <Cmd>FTags<CR>
-  nnoremap zT <Cmd>UpdateFolds \| UpdateFiles \| UpdateTags! \| GutentagsUpdate!<CR><Cmd>echom 'Updated project tags'<CR>
+  nnoremap zT <Cmd>UpdateFolds \| UpdateFiles \| UpdateTags! \| GutentagsUpdate!<CR><Cmd>echo 'Updated project tags'<CR>
   let g:gutentags_trace = 0  " toggle debug mode (also try :ShowIgnores)
   let g:gutentags_background_update = 1  " disable for debugging, printing updates
   let g:gutentags_ctags_auto_set_tags = 0  " tag#update_files() handles this instead
@@ -2088,14 +2089,14 @@ if s:has_plug('FastFold')  " {{{
     augroup fold_setup
       au!
       au FileType,BufEnter * call fold#update_method()
-      au TextChanged,TextChangedI * let b:fastfold_queued = 2
+      au TextChanged,TextChangedI * let b:fastfold_queued = 1
     augroup END
   endfunction
   function! s:fold_update() abort
     augroup fold_update
       au!
-      " au BufEnter * call fold#update_folds(0)
-      au FileType * let b:fastfold_queued = 1 | call fold#update_folds(0, 1)
+      au BufEnter * call fold#update_folds(0)
+      au FileType * unlet! b:fastfold_queued | call fold#update_folds(0, 1)
     augroup END
   endfunction
   function! s:fold_init(...) abort
@@ -2543,7 +2544,6 @@ endif  " }}}
 if s:has_plug('vim-gitgutter')  " {{{
   command! -nargs=? GitGutterToggle call switch#gitgutter(<args>)
   command! -bang -range Hunks call git#get_hunks(<range> ? <line1> : 0, <range> ? <line2> : 0, <bang>0)
-  exe 'silent! unmap zgg'
   let s:opts = {'line': 'cursor+1', 'moved': 'any', 'minwidth': g:linelength}
   let g:gitgutter_async = 1  " ensure enabled
   let g:gitgutter_map_keys = 0  " disable defaults
@@ -2551,26 +2551,23 @@ if s:has_plug('vim-gitgutter')  " {{{
   let g:gitgutter_preview_win_floating = 1  " toggle preview window
   let g:gitgutter_floating_window_options = s:opts  " defaults plus minwidth
   let g:gitgutter_use_location_list = 0  " use for errors instead
+  exe 'silent! unmap zgg'
   call utils#repeat_map('', '[G', 'HunkBackward', '<Cmd>call git#next_hunk(-v:count1, 1)<CR>')
   call utils#repeat_map('', ']G', 'HunkForward', '<Cmd>call git#next_hunk(v:count1, 1)<CR>')
   nmap zH <Cmd>Hunks<CR>
-  omap ih <Plug>(GitGutterTextObjectInnerPending)
-  omap ah <Plug>(GitGutterTextObjectOuterPending)
-  xmap ih <Plug>(GitGutterTextObjectInnerVisual)
-  xmap ah <Plug>(GitGutterTextObjectOuterVisual)
-  nmap <expr> <nowait> zhh git#get_hunks_expr() . 'ih'
-  nmap <expr> <nowait> ghh git#process_hunks_expr(1) . 'ih'
-  nmap <expr> <nowait> gHH git#process_hunks_expr(0) . 'ih'
+  nmap <expr> <nowait> zhh git#get_hunks_expr() . (foldclosed('.') > 0 ? 'iz' : 'ih')
+  nmap <expr> <nowait> ghh git#exe_hunks_expr(0) . (foldclosed('.') > 0 ? 'iz' : 'ih')
+  nmap <expr> <nowait> gHH git#exe_hunks_expr(1) . (foldclosed('.') > 0 ? 'iz' : 'ih')
   nnoremap <expr> zh git#get_hunks_expr()
-  nnoremap <expr> gh git#process_hunks_expr(1)
-  nnoremap <expr> gH git#process_hunks_expr(0)
+  nnoremap <expr> gh git#exe_hunks_expr(0)
+  nnoremap <expr> gH git#exe_hunks_expr(1)
   vnoremap <expr> zh git#get_hunks_expr()
-  vnoremap <expr> gh git#process_hunks_expr(1)
-  vnoremap <expr> gH git#process_hunks_expr(0)
+  vnoremap <expr> gh git#exe_hunks_expr(0)
+  vnoremap <expr> gH git#exe_hunks_expr(1)
   noremap [g <Cmd>call git#next_hunk(-v:count1, 0)<CR>
   noremap ]g <Cmd>call git#next_hunk(v:count1, 0)<CR>
-  nnoremap zg <Cmd>GitGutter \| echom 'Updated buffer hunks'<CR>
-  nnoremap zG <Cmd>GitGutterAll \| echom 'Updated global hunks'<CR>
+  nnoremap zg <Cmd>GitGutter<CR><Cmd>echo 'Updated buffer hunks'<CR>
+  nnoremap zG <Cmd>GitGutterAll<CR><Cmd>echo 'Updated global hunks'<CR>
   nnoremap <Leader>g <Cmd>call git#show_hunk()<CR>
   nnoremap <Leader>G <Cmd>call switch#gitgutter()<CR>
 endif  " }}}
