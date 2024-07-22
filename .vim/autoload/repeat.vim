@@ -29,67 +29,83 @@ function! repeat#set(sequence, ...)
 endfunction
 
 " Run repeat and wrap undo
+" WARNING: Cannot set repeat counter in repeat#set() because sequences themselves
+" might re-invoke repeat#set() for safety. Use default repeat_nr '1' below.
 " NOTE: Here take the original register, unless another (non-default) register has
 " been supplied to the repeat command (as an explicit override).
 function! repeat#run(...)
-  let tick = b:changedtick
-  let tick0 = get(g:, 'repeat_tick', -1)
-  let seq = get(g:, 'repeat_sequence', '')
-  let [seq0, reg0] = get(g:, 'repeat_reg', ['', ''])
   let s:errmsg = ''
+  let tick = get(g:, 'repeat_tick', -1)
+  let itick = b:changedtick
+  let sequence = get(g:, 'repeat_sequence', '')
+  let [isequence, iregister] = get(g:, 'repeat_reg', ['', ''])
   try
-    if tick == tick0
-      let cnt = get(g:, 'repeat_count', 1)
+    if tick == itick
+      let nr = get(g:, 'repeat_nr', 1)
+      let cnt = get(g:, 'repeat_count', 0)
       let cnt = cnt < 0 ? '' : a:0 && a:1 ? a:1 : cnt ? cnt : ''
       let reg = ''
-      if seq ==# seq0 && !empty(reg0)
-        let name = v:register ==# repeat#getreg() ? reg0 : v:register
+      if sequence ==# isequence && !empty(iregister)
+        let name = v:register ==# repeat#getreg() ? iregister : v:register
         let reg = '"' . name . (name ==# '=' ? getreg('=', 1) . "\<CR>" : '')
       endif
-      call feedkeys(seq, 'i')
+      let g:repeat_nr = nr + 1
+      call feedkeys(sequence, 'i')
       call feedkeys(reg . cnt, 'ni')
     else
       let cnt = a:0 && a:1 ? a:1 : ''
       call feedkeys(cnt . '.', 'ni')
+      unlet! g:repeat_nr
     endif
   catch /^Vim(normal):/
     let feed = "\<Cmd>echoerr " . v:errmsg . "\<CR>"
     call feedkeys(feed, 'n')  " avoid function message
+    unlet! g:repeat_nr
   endtry
 endfunction
 
 " Repair insert mode undo and repeat
 " WARNING: Running 'normal!' instead of feedkeys() suppresses built-in undo message
 " so use temporary augroup. Must avoid CursorMoved (can trigger before TextChanged).
-" NOTE: Here implement vim-tags support for restoring view after undoing changes and
-" preserve vim messages about number of lines added/removed (normal! commands fail)
-" finishes after b:changedtick is updated and sequence during undos/redos is lost.
+" NOTE: Here implement vim-tags support for workflow 'c*<text><Esc>...uuuUUUuuUU' i.e.
+" repeating then undoing then redoing the repeats. Only works as long as repeat is
+" still active and relies on tracking consecutive repeat counts. Requires to ensure
+" global replacements remember winview and itemwise changes update folds/scopes.
 function! repeat#undo(redo, ...) abort
-  let sign = a:redo ? 1 : -1
-  let tick = b:changedtick
-  let tick0 = get(g:, 'repeat_tick', -1)
-  let cnt = get(g:, 'repeat_count', 1)
-  let seq = get(g:, 'repeat_sequence', '')
-  let key1 = get(g:, 'tags_change_key', 'n')
-  let key2 = &l:foldopen =~# 'undo\|all' ? 'zv' : ''
-  let s:expr = a:redo ? 'normal! ' . key1 . key2 : ''
-  let s:count = (a:redo ? 1 : -1) * (cnt < 0 ? 0 : a:0 && a:1 ? a:1 : cnt)
+  let tick = get(g:, 'repeat_tick', -1)  " sequence change tick
+  let itick = b:changedtick
+  let nr = get(g:, 'repeat_nr', 1)  " unset if '.' not called
+  let inr = a:redo ? nr + 1 : nr - 1
+  let sequence = get(g:, 'repeat_sequence', '')
+  let isequence = tick == itick ? a:redo ? nr >= 0 : nr > 0 : 0
+  if tick == itick  " increment
+    let g:repeat_nr = inr
+  else  " sequence inactive
+    unlet! g:repeat_nr
+  endif
   augroup repeat_undo
     au!
     if &l:foldopen =~# 'undo\|all'
       au TextChanged <buffer> exe 'normal! zv'
     endif
-    if tick == tick0  " ensure repeat status preserved
+    if tick == itick  " ensure repeat status preserved
       au TextChanged <buffer> let g:repeat_tick = b:changedtick
-      if seq ==# "\<Plug>TagsChangeForce"
-        au TextChanged <buffer> call winrestview(get(g:, 'tags_change_view', {}))
-      elseif seq ==# "\<Plug>TagsChangeAgain"
-        au TextChanged <buffer> let @/ = tags#rescope(@/, s:count) | exe s:expr
-      endif
+    endif
+    if isequence && sequence ==# "\<Plug>TagsChangeAgain"
+      au TextChanged <buffer> let @/ = tags#rescope(@/, s:count) | exe s:post
+    endif
+    if isequence && sequence ==# "\<Plug>TagsChangeForce"
+      au TextChanged <buffer> call winrestview(get(b:, 'tags_change_winview', {}))
     endif
     au CursorHold,InsertEnter,TextChanged <buffer> autocmd! repeat_undo
   augroup END
-  let cnt = a:0 && a:1 ? a:1 : ''
-  let key = a:redo ? "\<C-r>" : 'u'
-  call feedkeys(cnt . key, 'n')
+  let cnt = get(g:, 'repeat_count', 0)
+  let cnt = cnt < 0 ? 0 : a:0 && a:1 ? a:1 : cnt
+  let s:count = a:redo ? cnt : -cnt
+  let post = get(g:, 'tags_change_key', 'n')
+  let post .= &l:foldopen =~# 'undo\|all' ? 'zv' : ''
+  let s:post = a:redo ? 'normal! ' . post : ''
+  let keys = a:0 && a:1 ? a:1 : ''  " input count
+  let keys .= a:redo ? "\<C-r>" : 'u'
+  call feedkeys(keys, 'n')
 endfunction
