@@ -212,35 +212,35 @@ function! jump#setup_loc() abort
   exe 'nnoremap <buffer> <CR> <CR>zv'
 endfunction
 function! jump#next_loc(count, list, ...) abort
+  let backward = a:0 > 0 ? a:1 : 0
+  let string = a:0 > 1 ? a:2 : ''
+  let skip = a:0 > 2 ? a:3 : 0
   let cmd = a:list ==# 'loc' ? 'll' : 'cc'
   let func = 'get' . a:list . 'list'
-  let backward = a:0 > 0 ? a:1 : 0
-  let recursed = a:0 > 1 ? a:2 : 0
-  let params = a:list ==# 'loc' ? [0] : []
-  let items = call(func, params)
+  let items = call(func, a:list ==# 'loc' ? [0] : [])
   call map(items, "extend(v:val, {'idx': v:key + 1})")
-  if backward | call reverse(items) | endif
   if empty(items)
     let msg = 'Error: No locations found'
     redraw | echohl ErrorMsg | echom msg | echohl None | return
   endif
   let lnum = backward ? foldclosed('.') : foldclosedend('.')
-  if lnum > 0 && !recursed && &l:foldopen !~# 'quickfix\|all'  " ignore current fold
+  if !skip && lnum > 0 && &l:foldopen !~# 'quickfix\|all'  " ignore current fold
     let [lnum, cnum] = [lnum, backward ? 1 : col([lnum, '$'])]
   else  " include current fold
     let [lnum, cnum] = [line('.'), col('.')]
   endif
   let oper = backward ? '<' : '>'
-  let filt = 'v:val.lnum ' . oper . ' lnum'
-  let filt .= ' || v:val.lnum == lnum && '
-  let filt .= 'v:val.col ' . oper . ' cnum + 1 - backward'
-  let idx = get(get(filter(items, filt), 0, {}), 'idx', '')
-  if type(idx) && !recursed  " cyclic restart
+  let filt = 'v:val.lnum ' . oper . ' lnum || v:val.lnum == lnum'
+  let filt .= ' && v:val.col ' . oper . ' cnum + 1 - backward'
+  let opts = backward ? reverse(copy(items)) : copy(items)
+  call filter(opts, 'empty(string) || v:val.type ==? string')
+  let idx = get(get(filter(opts, filt), 0, {}), 'idx', '')
+  if !skip && type(idx)  " cyclic restart
     silent exe backward ? '$' : 1
-    return jump#next_loc(a:count, a:list, backward, 1)
+    return jump#next_loc(a:count, a:list, backward, string, 1)
   elseif a:count > 1  " repeat jumping
     silent exe cmd . ' ' . idx
-    return jump#next_loc(a:count - 1, a:list, backward, 0)
+    return jump#next_loc(a:count - 1, a:list, backward, string, 0)
   else  " jump to error
     exe cmd . ' ' . idx
     exe &l:foldopen =~# 'quickfix\|all' ? 'normal! zv' : ''

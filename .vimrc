@@ -760,20 +760,20 @@ noremap <F8> <Esc><Cmd>call mark#next_mark(v:count1)<CR>
 " NOTE: In general location list and quickfix list filled by ale, but quickfix also
 " temporarily filled by lsp commands or fzf mappings, so add below generalized
 " mapping for jumping between e.g. variables, grep matches, tag matches, etc.
-command! -count=1 Lprev call jump#next_loc(<count>, 'loc', 1)
-command! -count=1 Lnext call jump#next_loc(<count>, 'loc', 0)
-command! -count=1 Qprev call jump#next_loc(<count>, 'qf', 1)
-command! -count=1 Qnext call jump#next_loc(<count>, 'qf', 0)
-nnoremap [{ <Cmd>exe v:count1 . 'Qprev'<CR><Cmd>call window#show_list(1)<CR><Cmd>wincmd p<CR>
-nnoremap ]} <Cmd>exe v:count1 . 'Qnext'<CR><Cmd>call window#show_list(1)<CR><Cmd>wincmd p<CR>
-nnoremap [X <Cmd>exe v:count1 . 'Qprev'<CR>
-nnoremap ]X <Cmd>exe v:count1 . 'Qnext'<CR>
-nnoremap [x <Cmd>exe v:count1 . 'Lprev'<CR>
-nnoremap ]x <Cmd>exe v:count1 . 'Lnext'<CR>
-nnoremap [Y <Cmd>exe v:count1 . 'tag!'<CR>
-nnoremap ]Y <Cmd>exe v:count1 . 'pop!'<CR>
+command! -count=1 -nargs=? Lprev call jump#next_loc(<count>, 'loc', 1, <f-args>)
+command! -count=1 -nargs=? Lnext call jump#next_loc(<count>, 'loc', 0, <f-args>)
+command! -count=1 -nargs=? Qprev call jump#next_loc(<count>, 'qf', 1, <f-args>)
+command! -count=1 -nargs=? Qnext call jump#next_loc(<count>, 'qf', 0, <f-args>)
 nnoremap [y <Cmd>exe v:count1 . 'tag'<CR>
 nnoremap ]y <Cmd>exe v:count1 . 'pop'<CR>
+nnoremap [Y <Cmd>exe v:count1 . 'tag!'<CR>
+nnoremap ]Y <Cmd>exe v:count1 . 'pop!'<CR>
+nnoremap [x <Cmd>exe v:count1 . 'Lprev'<CR>
+nnoremap ]x <Cmd>exe v:count1 . 'Lnext'<CR>
+nnoremap [X <Cmd>exe v:count1 . 'Lprev E'<CR>
+nnoremap ]X <Cmd>exe v:count1 . 'Lnext E'<CR>
+nnoremap [{ <Cmd>exe v:count1 . 'Qprev'<CR><Cmd>call window#show_list(1)<CR><Cmd>wincmd p<CR>
+nnoremap ]} <Cmd>exe v:count1 . 'Qnext'<CR><Cmd>call window#show_list(1)<CR><Cmd>wincmd p<CR>
 
 " Line searching and grepping {{{2
 " NOTE: This is only useful when 'search' excluded from &foldopen. Use to quickly
