@@ -2633,11 +2633,19 @@ if s:has_plug('vim-speeddating')  " {{{
   vnoremap <Plug>SpeedDatingFallbackUp <C-a>
   vnoremap <Plug>SpeedDatingFallbackDown <C-x>
 endif  " }}}
+
+" Auto-updating calculator panel
+" Julia usage bug: https://github.com/meta Kirby/codi.vim/issues/120
+" Python history bug: https://github.com/metakirby5/codi.vim/issues/85
+" Syncing bug (kludge is workaround): https://github.com/metakirby5/codi.vim/issues/106
+" NOTE: Recent codi versions use lua-vim which is not provided by conda-forge version.
+" However seems to run fine even without lua lines. So ignore errors with silent!
 if s:has_plug('codi.vim')  " {{{
   augroup codi_setup
     au!
     au User CodiEnterPre call calc#setup_codi(1)
     au User CodiLeavePost call calc#setup_codi(0)
+    au FileType codi call window#default_width(0)
   augroup END
   command! -nargs=* CodiNew call calc#show_codi(<f-args>)
   nnoremap <Leader>= <Cmd>CodiNew<CR>
@@ -2666,11 +2674,7 @@ if s:has_plug('codi.vim')  " {{{
   \ }
 endif  " }}}
 
-" Session saving and undo/register history
-" WARNING: Critical to load vinegar before sinse setup_netrw() manipulates vinegar
-" mappings, and critical to load enuch first so rename is not overwritten.
-" TODO: Currently can only clear history with 'C' in active pane not externally. Need
-" to submit PR for better command. See: https://github.com/mbbill/undotree/issues/158
+" Registers and undo history
 " NOTE: Here peekaboo#peek() returns <Plug>(peekaboo) which invokes peekaboo#aboo()
 " with <C-\><C-o> which moves cursor when called from end-of-line. Use below instead
 " NOTE: For some reason cannot set g:peekaboo_ins_prefix = '' and simply have <C-r>

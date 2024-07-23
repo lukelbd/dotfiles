@@ -42,12 +42,11 @@ function! switch#autosave(...) abort
   let suppress = a:0 > 1 ? a:2 : 0
   if state == toggle
     return
-  elseif toggle
+  elseif !toggle  " remove autocommands
+    exe 'au! autosave_' . bufnr()
+  else  " add autocommands
     exe 'augroup autosave_' . bufnr() | exe 'au!'
     exe 'autocmd InsertLeave,TextChanged <buffer> silent call file#update()'
-    exe 'augroup END'
-  else
-    exe 'augroup autosave_' . bufnr() | exe 'au!'
     exe 'augroup END'
   endif
   let b:autosave_enabled = toggle
@@ -67,7 +66,7 @@ function! switch#caps(...) abort
     endfor
     augroup caps_lock
       au!
-      au InsertLeave,CmdwinLeave * setlocal iminsert=0 | autocmd! caps_lock
+      au InsertLeave,CmdwinLeave * setlocal iminsert=0 | au! caps_lock
     augroup END
   endif | return "\<C-^>"
 endfunction
@@ -232,7 +231,7 @@ function! switch#paste() abort
   setlocal paste mouse=
   augroup paste_mode
     au!
-    au InsertLeave * call s:paste_restore() | autocmd! paste_mode
+    au InsertLeave * call s:paste_restore() | au! paste_mode
   augroup END | return ''
 endfunction
 
@@ -255,15 +254,13 @@ function! switch#reveal(...) abort
     let &g:foldopen = b:reveal_folds  " setting is global only
     let &l:conceallevel = 0  " reveal concealed characters and closed folds
     let &l:relativenumber = 0  " reveal absolute line numbers
-    augroup reveal_restore
-      au!
-      au BufEnter <buffer> let &g:foldopen = b:reveal_folds
-      au BufLeave <buffer> let &g:foldopen = b:reveal_cache[0]
-      au TextChanged,InsertEnter,InsertLeave <buffer> call s:reveal_restore() | autocmd! reveal_restore
-    augroup END
-  elseif !toggle && exists('#reveal_restore#TextChanged')
-    doautocmd reveal_restore TextChanged
-  elseif !toggle  " fallback or else state is permanent
+    exe 'augroup reveal_' . bufnr() | exe 'au!'
+    exe 'au BufEnter <buffer> let &g:foldopen = b:reveal_folds'
+    exe 'au BufLeave <buffer> let &g:foldopen = b:reveal_cache[0]'
+    exe 'au TextChanged,InsertEnter,InsertLeave <buffer> call s:reveal_restore() | au! reveal_' . bufnr()
+    exe 'augroup END'
+  elseif !toggle  " remove augroup
+    exe 'silent! doautocmd reveal_' . bufnr() . ' TextChanged'
     unlet! b:reveal_cache
   endif
   call s:echo_state('Reveal mode', toggle, suppress)

@@ -6,7 +6,7 @@
 " NOTE: Here repeat#invalidate() avoids spurious repeats in a related, naturally
 " repeating mapping when your repeatable mapping doesn't increase b:changedtick.
 function! repeat#invalidate()
-  autocmd! repeat_set
+  au! repeat_set
   let g:repeat_tick = -1
 endfunction
 function! repeat#getreg()
@@ -24,7 +24,7 @@ function! repeat#set(sequence, ...)
   augroup repeat_set
     au!
     au CursorHold,CursorMoved,InsertEnter,TextChanged <buffer>
-      \ let g:repeat_tick = b:changedtick | autocmd! repeat_set
+      \ let g:repeat_tick = b:changedtick | au! repeat_set
   augroup END
 endfunction
 
@@ -77,7 +77,7 @@ function! repeat#undo(redo, ...) abort
   let nr = get(g:, 'repeat_nr', 1)  " unset if '.' not called
   let inr = a:redo ? nr + 1 : nr - 1
   let sequence = get(g:, 'repeat_sequence', '')
-  let isequence = tick == itick ? a:redo ? nr >= 0 : nr > 0 : 0
+  let repeat = tick == itick ? a:redo ? nr >= 0 : nr > 0 : 0
   if tick == itick  " increment
     let g:repeat_nr = inr
   else  " sequence inactive
@@ -91,13 +91,13 @@ function! repeat#undo(redo, ...) abort
     if tick == itick  " ensure repeat status preserved
       au TextChanged <buffer> let g:repeat_tick = b:changedtick
     endif
-    if isequence && sequence ==# "\<Plug>TagsChangeAgain"
+    if repeat && sequence ==# "\<Plug>TagsChangeAgain"
       au TextChanged <buffer> let @/ = tags#rescope(@/, s:count) | exe s:post
     endif
-    if isequence && sequence ==# "\<Plug>TagsChangeForce"
+    if repeat && sequence ==# "\<Plug>TagsChangeForce"
       au TextChanged <buffer> call winrestview(get(b:, 'tags_change_winview', {}))
     endif
-    au CursorHold,InsertEnter,TextChanged <buffer> autocmd! repeat_undo
+    au CursorHold,InsertEnter,TextChanged <buffer> au! repeat_undo
   augroup END
   let cnt = get(g:, 'repeat_count', 0)
   let cnt = cnt < 0 ? 0 : a:0 && a:1 ? a:1 : cnt

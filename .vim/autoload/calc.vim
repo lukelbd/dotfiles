@@ -1,24 +1,21 @@
 "-----------------------------------------------------------------------------"
 " Utilities for codi windows
 "-----------------------------------------------------------------------------"
-" Set up codi window autocommands
-" See: https://github.com/metakirby5/codi.vim/issues/90
-" NOTE: This sets up the calculator window not the display window
-function! calc#setup_codi(toggle) abort
-  let name = 'codi_' . bufnr()
-  silent! exe 'autocmd! ' . name
-  if a:toggle
-    exe 'augroup ' . name
-    exe 'autocmd!'
-    exe 'au InsertLeave,TextChanged <buffer> call codi#update()'
-    exe 'augroup END'
-    call feedkeys("\<Cmd>call window#default_width(0)\<CR>", 'n')
-  endif
-endfunction
-
-" Open calculator or create new one
+" Codi processors and interpreters
+" NOTE: These act on main window not the codi display window. Configure on text change
+" instead of cursor hold. See https://github.com/metakirby5/codi.vim/issues/90
 " NOTE: Vim substitute() function '.' matches newlines and codi silently fails
 " if the rephrased input lines don't match original line count so be careful.
+function! calc#setup_codi(toggle) abort
+  if a:toggle  " add autocommands
+    exe 'augroup codi_' . bufnr()
+    exe 'au!'
+    exe 'au InsertLeave,TextChanged <buffer> call codi#update()'
+    exe 'augroup END'
+  else  " remove autocommands
+    silent! exe 'au! codi_' . bufnr()
+  endif
+endfunction
 function! calc#show_codi(...) abort
   let prompt = 'Calculator path'
   let path = a:0 ? a:1 : ''
@@ -27,10 +24,13 @@ function! calc#show_codi(...) abort
     let base = file#get_base(base, 1)  " trailing slash
     let path = file#input_path('Calculator', 'calc.py', base)
   endif
-  if !empty(path)
+  if isdirectory(path)  " fails if empty
+    let path = substitute(path, '/$', '', '') . '/calc.py'
+  endif
+  if !empty(path)  " open calculator
     let path = fnamemodify(path, ':r') . '.py'
     call file#drop_file(path)
-    call feedkeys("\<Cmd>Codi!\<CR>", 'n')
+    call feedkeys("\<Cmd>Codi!!\<CR>", 'n')
   endif
 endfunction
 

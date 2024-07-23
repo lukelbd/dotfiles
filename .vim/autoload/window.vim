@@ -330,8 +330,9 @@ function! window#scroll_normal(scroll, ...) abort
 endfunction
 " Scroll and update the count
 function! window#scroll_infer(scroll, ...) abort
+  let filter = "getbufvar(winbufnr(v:val), '&filetype') !=# 'ale-preview'"
+  let preview_ids = filter(popup_list(), filter)
   let popup_pos = pum_getpos()
-  let preview_ids = popup_list()
   if a:0 && a:1 || !empty(popup_pos)  " automatically returns empty if not present
     return call('s:scroll_popup', [a:scroll])
   elseif !empty(preview_ids)

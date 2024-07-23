@@ -327,7 +327,7 @@ function! parse#set_registers() abort
   endfor
   let restore = "call map(get(b:, 'registers', {}), 'setreg(v:key, v:val)')"
   let rotate = 'call parse#set_translate(v:event.regname, v:event.operator)'
-  let reset = 'unlet! b:registers | autocmd! registers_' . bufnr()
+  let reset = 'unlet! b:registers | au! registers_' . bufnr()
   exe 'augroup registers_' . bufnr() | exe 'au!'
   exe 'au TextYankPost <buffer> ' . rotate . ' | ' restore . ' | ' . reset
   exe 'au CursorHold <buffer> if utils#none_pending() | ' . restore . ' | ' . reset . ' | endif'
