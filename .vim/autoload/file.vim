@@ -7,16 +7,16 @@
 " out rest of screen. Workaround is to factor out an unnecessary source function.
 let s:new_base = ''  " path completion base folder
 let s:new_file = '[new file]'  " fzf entry for requesting new file
+let s:regex_abs = '^[~$]\|^/\|^\w\+:'  " adapted from eunuch.vim
+let s:regex_dir = s:regex_abs . '\|^\.\.\?\%(/\|$\)'  " adapted from eunuch.vim
 function! file#echo_path(head, ...) abort
-  let path = expand(a:0 ? a:1 : '%')
-  let path = RelativePath(path, 1)
-  let head = substitute(a:head, '^\(\a\)\(\a*\)$', '\u\1\l\2', '')
-  redraw | echom head . ': ' . path
+  let path = RelativePath(expand(a:0 ? a:1 : '%'), 1)
+  let head = substitute(a:head, '^\a', '\u&', '')
+  redraw | echo head . ': ' . path
 endfunction
-function! file#get_base(path, ...) abort
-  let regex = '^[~.]*/\|^\w\+:'  " path base or 'drive' is present
-  let base = fnamemodify(a:path, ':p:~:.')  " note do not use RelativePath
-  let base = a:0 && a:1 && base !~# regex ? './' . base : base
+function! file#fmt_base(path, ...) abort
+  let base = fnamemodify(a:path, ':.')  " skip :p:~ because can be relative to others
+  let base = a:0 && a:1 && base !~# s:regex_abs ? './' . base : base
   return substitute(base, '[^/]\@<=/*$', '/', '')
 endfunction
 function! file#get_cfile(...) abort
@@ -37,62 +37,73 @@ endfunction
 " Generate list of files in directory
 " WARNING: Critical that the list options match the prompt lead or else
 " when a single path is returned <Tab> during input() does not complete it.
-function! file#complete_names(...) abort  " used with fzf open
-  return call('file#_glob_names', ['.'] + a:000)
+function! file#glob_names(...) abort  " used with fzf open
+  return call('file#_glob_paths', [0, 0] + a:000)
 endfunction
-function! file#complete_paths(...) abort  " used with commands
-  return call('file#_glob_paths', [expand('%:p:h')] + a:000)
+function! file#glob_paths(...) abort  " used with fzf open
+  return call('file#_glob_paths', [0, 1] + a:000)
 endfunction
-function! file#_glob_names(base, lead, ...) abort
-  if !empty(a:lead)  " input pattern
-    let paths = globpath(a:base, a:1 . '*', 0, 1)
-  else  " all matches
-    let paths = globpath(a:base, '*', 0, 1) + globpath(a:base, '.?*', 0, 1)
-  endif | return map(paths,  "fnamemodify(v:val, ':t')")
+function! file#local_names(...) abort  " used with commands
+  return call('file#_glob_paths', [1, 0] + a:000)
 endfunction
-function! file#_glob_paths(base, lead, ...) abort
-  let base = a:lead =~# '^[~.]*/\|^\~$' ? '' : file#get_base(a:base)
-  let head = base . file#get_base(fnamemodify(a:lead, ':h'))
-  let tail = fnamemodify(a:lead, ':t')
-  if empty(head) || head ==# './'  " exclude leading component
-    let paths = glob(tail . '*', 1, 1) + glob(tail . '.*', 1, 1)
-  else  " include leading component
-    let paths = globpath(head, tail . '*', 1, 1) + globpath(head, tail . '.*', 1, 1)
+function! file#local_paths(...) abort  " used with commands
+  return call('file#_glob_paths', [1, 1] + a:000)
+endfunction
+function! file#_glob_paths(base, dirs, lead, ...) abort  " glob path names
+  let source = type(a:base) ? a:base : a:base ? expand('%:p:h') : '.'
+  let base0 = a:lead =~# s:regex_abs ? '' : file#fmt_base(source, 0)
+  let base1 = file#fmt_base(fnamemodify(a:lead, ':h'), 0)  " completed subfolders
+  let lead = fnamemodify(a:lead, ':t')  " user input pattern
+  if base1 =~# s:regex_abs
+    let base = base1
+  elseif base1 =~# '^\.\/\?$'
+    let base = base0
+  else  " default base
+    let base = base0 . base1
   endif
-  let filt = 'fnamemodify(v:val, '':t'') !~# ''^\.\+$'''  " remove dots
-  let map0 = 'fnamemodify(v:val, '':~:.'')'  " abbreviate names
-  let map1 = 'isdirectory(v:val) ? v:val . ''/'' : v:val'  " append '/' to folders
-  let map2 = 'substitute(v:val, ''^\.\/'', '''', '''')'  " remove current folder
-  let map3 = 'substitute(v:val, ''^'' . base, '''', '''')'  " remove base folder
-  return map(map(map(map(filter(paths, filt), map0), map1), map2), map3)
+  let base = empty(base) ? '.' : base
+  unsilent echom 'Source: ' . base . ' ' . string(lead)
+  let paths = globpath(base, lead . '*', 1, 1) + globpath(base, lead . '.?*', 1, 1)
+  call filter(paths, 'a:dirs || !isdirectory(expand(v:val))')  " possibly remove folders
+  call map(paths, 'substitute(v:val, ''^\.\/'', '''', '''')')  " remove './' headers
+  call map(paths, 'isdirectory(v:val) ? v:val . ''/'' : v:val')  " append '/' to dirs
+  return map(paths, 'substitute(v:val, ''^'' . base0, '''', '''')')
 endfunction
 
 " Helper functions for fzf completion
 " WARNING: Critical to make ./ the default in file#input_path() or else cannot
 " distinguish cancelled completion from successful completion. See below
-function! file#call_find(cmd, default, ...) abort
-  let default = file#get_base(a:default, 0)
-  let input = file#input_path(a:cmd, default)
-  if empty(input) | return | endif
-  let args = [0, 0, 0, a:cmd, input]
-  return call('file#init_find', args)
-endfunction
-function! file#init_find(bang, global, level, cmd, ...) abort
+function! file#fzf_paths(bang, global, level, cmd, ...) abort
   let input = [] | call map(copy(a:000), 'extend(input, expand(trim(v:val), 0, 1))')
   let paths = call('parse#get_paths', [2, a:global, 1 + a:level] + reverse(input))
   let paths = empty(paths) ? input : reverse(paths)  " important paths at top instead of bottom
   let args = a:cmd ==# 'Files' ? [a:bang, paths] : [a:bang, a:cmd, paths]
   return call(a:cmd ==# 'Files' ? 'file#fzf_files' : 'file#fzf_open', args)
 endfunction
+function! file#fzf_input(cmd, base, ...) abort
+  let base = file#fmt_base(a:base, 0)
+  let input = file#input_path(a:cmd, '', base)
+  if empty(input) | return | endif
+  let args = [0, 0, 0, a:cmd, input]
+  return call('file#fzf_paths', args)
+endfunction
 function! file#input_path(prompt, default, ...) abort
-  let dir = file#get_base(a:0 ? a:1 : '', 0)  " no leading ./
-  let base = file#get_base(a:0 ? a:1 : '', 1)  " leading ./
-  let name = empty(a:default) ? base : dir . a:default
-  let default = empty(a:default) ? base : a:default
-  let prompt = substitute(a:prompt, '^\(\a\)\(\a*\)$', '\u\1\l\2', '')
-  let prompt .= ' (' . name . ')'  " prompt with base folder
-  let path = utils#input_default(prompt, default, function('file#_glob_paths', [base]))
-  return path =~# '^[~.]*/\|^\~\?$' ? path : dir . path
+  let base = fnamemodify(a:0 ? a:1 : '', ':p')
+  let ibase = fnamemodify(base, ':~:.')
+  let base0 = file#fmt_base(ibase, 0)  " no leading ./
+  let base1 = file#fmt_base(ibase, 1)  " leading ./
+  let default = RelativePath(base . a:default, base)
+  let default0 = empty(default) ? './' : default
+  let default1 = empty(default) ? empty(base0) ? base1 : base0 : base0 . default
+  let prompt = substitute(a:prompt, '^\a', '\u&', '')
+  let prompt .= ' (' . substitute(default1, '/$', '', '') . ')'
+  let path1 = utils#input_default(prompt, default0, function('file#_glob_paths', [base1, 1]))
+  let path0 = substitute(path1, '^\.\/', '', '')
+  if empty(path1) || path1 =~# s:regex_abs  " return absolute path
+    return path1
+  else  " return path relative to base directory
+    return empty(path0) ? empty(base0) ? base1 : base0 : base0 . path0
+  endif
 endfunction
 
 " Open recently edited file
@@ -169,7 +180,8 @@ function! file#fzf_files(bang, ...) abort
   let source = file#find_source(['.'] + bases[1:])
   let opts = fzf#vim#with_preview()
   let opts = join(map(get(opts, 'options', []), 'fzf#shellescape(v:val)'), ' ')
-  let prompt = string('Files> ' . file#get_base(bases[0], 1))
+  let base = fnamemodify(bases[0], ':p:~')
+  let prompt = string('Files> ' . base)
   let options = {
     \ 'dir': fnamemodify(bases[0], ':p'),
     \ 'sink*': function('file#fzf_open', [a:bang, 'Drop', bases[0]]),
@@ -195,7 +207,6 @@ function! file#open_sink(cmd, ...) abort
   endfor
 endfunction
 function! file#fzf_open(bang, cmd, ...) abort
-  "
   if a:0 == 1  " user invocation
     let [base, items] = ['', a:1]
   else  " fzf invocation (ignore binding)
@@ -210,32 +221,31 @@ function! file#fzf_open(bang, cmd, ...) abort
   for item in items  " expand tilde
     let item = expand(item)
     if item ==# s:new_file  " WARNING: fzf sets 'base' to current working directory
-      let file = expand('<cfile>')
       try
-        let item = utils#input_default('File', file, 'file#complete_names')
+        let item = utils#input_default('File', expand('<cfile>'), 'file#glob_names')
       catch /^Vim:Interrupt$/
         let item = ''  " avoid error message
-      finally
-        if !empty(item) | call add(paths, fnamemodify('', ':p:~') . item) | endif
       endtry
-    elseif item ==# '..'  " remove slash and tail
-      call add(paths, fnamemodify(base, ':h:h'))
-    elseif !empty(item)
-      call add(paths, item =~# '^/' ? item : base . item)
+    endif
+    if !empty(item)
+      call add(paths, item =~# s:regex_abs ? item : base . item)
     endif
   endfor
   " Possibly activate or re-activate fzf
   let ipath = get(paths, 0, '')
-  let recurse = isdirectory(ipath) || fnamemodify(ipath, ':t') ==# '..'
-  if empty(paths) && a:0 == 1 || len(paths) == 1 && recurse
-    let base = fnamemodify(get(paths, 0, '.'), ':p')
+  let inner = isdirectory(ipath) || fnamemodify(ipath, ':t') ==# '..'
+  if empty(paths) && a:0 == 1 || inner && len(paths) == 1
     let opts = fzf#vim#with_preview()
     let opts = join(map(get(opts, 'options', []), 'fzf#shellescape(v:val)'), ' ')
-    let prompt = string(a:cmd . '> ' . file#get_base(base, 1))
+    let base = get(paths, 0, '.')  " glob path (already relative)
+    let base1 = fnamemodify(base, ':p:~')  " recursed path (must be absolute)
+    let base2 = RelativePath(base1, getcwd(-1))  " prompt path (from global cwd)
+    let base2 = empty(base2) ? base1 : base2 . '/'
+    let prompt = string(a:cmd . '> ' . base2)
     let options = {
-      \ 'dir': base,
-      \ 'sink*': function('file#fzf_open', [a:bang, a:cmd, base]),
-      \ 'source': file#_glob_names(base, '') + [s:new_file],
+      \ 'dir': base1,
+      \ 'sink*': function('file#fzf_open', [a:bang, a:cmd, base1]),
+      \ 'source': file#_glob_paths(base, 1, '') + [s:new_file],
       \ 'options': opts . ' --tiebreak chunk,index --prompt=' . prompt,
     \ }
     let paths = []  " only continue in recursion
@@ -299,7 +309,7 @@ endfunction
 function! file#show_cfile() abort
   let files = file#get_cfile(1)
   if empty(files)
-    echom "File or pattern '" . expand('<cfile>') . "' does not exist."
+    echom 'File or pattern ' . string(expand('<cfile>')) . ' does not exist.'
   else
     echom 'File(s) ' . join(map(files, 'string(v:val)'), ', ') . ' exist.'
   endif
@@ -380,6 +390,8 @@ function! file#reload() abort
   endif
 endfunction
 function! file#rename(name, bang)
+  let snr = utils#get_snr('vim-eunuch/plugin/eunuch.vim')
+  if empty(snr) | return | endif
   let b:gitgutter_was_enabled = get(b:, 'gitgutter_was_enabled', 0)
   let init = expand('%:p')
   let dest = fnamemodify(init, ':h') . '/' . a:name
@@ -387,37 +399,12 @@ function! file#rename(name, bang)
   try
     exe 'GMove' . a:bang . ' ' . dest
   catch /.*fugitive.*/
-    silent! exe 'Move' . a:bang . ' ' . dest
+    call call(snr . 'Move', [!empty(a:bang), dest])
     if v:errmsg !~# '^$\|^E329\|^E108' | throw v:errmsg | endif
   endtry
   let path = expand('%:p')  " resulting location
   if path !=# init && filewritable(path) && filewritable(init)
     silent exe 'bwipe! ' . init
     if !empty(delete(init)) | throw 'Could not delete ' . init | endif
-  endif
-endfunction
-function! s:Move(bang, arg) abort
-  let dst = s:FileDest(a:arg)
-  exe s:AbortOnError('call call("call", s:MkdirCallable(' . string(fnamemodify(dst, ':h')) . '))')
-  let dst = s:fcall('simplify', dst)
-  if !a:bang && s:fcall('filereadable', dst)
-    let confirm = &confirm
-    try
-      if confirm | set noconfirm | endif
-      exe s:AbortOnError('keepalt saveas ' . fnameescape(dst))
-    finally
-      if confirm | set confirm | endif
-    endtry
-  endif
-  if s:fcall('filereadable', @%) && EunuchRename(@%, dst)
-    return 'echoerr ' . string('Failed to rename "'.@%.'" to "'.dst.'"')
-  else
-    let last_bufnr = bufnr('$')
-    exe s:AbortOnError('silent keepalt file ' . fnameescape(dst))
-    if bufnr('$') != last_bufnr
-      exe bufnr('$') . 'bwipe'
-    endif
-    setlocal modified
-    return 'write!|filetype detect'
   endif
 endfunction

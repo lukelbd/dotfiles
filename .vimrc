@@ -355,26 +355,26 @@ nnoremap gP <Cmd>call call('file#drop_file', file#get_cfile())<CR>
 " nnoremap <C-g> <Cmd>Locate<CR>  " uses giant database from Unix 'locate'
 " command! -bang -nargs=* -complete=file Files call file#fzf_files(<bang>0, <f-args>)
 command! -bang -nargs=* -complete=file Files call file#fzf_files(<bang>0, <f-args>)
-command! -bang -nargs=* -complete=file Vsplit call file#init_find(<bang>0, 0, 0, 'botright vsplit', <f-args>)
-command! -bang -nargs=* -complete=file Split call file#init_find(<bang>0, 0, 0, 'botright split', <f-args>)
-command! -bang -nargs=* -complete=file Open call file#init_find(<bang>0, 0, 0, 'Drop', <f-args>)
-nnoremap <C-e> <Cmd>call file#init_find(0, 0, 0, 'Split')<CR>
-nnoremap <C-r> <Cmd>call file#init_find(0, 0, 0, 'Vsplit')<CR>
-nnoremap <C-y> <Cmd>call file#init_find(0, 0, 1, 'Files')<CR>
-nnoremap <F7> <Cmd>call file#init_find(0, 0, 0, 'Drop')<CR>
-nnoremap <C-o> <Cmd>call file#init_find(0, 0, 1, 'Drop')<CR>
-nnoremap <C-p> <Cmd>call file#init_find(0, 1, 1, 'Files')<CR>
+command! -bang -nargs=* -complete=file Vsplit call file#fzf_paths(<bang>0, 0, 0, 'botright vsplit', <f-args>)
+command! -bang -nargs=* -complete=file Split call file#fzf_paths(<bang>0, 0, 0, 'botright split', <f-args>)
+command! -bang -nargs=* -complete=file Open call file#fzf_paths(<bang>0, 0, 0, 'Drop', <f-args>)
+nnoremap <C-e> <Cmd>call file#fzf_paths(0, 0, 0, 'Split')<CR>
+nnoremap <C-r> <Cmd>call file#fzf_paths(0, 0, 0, 'Vsplit')<CR>
+nnoremap <C-y> <Cmd>call file#fzf_paths(0, 0, 1, 'Files')<CR>
+nnoremap <F7> <Cmd>call file#fzf_paths(0, 0, 0, 'Drop')<CR>
+nnoremap <C-o> <Cmd>call file#fzf_paths(0, 0, 1, 'Drop')<CR>
+nnoremap <C-p> <Cmd>call file#fzf_paths(0, 1, 1, 'Files')<CR>
 nnoremap <C-g> <Cmd>exe fugitive#Command(0, 0, 0, 0, '', '') =~# '^echoerr' ? 'Git' : 'GFiles'<CR>
 
 " Open file with optional user input
 " NOTE: The <Leader> maps open up views of the current file directory
 for s:key in ['q', 'w', 'e', 'r'] | silent! exe 'unmap <Tab>' . s:key | endfor
-nnoremap <Tab>o <Cmd>call file#call_find('Open', parse#get_root())<CR>
-nnoremap <Tab>i <Cmd>call file#call_find('Open', expand('%:p:h'))<CR>
-nnoremap <Tab>p <Cmd>call file#call_find('Files', parse#get_root())<CR>
-nnoremap <Tab>y <Cmd>call file#call_find('Files', expand('%:p:h'))<CR>
-nnoremap <Tab>e <Cmd>call file#call_find('Split', expand('%:p:h'))<CR>
-nnoremap <Tab>r <Cmd>call file#call_find('Vsplit', expand('%:p:h'))<CR>
+nnoremap <Tab>o <Cmd>call file#fzf_input('Open', parse#get_root())<CR>
+nnoremap <Tab>i <Cmd>call file#fzf_input('Open', expand('%:p:h'))<CR>
+nnoremap <Tab>p <Cmd>call file#fzf_input('Files', parse#get_root())<CR>
+nnoremap <Tab>y <Cmd>call file#fzf_input('Files', expand('%:p:h'))<CR>
+nnoremap <Tab>e <Cmd>call file#fzf_input('Split', expand('%:p:h'))<CR>
+nnoremap <Tab>r <Cmd>call file#fzf_input('Vsplit', expand('%:p:h'))<CR>
 
 " Mapping and command windows {{{2
 " This uses iterm mapping of <F6> to <C-;> and works in all modes
@@ -2577,12 +2577,39 @@ if s:has_plug('vim-gitgutter')  " {{{
 endif  " }}}
 
 " Utility plugin settings {{{2
-" Calculations and increments
-" Julia usage bug: https://github.com/meta Kirby/codi.vim/issues/120
-" Python history bug: https://github.com/metakirby5/codi.vim/issues/85
-" Syncing bug (kludge is workaround): https://github.com/metakirby5/codi.vim/issues/106
-" NOTE: Recent codi versions use lua-vim which is not provided by conda-forge version.
-" However seems to run fine even without lua lines. So ignore errors with silent!
+" Shell commands and session restoration
+" WARNING: Critical to load vinegar before sinse setup_netrw() manipulates vinegar
+" mappings, and critical to load enuch first so rename is not overwritten.
+" TODO: Currently can only clear history with 'C' in active pane not externally. Need
+" to submit PR for better command. See: https://github.com/mbbill/undotree/issues/158
+" NOTE: :Obsession .vimsession activates vim-obsession BufEnter and VimLeavePre
+" autocommands and saved session files call let v:this_session=expand("<sfile>:p")
+" (so that v:this_session is always set when initializing with vim -S .vimsession)
+if s:has_plug('vim-obsession')  " {{{
+  augroup session_setup
+    au!
+    au VimEnter * exe !empty(v:this_session) ? 'Obsession ' . v:this_session : ''
+  augroup END
+  command! -nargs=* -complete=customlist,vim#complete_sessions
+    \ Session call vim#init_session(<q-args>)
+  nnoremap <Leader>$ <Cmd>Session<CR>
+endif  " }}}
+if s:has_plug('vim-eunuch') || s:has_plug('vim-vinegar')  " {{{
+  silent! exe 'runtime plugin/eunuch.vim plugin/vinegar.vim'
+  augroup netrw_setup
+    au!
+    au FileType netrw call shell#setup_netrw()
+  augroup END
+  command! -bang -nargs=* -complete=customlist,file#local_names
+    \ Rename call file#rename(<q-args>, '<bang>')
+  command! -bang -nargs=* -complete=customlist,file#local_paths
+    \ Move call file#rename(<q-args>, '<bang>')
+  nnoremap <Tab>\ <Cmd>call shell#show_netrw('topleft vsplit', 1)<CR>
+  nnoremap <Tab>= <Cmd>call shell#show_netrw('topleft vsplit', 0)<CR>
+  nnoremap <Tab>- <Cmd>call shell#show_netrw('botright split', 1)<CR>
+endif  " }}}
+
+" Increment and inline calculations
 " NOTE: Speeddating increments selected item(s), and if selection includes empty lines
 " then extends using step size from preceding lines or using a default step size.
 " NOTE: Usage is HowMuch#HowMuch(isAppend, withEq, sum, engineType) where isAppend says
@@ -2650,31 +2677,6 @@ endif  " }}}
 " trigger the mapping. See https://vi.stackexchange.com/q/5803/8084
 " NOTE: Undotree normally triggers on BufEnter but may contribute to slowdowns. Use
 " below to override built-in augroup before enabling buffer.
-" NOTE: :Obsession .vimsession activates vim-obsession BufEnter and VimLeavePre
-" autocommands and saved session files call let v:this_session=expand("<sfile>:p")
-" (so that v:this_session is always set when initializing with vim -S .vimsession)
-if s:has_plug('vim-obsession')  " {{{
-  augroup session_setup
-    au!
-    au VimEnter * exe !empty(v:this_session) ? 'Obsession ' . v:this_session : ''
-  augroup END
-  command! -nargs=* -complete=customlist,vim#complete_sessions
-    \ Session call vim#init_session(<q-args>)
-  nnoremap <Leader>$ <Cmd>Session<CR>
-endif  " }}}
-if s:has_plug('vim-eunuch') || s:has_plug('vim-obsession')  " {{{
-  silent! exe 'runtime plugin/eunuch.vim plugin/vinegar.vim'
-  augroup netrw_setup
-    au!
-    au FileType netrw call shell#setup_netrw()
-  augroup END
-  " command! -bang -nargs=* -complete=customlist,file#glob_ldir
-  "   \ Rename call file#rename(<q-args>, '<bang>')
-  cnoreabbrev Move Rename
-  nnoremap <Tab>\ <Cmd>call shell#show_netrw('topleft vsplit', 1)<CR>
-  nnoremap <Tab>= <Cmd>call shell#show_netrw('topleft vsplit', 0)<CR>
-  nnoremap <Tab>- <Cmd>call shell#show_netrw('botright split', 1)<CR>
-endif  " }}}
 if s:has_plug('vim-peekaboo')  " {{{
   augroup peekaboo_setup
     au!
