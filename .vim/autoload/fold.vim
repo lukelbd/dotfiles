@@ -467,15 +467,15 @@ endfunction
 " Update the fold definitions and open-close status
 " WARNING: Regenerating b:SimPylFold_cache with manual SimpylFold#FoldExpr() call
 " can produce strange internal bug. Instead rely on FastFoldUpdate to fill the cache.
-" NOTE: Here simulate 'zx' by passing 1 and 'zX' by passing 2, except here even 'zX'
-" only permits one level of nested folds underneath cursor (useful for e.g. json data)
+" NOTE: Here simulate 'zx' by passing 1 and 'zX' by passing 2, except consistent with
+" 'zC' maps this increases the depth of closed folds under cursor by one at a time
 function! fold#update_folds(force, ...) abort
-  " Initial stuff
+  " Parse fold settings
   let markers = []  " manual markers
   let winview = winsaveview()
+  let closed0 = foldlevel('.') ? foldclosed('.') : 0  " zero if no folds
+  let level0 = foldlevel(closed0 > 0 ? closed0 : '.')  " fold close level
   let method0 = &l:foldmethod  " previous method
-  let level0 = &l:foldlevel
-  let closed0 = foldlevel('.') ? foldclosed('.') : 0
   let force = a:force || method0 =~# 'syntax\|expr'
   let queued = get(b:, 'fastfold_queued', -1)  " add markers after fastfold
   let remark = queued < 0 && method0 ==# 'manual'
@@ -502,20 +502,25 @@ function! fold#update_folds(force, ...) abort
     let b:fastfold_queued = 0
   endif
   " Optionally apply foldlevel
-  let keys = ''  " additional updates
-  let reset = a:0 ? a:1 : -1  " fold level reset state
+  let level1 = &l:foldlevel
+  let closed1 = level0 ? foldclosed(winview.lnum) : 0
   let method1 = &l:foldmethod
+  let keys = ''  " normal mode keys
+  let reset = a:0 ? a:1 : -1  " reset state
   let level1 = &l:filetype ==# 'json' ? 2 : !empty(get(b:, 'fugitive_type', '')) ? 1 : 0
   let level1 = !level1 && method1 ==# 'manual' ? search('{{{1\s*$', 'wn') > 0 : level1
   let level1 = !level1 && method1 ==# 'marker' ? search('{{{2\s*$', 'wn') > 0 : level1
-  let closed1 = foldlevel(winview.lnum) ? foldclosed(winview.lnum) : 0
-  if reset >= 0 || method0 !=# method1  " update fold level
-    let &l:foldlevel = a:0 || method0 !=# method1 ? level1 : level0
+  if reset >= 0 || method0 !=# method1
+    let &l:foldlevel = level1  " update fold level
     for lnum in fold#get_matches() | exe lnum . 'foldopen' | endfor
-    let reopen = closed0 < 0 && closed1 > 0 || closed0 == 0 && closed1 !=# winview.lnum
-    let reclose = reset > 0 && closed0 > 0 && closed1 < 0
-    let keys .= reopen || reset == 0 ? 'zv' : ''  " restore open
-    let keys .= reclose || reopen && reset == 2 ? 'zc' : ''  " restore close
+    let initial = reset > 2 || method0 !=# method1
+    let refresh = closed0 == 0 && closed1 !=# winview.lnum
+    let reveal = initial || refresh || level0 - level1 > 2
+    let status = closed0 < 0 && closed1 > 0 ? -1 : closed0 > 0 && closed1 < 0 ? 1 : 0
+    let closes = repeat('zc', foldlevel(winview.lnum) - level0)
+    let closes .= closed0 < 0 || refresh ? 'zc' : 'zczc'
+    let keys = reset == 0 || reveal ? 'zv' : reset == 1 && status > 0 ? 'zv' : ''
+    let keys .= reset == 2 && reveal ? closes : reset == 1 && status < 0 ? 'zc' : ''
   endif
   exe winview.lnum | exe empty(keys) ? '' : 'silent! normal! ' . keys
   call winrestview(winview)

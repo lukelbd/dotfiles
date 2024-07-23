@@ -73,7 +73,7 @@ set fillchars=eob:~,vert:\|,lastline:@,fold:\ ,foldopen:\>,foldclose:<
 set foldclose=  " use foldclose=all to auto-close folds when leaving
 set foldcolumn=0  " do not show folds, since fastfold dynamically updates
 set foldlevelstart=0  " hide folds when opening (then 'foldlevel' sets current status)
-set foldnestmax=8  " allow only some folds
+set foldnestmax=20  " use default internal limit
 set foldopen=insert,jump,quickfix,tag,undo  " exclude: block, hor, mark, percent, search
 set foldtext=fold#fold_text()  " default function for generating text shown on fold line
 set guicursor+=a:blinkon0  " skip blinking cursor
@@ -2107,7 +2107,7 @@ if s:has_plug('FastFold')  " {{{
       augroup END
     else  " autocommands following fastfold
       augroup fastfold_update
-        au! | au VimEnter * call fold#update_folds(0, 1) | call s:fold_update()
+        au! | au VimEnter * call fold#update_folds(0, 3) | call s:fold_update()
       augroup END
     endif
   endfunction
