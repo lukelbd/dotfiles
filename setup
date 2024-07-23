@@ -6,7 +6,7 @@
 # Read the tracked file names. Note style configs required to be in .config.
 # See: https://black.readthedocs.io/en/stable/usage_and_configuration/the_basics.html
 # Note '.ignore' seems to work in either $HOME or in $HOME/.config after testing.
-shopt -s nullglob
+shopt -s nullglob  # {{{
 configs=(pep8 black isort)  # required
 exclude=(.gitignore backup cleanup setup envs environment.yml)
 dotfiles=$HOME/dotfiles  # dotfiles directory
@@ -14,20 +14,20 @@ cd "$dotfiles" || {
   echo "Error: dotfiles repo should be cloned into \$HOME."
   exit 1
 }
-read -r -a names < <(git ls-tree --name-only master | xargs)
+read -r -a names < <(git ls-tree --name-only master | xargs)  # }}}
 
 # Create required folders
 # NOTE: If 'undodir' in vim is set to non-existent folder failure is silent
-backup=$dotfiles/backup
-undohist=$HOME/.vim_undo_hist  # required for persistent undo
+backup=$dotfiles/backup  # {{{
+undohist=$HOME/.vim_undo_hist
 nvimroot=$HOME/.config/nvim
 [ -d "$backup" ] || mkdir "$backup"
 [ -d "$nvimroot" ] || mkdir "$nvimroot"
-[ -d "$undohist" ] || mkdir "$undohist"
+[ -d "$undohist" ] || mkdir "$undohist"  # }}}
 
 # Create symlinks
 # NOTE: Moves existing stuff to backup storage
-for name in "${names[@]}"; do  # iterate through files
+for name in "${names[@]}"; do  # iterate through files  {{{
   [[ " ${exclude[*]} " =~ " $name " ]] && continue
   [[ "$name" =~ \.(md|txt|rst)$ ]] && continue
   file=$dotfiles/$name
@@ -48,36 +48,36 @@ for name in "${names[@]}"; do  # iterate through files
     mv "$dest" "$backup/"  # copy if not
   fi
   ln -s "$file" "$dest"
-done
+done  # }}}
 
 # Create variety of symlinks in home directory
+# NOTE: Manually search for latest python version using reverse number sort
 # NOTE: Using brew install --cask mactex generates /Library/TeX/Root symlink pointing
 # to /Library/TeX/Distributions/.DefaultTeX/Contents/Root pointing to a distribution
-# e.g. /usr/local/texlive/2021. Use the symlink for consistency across versions. For
-# python have to manually search for the latest version using reverse number sort.
-texroot=/Library/TeX/Root  # tex distribution
-libroot=$HOME/Library  # library source
-pdfroot=$libroot/Mobile\ Documents/3L68KQB4HG~com~readdle~CommonDocuments
-approot=$libroot/Application\ Support
-cloudroot=$libroot/Mobile\ Documents/com~apple~CloudDocs
-googleroot=$libroot/CloudStorage/GoogleDrive-lukelbd@gmail.com
+# e.g. /usr/local/texlive/2021. Use the symlink for consistency across versions.
+lib=$HOME/Library  # {{{
+tex=/Library/TeX/Root  # tex distribution
+docs=$lib/Mobile\ Documents/3L68KQB4HG~com~readdle~CommonDocuments
+google=$lib/CloudStorage/GoogleDrive-lukelbd@gmail.com
+icloud=$lib/Mobile\ Documents/com~apple~CloudDocs
+support=$lib/Application\ Support
 [ -d "$HOME"/micromamba ] && condaroot=$HOME/micromamba || condaroot=$HOME/mambaforge
-pyroot=$condaroot/lib/python3.  # python root
-read -r -a pynums < <(echo $pyroot* | sed "s@$pyroot@@g" | tr ' ' '\n' | sort -gr)
-pyroot=$pyroot${pynums[0]:?10}  # below emits error if empty
+python=$condaroot/lib/python3.  # python root
+read -r -a version < <(echo $python* | sed "s@$python@@g" | tr ' ' '\n' | sort -gr)
+python=$python${version[0]:?10}  # below emits error if empty
 for pair in \
   "$HOME"/.vim:.nvim \
   "$HOME"/dotfiles/.vimrc:.config/nvim/init.vim \
-  "$pyroot"/site-packages:site-packages \
-  "$texroot"/texmf-dist/tex:texmf-dist \
-  "$approot"/Platypus:apps \
-  "$approot"/iTerm2/Scripts:scripts \
-  "$pdfroot"/Documents:pdfs \
-  "$googleroot"/My\ Drive:google \
-  "$cloudroot":icloud \
-  "$cloudroot"/Mackup:mackup \
-  "$cloudroot"/Mackup/Services:workflows \
-  "$cloudroot"/Mackup/.mackup.cfg:.mackup.cfg
+  "$python"/site-packages:site-packages \
+  "$tex"/texmf-dist/tex:texmf-dist \
+  "$support"/Platypus:apps \
+  "$support"/iTerm2/Scripts:scripts \
+  "$docs"/Documents:pdfs \
+  "$google"/My\ Drive:google \
+  "$icloud":icloud \
+  "$icloud"/Mackup:mackup \
+  "$icloud"/Mackup/Services:workflows \
+  "$icloud"/Mackup/.mackup.cfg:.mackup.cfg
   do
   src=${pair%:*}
   if ! [ -r "$src" ]; then
@@ -94,4 +94,4 @@ for pair in \
     continue
   fi
   ln -sf "$src" "$dest"
-done
+done  # }}}

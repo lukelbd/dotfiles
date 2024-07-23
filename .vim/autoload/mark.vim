@@ -24,7 +24,7 @@ function! mark#goto_mark(...) abort
   else  " note this does not affect jumplist
     silent call file#drop_file(mrks[0].file)
     call setpos('.', mrks[0].pos)
-    exe 'normal! ' . (&l:foldopen =~# 'mark' ? 'zvzzze' : 'zzze')
+    exe 'normal! ' . (&l:foldopen =~# 'mark\|all' ? 'zv' : '') . 'zzze'
   endif
   let g:mark_name = mrk  " mark stack navigation
 endfunction
@@ -33,7 +33,7 @@ function! mark#fzf_marks(...) abort
   if empty(snr) | return | endif
   let source = split(execute('silent marks'), "\n")
   call extend(source[0:0], map(source[1:], {idx, val -> call(snr . 'format_mark', [v:val])}))
-  let opts = '+m -x --ansi --header-lines 1 --tiebreak=begin '
+  let opts = '+m -x --ansi --header-lines 1 --tiebreak begin,index '
   let options = {
     \ 'source': source,
     \ 'options': opts . ' --prompt "Marks> "',
@@ -83,9 +83,8 @@ function! mark#del_marks(...) abort
   let g:mark_highlights = highlights
   let mrks = a:0 ? filter(copy(a:000), '!empty(v:val)') : keys(highlights)
   if empty(mrks)
-    redraw | echohl WarningMsg
-    echom 'Error: No marks found'
-    echohl None | return
+    let msg = 'Error: No marks found'
+    redraw | echohl WarningMsg | echom msg | echohl None | return
   endif
   for mrk in mrks
     if has_key(highlights, mrk) && len(highlights[mrk]) > 1

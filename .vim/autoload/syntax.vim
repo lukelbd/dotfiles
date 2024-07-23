@@ -135,18 +135,20 @@ endfunction
 " rather than top-level only, searching backward, and without circular wrapping.
 function! syntax#sync_lines(count, ...) abort
   if a:0 && a:1
-    exe 'syntax sync fromstart'
-    echom 'Syntax sync: fromstart'
+    let cmd = 'syntax sync fromstart'
+    let msg = 'Syntax sync: fromstart'
   elseif a:count  " input count
-    exe 'syntax sync minlines=' . a:count . ' maxlines=0'
-    echom 'Syntax sync: minlines=' . a:count
+    let cmd = 'syntax sync minlines=' . a:count . ' maxlines=0'
+    let msg = 'Syntax sync: minlines=' . a:count
   else  " sync from tag
     let item = tags#get_tag(line('w0'))
     let lnum = empty(item) ? line('w0') : str2nr(get(item, 1, 1))
     let nlines = max([0, line('.') - lnum])
-    exe 'syntax sync minlines=' . nlines . ' maxlines=0'
-    echom 'Syntax sync: minlines=' . nlines . ' (' . get(item, 0, 'unknown') . ')'
+    let info = '(' . get(item, 0, 'unknown') . ')'
+    let msg = 'Syntax sync: minlines=' . nlines . ' ' . info
+    let cmd = 'syntax sync minlines=' . nlines . ' maxlines=0'
   endif
+  exe cmd | redraw | echom msg
 endfunction
 
 " Update on-the-fly matchadd() matches.
@@ -187,13 +189,13 @@ function! syntax#update_groups() abort
     highlight link jsonComment Comment
   elseif &filetype ==# 'vim'  " repair comments: https://github.com/vim/vim/issues/11307
     syntax match vimQuoteComment '^[ \t:]*".*$' contains=vimComment.*,@Spell
-    highlight link vimQuoteComment Comment | exe 'syntax clear vimCommentTitle'
+    highlight link vimQuoteComment Comment | syntax clear vimInsert vimCommentTitle
   elseif &filetype ==# 'fortran'  " repair comments (ensure space and skip c = value)
     syntax match fortranComment excludenl '^\s*[cC]\s\+=\@!.*$' contains=@spell,@fortranCommentGroup
     highlight link fortranComment Comment
   elseif &filetype ==# 'python'  " fix syntax: https://stackoverflow.com/a/28114709/4970632
     highlight BracelessIndent ctermfg=NONE ctermbg=NONE cterm=inverse
-    exe 'syntax sync minlines=100' | exe exists('*SetCellHighlighting') ? 'call SetCellHighlighting()' : ''
+    syntax sync minlines=100 | exe exists('*SetCellHighlighting') ? 'call SetCellHighlighting()' : ''
   endif
   syntax match commentBang /^\%1l#!.*$/ contains=@NoSpell
   syntax match commentLink

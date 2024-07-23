@@ -1,9 +1,9 @@
-"------------------------------------------------------------------------------" {{{1
-" Improve shell script syntax.
+"------------------------------------------------------------------------------"
+" Improve shell script syntax {{{1
 "------------------------------------------------------------------------------"
 " Figure out shell type {{{2
-" TODO: Try awk highlighting from https://stackoverflow.com/a/13925238/4970632
-" TODO: Try heredoc highlighting from .vim/after/syntax/perl/heredoc-perl.vim
+" TODO: Try heredoc highlighting from: .vim/after/syntax/perl/heredoc-perl.vim
+" and awk highlighting from: https://stackoverflow.com/a/13925238/4970632
 if !exists('b:is_kornshell') && !exists('b:is_bash')
   if exists('g:is_posix') && !exists('g:is_kornshell')
    let g:is_kornshell = g:is_posix

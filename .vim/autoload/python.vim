@@ -19,7 +19,7 @@ function! s:get_indent(lnum) abort
   if has_key(opts, 'indent')
     let indent = opts.indent
   else  " manual detection (slower)
-    let indent = strdisplaywidth(matchstr(getline(a:lnum), '^\s*')) / &l:tabstop
+    let indent = strdisplaywidth(matchstr(getline(a:lnum), '^\s*')) / shiftwidth()
   endif
   return indent
 endfunction
@@ -38,24 +38,24 @@ endfunction
 " bug where if opening bracket is immediately followed by newline, then 'inner'
 " bracket range incorrectly sets the closing bracket column position to '1'.
 function! python#dict_to_kw(invert, ...) range abort
-  let winview = winsaveview()
-  let lines = []
-  let marks = a:0 && a:1 ==# 'n' ? '[]' : '<>'
-  let col1 = col("'" . marks[0]) - 1  " first column, note ' really means ` here
-  let col2 = len(getline("'" . marks[1])) - 1  " last selection column
-  let [line1, line2] = sort([a:firstline, a:lastline], 'n')
+  let locs = a:0 && a:1 ==# 'n' ? '[]' : '<>'
+  let locs = ["'" . locs[0], "'" . locs[1]]
+  let [col1, col2] = map(copy(locs), 'col(v:val)')
+  let [idx1, idx2] = [col1 - 1, col([line(col2), '$']) - 1]  " kludge (see above)
+  let [line1, line2] = [a:firstline, a:lastline]  " sorted by utils operator_func
+  let [lines, winview] = [[], winsaveview()]
   for lnum in range(line1, line2)
     let [line, prefix, suffix] = [getline(lnum), '', '']
     if lnum == line1 && lnum == line2  " vint: -ProhibitUsingUndeclaredVariable
-      let prefix = col1 > 0 ? line[:col1 - 1] : ''
-      let suffix = line[col2 + 1:]
-      let line = line[col1:col2]  " must come last
+      let prefix = idx1 > 0 ? line[:idx1 - 1] : ''
+      let suffix = line[idx2 + 1:]
+      let line = line[idx1:idx2]  " must come last
     elseif lnum == line1
-      let prefix = col1 > 0 ? line[:col1 - 1] : ''
-      let line = line[col1:]  " must come last
+      let prefix = idx1 > 0 ? line[:idx1 - 1] : ''
+      let line = line[idx1:]  " must come last
     elseif lnum == line2
-      let suffix = line[col2 + 1:]
-      let line = line[:col2]  " must come last
+      let suffix = line[idx2 + 1:]
+      let line = line[:idx2]  " must come last
     endif
     if !empty(matchstr(line, ':')) && !empty(matchstr(line, '='))
       echohl WarningMsg
@@ -76,7 +76,7 @@ function! python#dict_to_kw(invert, ...) range abort
   exe line1 . ',' . line2 . 'd _'
   call append(line1 - 1, lines)  " replace with fixed lines
   call winrestview(winview)
-  call cursor(line1, col1)
+  call cursor(line1, idx1 + 1)
 endfunction
 " For <expr> map accepting motion
 function! python#dict_to_kw_expr(invert) abort
@@ -198,18 +198,16 @@ function! python#init_jupyter() abort
     let pattern = 'kernel-' . folder . '-[0-9][0-9].json'
     if !empty(glob(runtime . '/' . pattern)) | return jupyter#Connect(pattern) | endif
   endwhile
-  redraw | echohl WarningMsg
-  echom "Error: No connection files found for path '" . expand('%:p:h') . "'."
-  echohl None
+  let msg = 'Error: No connection files found for path ' . string(expand('%:p:h')) . '.'
+  redraw | echohl WarningMsg | echom msg | echohl None
 endfunction
 
 " Run current file with conda python (important for macvim)
 " TODO: More robust checking for conda python in other places
 function! python#run_file() abort
   if !exists('$CONDA_PREFIX')
-    redraw | echohl WarningMsg
-    echom 'Error: Cannot find conda prefix.'
-    echohl None | return
+    let msg = 'Error: Cannot find conda prefix.'
+    redraw | echohl WarningMsg | echom msg | echohl None | return
   endif
   let exe = $CONDA_PREFIX . '/bin/python'
   let proj = $CONDA_PREFIX . '/share/proj'
@@ -261,7 +259,7 @@ endfunction
 function! python#doc_translate(item) abort
   if &l:filetype !=# 'python' | return a:item | endif
   let winview = winsaveview()
-  let parts = split(a:item, '\.')
+  let parts = split(a:item, '\.', 1)
   let module = parts[0]
   let regex = '\(\k\|\.\)\+'
   if search('import\s\+' . regex . '\s\+as\s\+' . module, 'w')
@@ -341,7 +339,7 @@ endfunction
 function! python#fzf_doc() abort
   let options = {
     \ 'source': python#doc_list(),
-    \ 'options': '--no-sort --prompt="doc> "',
+    \ 'options': '--tiebreak length,index --prompt="doc> "',
     \ 'sink': function('stack#push_stack', ['doc', 'python#doc_page'])
   \ }
   call fzf#run(fzf#wrap(options))
@@ -356,15 +354,15 @@ let s:regex_doc = '["'']\{3}'
 function! python#next_docstring(count, ...) abort
   let flags = a:count >= 0 ? 'w' : 'wb'
   if a:0 && a:1
-    let head = '^\(\|\t\| \{' . &tabstop . '\}\)'
+    let head = '^\(\|\t\| \{' . shiftwidth() . '\}\)'
   else  " include comments
     let head = '\(' . comment#get_regex() . '.*\)\@<!'
   endif
   let regex = head . '[frub]*' . s:regex_doc . '\_s*\zs'
   for _ in range(abs(a:count))  " cursor is on first non-whitespace after triple-quote
-    call search(regex, flags, 0, 0, "tags#get_skip(-1, 'Constant')")
+    call search(regex, flags, 0, 0, "!tags#get_inside(-1, 'Constant')")
   endfor
-  if &foldopen =~# 'quickfix' | exe 'normal! zv' | endif
+  exe &foldopen =~# 'quickfix\|all' ? 'normal! zv' : ''
 endfunction
 function! python#insert_docstring() abort
   let winview = winsaveview()

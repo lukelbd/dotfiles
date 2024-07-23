@@ -11,8 +11,8 @@
 " maps and having fugitive use :Gdrop, but was getting error where after tab switch
 " an empty panel was opened in the git window. Might want to revisit.
 " let rhs = substitute(rhs, '\C\<tabe\a*', 'drop', 'g')  " use :Git drop?
-let s:log_trim = '--graph --abbrev-commit --max-count=50'
-let s:log_format = '--date=relative --branches --decorate'
+let s:cmd_graph = '--graph --abbrev-commit --max-count=50'  " {{{
+let s:cmd_format = '--date=relative --branches --decorate'
 let s:cmd_vert = ['commits', 'log', 'refs', 'tree', 'trunk']  " vertical commands
 let s:cmd_editor = ['merge', 'commit', 'oops']  " commands open editor
 let s:cmd_oneline = ['add', 'stage', 'reset', 'push', 'pull', 'fetch', 'switch', 'restore', 'checkout']
@@ -20,19 +20,20 @@ let s:cmd_resize = {
   \ '': 0.5, 'commits': 0.5, 'log': 0.5, 'tree': 0.5, 'trunk': 0.5,
   \ 'show': 1, 'diff': 1, 'merge': 1, 'commit': 1, 'oops': 1, 'status': 1,
 \ }
-let s:cmd_translate = {'status': '',
-  \ 'log': 'log ' . s:log_trim,
-  \ 'tree': 'log --stat ' . s:log_trim . ' ' . s:log_format,
-  \ 'trunk': 'log --name-status ' . s:log_trim . ' ' . s:log_format,
+let s:cmd_translate = {
+  \ 'status': '', 'log': 'log ' . s:cmd_graph,
+  \ 'tree': 'log --stat ' . s:cmd_graph . ' ' . s:cmd_format,
+  \ 'trunk': 'log --name-status ' . s:cmd_graph . ' ' . s:cmd_format,
   \ 'show': 'show --abbrev-commit',
   \ 'blame': 'blame --show-email',
-  \ 'commits': 'log --graph --oneline ' . s:log_format,
-\ }
-let s:map_remove = ['dq', '<<', '>>', '==', '<F1>', '<F2>']
-let s:map_from = [
+  \ 'commits': 'log --graph --oneline ' . s:cmd_format,
+\ }  " }}}
+let s:map_drop = ['dq', '<<', '>>', '==', '<F1>', '<F2>']  " {{{
+let s:map_translate = [
   \ ['n', '<2-LeftMouse>', 'O'],
   \ ['n', '<CR>', 'O'],
-  \ ['n', 'O', '<CR>'],
+  \ ['n', 'o', '<CR>'],
+  \ ['n', 'O', 'o'],
   \ ['nx', ';', '.'],
   \ ['nx', '.', '-'],
   \ ['nox', '{', '[c'],
@@ -43,77 +44,13 @@ let s:map_from = [
   \ ['nx', ']g', ')'],
   \ ['nx', ',', '=', ":\<C-u>call fold#update_folds(0, 1)\<CR>"],
   \ ['nx', '=', '=', ":\<C-u>call fold#update_folds(0, 1)\<CR>"],
-\ ]
+  \ ]  " }}}
 
-" Helper setup functions for commands
-" See: https://github.com/sgeb/vim-diff-fold/
-" NOTE: Renamed files additionally have file name next to the commit number.
-" NOTE: Supports normal, context, unified, rcs, ed, subversion and git diffs. For rcs
-" diffs folds only files (rcs has no hunks in the common sense). Uses foldlevel=1 ==>
-" file foldlevel=2 ==> hunk. Note context diffs need special treatment, as hunks are
-" defined via context (after '***'), and checking for '*** ' or ('--- ') only does
-" not work since the file lines have the same marker.
-function! git#setup_blame() abort
-  let regex = '^\x\{8}\s\+.\{-}\s\+(\zs<\S\+>\s\+'
-  call matchadd('Conceal', regex, 0, -1, {'conceal': ''})
-  call feedkeys(window#count_panes('h') == 1 ? "\<Cmd>call window#default_width(0)\<CR>": '', 'n')
-endfunction
-function! git#setup_commit(...) abort
-  call switch#autosave(1, 1)
-  call window#default_height(1) | setlocal colorcolumn=73
-  goto | call feedkeys("\<Cmd>startinsert\<CR>", 'n')
-endfunction
-function! git#setup_panel() abort  " also used for general diff filetypes
-  for val in s:map_remove | silent! exe 'unmap <buffer> ' . val | endfor
-  let &l:foldexpr = 'git#fold_expr(v:lnum)'
-  let &l:foldmethod = &l:filetype ==# 'fugitive' ? 'syntax' : 'expr'
-  call matchadd('Conceal', '^[ +-]', 0, -1, {'conceal': ''})
-  call call('utils#map_from', &l:filetype ==# 'diff' ? [] : s:map_from)
-  call fold#update_folds(0, 0)  " re-apply defaults after setting foldexpr
-endfunction
-function! git#fold_expr(lnum) abort
-  let line = getline(a:lnum)
-  if line =~# '^\(diff\|Index\)'     " file
-    return '>1'
-  elseif line =~# '^\(@@\|\d\)\|^[*-]\{3}\s*\d\+,\d\+\s*[*-]\{3}'  " hunk
-    return '>2'
-  else
-    return '='
-  endif
-endfunction
-
-" Override native fugitive commands
-" NOTE: Native fugitive command is declared with :command! Git -nargs=? -range=-1
-" fugitive#Command(<line1>, <count>, +'<range>', <bang>0, '<mods>', <q-args>)
-" where <line1> is cursor line, <count> is -1 if no range supplied and <line2>
-" if any range supplied (see :help command-range), and confusingly <range> is the
-" number of range arguments supplied (i.e. 0 for :Git, 1 for e.g. :10Git, and
-" 2 for e.g. :10,20Git) where +'<range>' forces this to integer. Here, use simpler
-" implicit distinction between calls with/without range where we simply test the
-" equality of <line1> and <line2>, or allow a force-range a:range argument.
-function! git#setup_commands() abort
-  command! -buffer
-    \ -bar -bang -nargs=? -range=-1 -complete=customlist,fugitive#Complete
-    \ G call git#run_command(0, <line1>, <count>, +'<range>', <bang>0, '<mods>', <q-args>)
-  command! -buffer
-    \ -bar -bang -nargs=? -range=-1 -complete=customlist,fugitive#Complete
-    \ Git call git#run_command(0, <line1>, <count>, +"<range>", <bang>0, "<mods>", <q-args>)
-  command! -buffer
-    \ -bar -bang -range=-1 -nargs=* -complete=customlist,fugitive#EditComplete
-    \ Gtabedit exe fugitive#Open(<q-args> =~# '^+' ? 'edit' : 'Drop', <bang>0, '<mods>', <q-args>)
-  for cmd in ['drop', 'Drop']  " tab drop sinks
-    exe 'command! -buffer -nargs=* -bang G' . cmd . ' Gtabedit <args>'
-  endfor
-  for cmd in ['diff', 'split', 'diffsplit']  " outdated commands
-    silent! exe 'delcommand -buffer G' . cmd
-  endfor
-endfunction
-
-" Run and process results of fugitive operation
+" Call fugitive internal command returned by fugitive#Command()
 " TODO: Use bufhidden=delete more frequently, avoid tons of useless buffers
 " NOTE: Here use 'Git' to open standard status pane and 'Git status' to open
 " pane with diff hunks expanded with '=' and folded with 'zc'.
-function! s:run_cmd(bnum, lnum, cmd, ...) abort
+function! s:call_fugitive(bnum, lnum, cmd, ...) abort
   let winview = winsaveview()
   let input = join(a:000, '')
   let name = split(input, '', 1)[0]
@@ -134,7 +71,7 @@ function! s:run_cmd(bnum, lnum, cmd, ...) abort
     if a:bnum == bufnr() && input =~# '^blame'  " syncbind is no-op if not vertical
       exe a:lnum | exe 'normal! z.' | call feedkeys("\<Cmd>syncbind\<CR>", 'n')
     elseif a:bnum != bufnr() && name ==# 'status'  " open change statistics
-      goto | exe 'normal ='
+      keepjumps goto | exe 'normal ='
     elseif a:bnum != bufnr() && input =~# '\s\+%'  " open single difference fold
       exe 'normal! zv'
     endif
@@ -149,11 +86,29 @@ function! s:run_cmd(bnum, lnum, cmd, ...) abort
   return panel && a:cmd !~# '^echoerr'  " whether echo required
 endfunction
 
-" Run fugitive command or mapping
+" Call fugitive :Git via command or mapping (see git#setup_commands())
 " NOTE: Fugitive does not currently use &previewwindow and does not respect <mods>
 " so set window explicitly below. See: https://stackoverflow.com/a/8356605/4970632
+" Run from <expr> mapping
+function! git#call_git_expr(...) abort
+  return utils#motion_func('git#call_git', a:000, 1)
+endfunction
+" Run from normal mode
+function! git#call_git(range, ...) range abort
+  if a:range && a:firstline == a:lastline
+    let offset = 5 | let [line1, line2] = [a:firstline - offset, a:lastline + offset]
+  else
+    let offset = 0 | let [line1, line2] = sort([a:firstline, a:lastline], 'n')
+  endif
+  if a:range || line1 != line2
+    call call('s:call_git', [0, line1, line2, a:range] + a:000)
+  else
+    call call('s:call_git', [0, line1, -1, a:range] + a:000)
+  endif
+  call feedkeys(offset ? abs(offset) . (offset > 0 ? 'j' : 'k') : '', 'n')
+endfunction
 " Run from command line
-function! git#run_command(msg, line1, count, range, bang, mods, cmd, ...) range abort
+function! s:call_git(msg, line1, count, range, bang, mods, cmd, ...) range abort
   let [bnum, lnum] = [bufnr(), line('.')]
   let icmd = empty(FugitiveGitDir()) ? '' : a:cmd
   let [name; flags] = split(icmd, '\\\@<!\s\+', 1)
@@ -166,37 +121,18 @@ function! git#run_command(msg, line1, count, range, bang, mods, cmd, ...) range 
     let imod = 'botright'
   endif
   let args = [a:line1, a:count, a:range, a:bang, imod, icmd]
-  silent let rcmd = call('fugitive#Command', args + a:000)
-  let verbose = s:run_cmd(bnum, lnum, rcmd, a:cmd)
+  silent let cmd = call('fugitive#Command', args + a:000)
+  let verbose = s:call_fugitive(bnum, lnum, cmd, a:cmd)
   let input = 'Git ' . a:cmd
   let error = 'Warning: ' . (type(a:msg) ? a:msg : string(input) . ' was empty')
   if verbose && bnum == bufnr()  " empty result
     redraw | echohl WarningMsg | echom error | echohl None
   elseif verbose
-    redraw | echom input
+    redraw | echo input
   endif
-endfunction
-" Run from normal mode
-function! git#run_map(range, ...) range abort
-  if a:range && a:firstline == a:lastline
-    let offset = 5 | let [line1, line2] = [a:firstline - offset, a:lastline + offset]
-  else
-    let offset = 0 | let [line1, line2] = sort([a:firstline, a:lastline], 'n')
-  endif
-  if a:range || line1 != line2
-    call call('git#run_command', [0, line1, line2, a:range] + a:000)
-  else
-    call call('git#run_command', [0, line1, -1, a:range] + a:000)
-  endif
-  call feedkeys(offset ? abs(offset) . (offset > 0 ? 'j' : 'k') : '', 'n')
-endfunction
-" For <expr> map accepting motion
-function! git#run_map_expr(...) abort
-  let winview = winsaveview()
-  return utils#motion_func('git#run_map', a:000)
 endfunction
 
-" Run git commit with or without editor
+" Call git commit with or without editor
 " NOTE: Git commit is asynchronous unlike others so resize must be reapplied here. In
 " general do not apply resize to setup functions since could be panel or full-screen.
 " NOTE: This prevents annoying <press enter to continue> message showing up when
@@ -210,7 +146,7 @@ function! git#complete_commit(lead, line, cursor, ...) abort
   let opts = filter(opts, '!empty(v:val) && v:val =~# ' . string(lead))
   return map(opts, 'substitute(v:val, "\s\+", "", "g")')
 endfunction
-function! git#run_commit(editor, ...) abort
+function! git#call_commit(editor, ...) abort
   let cmd = a:0 ? a:1 : 'commit'  " commit version
   let flag = cmd =~# '^stash' ? [] : ['--staged']
   let args = ['diff', '--quiet']  " see: https://stackoverflow.com/a/1587877/4970632
@@ -219,11 +155,9 @@ function! git#run_commit(editor, ...) abort
   if status == 0 && cmd !~# '^oops'  " exits 0 if there are no staged changes
     let msg = empty(flag) ? 'No unstaged changes' : 'No staged changes'
     if !a:editor
-      redraw | echohl WarningMsg
-      echom 'Warning: ' . msg
-      echohl None | return
+      redraw | echohl WarningMsg | echom 'Warning: ' . msg | echohl None | return
     endif
-    return git#run_command(msg, line('.'), -1, 0, 0, '', 'status')
+    return s:call_git(msg, line('.'), -1, 0, 0, '', 'status')
   endif
   if !a:editor
     let s:messages = get(s:, 'messages', {})
@@ -233,21 +167,225 @@ function! git#run_commit(editor, ...) abort
     let msg = utils#input_default('Git ' . cmd, default, 'git#complete_commit')
     if !empty(msg) | let s:messages[base] = msg[:49] | endif
     while !empty(msg) && len(msg) > 50  " see .bashrc git()
-      redraw | echohl WarningMsg
-      echom 'Error: Message has length ' . len(msg) . '. Must be less than or equal to 50.'
-      echohl None
+      let msg = 'Error: Message has length ' . len(msg) . '. Must be less than or equal to 50.'
+      redraw | echohl WarningMsg | echom msg | echohl None
       let msg = utils#input_default('Git ' . cmd, msg[:49], 'git#complete_commit')
       if !empty(msg) | let s:messages[base] = msg[:49] | endif
     endwhile
     if empty(msg) | return | endif
     let cmd .= ' --message ' . shellescape(msg)
   endif
-  call git#run_command(0, line('.'), -1, 0, 0, '', cmd)
+  call s:call_git(0, line('.'), -1, 0, 0, '', cmd)
 endfunction
 
-" Navigate git merge conflicts
+" Helper functions for git gutter utilities
+" NOTE: Git gutter works by triggering on &updatetime after CursorHold only if
+" text was changed and starts async process. Here temporarily make synchronous.
+function! s:echo_hunk(hunk) abort
+  if empty(a:hunk) | return [] | endif
+  let line1 = a:hunk[2]
+  let nline = max([a:hunk[3], 1])
+  let line2 = line1 + nline - 1
+  let fold1 = foldclosed(line1)
+  let fold2 = foldclosedend(line2)
+  let range1 = fold1 > 0 ? fold1 : line1
+  let range2 = fold2 > 0 ? fold2 : line2
+  call git#_get_hunks(range1, range2)
+endfunction
+function! s:get_hunks(...) abort
+  let quiet = a:0 ? a:1 : 0
+  let bnr = bufnr()
+  if &l:diff
+    return 0
+  endif
+  if !quiet
+    try  " synchronous update
+      let g:gitgutter_async = 0
+      call gitgutter#process_buffer(bnr, 0)
+    finally
+      let g:gitgutter_async = 1
+    endtry
+  endif
+  if !pumvisible() && !gitgutter#utility#is_active(bnr)
+    return 0  " ignore gitgutter pumvisible() condition
+  endif
+  let hunks = gitgutter#hunk#hunks(bnr)
+  if !quiet && empty(hunks)
+    let msg = 'Error: No hunks in file'
+    redraw | echohl WarningMsg | echom msg | echohl None
+  endif
+  return hunks
+endfunction
+
+" Create git gutter hunk description
+" NOTE: Here g:gitgutter['hunks'] are [from_start, from_count, to_start, to_count]
+" lists i.e. starting line and counts before and after changes. Adapated s:isadded()
+" s:isremoved() etc. methods from autoload/gitgutter/diff.vim for partitioning into
+" simple added/changed/removed groups (or just 'changed') as shown below.
+function! git#_get_hunks(range1, range2, ...) abort
+  let locs = []  " hunk indices
+  let cnts = [0, 0, 0]  " change counts
+  let quiet = a:0 ? a:1 : 0  " quicker version
+  let hunks = s:get_hunks(quiet)
+  if empty(hunks) | return | endif
+  for idx in range(len(hunks))
+    let [hunk0, count0, hunk1, count1] = hunks[idx]
+    let hunk2 = count1 ? hunk1 + count1 - 1 : hunk1
+    let clip1 = max([hunk1, a:range1])
+    let clip2 = min([hunk2, a:range2])
+    if clip2 < clip1 | continue | endif
+    let offset = (hunk2 - clip2) + (clip1 - hunk1)  " count change
+    let cnt0 = max([count0 - offset, 0])
+    let cnt1 = max([count1 - offset, 0])
+    let cnts[0] += max([cnt1 - cnt0, 0])  " added
+    let cnts[1] += min([cnt0, cnt1])  " modified
+    let cnts[2] += max([cnt0 - cnt1, 0])  " removed
+    call add(locs, idx + 1)  " included hunk
+  endfor
+  let delta = cnts[0] ? '+' . cnts[0] : ''
+  let delta .= cnts[1] ? '~' . cnts[1] : ''
+  let delta .= cnts[2] ? '-' . cnts[2] : ''
+  if !quiet && !empty(locs) " show message
+    let index = min(locs) == max(locs) ? locs[0] : min(locs) . '-' . max(locs)
+    let index = '(' . index . ' of ' . len(hunks) . ')'
+    redraw | echo 'Hunk(s): ' . delta . ' ' . index
+  endif
+  return delta
+endfunction
+" For optional range arguments
+function! git#get_hunks(...) range abort
+  return utils#range_func('git#_get_hunks', a:000, [a:firstline, a:lastline])
+endfunction
+" For <expr> map accepting motion
+function! git#get_hunks_expr(...) abort
+  return utils#motion_func('git#get_hunks', [-1, -1] + a:000, 1)
+endfunction
+
+" Git gutter staging and unstaging over input lines
+" NOTE: Currently GitGutterStageHunk only supports partial staging of additions
+" specified by visual selection, not different hunks. This supports both, iterates in
+" reverse in case lines change. See: https://github.com/airblade/vim-gitgutter/issues/279
+" NOTE: Created below by studying s:get_hunks() and gitgutter#diff#exe_hunks()
+" in autoload/gitgutter/diff.vim. Addition-only hunks have from_count '0' and to_count
+" non-zero since no text was present before the change. Also note gitgutter#hunk#stage()
+" requires cursor inside lines and fails when specifying lines outside of addition hunk
+" (see s:hunk_op) so explicitly navigate lines below before calling stage commands.
+function! git#_exe_hunks(range1, range2, ...) range abort
+  let name = a:0 && a:1 ? 'Undo' : 'Stage'
+  let undo = a:0 && a:1 ? 1 : 0
+  let locs = []  " hunk locations
+  let ranges = []  " ranges staged
+  let offset = 0  " offset after undo
+  let hunks = s:get_hunks()  " general update
+  let winview = winsaveview()
+  if empty(hunks) | return | endif
+  for idx in range(len(hunks))
+    let [hunk0, count0, hunk1, count1] = hunks[idx]
+    let [iline, jline] = [a:range1 + offset, a:range2 + offset]
+    let [line0, line1] = [hunk0 + offset, hunk1 + offset]
+    let line2 = count1 ? line1 + count1 - 1 : line1  " changed closing line
+    if iline <= line1 && jline >= line2
+      let range = []  " selection encapsulates hunk
+    elseif iline >= line1 && jline <= line2
+      let range = count0 || a:0 && a:1 ? [] : [iline, jline]
+    elseif iline <= line2 && jline >= line2  " starts inside goes outside
+      let range = count0 || a:0 && a:1 ? [] : [iline, line2]
+    elseif iline <= line1 && jline >= line1  " starts outside goes inside
+      let range = count0 || a:0 && a:1 ? [] : [line1, jline]
+    else  " no update needed
+      continue
+    endif
+    exe line1 | exe join(range, ',') . 'GitGutter' . name . 'Hunk'
+    let range = empty(range) ? [line1, line2] : range
+    let range = map(uniq(range), 'v:val - offset')
+    let offset += a:0 && a:1 ? count0 - count1 : 0
+    call add(locs, idx + 1)  " included hunk
+    call add(ranges, join(range, '-'))
+  endfor
+  let range = join(ranges, ', ')  " line ranges
+  call winrestview(winview)
+  if !empty(range)  " synchronous update fails here for some reason
+    let index = min(locs) == max(locs) ? locs[0] : min(locs) . '-' . max(locs)
+    let index = '(' . index . ' of ' . len(hunks) . ')'
+    redraw | echom name . ' hunk(s): ' . range . ' ' . index
+    call timer_start(200, 'git#_exe_buffer')
+  endif
+endfunction
+" For delayed updates after staging
+function! git#_exe_buffer(...) abort
+  return gitgutter#process_buffer(bufnr(), 1)
+endfunction
+" For optional range arguments
+function! git#exe_hunks(...) range abort
+  return utils#range_func('git#_exe_hunks', a:000, [a:firstline, a:lastline])
+endfunction
+" For <expr> map accepting motion
+function! git#exe_hunks_expr(...) abort
+  return utils#motion_func('git#exe_hunks', [-1, -1] + a:000)
+endfunction
+
+" Update gitgutter hunks and show hunks under cursor
+" NOTE: Here skip hunks beneath current closed fold. This is consistent with native
+" vim behavior, since n/N do not open fold under cursor to access inner match even if
+" foldopen contains 'search' (but may open match in another fold). See also tags.vim
+function! s:next_hunk(hunk, ...) abort
+  let stage = a:0 ? a:1 : 0
+  exe a:hunk[2] == 0 ? 1 : a:hunk[2]
+  if !stage | return | endif
+  let keys = git#exe_hunks_expr(0)  " see vimrc maps
+  let keys .= (foldclosed('.') > 0 ? 'iz' : 'ih')
+  exe 'keepjumps normal ' . keys
+endfunction
+function! git#next_hunk(count, ...) abort
+  let cnt = a:count
+  let stage = a:0 ? a:1 : 0
+  let forward = cnt >= 0
+  if empty(cnt) | return | endif
+  if &l:diff  " native vim jumps
+    let keys = abs(cnt) . (forward ? ']c' : '[c')
+    exe 'normal! ' . keys | return
+  endif
+  let hunk = s:get_hunk()  " hunk under cursor
+  if stage && !empty(hunk)
+    let cnt += forward ? -1 : 1
+    call s:next_hunk(hunk, 1)
+  endif
+  let lnum = forward ? foldclosedend('.') : foldclosed('.')
+  let lnum = lnum > 0 ? lnum : line('.')  " ignore within fold
+  let hunks = s:get_hunks()
+  let hunks = forward ? hunks : reverse(copy(hunks))
+  if empty(hunks) | return | endif
+  for ihunk in hunks
+    if cnt == 0 | break | endif
+    if cnt > 0 ? ihunk[2] > lnum : ihunk[2] < lnum
+      let cnt += forward ? -1 : 1
+      let hunk = ihunk  " stop if count zero
+      call s:next_hunk(hunk, stage)
+    endif
+  endfor
+  if cnt == a:count  " no jumps or stages so echo message
+    let msg = 'Warning: No more hunks'
+    redraw | echohl WarningMsg | echom msg | echohl None
+  elseif !stage  " WARNING: 'G' changes v:count1 which messes up repeat.vim [G/]G
+    exe &l:foldopen =~# 'block\|all' ? 'normal! zv' : ''
+    call s:echo_hunk(hunk)
+  endif
+endfunction
+
+" Conflict jumping and delta folding
 " NOTE: This is adapted from conflict-marker.vim/autoload/conflict_marker.vim. Only
 " searches for complete blocks, ignores false-positive matches e.g. markdown ===
+" NOTE: Fold expr supports normal, context, unified, rcs, ed, subversion and git diffs.
+" For rcs diffs folds only files (rcs has no hunks in common sense). Uses foldlevel=1
+" ==> file foldlevel=2 ==> hunk. Note context diffs need special treatment, as hunks
+" are defined via context (after '***'), and checking for '*** ' or ('--- ') only
+" does not work since the file lines have the same marker. Copied this from elsewhere
+function! git#fold_expr(lnum) abort
+  let line = getline(a:lnum)  " see below
+  let regex1 = '^\(diff\|Index\)'  " difference file
+  let regex2 = '^\(@@\|\d\)\|^[*-]\{3}\s*\d\+,\d\+\s*[*-]\{3}'  " difference hunk
+  return line =~# regex2 ? '>2' : line =~# regex1 ? '>1' : '='
+endfunction
 function! git#next_conflict(count, ...) abort
   let winview = winsaveview()
   let reverse = a:0 && a:1
@@ -264,136 +402,144 @@ function! git#next_conflict(count, ...) abort
     call cursor(pos0)  " always open folds (same as gitgutter)
     exe 'normal! zv'
   else  " echo warning
-    call winrestview(winview)
-    echohl ErrorMsg
-    echom 'Error: No conflicts'
-    echohl None
+    let msg = 'Error: No conflicts' |
+    redraw | echohl ErrorMsg | echom msg | echohl None | call winrestview(winview)
   endif
 endfunction
 
-" Navigate and preview git gutter hunks
-" NOTE: Git gutter works by triggering on &updatetime after CursorHold only if
-" text was changed and starts async process. Here temporarily make synchronous.
-" NOTE: Always ensure gitgutter on and up-to-date before actions. Note CursorHold
-" triggers conservative update gitgutter#process_buffer('.', 0) that only runs if
-" text was changed while GitGutter and staging commands trigger forced update.
-function! s:update_hunks(...) abort
-  call switch#gitgutter(1, 1)
-  let force = a:0 ? a:1 : 0
-  try
-    let g:gitgutter_async = 0
-    call gitgutter#process_buffer(bufnr(''), force)
-  finally
-    let g:gitgutter_async = 1
-  endtry
+" Git gutter hunk objects (compare with fold.vim)
+" WARNING: Native gitgutter changes lines with 'G' which resets count and causes
+" utils#repeat_map() invocation of v:prevcount to use giant line number.
+function! git#object_hunk_i() abort
+  return s:object_hunk(0)
 endfunction
-function! git#next_hunk(count, stage) abort
-  call s:update_hunks()
-  let str = a:count < 0 ? 'Prev' : 'Next'
-  let cmd = 'keepjumps GitGutter' . str . 'Hunk'
-  for _ in range(abs(a:count))
-    exe cmd | exe a:stage ? 'GitGutterStageHunk' : ''
-  endfor
+function! git#object_hunk_a() abort
+  return s:object_hunk(1)
+endfunction
+function! s:object_hunk(...) abort
+  let hunk = s:get_hunk()
+  if empty(hunk)
+    let msg = 'E490: No hunk found'
+    redraw | echohl ErrorMsg | echom msg | echohl None
+    return ['v', getpos('.'), getpos('.')]
+  endif
+  let [line1, line2] = [hunk[2], hunk[2] + hunk[3] - 1]
+  if a:0 && a:1
+    let inum = line('$')
+    let lnum = line2
+    while lnum < inum && empty(trim(getline(lnum + 1)))
+      let lnum += 1
+    endwhile
+    let line2 = lnum
+  endif
+  let pos1 = [0, line1, 1, 0]
+  let pos2 = [0, line2, col([line2, '$']), 0]
+  return ['V', pos1, pos2]
+endfunction
+
+" Show hunk under cursor
+" NOTE: Compare to vim-lsp and ale.vim utilities. Here we do not auto-open
+" hunk difference popups since they are way bigger than those plugins.
+function! s:get_hunk() abort
+  let hunks = s:get_hunks(1)
+  if empty(hunks) | return [] | endif
+  let hunk = []
+  for ihunk in hunks
+    if gitgutter#hunk#cursor_in_hunk(ihunk)
+      let hunk = ihunk | break
+    endif
+  endfor | return hunk
 endfunction
 function! git#show_hunk() abort
   call map(popup_list(), 'popup_close(v:val)')
-  call s:update_hunks()
+  call switch#gitgutter(1, 1)  " turn on if possible
+  let hunks = s:get_hunks()
+  if empty(hunks) | return | endif
+  let hunk = s:get_hunk()
+  if empty(hunk)
+    let msg = 'Error: No hunk under cursor'
+    redraw | echohl ErrorMsg | echom msg | echohl None | return
+  endif
   GitGutterPreviewHunk
-  silent wincmd j
   call window#setup_preview()
-  redraw  " ensure message shows
-  echom 'Hunk difference'
+  let winids = popup_list()
+  if empty(winids) | return | endif
+  call s:echo_hunk(hunk)
 endfunction
 
-" Git gutter statistics over input lines
-" NOTE: Here g:gitgutter['hunks'] are [from_start, from_count, to_start, to_count]
-" lists i.e. starting line and counts before and after changes. Adapated s:isadded()
-" s:isremoved() etc. methods from autoload/gitgutter/diff.vim for partitioning into
-" simple added/changed/removed groups (or just 'changed') as shown below.
-function! git#stat_hunks(...) range abort
-  let [cnts, delta] = [[0, 0, 0], '']
-  let line1 = a:0 > 0 ? a:1 > 0 ? a:1 : 1 : a:firstline
-  let line2 = a:0 > 1 ? a:2 > 0 ? a:2 : line('$') : a:lastline
-  let single = a:0 > 2 ? a:3 : 0  " single delta
-  let suppress = a:0 > 3 ? a:4 : 0  " suppress message
-  let idxs = single ? [0, 0, 0] : [0, 1, 2]
-  let signs = single ? ['~'] : ['+', '~', '-']
-  let hunks = &l:diff ? [] : gitgutter#hunk#hunks(bufnr())
-  for [hunk0, count0, hunk1, count1] in hunks
-    let hunk2 = count1 ? hunk1 + count1 - 1 : hunk1
-    let [clip1, clip2] = [max([hunk1, line1]), min([hunk2, line2])]
-    if clip2 < clip1 | continue | endif
-    let offset = (hunk2 - clip2) + (clip1 - hunk1)  " count change
-    let cnt0 = max([count0 - offset, 0])
-    let cnt1 = max([count1 - offset, 0])
-    let cnts[idxs[0]] += max([cnt1 - cnt0, 0])  " added
-    let cnts[idxs[1]] += min([cnt0, cnt1])  " modified
-    let cnts[idxs[2]] += max([cnt0 - cnt1, 0])  " removed
-  endfor
-  for idx in range(len(cnts))
-    if !cnts[idx] | continue | endif
-    let delta .= signs[idx] . cnts[idx]
-  endfor
-  if !suppress
-    let range = ' (lines ' . line1 . ' to ' . line2 . ')'
-    let range = line1 > 1 || line2 < line('$') ? range : ''
-    echom 'Hunks: ' . string(delta) . range
-  endif
-  return delta
+" Helper functions for fugitive commands
+" NOTE: Fugitive commands permit overriding both option flags and sink entries
+" NOTE: Native fzf-vim :BCommits and :Commits commands include bindings inconsistent
+" with panel actions (hitting enter calls :edit, hitting ctrl-d runs split diff) so
+" here ensure enter triggers :Drop which calls edit only if in single-tab pane and
+" override ctrl-d mapping and header help information with standard mappings.
+function! git#setup_opts() abort
+  let b:fzf_winview = winsaveview()  " copied from fzf.vim
+  let opts = fzf#vim#with_preview({'placeholder': ''})
+  let opts['sink*'] = function('git#setup_sink')
+  call extend(opts.options, ['--header', '', '--header-first'])
+  call extend(opts.options, ['--bind', 'ctrl-d:half-page-down'])
+  call extend(opts.options, ['--no-expect', '--expect=ctrl-y,ctrl-o'])
+  return opts
 endfunction
-" For <expr> map accepting motion
-function! git#stat_hunks_expr() abort
-  return utils#motion_func('git#stat_hunks', [], 1)
+function! git#setup_sink(lines)
+  let regex = '[0-9a-f]\{7,40}'
+  if len(a:lines) < 2 | return | endif
+  if a:lines[0] ==# 'ctrl-y'
+    let hash = join(filter(map(a:lines[1:], 'matchstr(v:val, regex)'), 'len(v:val)'))
+    let @" = hash | silent! let @* = hash | silent! let @+ = hash | return
+  endif
+  let cmd = get(get(g:, 'fzf_action', {}), a:lines[0], '')
+  let cmd = type(cmd) == 1 && !empty(cmd) ? cmd : 'Drop'
+  for idx in range(1, len(a:lines) - 1)
+    let sha = matchstr(a:lines[idx], regex)
+    if empty(sha) | continue | endif
+    exe cmd . ' ' . FugitiveFind(sha)
+  endfor
 endfunction
 
-" Git gutter staging and unstaging over input lines
-" NOTE: Currently GitGutterStageHunk only supports partial staging of additions
-" specified by visual selection, not different hunks. This supports both, iterates in
-" reverse in case lines change. See: https://github.com/airblade/vim-gitgutter/issues/279
-" NOTE: Created below by studying s:update_hunks() and gitgutter#diff#process_hunks().
-" in autoload/gitgutter/diff.vim. Addition-only hunks have from_count '0' and to_count
-" non-zero since no text was present before the change. Also note gitgutter#hunk#stage()
-" requires cursor inside lines and fails when specifying lines outside of addition hunk
-" (see s:hunk_op) so explicitly navigate lines below before calling stage commands.
-function! git#stage_hunks(stage) range abort
-  let action = a:stage ? 'Stage' : 'Undo'
-  let cmd = 'GitGutter' . action . 'Hunk'
-  call s:update_hunks()
-  let hunks = gitgutter#hunk#hunks(bufnr(''))
-  let offset = 0  " offset after undo
-  let ranges = []  " ranges staged
-  let [ispan, jspan] = sort([a:firstline, a:lastline], 'n')
-  let [ifold, jfold] = [foldclosed(ispan), foldclosedend(jspan)]
-  let [ispan, jspan] = [ifold > 0 ? ifold : ispan, jfold > 0 ? jfold : jspan]
-  for [hunk0, count0, hunk1, count1] in copy(hunks)
-    let [iline, jline] = [ispan + offset, jspan + offset]
-    let [line0, line1] = [hunk0 + offset, hunk1 + offset]
-    let line2 = count1 ? line1 + count1 - 1 : line1  " changed closing line
-    if iline <= line1 && jline >= line2
-      let range = []  " selection encapsulates hunk
-    elseif iline >= line1 && jline <= line2
-      let range = count0 || !a:stage ? [] : [iline, jline]
-    elseif iline <= line2 && jline >= line2  " starts inside goes outside
-      let range = count0 || !a:stage ? [] : [iline, line2]
-    elseif iline <= line1 && jline >= line1  " starts outside goes inside
-      let range = count0 || !a:stage ? [] : [line1, jline]
-    else  " no update needed
-      continue
-    endif
-    let winview = winsaveview()
-    exe line1 | exe join(range, ',') . cmd
-    call winrestview(winview)
-    let range = empty(range) ? [line1, line2] : range
-    let range = map(uniq(range), 'v:val - offset')
-    let offset += a:stage ? 0 : count0 - count1
-    call add(ranges, join(range, '-'))
-  endfor
-  if !empty(ranges)  " synchronous update fails here for some reason
-    redraw | echom action . ' hunks: ' . join(ranges, ', ')
-    call timer_start(200, function('s:update_hunks', [1]))
-  endif
+" Setup fugitive windows
+" See: https://github.com/sgeb/vim-diff-fold/
+" NOTE: Renamed files additionally have file name next to the commit number.
+" NOTE: Native fugitive command is declared with :command! Git -nargs=? -range=-1
+" fugitive#Command(<line1>, <count>, +'<range>', <bang>0, '<mods>', <q-args>)
+" where <line1> is cursor line, <count> is -1 if no range supplied and <line2>
+" if any range supplied (see :help command-range), and confusingly <range> is the
+" number of range arguments supplied (i.e. 0 for :Git, 1 for e.g. :10Git, and
+" 2 for e.g. :10,20Git) where +'<range>' forces this to integer.
+function! git#setup_blame() abort
+  let regex = '^\x\{8}\s\+.\{-}\s\+(\zs<\S\+>\s\+'
+  call matchadd('Conceal', regex, 0, -1, {'conceal': ''})
+  call feedkeys(window#count_panes('h') == 1 ? "\<Cmd>call window#default_width(0)\<CR>": '', 'n')
 endfunction
-" For <expr> map accepting motion
-function! git#stage_hunks_expr(...) abort
-  return utils#motion_func('git#stage_hunks', a:000)
+function! git#setup_commit(...) abort
+  call switch#autosave(1, 1)
+  call window#default_height(1) | setlocal colorcolumn=73
+  keepjumps goto | call feedkeys("\<Cmd>startinsert\<CR>", 'n')
+endfunction
+function! git#setup_deltas() abort  " also used for general diff filetypes
+  for val in s:map_drop | silent! exe 'unmap <buffer> ' . val | endfor
+  let &l:foldexpr = 'git#fold_expr(v:lnum)'
+  let &l:foldmethod = &l:filetype ==# 'fugitive' ? 'syntax' : 'expr'
+  call matchadd('Conceal', '^[ +-]', 0, -1, {'conceal': ''})
+  call call('utils#map_from', &l:filetype ==# 'diff' ? [] : s:map_translate)
+  call fold#update_folds(0, 0)  " re-apply defaults after setting foldexpr
+endfunction
+function! git#setup_commands() abort
+  for cmd in ['drop', 'Drop']  " tab drop sinks
+    exe 'command! -buffer -nargs=* -bang G' . cmd . ' Gtabedit <args>'
+  endfor
+  for cmd in ['diff', 'split', 'diffsplit']  " outdated commands
+    silent! exe 'delcommand -buffer G' . cmd
+  endfor
+  command! -buffer -bar -bang -nargs=? -range=-1 -complete=customlist,fugitive#Complete
+    \ G call s:call_git(0, <line1>, <count>, +'<range>', <bang>0, '<mods>', <q-args>)
+  command! -buffer -bar -bang -nargs=? -range=-1 -complete=customlist,fugitive#Complete
+    \ Git call s:call_git(0, <line1>, <count>, +"<range>", <bang>0, "<mods>", <q-args>)
+  command! -buffer -bar -bang -range=-1 -nargs=* -complete=customlist,fugitive#EditComplete
+    \ Gtabedit exe fugitive#Open(<q-args> =~# '^+' ? 'edit' : 'Drop', <bang>0, '<mods>', <q-args>)
+  command! -buffer -bar -bang -nargs=* -range=% BCommits
+    \ <line1>,<line2>call fzf#vim#buffer_commits(<q-args>, git#setup_opts(), <bang>0)
+  command! -buffer -bar -bang -nargs=* -range=% -complete=file Commits
+    \ <line1>,<line2>call fzf#vim#commits(<q-args>, git#setup_opts(), <bang>0)
 endfunction

@@ -1,6 +1,27 @@
 "-----------------------------------------------------------------------------"
 " Utilities for scrolling and iterating
 "-----------------------------------------------------------------------------"
+" Helper function for showing location list info
+" NOTE: This is adapted from ale.vim, shows truncated message without 'hit enter
+" to continue prompt' while navigating errors via bracket maps. Instead rely upon
+" popup windows or location list panel to show full message if it is truncated.
+function! s:echo_loc(nr, ...) abort
+  let quickfix = a:0 ? a:1 : 0
+  let items = quickfix ? getqflist() : getloclist(0)
+  if a:nr < 1 || a:nr > len(items) | return | endif
+  let msg = items[a:nr - 1].text
+  let msg = substitute(msg, "\n", '', 'g')
+  let msg = substitute(msg, "\t", ' ', 'g')
+  let msg = substitute(msg, ' \+', ' ', 'g')
+  let shortmess = &l:shortmess
+  let width0 = winwidth(0) - 12  " showcmd region
+  let width = strdisplaywidth(msg)
+  if width0 < width  " 12 for showcmd region 3 for ellipsis
+    let idx = width0 / 2 - 2  " vint: next-line -ProhibitUsingUndeclaredVariable
+    let msg = msg[:idx - 1] . '...' . msg[-idx:]
+  endif | echo msg
+endfunction
+
 " Generate jump and change lists
 " NOTE: Similar to how stack.vim 'floats' recent tab stack entries to the top of the
 " stack of the current tab is in the most recent five, this filters jump and change
@@ -29,9 +50,10 @@ function! s:get_list(mode, ...) abort  " return location list with unique lines
 endfunction
 
 " Navigate jump and change lists
-" NOTE: This improves on native bug where e.g. going backwards in jumplist (changelist)
-" from top of changelist (jumplist) keeps the 'current position' at top of stack so
-" cannot return with forward press. Note 'col' stored in lists is relative to zero.
+" NOTE: Native vim jump/change motions are sensitive to foldopen 'mark' not 'jump',
+" and 'col' returned by getjumplist (getchangelist) is relative to zero not one.
+" NOTE: This fixes bug where e.g. going to previous jump (change) from latest change
+" (jump) keeps 'current position' at top of stack so cannot return with forward press.
 " NOTE: The getjumplist (getchangelist) functions return the length of the list
 " instead of the current position for external windows, so when switching from
 " current window, jump to top of the list before the requested user position. Also
@@ -47,9 +69,9 @@ function! s:feed_list(mode, iloc, ...) abort
   let [tnr, wnr; rest] = a:0 ? a:000 : [tabpagenr(), winnr(), 0]
   silent exe tnr . 'tabnext' | silent exe wnr . 'wincmd w'
   let keys = tnr == tabpagenr() && wnr == winnr() ? '' : '1000' . key2  " initial
-  let keys .= a:iloc == 0 ? '' : abs(a:iloc)  " count
-  let keys .= a:iloc > 0 ? key2 : key1  " motion
-  let keys .= &l:foldopen =~# '\<jump\>' ? 'zv' : ''
+  let keys .= a:iloc == 0 ? '' : abs(a:iloc)  " motion count
+  let keys .= a:iloc > 0 ? key2 : key1  " previous or next
+  let keys .= &l:foldopen =~# 'mark\|all' ? 'zv' : ''  " consistent with vim
   call feedkeys(keys . 'zzze', 'n')
 endfunction
 function! s:next_list(mode, count) abort  " navigate to nth location in list
@@ -64,13 +86,13 @@ function! s:next_list(mode, count) abort  " navigate to nth location in list
   let head = toupper(name[0]) . name[1:] . ' location: '
   if jdx >= 0 && jdx < len(opts)  " jump to location
     call s:feed_list(a:mode, opts[jdx]['loc'], tabpagenr(), winnr())
-    call feedkeys("\<Cmd>redraw | echom '" . head . (jdx + 1) . '/' . len(opts) . "'\<CR>", 'n')
+    call feedkeys("\<Cmd>redraw | echo '" . head . (jdx + 1) . '/' . len(opts) . "'\<CR>", 'n')
   elseif !iend && a:count == 1 && jdx == len(opts)  " silently restore position
     if bnum != bufnr() | exe bnum . 'buffer' | endif | call cursor(lnum, cnum + 1)
-    call feedkeys("\<Cmd>redraw | echom '" . head . jdx . '/' . len(opts) . "'\<CR>", 'n')
+    call feedkeys("\<Cmd>redraw | echo '" . head . jdx . '/' . len(opts) . "'\<CR>", 'n')
   else  " no-op warning message
-    redraw | let direc = a:count < 0 ? 'start' : 'end'
-    echohl WarningMsg | echom 'Error: At ' . direc . ' of ' . name . 'list' | echohl None
+    let msg = 'Error: At ' . (a:count >= 0 ? 'end' : 'start') . ' of ' . name . 'list'
+    redraw | echohl WarningMsg | echom msg | echohl None
   endif
 endfunction
 
@@ -102,9 +124,8 @@ function! s:list_sink(mode, line) abort
   let parts = matchlist(a:line, regex, '', '')
   let g:length = len(parts)
   if empty(parts)
-    redraw | echohl ErrorMsg
-    echom "Error: Invalid selection '" . a:line . "'"
-    echohl None | return
+    let msg = 'Error: Invalid selection ' . string(a:line)
+    redraw | echohl ErrorMsg | echom msg | echohl None | return
   endif
   let [iloc, tnr, wnr, _, _, item; rest] = map(parts[1:], 'str2nr(v:val)')
   return s:feed_list(a:mode, -iloc, tnr, wnr)
@@ -145,7 +166,7 @@ function! s:change_sink(arg) abort  " first item is key binding
 endfunction
 function! jump#fzf_jumps(...)
   let opts = '+m -x --ansi --cycle --scroll-off 999'
-  let opts .= ' --sync --header-lines 1 --tiebreak=index'
+  let opts .= ' --sync --header-lines 1 --tiebreak chunk,index'
   let options = {
     \ 'source': s:list_source(0),
     \ 'sink*': function('s:jump_sink'),
@@ -155,7 +176,7 @@ function! jump#fzf_jumps(...)
 endfunction
 function! jump#fzf_changes(...) abort
   let opts = '+m -x --ansi --cycle --scroll-off 999'
-  let opts .= ' --sync --header-lines=1 --tiebreak=index'
+  let opts .= ' --sync --header-lines 1 --tiebreak chunk,index'
   let options = {
     \ 'source': s:list_source(1),
     \ 'sink*': function('s:change_sink'),
@@ -205,40 +226,44 @@ function! jump#push_jump() abort
   endif
 endfunction
 
-" Navigate location list errors cyclically
-" Adding '+ 1 - reverse' fixes vint issue where ]x does not move from final error
-" See: https://vi.stackexchange.com/a/14359
-function! jump#setup_loc() abort
-  exe 'nnoremap <buffer> <CR> <CR>zv'
-endfunction
-function! jump#next_loc(count, list, ...) abort
-  let cmd = a:list ==# 'loc' ? 'll' : 'cc'
-  let func = 'get' . a:list . 'list'
-  let backward = a:0 > 0 ? a:1 : 0
-  let recursed = a:0 > 1 ? a:2 : 0
-  let params = a:list ==# 'loc' ? [0] : []
-  let items = call(func, params)
-  call map(items, "extend(v:val, {'idx': v:key + 1})")
-  if backward | call reverse(items) | endif
+" Navigate location list errors cyclically (see: https://vi.stackexchange.com/a/14359)
+" NOTE: Adding '+ 1 - backward' fixes vint issue where cursor remains stationary
+" NOTE: Unlike e.g. n/N jumping here permit jumping to match in fold under cursor
+function! jump#next_loc(count, ...) abort
+  let quickfix = a:0 > 0 ? a:1 : 0
+  let backward = a:0 > 1 ? a:2 : 0
+  let string = a:0 > 2 ? a:3 : ''
+  let skip = a:0 > 3 ? a:4 : 0
+  let items = quickfix ? getqflist() : getloclist(0)
+  let cmd = quickfix ? 'silent cc' : 'silent ll'
+  call map(items, "extend(v:val, {'idx': v:key})")
   if empty(items)
-    redraw | echohl ErrorMsg
-    echom 'Error: No locations'
-    echohl None | return
+    let msg = 'Error: No locations found'
+    redraw | echohl ErrorMsg | echom msg | echohl None | return
   endif
-  let [lnum, cnum] = [line('.'), col('.')]
-  let [cmps, oper] = [[], backward ? '<' : '>']
-  call add(cmps, 'v:val.lnum ' . oper . ' lnum')
-  call add(cmps, 'v:val.col ' . oper . ' cnum + 1 - backward')
-  call filter(items, join(cmps, ' || v:val.lnum == lnum && '))
-  let idx = get(get(items, 0, {}), 'idx', '')
-  if type(idx) && !recursed
-    exe backward ? '$' : '1' | call jump#next_loc(a:count, a:list, backward, 1)
-  elseif a:count > 1
-    exe cmd . ' ' . idx | call jump#next_loc(a:count - 1, a:list, backward)
+  let lnum = backward ? foldclosed('.') : foldclosedend('.')
+  if !skip && lnum > 0 && &l:foldopen !~# 'quickfix\|all'  " ignore current fold
+    let [lnum, cnum] = [lnum, backward ? 1 : col([lnum, '$'])]
+  else  " include current fold
+    let [lnum, cnum] = [line('.'), col('.')]
+  endif
+  let oper = backward ? '<' : '>'
+  let filt = 'v:val.lnum ' . oper . ' lnum || v:val.lnum == lnum'
+  let filt .= ' && v:val.col ' . oper . ' cnum + 1 - backward'
+  let opts = backward ? reverse(copy(items)) : copy(items)
+  call filter(opts, 'empty(string) || v:val.type ==? string')
+  let idx = get(get(filter(opts, filt), 0, {}), 'idx', '')
+  let inr = type(idx) ? 0 : idx + 1
+  if !skip && empty(inr)  " cyclic restart
+    exe backward ? '$' : 1
+    return jump#next_loc(a:count, quickfix, backward, string, 1)
+  elseif a:count > 1  " repeat jumping
+    exe cmd . ' ' . inr
+    return jump#next_loc(a:count - 1, quickfix, backward, string, 0)
   else  " jump to error
-    exe cmd . ' ' . idx
+    exe cmd . ' ' . inr | call s:echo_loc(inr)
+    exe &l:foldopen =~# 'quickfix\|all' ? 'normal! zv' : ''
   endif
-  if &l:foldopen =~# '\<quickfix\>' | exe 'normal! zv' | endif
 endfunction
 
 " Navigate words with restricted &iskeyword
@@ -247,11 +272,11 @@ endfunction
 function! jump#next_part(key, mode, ...) abort
   let cmd = 'setlocal iskeyword=' . &l:iskeyword  " vint: next-line -ProhibitUnnecessaryDoubleQuote
   let &l:iskeyword = a:mode ? "a-z,48-57" : "@,48-57,192-255"
-  let cnt = a:mode ? s:get_count(a:key) : v:count1
+  let cnt = a:mode ? s:next_count(a:key) : v:count1
   let action = a:0 ? a:1 ==# 'c' ? "\<Esc>c" : a:1 : ''
   call feedkeys(action . cnt . a:key . "\<Cmd>" . cmd . "\<CR>", 'm')
 endfunction
-function! s:get_count(key) abort
+function! s:next_count(key) abort
   let [line, idx] = [getline('.'), col('.') - 1]
   let forward = a:key =~# '^[we]$'
   let regex = a:key ==# 'w' ? '\u\+\l\+' : a:key ==# 'b' ? '\a\l\+\u\+' : '\l\+\u\+'
@@ -274,9 +299,6 @@ endfunction
 " Jump to next word or WORD accunting for conceal
 " NOTE: For some reason running separate normal mode command for adjustment solves
 " issue where deleting to end-of-line with 'e' either omits character includes newline
-" TODO: Support conceal-aware word objects. Use function that cancels operation, runs a
-" new 'g@aw' operation to record '[ and '], then augments the positions to account for
-" concealed characters with new operator (via a supplementary textobj-user mapping).
 function! jump#next_word(key, ...) abort
   let adjust = mode(1) =~# '^no' && a:key ==? 'e' ? 'l' : ''
   let [lnum, cols] = [line('.'), syntax#_concealed()]
@@ -300,15 +322,17 @@ endfunction
 function! jump#next_search(count) abort
   let forward = get(g:, 'indexed_search_n_always_searches_forward', 0)  " default
   if forward && !v:searchforward  " implement 'always forward'
-    let map = a:count > 0 ? 'N' : 'n'
+    let key = a:count > 0 ? 'N' : 'n'
   else  " standard direction
-    let map = a:count > 0 ? 'n' : 'N'
+    let key = a:count > 0 ? 'n' : 'N'
   endif
+  let keys = abs(a:count) . key
+  let keys .= &l:foldopen =~# 'search\|all' ? 'zv' : ''
   let b:curpos = getcurpos()
   if !empty(@/)
-    call feedkeys("\<Cmd>keepjumps normal! " . abs(a:count) . map . "\<CR>", 'n')
+    call feedkeys("\<Cmd>keepjumps normal! " . keys . "\<CR>", 'n')
   else
-    echohl ErrorMsg | echom 'Error: Pattern not set' | echohl None
+    redraw | echohl ErrorMsg | echom 'Error: Pattern not set' | echohl None
   endif
   if !empty(@/)
     call feedkeys("\<Cmd>exe b:curpos == getcurpos() ? '' : 'ShowSearchIndex'\<CR>", 'n')

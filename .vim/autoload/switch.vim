@@ -6,7 +6,7 @@ function! s:echo_state(text, toggle, ...)
   if !a:0 || !a:1
     let [str1, str2] = a:text =~# 'folds' ? ['open', 'clos'] : ['enabl', 'disabl']
     let state = a:toggle ? str1 . 'ed' : str2 . 'ed'
-    redraw | echom toupper(a:text[0]) . a:text[1:] . ' ' . state . '.'
+    redraw | echo toupper(a:text[0]) . a:text[1:] . ' ' . state . '.'
   endif
 endfunction
 
@@ -27,7 +27,7 @@ function! switch#ale(...) abort
     ALEResetBuffer | ALEDisableBuffer
   endif
   let b:ale_enabled = toggle  " ensure always applied in case API changes
-  call call('s:echo_state', ['ale linters', toggle, suppress])
+  call s:echo_state('ale linters', toggle, suppress)
 endfunction
 
 " Autosave toggle (autocommands are local to buffer as with codi)
@@ -42,16 +42,15 @@ function! switch#autosave(...) abort
   let suppress = a:0 > 1 ? a:2 : 0
   if state == toggle
     return
-  elseif toggle
+  elseif !toggle  " remove autocommands
+    exe 'au! autosave_' . bufnr()
+  else  " add autocommands
     exe 'augroup autosave_' . bufnr() | exe 'au!'
     exe 'autocmd InsertLeave,TextChanged <buffer> silent call file#update()'
     exe 'augroup END'
-  else
-    exe 'augroup autosave_' . bufnr() | exe 'au!'
-    exe 'augroup END'
   endif
   let b:autosave_enabled = toggle
-  call call('s:echo_state', ['Autosave', toggle, suppress])
+  call s:echo_state('autosave', toggle, suppress)
 endfunction
 
 " Toggle insert and command-mode caps lock
@@ -67,7 +66,7 @@ function! switch#caps(...) abort
     endfor
     augroup caps_lock
       au!
-      au InsertLeave,CmdwinLeave * setlocal iminsert=0 | autocmd! caps_lock
+      au InsertLeave,CmdwinLeave * setlocal iminsert=0 | au! caps_lock
     augroup END
   endif | return "\<C-^>"
 endfunction
@@ -83,7 +82,7 @@ function! switch#conceal(...) abort
   else
     let &l:conceallevel = toggle ? 2 : 0
   endif
-  call call('s:echo_state', ['Conceal mode', toggle, suppress])
+  call s:echo_state('conceal mode', toggle, suppress)
 endfunction
 
 " Tgogle special characters and columns on-off
@@ -105,7 +104,7 @@ function! switch#copy(scroll, ...) abort
       exe 'let &l:' . key . '=' . string(eval('&g:' . key))
     endfor
   endif
-  call call('s:echo_state', ['Copy mode', toggle, suppress])
+  call s:echo_state('copy mode', toggle, suppress)
 endfunction
 
 " Toggle ddc on and off
@@ -124,7 +123,7 @@ function! switch#ddc(...) abort
     call denops#server#stop()  " must come before ddc calls
     call ddc#custom#patch_global('sources', [])  " wipe out ddc sources
   endif
-  call call('s:echo_state', ['autocomplete', toggle, suppress])
+  call s:echo_state('autocomplete', toggle, suppress)
 endfunction
 
 " Toggle git gutter and skip if input request matches current state
@@ -139,7 +138,7 @@ function! switch#gitgutter(...) abort
   else
     GitGutterBufferDisable
   endif
-  call call('s:echo_state', ['GitGutter', toggle, suppress])
+  call s:echo_state('gitgutter', toggle, suppress)
 endfunction
 
 " Toggle highlighting
@@ -156,7 +155,7 @@ function! switch#hlsearch(...) abort
     let cmd = 'nohlsearch'
   endif
   call feedkeys("\<Cmd>" . cmd . "\<CR>", 'n')
-  call call('s:echo_state', ['Highlight search', toggle, suppress])
+  call s:echo_state('highlight search', toggle, suppress)
 endfunction
 
 " Toggle local directory navigation
@@ -168,8 +167,7 @@ function! switch#localdir(...) abort
   let root = empty(v:this_session) ? getcwd(-1) : fnamemodify(v:this_session, ':p:h')
   let local = expand('%:p:h')
   if getcwd(-1) !=# root  " enforce in case it changed
-    exe 'cd ' . root
-    echom "Global directory '" . root . "'"
+    exe 'cd ' . root | echo  'Global directory ' . string(root)
   endif
   if state == toggle
     return
@@ -178,7 +176,7 @@ function! switch#localdir(...) abort
   else
     exe 'cd ' . root
   endif
-  call call('s:echo_state', ["Local directory '" . local . "'", toggle, suppress])
+  call s:echo_state('local directory ' . string(local), toggle, suppress)
 endfunction
 
 " Enable and disable LSP engines
@@ -200,7 +198,7 @@ function! switch#lsp(...) abort
   else
     for server in running | call lsp#stop_server(server) | endfor  " de-activate server
   endif
-  call call('s:echo_state', ['lsp integration', toggle, suppress])
+  call s:echo_state('lsp integration', toggle, suppress)
 endfunction
 
 " Toggle between UK and US English
@@ -215,51 +213,57 @@ function! switch#lang(...) abort
   else
     setlocal spelllang=en_us
   endif
-  call call('s:echo_state', ['UK English', toggle, suppress])
+  call s:echo_state('UK English', toggle, suppress)
 endfunction
 
-" Toggle temporary paste mode
-" NOTE: Removed automatically when insert mode finishes
+" Toggle paste mode
+" NOTE: Automatically untoggle when insert mode finishes
 function! s:paste_restore() abort
   if exists('s:paste_options')
-    echom 'Paste mode disabled.'
+    echo 'Paste mode disabled.'
     let [&l:paste, &l:mouse] = s:paste_options
     exe 'unlet s:paste_options'
   endif
 endfunction
 function! switch#paste() abort
-  echom 'Paste mode enabled.'
+  echo 'Paste mode enabled.'
   let s:paste_options = [&l:paste, &l:mouse]
   setlocal paste mouse=
   augroup paste_mode
     au!
-    au InsertLeave * call s:paste_restore() | autocmd! paste_mode
+    au InsertLeave * call s:paste_restore() | au! paste_mode
   augroup END | return ''
 endfunction
 
-" Toggle temporary conceal reveal
-" NOTE: This is similar to switch#conceal() but auto-restores
+" Toggle temporary fold/conceal reveal
+" NOTE: Automatically untoggle after editing or inserting
 function! s:reveal_restore() abort
-  if exists('s:reveal_option')
-    let &l:conceallevel = s:reveal_option
-    exe 'unlet s:reveal_option'
-  endif
+  if exists('b:reveal_cache')
+    let &g:foldopen = b:reveal_cache[0]  " global only
+    let &l:conceallevel = b:reveal_cache[1]
+    let &l:relativenumber = b:reveal_cache[2]
+  endif | unlet! b:reveal_cache
 endfunction
 function! switch#reveal(...) abort
-  let state = exists('s:reveal_option')
+  let state = exists('b:reveal_cache')
   let toggle = a:0 > 0 ? a:1 : 1 - state
-  if !toggle && exists('s:reveal_option')
-    echom 'Reveal mode disabled.'
-    doautocmd reveal_restore TextChanged
-  elseif toggle && !exists('s:reveal_option')
-    echom 'Reveal mode enabled.'
-    let s:reveal_option = &l:conceallevel
-    setlocal conceallevel=0  " incsearch only
-    augroup reveal_restore
-      au!
-      au TextChanged,InsertEnter,InsertLeave * call s:reveal_restore() | autocmd! reveal_restore
-    augroup END
-  endif | return ''
+  let suppress = a:0 > 1 ? a:2 : 0
+  if toggle && !exists('b:reveal_cache')
+    let b:reveal_folds = 'block,insert,jump,mark,percent,quickfix,search,tag,undo'
+    let b:reveal_cache = [&g:foldopen, &l:conceallevel, &l:relativenumber]
+    let &g:foldopen = b:reveal_folds  " setting is global only
+    let &l:conceallevel = 0  " reveal concealed characters and closed folds
+    let &l:relativenumber = 0  " reveal absolute line numbers
+    exe 'augroup reveal_' . bufnr() | exe 'au!'
+    exe 'au BufEnter <buffer> let &g:foldopen = b:reveal_folds'
+    exe 'au BufLeave <buffer> let &g:foldopen = b:reveal_cache[0]'
+    exe 'au TextChanged,InsertEnter,InsertLeave <buffer> call s:reveal_restore() | au! reveal_' . bufnr()
+    exe 'augroup END'
+  elseif !toggle  " remove augroup
+    exe 'silent! doautocmd reveal_' . bufnr() . ' TextChanged'
+    unlet! b:reveal_cache
+  endif
+  call s:echo_state('Reveal mode', toggle, suppress)
 endfunction
 
 " Toggle folds with gitgutter hunks
@@ -267,12 +271,12 @@ endfunction
 function! s:get_changes() abort
   let lnums = []
   for [line1, line2, _] in fold#fold_source()
-    let hunks = git#stat_hunks(line1, line2, 0, 1)
-    let errors = edit#stat_errors(line1, line2)
-    if !empty(hunks) || !empty(errors) | call add(lnums, line1) | endif
+    let flags = git#get_hunks(line1, line2, 1)
+    let flags .= edit#get_errors(line1, line2)
+    if !empty(flags) | call add(lnums, line1) | endif
   endfor | return lnums
 endfunction
-function! switch#showchanges(...) abort
+function! switch#changes(...) abort
   let winview = winsaveview()
   let lnums = s:get_changes()
   let state = empty(filter(copy(lnums), 'foldclosed(v:val) > 0'))
@@ -280,13 +284,13 @@ function! switch#showchanges(...) abort
   let suppress = a:0 > 1 ? a:2 : 0
   if toggle  " :global previous search
     call fold#update_folds(0, 2)
-    for lnum in lnums | exe 'keepjumps silent! normal! ' . lnum . 'Gzv' | endfor
-    call winrestview(winview)
+    for lnum in lnums | exe lnum . 'foldopen' | endfor
+    call winrestview(winview) | exe 'normal! zzze'
   else  " keep hlsearch enabled
     call winrestview(winview)
     call fold#update_folds(0, 1)
   endif
-  call call('s:echo_state', [len(lnums) . ' folds', toggle, suppress])
+  call s:echo_state(len(lnums) . ' folds', toggle, suppress)
 endfunction
 
 " Toggle folds with search matches
@@ -297,7 +301,7 @@ function! s:get_matches() abort
     exe line1 | if search(@/, 'nW', line2) | call add(lnums, line1) | endif
   endfor | return lnums
 endfunction
-function! switch#showmatches(...) abort
+function! switch#matches(...) abort
   let winview = winsaveview()
   let lnums = s:get_matches()
   let state = empty(filter(copy(lnums), 'foldclosed(v:val) > 0'))
@@ -305,14 +309,14 @@ function! switch#showmatches(...) abort
   let suppress = a:0 > 1 ? a:2 : 0
   if toggle  " :global previous search
     call fold#update_folds(0, 2)
-    global//silent! normal! zv
-    call winrestview(winview)
+    for lnum in lnums | exe lnum . 'foldopen' | endfor
+    call winrestview(winview) | exe 'normal! zzze'
   else  " keep hlsearch enabled
     call winrestview(winview)
     call fold#update_folds(0, 1)
   endif
   call feedkeys("\<Cmd>set hlsearch\<CR>", 'n')
-  call call('s:echo_state', [len(lnums) . ' folds', toggle, suppress])
+  call s:echo_state(len(lnums) . ' folds', toggle, suppress)
 endfunction
 
 " Toggle spell check on and off
@@ -325,7 +329,7 @@ function! switch#spell(...) abort
   else
     let &l:spell = toggle
   endif
-  call call('s:echo_state', ['Spell check', toggle, suppress])
+  call s:echo_state('Spell check', toggle, suppress)
 endfunction
 
 " Toggle literal tab characters on and off
@@ -340,7 +344,7 @@ function! switch#tabs(...) abort
   if suppress && !&l:softtabstop  " enforce default
     let [&l:tabstop, &l:softtabstop, &l:shiftwidth] = [2, 2, 2]
   endif
-  call call('s:echo_state', ['Literal tabs', 1 - toggle, suppress])
+  call s:echo_state('Literal tabs', 1 - toggle, suppress)
 endfunction
 
 " Toggle tags on and off
@@ -361,5 +365,5 @@ function! switch#tags(...) abort
       silent! call remove(b:, name)
     endfor
   endif
-  call call('s:echo_state', ['Tags', toggle, suppress])
+  call s:echo_state('Tags', toggle, suppress)
 endfunction

@@ -109,7 +109,7 @@ function! tag#next_stack(...) abort
     let ipos = s:get_from(item[0], item[2], iloc == 0)
     call call('s:goto_pos', ipos)  " possibly empty
   endif
-  exe &l:foldopen =~# '\<tag\>' ? 'normal! zv' : ''
+  exe &l:foldopen =~# 'tag\|all' ? 'normal! zv' : ''
   if !result | call stack#print_item('tag') | endif
 endfunction
 
@@ -137,9 +137,8 @@ function! tag#fzf_stack() abort
     call map(items, '[v:val.cmd, v:val.name, v:val.kind]')
   endif
   if empty(items)
-    redraw | echohl WarningMsg
-    echom 'Error: Tag stack is empty'
-    echohl None | return
+    let msg = 'Error: Tag stack is empty'
+    redraw | echohl WarningMsg | echom msg | echohl None | return
   endif
   return tags#select_tag(level, reverse(items), 1)
 endfunction
@@ -148,9 +147,8 @@ endfunction
 " NOTE: This is similar to fzf except uses custom sink that adds results to window
 " tag stack for navigation with ctrl-bracket maps and tag/pop commands.
 function! s:raise() abort
-  redraw | echohl ErrorMsg
-  echom 'Error: Tags not found or not available.'
-  echohl None | return
+  let msg = 'Error: Tags not found or not available.'
+  redraw | echohl ErrorMsg | echom msg | echohl None | return
 endfunction
 function! s:format(size, ...) abort
   let path = a:0 ? "\t" . a:1 . '.vimtags' : ''  " see fzf.vim/bin/tagpreview.sh
@@ -166,8 +164,8 @@ function! tag#fzf_btags(bang, query, ...) abort
   let cmd = printf(cmd, fzf#shellescape(expand('%')))
   let opts = fzf#vim#with_preview({'placeholder': '{2}:{3..}'})
   let opts = join(map(get(opts, 'options', []), 'fzf#shellescape(v:val)'), ' ')
-  let opts .= " -m -d '\t' --with-nth 1,4.. --nth 1"
   let opts .= ' --preview-window +{3}-/2 --query ' . shellescape(a:query)
+  let opts .= " -m -d '\t' --nth 1 --with-nth 1,4.. --tiebreak chunk,index"
   try
     let source = call(snr . 'btags_source', [[cmd]])
   catch /.*/
@@ -210,9 +208,8 @@ function! s:get_files(...) abort
       if filereadable(file)
         call add(files, file)
       else
-        redraw | echohl WarningMsg
-        echom 'Warning: Failed to generate tag file ' . string(path)
-        echohl None
+        let msg = 'Warning: Failed to generate tag file ' . string(path)
+        redraw | echohl WarningMsg | echom msg | echohl None
       endif
     endfor
   endif
@@ -240,15 +237,14 @@ function! tag#fzf_tags(type, bang, ...) abort
   let regex = substitute(regex, '\\\@<![(|)]', '\\\\\&', 'g')
   let regex = substitute(regex, '\\\([(|)]\)', '\1', 'g')
   if empty(regex) && !empty(a:type)
-    redraw | echohl WarningMsg
-    echom 'Warning: Unable to filter file type ' . string(a:type) . '.'
-    echohl None
+    let msg = 'Warning: Unable to filter file type ' . string(a:type) . '.'
+    redraw | echohl WarningMsg | echom msg | echohl None
   endif
   let post = empty(regex) ? '' : " | awk -F'\t' '$2 ~ /" . regex . "/'"
   let read = join(map(['perl', script, ''] + args, 'shellescape(v:val)'), ' ')
   let opts = fzf#vim#with_preview({'placeholder': '--tag {2}:{-1}:{3..}'})
   let opts = join(map(get(opts, 'options', []), 'fzf#shellescape(v:val)'), ' ')
-  let opts .= " -m -d '\t' --with-nth ..4 --nth ..2"
+  let opts .= " -m -d '\t' --nth ..2 --with-nth ..4 --tiebreak index"
   let opts .= nbytes > maxbytes ? ' --algo=v1' : ''
   let prompt = string(empty(a:type) ? 'Tags> ' : 'FTags> ')
   let options = {

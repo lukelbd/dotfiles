@@ -31,7 +31,7 @@ function! grep#regex(regex) abort  " convert to pcre syntax
   let regex = substitute(regex, '\C\\[IKF]', '[a-zA-Z_]', 'g')  " convert to alphabetic
   let regex = substitute(regex, '\C\\[ikf]', '\\w', 'g')  " convert to alphanumeric
   let regex = substitute(regex, '\%(\\%\?\)\@<!\([(|)+?{]\)', '\\\\\1', 'g')  " double escape magics
-  let regex = substitute(regex, '\\%\?\([(]\|[|)+?{]\)', '\1', 'g')  " unescape magics
+  let regex = substitute(regex, '\\%\?\([(|)+?{]\)', '\1', 'g')  " unescape magics
   return fzf#shellescape(regex)  " similar to native method but supports other shells
 endfunction
 
@@ -54,10 +54,10 @@ function! grep#call_lines(global, level, regex, ...) abort
   let opts = a:global ? {'sink*': function('s:goto_lines')} : {}
   let regex = a:regex =~# '^\s\+$' ? '' : a:regex
   let [show, source] = fzf#vim#_lines(a:global ? 0 : 1)
-  let opts = '-d "\t" --tabstop=1 --nth ' . (2 + show) . '..'
+  let opts = '-d "\t" --tabstop 1 --nth ' . (2 + show) . '..'
   let opts .= ' --with-nth ' . (a:global ? 1 + show : 2 + show) . '..'
-  let opts .= ' --layout=reverse-list --tiebreak=index --extended --ansi'
-  let opts .= ' --query=' . string(succinct#regex(a:regex, 'omns'))
+  let opts .= ' --layout reverse-list --tiebreak chunk,index --ansi --extended'
+  let opts .= ' --query ' . string(succinct#regex(a:regex, 'omns'))
   let [_, _, case] = grep#parse(a:global, a:level, a:regex)
   let prompt = toupper(cmd[0]) . tolower(cmd[1:]) . '> '
   let regex1 = a:global ? '' : '^\e\?[^\e]*\D' . bufnr('') . '\t'
@@ -120,17 +120,18 @@ function! grep#complete_search(lead, line, cursor)
   return reverse([@/] + opts[1:])  " match to user input
 endfunction
 function! grep#call_grep(cmd, global, level) abort
-  let name = a:level > 2 ? 'root' : a:level > 1 ? 'project' : a:level ? 'folder' : 'buffer'
   let paths = parse#get_paths(1, a:global, a:level)
-  let action = a:cmd ==# 'lines' ? 'Search' : toupper(a:cmd[0]) . a:cmd[1:]
+  let head = a:cmd ==# 'lines' ? 'Search' : toupper(a:cmd[0]) . a:cmd[1:]
+  let name = a:level > 2 ? 'directory' : a:level > 1 ? 'project' : a:level ? 'folder' : 'buffer'
+  let name = len(paths) > 1 ? a:level > 2 ? 'directories' : name . 's' : name
   if a:global && len(paths) > 1  " open files or folders across session
-    let label = len(paths) . ' ' . name . 's'
+    let label = len(paths) . ' ' . name
   elseif a:cmd ==# 'lines'
     let label = 'current buffer'
   else  " specific paths
-    let label = join(paths, ' ')
+    let label = name . ' ' . join(paths, ' ')
   endi
-  let prompt = action . ' ' . label
+  let prompt = head . ' ' . label
   let regex = utils#input_default(prompt, @/, 'grep#complete_search')
   if empty(regex) | return | endif
   let args = [a:global, a:level, regex]

@@ -2,8 +2,11 @@
 " Utilities for formatting text
 "-----------------------------------------------------------------------------"
 " Auto-format with external plugin
-" NOTE: Not all servers support auto formtting. Seems 'pylsp' uses autopep8 consistent
+" NOTE: Not all servers support auto formatting. Seems 'pylsp' uses autopep8 consistent
 " with flake8 warnings. Use below function to print active servers.
+function! s:echo_range(msg, num) range abort
+  redraw | echom a:msg . (a:msg =~# '\s' ? ' on ' : ' ')  . a:num . ' line(s)'
+endfunction
 function! s:auto_servers() abort
   let servers = lsp#get_allowed_servers()
   let table = split(lsp#get_server_status(), "\n")
@@ -20,10 +23,34 @@ function! edit#auto_format(...) abort
     exe 'Autoformat' | call fold#update_folds(1)
     redraw | echom 'Autoformatted with ' . string(formatters[0])
   else
-    redraw | echohl WarningMsg
-    echom 'Error: No formatters available'
-    echohl None
+    let msg = 'Error: No formatters available'
+    redraw | echohl WarningMsg | echom msg | echohl None
   endif
+endfunction
+
+" Get number of error messages under the cursor
+" NOTE: This is used to show error messages on closed folds similar
+" to method used to show git-gutter hunk summaries on closed folds.
+function! edit#_get_errors(range1, range2, ...) abort
+  let flags = {'E': '!', 'W': '*', 'I': '^'}
+  let counts = {}  " flag counts
+  let items = get(b:, 'ale_highlight_items', [])
+  for item in items
+    if item.bufnr == bufnr() && item.lnum >= a:range1 && item.lnum <= a:range2
+      let flag = get(flags, item.type, '?')
+      let counts[flag] = get(counts, flag, 0) + 1
+    endif
+  endfor
+  let items = map(items(counts), 'v:val[0] . v:val[1]')
+  return join(items, '')
+endfunction
+" For optional range arguments
+function! edit#get_errors(...) range abort
+  return utils#range_func('edit#_get_errors', a:000, [a:firstline, a:lastline])
+endfunction
+" For <expr> map accepting motion
+function! edit#get_errors_expr() abort
+  return utils#motion_func('edit#get_errors_range', [])
 endfunction
 
 " Change order of adjacent characters
@@ -77,7 +104,7 @@ function! edit#change_lines(...) abort
   call winrestview(winview) | redraw
 endfunction
 
-" Format using &formatoptions setting
+" Format lines using the &formatoptions setting
 " NOTE: This implements line wrapping and joining settings, and accounts for comment
 " continuation and automatic indentation based on shiftwidth or formatlistpat.
 " NOTE: This wraps to optional input count column rather than text width, and
@@ -120,19 +147,27 @@ function! edit#format_lines_expr(...) abort
 endfunction
 
 " Indent or join lines by count
+" NOTE: Here join comments with two spaces instead of one (pep8 consistency)
 " NOTE: Native vim indent uses count to move over number of lines, but redundant
 " with e.g. 'd2k', so instead use count to denote indentation level.
 " NOTE: Native vim join uses count to join n lines including parent line, so e.g.
 " 1J and 2J have the same effect. This adds to count to make join more intuitive
-function! edit#join_lines(key, back) range abort
+function! edit#join_lines(backward, ...) range abort
   let [line1, line2, cnum] = [a:firstline, a:lastline, col('.')]
-  let line2 += line2 > line1 ? v:count : v:count1
-  let regex = '\S\zs\s\(' . comment#get_regex() . '\)'
-  let args = [regex, 'cnW', line1, 0, "!tags#get_skip(0, 'Comment')"]
+  if a:backward  " reverse join
+    let line1 -= line2 > line1 ? v:count : v:count1
+  else  " forward join
+    let line2 += line2 > line1 ? v:count : v:count1
+  endif
+  let regex = escape(comment#get_regex(), '@')
+  let regex = '\S\zs\s\(' . regex . '\)'  " \zs comes before comment
+  let args = [regex, 'cnW', line1, 0, "tags#get_inside(0, 'Comment')"]
   call cursor(line1, 1) | let [_, col1] = call('searchpos', args)
-  exe line1 . ',' . line2 . (exists(':Join') ? 'Join' : 'join')
+  let bang = a:0 && a:1 ? '!' : ''
+  let cmd = exists(':Join') ? 'Join' : 'join'
+  exe line1 . ',' . line2 . cmd . bang
   call cursor(line1, 1) | let [_, col2] = call('searchpos', args)
-  exe !col1 && col2 ?  line1 . 'substitute/' . regex . '/  \1/e' : ''
+  exe !col1 && col2 ?  line1 . 's@' . regex . '@  \1@e' : ''
   call cursor(line1, cnum)
 endfunction
 " Indent input lines
@@ -148,43 +183,77 @@ function! edit#join_lines_expr(...) abort
   return utils#motion_func('edit#join_lines', a:000)
 endfunction
 
-" Return error messages and replacement message
-" NOTE: This is used to show error messages on closed folds similar
-" to method used to show git-gutter hunk summaries on closed folds.
-function! s:stat_range(msg, num, ...) range abort
-  let head = a:msg =~# '\s' ? ' on ' : ' '
-  let tail = join(a:000, '')
-  let tail = empty(tail) ? '' : ' (args ' . tail . ')'
-  redraw | echom a:msg . head  . a:num . ' line(s)' . tail
+" Insert mode delete-by-tabs and delimit-mate keys
+" NOTE: Native delimitMate#ExpandReturn() issues <Esc> then fails to split brackets due
+" to InsertLeave autocommand that repositions cursor. Use <C-c> to avoid InsertLeave.
+let s:insert_delims = {'s': 'ExpandSpace', 'r': 'ExpandReturn', 'b': 'BS'}
+function! edit#insert_init(...) abort
+  let key = a:0 ? a:1 : get(b:, 'insert_mode', '')
+  let b:insert_mode = key  " see above
+  return key
 endfunction
-function! edit#stat_errors(...) range abort
-  let [line1, line2] = a:0 ? a:000 : [a:firstline, a:lastline]
-  let [info, cnts, flags] = ['', {}, {'E': '!', 'W': '@', 'I': '#'}]
-  for item in get(b:, 'ale_highlight_items', {})
-    if item.bufnr == bufnr() && item.lnum >= line1 && item.lnum <= line2
-      let flag = get(flags, item.type, '?')
-      let cnts[flag] = get(cnts, flag, 0) + 1
-    endif
-  endfor | return join(map(items(cnts), 'v:val[0] . v:val[1]'), '')
+function! edit#insert_undo(...) abort
+  let key = a:0 ? a:1 : get(b:, 'insert_mode', '')  " default to queued
+  let b:insert_mode = key ==? 'o' ? key : col('.') < col('$') - 1 ? 'i' : 'a'
+  return "\<C-g>u"
+endfunction
+function! edit#insert_delims(key, ...) abort
+  let name = get(s:insert_delims, a:key, a:key)
+  let keys = call('delimitMate#' . name, a:000)
+  let keys = substitute(keys, "\<Esc>", "\<C-c>", 'g') | return keys
+endfunction
+function! edit#insert_delete(...) abort  " vint: -ProhibitUsingUndeclaredVariable
+  let [idx, text] = [col('.') - 1, getline('.')]
+  let text = text[idx:idx + shiftwidth() - 1]  " forward-delete-by-tab
+  let regex = '^\(\t\| \{,' . shiftwidth() . '}\).*$'
+  let pad = substitute(text, regex, '\1', '')
+  let cnt = empty(pad) ? a:0 && a:1 : len(pad)
+  let head = cnt && pumvisible() ? "\<C-e>" : ''
+  let keys = repeat("\<Delete>", cnt) | return keys
+endfunction
+
+" Get variable segment text objects
+" NOTE: Native plugin works well but includes \k iskeyword boundaries instead of
+" strictly alphanumeric characters. Workaround by temporarily changing iskeyword
+function! edit#object_segment_i() abort
+  return call('edit#object_segment', ['i'] + a:000)
+endfunction
+function! edit#object_segment_a() abort
+  return call('edit#object_segment', ['a'] + a:000)
+endfunction
+function! edit#object_segment(char, ...) abort
+  let name = 'textobj#variable_segment#select_' . a:char
+  let keys = &l:iskeyword
+  try
+    setlocal iskeyword=@,48-57,_,192-255
+    return call('textobj#variable_segment#select_i', a:000)
+  finally
+    let &l:iskeyword = keys
+  endtry
 endfunction
 
 " Search sort or reverse the input lines
 " NOTE: Adaptation of hard-to-remember :g command shortcut. Adapted
 " from super old post: https://vim.fandom.com/wiki/Reverse_order_of_lines
+function! s:echo_range(msg, num) range abort
+  let head = a:msg . (a:msg =~# '\s' ? ' on ' : ' ')
+  let tail = a:num . ' line(s)'
+  redraw | echom head . ' ' . tail
+endfunction
 function! edit#sel_lines(...) range abort
   let range = printf('\%%>%dl\%%<%dl', a:firstline - 1, a:lastline + 1)
   call feedkeys((a:0 && a:1 ? '?' : '/') . range, 'n')
-  call s:stat_range('Searching', a:lastline - a:firstline - 1)
+  call s:echo_range('Searching', a:lastline - a:firstline - 1)
 endfunction
 function! edit#sort_lines(...) range abort  " vint: -ProhibitUnnecessaryDoubleQuote
   let range = a:firstline == a:lastline ? '' : a:firstline . ',' . a:lastline
   exe 'silent ' . range . 'sort ' . join(a:000, '')
-  call s:stat_range('Sorted', a:lastline - a:firstline + 1)
+  call s:echo_range('Sorted', a:lastline - a:firstline + 1)
 endfunction
 function! edit#reverse_lines() range abort  " vint: -ProhibitUnnecessaryDoubleQuote
   let range = a:firstline == a:lastline ? '' : a:firstline . ',' . a:lastline
   exe 'silent ' . range . 'g/^/m' . (empty(range) ? 0 : a:firstline - 1)
-  call s:stat_range('Reversed', a:lastline - a:firstline + 1)
+  call s:echo_range('Reversed', a:lastline - a:firstline + 1)
 endfunction
 " For <expr> map accepting motion
 function! edit#sel_lines_expr(...) abort
@@ -200,105 +269,68 @@ endfunction
 " Spell check under cursor
 " NOTE: This improves '1z=' to return nothing when called on valid words.
 " NOTE: If nothing passed and no manual count then skip otherwise continue.
-function! s:spell_check(...) abort
+function! s:run_check(...) abort
   let word = a:0 ? a:1 : expand('<cword>')
   let [fixed, which] = spellbadword(word)
   return !empty(fixed)
 endfunction
-function! edit#spell_next(count) abort
-  let keys = a:count < 0 ? '[s' : ']s'
-  for _ in range(abs(a:count))
-    exe s:spell_check() ? '' : 'keepjumps normal! ' . keys
-    call edit#spell_check(1)
-  endfor
-endfunction
 function! edit#spell_check(...) abort
-  if a:0 || v:count || s:spell_check()
-    let nr = a:0 ? a:1 : v:count1
-    let nr = nr ? string(nr) : ''
-    echom 'Spell check: ' . expand('<cword>')
-    if empty(nr)
-      call feedkeys('z=', 'n')
-    else
-      exe 'normal! ' . nr . 'z='
-    endif
+  let word = expand('<cword>')
+  let cnt = a:0 ? a:1 : v:count
+  if cnt || s:run_check()  " automatic check
+    exe 'normal! ' . max([cnt, 1]) . 'z='
+    let msg = word . ' -> ' . expand('<cword>')
+    redraw | echom 'Spell check: ' . msg
+  elseif !a:0  " user selection
+    let msg = 'Error: ' . string(word) . ' is not misspelled'
+    redraw | echohl WarningMsg | echo msg | echohl None
+  else  " user selection
+    call feedkeys('z=', 'n')
   endif
+endfunction
+function! edit#spell_next(count, ...) abort
+  let &l:spell = 1  " auto-enable spell checking
+  let forward = a:count >= 0
+  let correct = a:0 ? a:1 : 0
+  let regex = correct ? 'quickfix\|all' : 'block\|all'
+  let keys = forward ? ']S' : '[S'  " ignore rare and regional words
+  let keys .= &l:foldopen =~# regex ? 'zv' : ''
+  let msg = "echo 'Misspelled: ' . expand('<cword>')"
+  for _ in range(abs(a:count))
+    let lnum = forward ? foldclosedend('.') : foldclosed('.')  " see also tags.vim
+    exe !correct && lnum > 0 ? forward ? lnum + 1 : lnum - 1 : ''
+    exe correct && s:run_check() ? '' : 'keepjumps normal! ' . keys
+    exe correct && s:run_check() ? 'call edit#spell_check(1)' : msg
+  endfor
 endfunction
 
 " Search replace without history
-" NOTE: Substitute 'n' would give exact count but then have to repeat twice, too slow
+" NOTE: Using substitute(..., 'n') also gives count but have to repeat twice, too slow
 " NOTE: Critical to replace reverse line-by-line in case substitution has newlines
 function! edit#search_replace(msg, ...) range abort
   let winview = winsaveview()
   let pairs = copy(a:000[a:0 % 2:])
-  let skip = a:0 % 2 ? a:1 : ''
+  let group = a:0 % 2 ? a:1 : ''
+  let skip = "!tags#get_inside('$', group)"
   let cnt = 0  " pattern count
-  let pattern = @/  " previous pattern
+  let search = @/  " previous pattern
   for line in range(a:lastline, a:firstline, -1)
     exe line | for idx in range(0, a:0 - 2, 2)
       let jdx = idx + 1  " replacement index
       let regex = type(pairs[idx]) == 2 ? pairs[idx]() : pairs[idx]
       let replace = jdx >= a:0 ? '' : type(pairs[jdx]) == 2 ? pairs[jdx]() : pairs[jdx]
-      if !empty(skip) && !search(regex, 'cnW', line, 0, "tags#get_skip('$', skip)")
+      if !empty(group) && !search(regex, 'cnW', line, 0, skip)
         continue  " e.g. not inside comment
       endif
       let cmd = 's@' . regex . '@' . replace . '@gel'
       let cnt += !empty(execute('keepjumps ' . cmd))  " or exact with 'n'?
-      call histdel('/', -1)  " preserve history
     endfor
   endfor
-  let @/ = pattern
+  let @/ = search
   call winrestview(winview)
-  call s:stat_range(a:msg, cnt)
+  call s:echo_range(a:msg, cnt)
 endfunction
 " For <expr> map accepting motion
 function! edit#search_replace_expr(...) abort
   return utils#motion_func('edit#search_replace', a:000)
-endfunction
-
-" Repaired undo and repeat actions
-" NOTE: This restores cursor position after insert-mode undo. First queue translation
-" with edit#wrap_insert() then run edit#undo_insert() on InsertLeave (e.g. after 'ciw')
-function! edit#undo_repeat(key, count) abort
-  let reset = get(g:, 'repeat_tick', -1) == b:changedtick
-  let keys = (a:count ? a:count : '') . a:key
-  exe 'normal! ' . keys
-  exe &l:foldopen =~# 'undo\|all' ? 'normal! zv' : ''
-  if reset | let g:repeat_tick = b:changedtick | endif
-endfunction
-function! edit#undo_insert(...) abort
-  let imode = a:0 ? a:1 : get(b:, 'insert_mode', '')  " default to queued
-  if imode =~# 'o\|O'
-    let iundo = imode
-  elseif col('.') < col('$') - 1  " standard restore
-    let iundo = 'i'
-  else  " end-of-line restore
-    let iundo = 'a'
-  endif
-  let b:insert_mode = iundo | return "\<C-g>u"
-endfunction
-
-" Insert mode delete-by-tabs and delimit-mate keys
-" NOTE: Native delimitMate#ExpandReturn() issues <Esc> then fails to split brackets due
-" to InsertLeave autocommand that repositions cursor. Use <C-c> to avoid InsertLeave.
-function! edit#wrap_insert(...) abort
-  let imode = a:0 ? a:1 : get(b:, 'insert_mode', '')
-  let b:insert_mode = imode  " see above
-  return imode
-endfunction
-function! edit#wrap_delims(key, ...) abort
-  let names = {'s': 'ExpandSpace', 'r': 'ExpandReturn', 'b': 'BS'}
-  let name = get(names, a:key, a:key)
-  let keys = call('delimitMate#' . name, a:000)
-  let keys = substitute(keys, "\<Esc>", "\<C-c>", 'g')
-  return keys
-endfunction
-function! edit#wrap_delete(...) abort  " vint: -ProhibitUsingUndeclaredVariable
-  let [idx, text] = [col('.') - 1, getline('.')]
-  let text = text[idx:idx + &tabstop - 1]  " forward-delete-by-tab
-  let regex = '^\(\t\| \{,' . &tabstop . '}\).*$'
-  let pad = substitute(text, regex, '\1', '')
-  let cnt = empty(pad) ? a:0 && a:1 : len(pad)
-  let head = cnt && pumvisible() ? "\<C-e>" : ''
-  let keys = repeat("\<Delete>", cnt) | return keys
 endfunction

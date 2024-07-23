@@ -199,18 +199,17 @@ endfunction
 " NOTE: This handles fzf output lines
 function! window#goto_tab(item) abort
   if empty(a:item) | return | endif
-  let [tnr, wnr] = s:tab_sink(a:item)
-  if tnr == 0 || wnr == 0 | return | endif
+  let [tnr, wnr] = type(a:item) ? s:tab_sink(a:item) : [a:item, 0]
+  if tnr == 0 | return | endif
   exe tnr ? tnr . 'tabnext' : ''
   exe wnr ? wnr . 'wincmd w' : ''
 endfunction
 function! window#move_tab(item) abort
   if empty(a:item) | return | endif
-  let [tnr, _] = s:tab_sink(a:item)
+  let [tnr, _] = type(a:item) ? s:tab_sink(a:item) : [a:item, 0]
   if tnr == tabpagenr() | return | endif
   let tnr = tnr > tabpagenr() ? tnr : tnr - 1
-  let tnr = min([max([tnr, 0]), tabpagenr('$')])
-  exe 'tabmove ' . tnr
+  exe 'tabmove ' . min([max([tnr, 0]), tabpagenr('$')])
 endfunction
 function! s:tab_sink(item) abort
   if !type(a:item) | return [a:item, 0] | endif
@@ -231,7 +230,7 @@ function! window#fzf_goto(...) abort
   let bang = a:0 ? a:1 : 0
   let opts = fzf#vim#with_preview({'placeholder': '{4}:{3..}'})
   let opts = join(map(get(opts, 'options', []), 'fzf#shellescape(v:val)'), ' ')
-  let opts .= " -d : --with-nth 1,5.. --preview-window '+{3}-/2' --no-sort"
+  let opts .= " -d : --with-nth 1,5.. --preview-window '+{3}-/2' --tiebreak index"
   let options = {
     \ 'sink': function('window#goto_tab'),
     \ 'source' : s:tab_source(1),
@@ -243,7 +242,7 @@ function! window#fzf_move(...) abort
   let bang = a:0 ? a:1 : 0
   let opts = fzf#vim#with_preview({'placeholder': '{4}:{3..}'})
   let opts = join(map(get(opts, 'options', []), 'fzf#shellescape(v:val)'), ' ')
-  let opts .= " -d : --with-nth 1,5.. --preview-window '+{3}-/2' --no-sort"
+  let opts .= " -d : --with-nth 1,5.. --preview-window '+{3}-/2' --tiebreak index"
   let options = {
     \ 'sink': function('window#move_tab'),
     \ 'source' : s:tab_source(1),
@@ -331,8 +330,9 @@ function! window#scroll_normal(scroll, ...) abort
 endfunction
 " Scroll and update the count
 function! window#scroll_infer(scroll, ...) abort
+  let filter = "getbufvar(winbufnr(v:val), '&filetype') !=# 'ale-preview'"
+  let preview_ids = filter(popup_list(), filter)
   let popup_pos = pum_getpos()
-  let preview_ids = popup_list()
   if a:0 && a:1 || !empty(popup_pos)  " automatically returns empty if not present
     return call('s:scroll_popup', [a:scroll])
   elseif !empty(preview_ids)
@@ -352,7 +352,7 @@ function! window#setup_preview(...) abort
     let info = popup_getpos(winid)
     if !info.visible | continue | endif
     let scroll = line('$', winid) > info.core_height
-    let opts = {'dragall': 1, 'scrollbar': scroll}
+    let opts = {'dragall': 1, 'scrollbar': scroll, 'close': 'none'}
     if a:0 && a:1  " previously if empty(pum_getpos())
       let opts.border  = [0, 1, 0, 1]
       let opts.borderchars  = [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']
@@ -387,6 +387,27 @@ function! window#setup_panel(...) abort
       exe 'nmap <buffer> g' . char . ' <Nop>'
     endif
   endfor
+endfunction
+
+" Setup csv data windows
+" NOTE: See :help CSV and https://github.com/chrisbra/csv.vim
+function! window#setup_values() abort
+  if !exists(':CSVInit') | return | endif
+  let winview = winsaveview()
+  let char = matchstr(getline(1), '^[#%"]')
+  let char = empty(char) ? '#' : char
+  keepjumps goto  " start from top
+  let head1 = search('^\s*\a', 'W')
+  let head2 = head1 ? search('^\s*[.+-]\?\d', 'W') : head1
+  let g:csv_delim = expand('%:e') ==# 'txt' ? ' ' : ','
+  let b:csv_headerline = head2 ? head2 - 1 : head1  " header above numeric
+  let &l:commentstring = char . '%s'
+  keepjumps goto  " start from top
+  let info = search('^\s*[^' . char . ']', 'nW') - 1
+  let expr = info > 1 && !foldlevel(1) ? 1 . ',' . info . 'fold' : ''
+  exe 'CSVInit' | setlocal foldenable
+  call feedkeys("\<Cmd>" . expr . "\<CR>", 'n')
+  call winrestview(winview)
 endfunction
 
 " Setup or show specific panel windows

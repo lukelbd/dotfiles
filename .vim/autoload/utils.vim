@@ -165,23 +165,25 @@ function! utils#map_from(...) abort
     endfor
   endfor
   if !empty(fails)
-    redraw | echohl WarningMsg
-    echom 'Warning: Could not find source maps ' . join(map(fails, 'string(v:val)'), ', ')
-    echohl None | return 1
+    let msg = 'Warning: Could not find source maps ' . join(map(fails, 'string(v:val)'), ', ')
+    redraw | echohl WarningMsg | echom msg | echohl None | return 1
   endif
 endfunction
 
-" Call over the visual line range or user motion line range (see e.g. python.vim)
-" NOTE: :call call(function, args) with range seems to execute line-by-line instead of
-" entire block which causes issues with some functions. So use below clunky method.
-" Also ensure functions accept :[range]call function(args) for consistency with vim
-" standard paradigm and so they can be called with e.g. V<motion>:call func().
+" Call function with range supplied by motion
+" WARNING: Plugin text objects may be single-line linewise so avoid check below
+" NOTE: Only motions can cause backwards firstline to lastline order. Manual calls
+" to the function will have sorted lines. This wrapper sorts the range for safety
+" NOTE: Calling :[range]call call(...) for functions declared without range flag
+" executes line-by-line instead of entire block. Prefer :[range]call function(args)
+" usage instead of input arguments so ranges can be passed with V<motion>.
 function! utils#motion_func(name, args, ...) abort
   let signature = string(a:args)[1:-2]  " remove square brackets
   let operator = a:name . '(' . signature . ')'
-  let s:operator_view = a:0 && a:1 ? winsaveview() : {}
   let s:operator_func = operator
-  if mode() =~# '^\(v\|V\|\)$'  " call operator function with line range
+  let s:operator_view = a:0 && a:1 ? winsaveview() : {}
+  let s:operator_view['bufnr'] = bufnr()
+  if mode() =~# '^\(v\|V\|\)$'  " call operator function with current line range
     return ":call utils#operator_func('')\<CR>"
   elseif mode() ==# 'n'  " await motion and call operator function over those lines
     set operatorfunc=utils#operator_func
@@ -191,28 +193,60 @@ function! utils#motion_func(name, args, ...) abort
     return "\<Esc>"
   endif
 endfunction
-
-" Execute the function name and call signature passed to utils#motion_func.
-" This is generally invoked inside an <expr> mapping (see e.g. python.vim) .
-" NOTE: Only motions can cause backwards firstline to lastline order. Manual calls
-" to the function will have sorted lines. This sorts the range for safety.
 function! utils#operator_func(type, ...) range abort
-  if empty(a:type) " default behavior
-    let line1 = a:firstline
-    let line2 = a:lastline
-  elseif a:type =~? 'line\|char\|block' " builtin g@ type strings
-    let line1 = line("'[")
-    let line2 = line("']")
-  else
+  if empty(a:type)  " default behavior
+    let nums = [a:firstline, a:lastline]
+    let locs = ["'<", "'>"]
+  elseif a:type =~? 'line\|char\|block'  " builtin g@ type strings
+    let nums = [line("'["), line("']")]
+    let locs = ["'[", "']"]
+  else  " fallback
     echoerr 'E474: Invalid argument: ' . string(a:type)
     return ''
   endif
-  let [line1, line2] = sort([line1, line2], 'n')
+  let [line1, line2] = sort(nums, 'n')
+  let [col1, col2] = map(copy(locs), 'col(v:val)')
+  if a:type !=# 'line' && line1 == line2 && col1 >= col2  " keep single-line hunks
+    return ''
+  endif
+  let view = s:operator_view.bufnr ==# bufnr() ? s:operator_view : {}
   exe line1 . ',' . line2 . 'call ' . s:operator_func
-  call winrestview(s:operator_view) | return ''
+  call winrestview(view) | return ''
+endfunction
+
+" Convert ranges to arguments and jump to next match
+" NOTE: This is generally invoked inside an <expr> mapping (see e.g. python.vim).
+" NOTE: Here utils#range_func() converts command ranges to input arguments and
+" converts zeros to the full range. Used with git#get_hunks() and edit#get_errors()
+function! utils#next_func(count, ...) abort
+  for _ in range(abs(a:count))
+    let [lnum0, lnum] = [-1, line('.')]
+    let [fnum0, fnum] = [lnum, lnum]
+    while lnum0 != lnum && fnum0 > 0 && fnum == fnum0
+      let lnum0 = line('.')
+      let fnum0 = foldclosed('.')
+      for cmd in a:000 | call call(cmd, []) | endfor
+      let lnum = line('.')
+      let fnum = foldclosed('.')
+    endwhile
+  endfor
+endfunction
+function! utils#range_func(name, args, ...) abort range
+  let [range1, range2] = a:0 ? a:1 : [a:firstline, a:lastline]
+  let [arg1, arg2] = [get(a:args, 0, -1), get(a:args, 1, -1)]
+  let line1 = arg1 > 0 ? arg1 : arg1 == 0 ? 1 : range1
+  let line2 = arg2 >= 0 ? arg2 > 0 ? arg2 : line('$') : range2
+  let fold1 = foldclosed(line1)
+  let fold2 = foldclosedend(line2)
+  let span1 = fold1 > 0 ? fold1 : line1
+  let span2 = fold2 > 0 ? fold2 : line2
+  let spans = sort([span1, span2], 'n')
+  return call(a:name, spans + a:args[2:])
 endfunction
 
 " Generate repeatable mappings for arbitrary modes
+" WARNING: Normal mode commands issued from right-hand-side functions can reset count,
+" so v:prevcount could be e.g. line number if 'G' was called. Careful to avoid this
 " NOTE: This supports arbitrary operator-pending modifications, e.g. text changes
 " that prompt for user input, like vim-tags utility. Should try more ideas
 " NOTE: GUI vim raises error when combining <Plug> maps with <Cmd> so have to disable
@@ -232,6 +266,7 @@ function! utils#repeat_map(mode, lhs, name, rhs) abort
   let mrep = '"\<Plug>' . a:name . '", v:prevcount'
   let orep = 'utils#repeat_op(' . string(a:name) . ', v:prevcount)'
   let iset = empty(a:name) ? '"\<Ignore>"' : a:mode ==# 'o' ? orep : mrep
+  let setup = "\<Cmd>let g:repeat_count = v:count\<CR>"
   let repeat = empty(icmd) ? '' : icmd . 'call repeat#set(' . iset . ')<CR>'
   if empty(a:name)  " disable repetition (e.g. require user input)
     exe noremap . ' ' . a:lhs . ' ' . a:rhs . repeat

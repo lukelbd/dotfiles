@@ -1,9 +1,14 @@
 "-----------------------------------------------------------------------------
 " Vim settings
 "-----------------------------------------------------------------------------
-" General settings
+" General settings (see :help g:vim-indent)
 " NOTE: Exclude ':' except for insert mode popup completion
 setlocal iskeyword=@,48-57,_,#,192-255
+let g:vim_indent = {
+  \ 'line_continuation': shiftwidth(),
+  \ 'more_in_bracket_block': v:false,
+  \ 'searchpair_timeout': 100,
+\ }
 
 " Delimiter settings
 let b:delimitMate_quotes = "'"

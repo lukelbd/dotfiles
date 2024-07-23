@@ -1,8 +1,11 @@
 "-----------------------------------------------------------------------------
 " ReST settings
 "-----------------------------------------------------------------------------
-" Tab and delimiter settings
+" Plugin settings
 let b:delimitMate_quotes = "\" ' $ `"
+let b:delimitMate_nesting_quotes = ['`']
+
+" General settings
 setlocal tabstop=4  " required for nested bullets
 setlocal shiftwidth=4
 setlocal softtabstop=4

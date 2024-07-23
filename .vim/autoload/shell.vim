@@ -53,7 +53,7 @@ endfunction
 function! shell#fzf_help() abort
   let options = {
     \ 'source': getcompletion('', 'shellcmd'),
-    \ 'options': '--no-sort --prompt="--help> "',
+    \ 'options': '--tiebreak length,index --prompt="--help> "',
     \ 'sink': function('stack#push_stack', ['help', 'shell#help_page'])
   \ }
   call fzf#run(fzf#wrap(options))
@@ -95,7 +95,7 @@ function! shell#man_page(...) abort
   if line('$') > 1  " jump to relevant file
     if getline(1) =~# 'BUILTIN' || getline(2) =~# 'BUILTIN'
       if has('macunix') && page !=# 'builtin' | call s:load_page('', 'bash') | endif
-      goto | call search('^ \{7}' . page . ' [.*$', '')
+      keepjumps goto | call search('^ \{7}' . page . ' [.*$', '')
     endif
     silent exe 'file ' . name
     let s:man_prev = page
@@ -103,15 +103,14 @@ function! shell#man_page(...) abort
     if type !=# 'man'
       silent quit! | silent call file#drop_file(bufname(bnr))
     endif
-    redraw | echohl ErrorMsg
-    echom 'Error: Man page ' . string(page) . ' not found'
-    echohl None | return 1
+    let msg = 'Error: Man page ' . string(page) . ' not found'
+    redraw | echohl ErrorMsg | echom msg | echohl None | return 1
   endif
 endfunction
 function! shell#fzf_man() abort
   let options = {
     \ 'source': getcompletion('', 'shellcmd'),
-    \ 'options': '--no-sort --prompt="man> "',
+    \ 'options': '--tiebreak length,index --prompt="man> "',
     \ 'sink': function('stack#push_stack', ['man', 'shell#man_page'])
   \ }
   call fzf#run(fzf#wrap(options))
@@ -218,11 +217,11 @@ function! shell#show_netrw(cmd, local) abort
   exe a:cmd =~# 'vsplit' ? 'vert resize ' . width : 'resize ' . height 
 endfunction
 function! shell#show_terminal() abort
-  if !has('terminal')
-    redraw | echohl ErrorMsg
-    echom 'Error: Terminal not supported.'
-    echohl None | return
+  if has('terminal')
+    let $VIMTERMDIR = expand('%:p:h')
+    terminal | call feedkeys('cd $VIMTERMDIR', 'tn')
+  else  " raise error
+    let msg = 'Error: Terminal not supported.'
+    redraw | echohl ErrorMsg | echom msg | echohl None | return
   endif
-  let $VIMTERMDIR = expand('%:p:h')
-  terminal | call feedkeys('cd $VIMTERMDIR', 'tn')
 endfunction

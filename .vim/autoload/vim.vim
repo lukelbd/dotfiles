@@ -13,7 +13,8 @@ let s:config_ignore = [
   \ '/\.\?vimsession*', '/\.\?vim/autoload/vim.vim', '/\.\?vim/after/common.vim',
 \ ]  " common.vim sourced by filetype detect, others managed externally
 function! vim#config_refresh(bang, ...) abort
-  let time = get(g:, 'refresh', localtime())
+  let winview = winsaveview()
+  let refresh = get(g:, 'refresh', localtime())
   let regex = join(s:config_ignore, '\|')
   let paths = []
   for ipath in utils#get_scripts(a:0 ? a:1 : '')
@@ -21,21 +22,20 @@ function! vim#config_refresh(bang, ...) abort
     if path !~# expand('~') || path =~# regex || index(paths, ipath) != -1
       continue  " skip files not edited by user or matching regex
     endif
-    let state = 'g:loaded_' . fnamemodify(ipath, ':t:r')
-    if exists(state) | exe 'unlet! ' . state | endif
+    call s:unlet_loaded(ipath)
     if path =~# '/syntax/\|/ftplugin/'  " sourced by :filetype detect
       let ftype = fnamemodify(path, ':t:r')  " e.g. ftplugin/python.vim --> python
       if &filetype ==# ftype | call add(paths, ipath) | endif
-    elseif a:bang || getftime(path) > time || path =~# '/\.\?vimrc\|/init\.vim'
+    elseif a:bang || getftime(path) > refresh || path =~# '/\.\?vimrc\|/init\.vim'
       exe 'source ' . path
       call add(paths, ipath)
     endif
   endfor
-  let fold1 = foldclosed('.')
-  filetype detect  " update syntax, filetype, folds
-  let fold2 = foldclosed('.')
-  exe 'silent! normal! ' . (fold1 > 0 ? fold2 > 0 ? '' : 'zc' : 'zv')
+  let folds = filter(fold#fold_source(), 'foldclosed(v:val[0]) < 0')
   call map(paths, "fnamemodify(v:val, ':~')[2:]")
+  filetype detect  " update syntax, filetype, folds
+  for fold in folds | exe fold[0] . 'foldopen' | endfor
+  call winrestview(winview)
   redraw | echom 'Loaded: ' . join(paths, ', ') . '.'
   let g:refresh = localtime()
 endfunction
@@ -117,10 +117,23 @@ function! vim#setup_cmdwin() abort
 endfunction
 
 " Source current file or lines
+" NOTE: Have to remove loaded variables or :finish may be called early
 " NOTE: This fails when calling from current script so use expr mapping
+function! s:unlet_loaded(...) abort
+  let name = a:0 ? fnamemodify(a:1, ':t:r') : expand('%:t:r')
+  for fmt in ['loaded_%s', 'autoloaded_%s', '_%s_loaded']
+    let var = 'g:' . printf(fmt, name)
+    if exists(var) | exe 'unlet! ' . var | endif
+  endfor
+endfunction
+" Source motion or entire path
+function! vim#source_motion() range abort
+  update | let range = a:firstline . ',' . a:lastline
+  exe range . 'source'
+  redraw | echom 'Sourced lines ' . a:firstline . ' to ' . a:lastline
+endfunction
 function! vim#source_general() abort
-  let state = 'g:loaded_' . expand('%:t:r')
-  if exists(state) | exe 'unlet! ' . state | endif
+  call s:unlet_loaded()
   if v:count
     exe line('.') . ',' . (line('.') + v:count) . 'source'
     echom 'Sourced ' . v:count . ' lines'
@@ -129,20 +142,10 @@ function! vim#source_general() abort
     redraw | echom 'Sourced current file'
   endif
 endfunction
-" For <expr> execution map
-function! vim#source_general_expr() abort
-  let cmd = expand('%:p') =~# 'autoload/vim\.vim$' ? 'source %' : 'call vim#source_general()'
-  return "\<Cmd>" . cmd . "\<CR>"
-endfunction
-
-" Source input motion or selection
-" TODO: Add generalization for running chunks of arbitrary filetypes?
-function! vim#source_motion() range abort
-  update | let range = a:firstline . ',' . a:lastline
-  exe range . 'source'
-  redraw | echom 'Sourced lines ' . a:firstline . ' to ' . a:lastline
-endfunction
-" For <expr> map accepting motion
+" For <expr> motion or entire path
 function! vim#source_motion_expr(...) abort
   return utils#motion_func('vim#source_motion', a:000)
+endfunction
+function! vim#source_general_expr() abort
+  return "\<Cmd>" . (expand('%:p') =~# 'autoload/vim\.vim$' ? 'source %' : 'call vim#source_general()') . "\<CR>"
 endfunction

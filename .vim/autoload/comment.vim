@@ -30,7 +30,7 @@ function! s:get_header() abort
   let regex = '^\s*\(' . comment#get_regex() . '\s*\)\?'
   let cursor = substitute(getline('.'), regex, '', '')
   let header = utils#input_default('Header text', cursor, '')
-  call feedkeys(header ==# cursor ? '"_dd' : '', 'n') | return header
+  exe header ==# cursor ? 'delete _' : '' | return header
 endfunction
 function! comment#append_note(note) abort
   let indent = matchstr(getline('.'), '^\s*')
@@ -87,7 +87,7 @@ function! comment#header_line(fill, count, ...) abort  " inserts above by defaul
   let string .= string =~# '%s$' ? join(reverse(split(leader, '\zs')), '') : ''
   let repeat = (a:count - strchars(indent)) / strchars(a:fill)  " divide by width
   let append = indent . printf(string, repeat(a:fill, repeat))
-  if double
+  if double  " add header above and label in-between
     let string = comment#get_string(1)
     let header = s:get_header() | if empty(header) | return | endif
     let header = indent . printf(string, header)
@@ -96,47 +96,27 @@ function! comment#header_line(fill, count, ...) abort  " inserts above by defaul
   call append(line('.') - 1, append)
 endfunction
 
-" Navigate between comment blocks and headers
+" Helper comment functions
 " NOTE: The '$' is required for lookbehind for some reason
 function! comment#next_comment(count, ...) abort
   let comment = comment#get_regex()
   let head = a:0 && a:1 ? '' : '\s*'  " include indented
   let tail = comment . '.\+$\n'
-  let back = '^\(' . head . tail . '\)\@<!'
+  let back = '^\(^' . head . tail . '\)\@<!'
   let regex = back . head . '\zs' . tail . '\(' . head . tail . '\)*'
+  let lnum = s:next_comment(a:count, regex)
+  return lnum > 0
+endfunction
+function! s:next_comment(count, regex)
   let flags = a:count >= 0 ? 'w' : 'bw'
   for _ in range(abs(a:count))
-    call search(regex, flags, 0, 0, "tags#get_skip(0, 'Comment')")
+    let inum = foldclosed('.')
+    let skip = "!tags#get_inside(0, 'Comment')"
+    let skip .= inum > 0 ? " || foldclosed('.') == " . inum : ''
+    let lnum = search(a:regex, flags, 0, 0, skip)
   endfor
-  if &foldopen =~# 'block' | exe 'normal! zv' | endif
+  exe &foldopen =~# 'block\|all' ? 'normal! zv' : '' | return lnum
 endfunction
-function! comment#next_header(count, ...) abort
-  let comment = comment#get_regex()
-  let head = a:0 && a:1 ? '' : '\s*'  " include indented
-  let back = '^\(' . head . comment . '.\+$\n\)\@<!'
-  let tail = comment . '\s*[-=]\{3,}' . comment . '\?'
-  let regex = back . head . '\zs' . tail .'\(\s\|$\)'
-  let flags = a:count >= 0 ? 'w' : 'bw'
-  for _ in range(abs(a:count))
-    call search(regex, flags, 0, 0, "tags#get_skip(0, 'Comment')")
-  endfor
-  if &foldopen =~# 'block' | exe 'normal! zv' | endif
-endfunction
-function! comment#next_label(count, ...) abort
-  let [flag, opts] = a:0 && !type(a:1) ? [a:1, a:000[1:]] : [0, a:000]
-  let comment = comment#get_regex()
-  let head = (flag ? '^\s*' : '') .comment . '\s*'
-  let tail = '\c\zs\(' . join(opts, '\|') . '\).*$'
-  let regex = head . '\zs' . tail
-  let flags = a:count >= 0 ? 'w' : 'bw'
-  for _ in range(abs(a:count))
-    call search(regex, flags, 0, 0, "tags#get_skip(0, 'Comment')")
-  endfor
-  if &foldopen =~# 'quickfix' | exe 'normal! zv' | endif
-endfunction
-
-" Comment toggling and table comments
-" NOTE: Required since default 'gcc' maps to g@$ operator function call
 function! comment#toggle_comment(...) abort
   call tcomment#ResetOption()
   if v:count > 0 | call tcomment#SetOption('count', v:count) | endif
@@ -145,25 +125,33 @@ function! comment#toggle_comment(...) abort
   let &operatorfunc = 'TCommentOpFunc_' . suffix
   let line1 = foldclosed('.')
   let line2 = foldclosedend('.')
-  if line1 == line2  " e.g. both -1
-    call feedkeys('g@$', 'n')
-  else  " toggle fold
-    call feedkeys(line1 . 'ggg@$', 'n')
-  endif
+  call feedkeys(line1 == line2 ? 'g@il' : 'g@iz', 'm')
 endfunction
-function! comment#setup_table() abort
-  if !exists(':CSVInit') | return | endif
-  let winview = winsaveview()
-  let char = matchstr(getline(1), '^[#%"]')
-  let char = empty(char) ? '#' : char
-  goto | let head1 = search('^\s*\a', 'W')
-  let head2 = head1 ? search('^\s*[.+-]\?\d', 'W') : head1
-  let g:csv_delim = expand('%:e') ==# 'txt' ? ' ' : ','
-  let b:csv_headerline = head2 ? head2 - 1 : head1  " header above numeric
-  let &l:commentstring = char . '%s'
-  goto | let info = search('^\s*[^' . char . ']', 'nW') - 1
-  let expr = info > 1 && !foldlevel(1) ? 1 . ',' . info . 'fold' : ''
-  exe 'CSVInit' | setlocal foldenable
-  call feedkeys("\<Cmd>" . expr . "\<CR>", 'n')
-  call winrestview(winview)
+
+" Jump between comment blocks
+" NOTE: Required since default 'gcc' maps to g@$ operator function call
+function! comment#next_block(count, ...) abort
+  let comment = comment#get_regex()
+  let head = a:0 && a:1 ? '' : '\s*'  " include indented
+  let back = '^\(^' . head . comment . '.\+$\n\)\@<!'
+  let tail = comment . '\s*[-=]\{3,}' . comment . '\?'
+  let regex = back . head . '\zs' . tail .'\(\s\|$\)'
+  let lnum = s:next_comment(a:count, regex)
+  if lnum <= 0 | return | endif
+  let text = getline(lnum + 1)
+  let msg = substitute(text, head . comment . '\s*', '', '')
+  redraw | echo 'Header: ' . msg
+endfunction
+function! comment#next_label(count, ...) abort
+  let [flag, opts] = a:0 && !type(a:1) ? [a:1, a:000[1:]] : [0, a:000]
+  let comment = comment#get_regex()
+  let head = (flag ? '^\s*' : '') . comment . '\s*'
+  let tail = '\c\zs\(' . join(opts, '\|') . '\):.*$'
+  let regex = head . '\zs' . tail
+  let lnum = s:next_comment(a:count, regex)
+  if lnum <= 0 | return | endif
+  let msg = substitute(getline(lnum), head, '', '')
+  let msg = split(msg, '^[^:]*\zs:', 1)
+  let msg[0] = substitute(tolower(msg[0]), '^\a', '\u&', '')
+  redraw | echo join(msg, ':') . '...'
 endfunction
