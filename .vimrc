@@ -816,8 +816,8 @@ command! -range=0 -bang -nargs=* -complete=file Find call call('grep#call_rg', [
 command! -range=0 -bang -nargs=+ -complete=file Ag call grep#call_ag(<bang>0, <count>, <f-args>)
 command! -range=0 -bang -nargs=+ -complete=file Rg call grep#call_rg(<bang>0, <count>, <f-args>)
 nnoremap g' <Cmd>call grep#call_grep('rg', 0, 2)<CR>
-nnoremap g" <Cmd>call grep#call_grep('rg', 1, 2)<CR>
-nnoremap z' <Cmd>call grep#call_grep('rg', 0, 3)<CR>
+nnoremap g" <Cmd>call grep#call_grep('rg', 0, 3)<CR>
+nnoremap z' <Cmd>call grep#call_grep('rg', 1, 2)<CR>
 nnoremap z" <Cmd>call grep#call_grep('rg', 1, 3)<CR>
 
 " Grepping uncommented print statements
