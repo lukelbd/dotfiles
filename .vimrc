@@ -871,8 +871,8 @@ vnoremap <LeftMouse> <LeftMouse>my<Cmd>exe 'keepjumps normal! `z' . visualmode()
 " NOTE: Original vim idea is that these commands take us far away from cursor but
 " typically use scrolling to go far away. So now use CursorHold approach.
 for s:key in ['(', ')'] | exe 'silent! unmap ' . s:key | endfor
-nnoremap ; <Cmd>call switch#hlsearch(1 - v:hlsearch, 1)<CR>
-vnoremap ; <Cmd>call switch#hlsearch(1 - v:hlsearch, 1)<CR>
+nnoremap ; <Cmd>call switch#hlsearch(1 - v:hlsearch)<CR>
+vnoremap ; <Cmd>call switch#hlsearch(1 - v:hlsearch)<CR>
 noremap N <Cmd>call jump#next_search(-v:count1)<CR>
 noremap n <Cmd>call jump#next_search(v:count1)<CR>
 noremap { <Cmd>exe 'keepjumps normal! ' . v:count1 . '{'<CR>

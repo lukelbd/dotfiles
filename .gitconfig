@@ -47,6 +47,8 @@
 #   List the tracked file names and commits.
 # 'master':
 #   Merge master branch into current branch.
+# 'merged':
+#   Print whether current branch is up to date with master.
 # 'main':
 #   Merge main branch into current branch.
 # 'objects':

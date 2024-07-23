@@ -91,7 +91,7 @@ function! grep#call_ag(global, level, regex, ...) abort
   let source = join([flags, case, '--', regex, paths], ' ')
   let filter = ' | sed "s@$HOME@~@"'  " post-process
   call fzf#vim#ag_raw(source . filter, opts, 0)  " 0 is no fullscreen
-  redraw | echom 'Ag ' . regex . ' (level ' . a:level . ')'
+  redraw | echo 'Ag ' . regex . ' (level ' . a:level . ')'
 endfunction
 function! grep#call_rg(global, level, regex, ...) abort
   let flags = a:level > 1 ? '--hidden' : '--hidden --max-depth 1'
@@ -105,7 +105,7 @@ function! grep#call_rg(global, level, regex, ...) abort
   let source = join([head, flags, case, '--', regex, paths], ' ')
   let filter = ' | sed "s@$HOME@~@"'  " post-process
   call fzf#vim#grep(source . filter, opts, 0)  " 0 is no fullscreen
-  redraw | echom 'Rg ' . regex . ' (level ' . a:level . ')'
+  redraw | echo 'Rg ' . regex . ' (level ' . a:level . ')'
 endfunction
 
 " Call Ag Rg BLines or Lines from mapping (see also file.vim)
