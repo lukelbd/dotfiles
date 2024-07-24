@@ -351,6 +351,15 @@ endfunction
 " @= then indent-preserving ]p paste. See https://stackoverflow.com/a/2783670/4970632
 " exe 'global/' . regex . '/normal! gnd"="\n" . @"' . '\<CR>' . ']p'
 let s:regex_doc = '["'']\{3}'
+function! python#_process(line, label, ...) abort
+  let label = substitute(a:label, '^\s*', '', '')
+  call cursor(a:line, 1)
+  if search(s:regex_doc, 'ce')
+    let keys = empty(label) ? '' : "\<Esc>\"_cc" . label
+    exe "normal! a\<CR>" . keys
+  endif
+  return a:0 ? a:1 : 0
+endfunction
 function! python#next_docstring(count, ...) abort
   let flags = a:count >= 0 ? 'w' : 'wb'
   if a:0 && a:1
@@ -358,19 +367,21 @@ function! python#next_docstring(count, ...) abort
   else  " include comments
     let head = '\(' . comment#get_regex() . '.*\)\@<!'
   endif
+  let inum = foldclosed('.')
+  let skip = "!tags#get_inside(-1, 'Constant')"
+  let skip .= inum > 0 ? " || foldclosed('.') == " . inum : ''
   let regex = head . '[frub]*' . s:regex_doc . '\_s*\zs'
   for _ in range(abs(a:count))  " cursor is on first non-whitespace after triple-quote
-    call search(regex, flags, 0, 0, "!tags#get_inside(-1, 'Constant')")
+    call search(regex, flags, 0, 0, skip)
   endfor
-  exe &foldopen =~# 'quickfix\|all' ? 'normal! zv' : ''
+  exe &foldopen =~# 'block\|all' ? 'normal! zv' : ''
 endfunction
 function! python#insert_docstring() abort
   let winview = winsaveview()
   let itag = tags#get_tag(line('.'))
   if empty(itag) || itag[2] !~# '[mfc]'
-    echohl ErrorMsg
-    echom 'Error: Cursor is not inside class or function'
-    echohl None
+    let msg = 'Error: Cursor is not inside class or function'
+    redraw | echohl ErrorMsg | echom msg | echohl None
     call winrestview(winview) | return
   endif
   let tline = str2nr(itag[1])  " definition line
@@ -379,23 +390,28 @@ function! python#insert_docstring() abort
   let line1 = search(regex, 'e', tline)
   let line2 = searchpair('(', '', ')', 'W')  " returns end (note 'c' and '):' fail)
   if !line1 || !line2
-    echohl ErrorMsg
-    echom 'Error: Invalid object ' . string(itag[0]) . ' or position not found'
-    echohl None
+    let msg = 'Error: Invalid object ' . string(itag[0]) . ' or position not found'
+    redraw | echohl ErrorMsg | echom msg | echohl None
     call winrestview(winview) | return
   endif
-  let dline = line2 + 1
-  call cursor(dline, col([dline, '$']))
-  silent let result = succinct#get_delims(s:regex_doc, s:regex_doc)
+  let lnum = line2 + 1
+  let label = ''
+  call cursor(lnum, col([lnum, '$']))
+  let result = succinct#get_delims(s:regex_doc, s:regex_doc)
   if !empty(get(result, 0, 0))
-    let [_, _, dline1, _, dline2, _] = result
-    call deletebufline(bufnr(), dline1, dline2)
+    let [_, _, iline, _, jline, _] = result
+    let label = getline(iline + 1)
+    let label = label =~# s:regex_doc ? '' : label
+    call deletebufline(bufnr(), iline, jline)
   endif
   call cursor(line1, col([line1, '$']))
   call pydocstring#insert('', 1, line1, line2)
-  sleep 500m | call cursor(dline, 1)
-  let doc0 = search(s:regex_doc, 'ce')
-  if doc0 && col('.') < col('$') - 1  " format if necessary
-    exe "normal! a\<CR>\<Esc>=="
+  let jobs = shell#get_jobs('\<doq\>')
+  if len(jobs) != 1
+    let msg = 'Warning: Unable to unique pydocstring job (found ' . len(jobs) . ')'
+    redraw | echohl WarningMsg | echom msg | echohl None | return 1
   endif
+  let job = ch_getjob(jobs[0].channel)
+  let opts = {'exit_cb': {id, stat -> python#_process(lnum, label, stat)}}
+  call job_setoptions(job, opts)
 endfunction

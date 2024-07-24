@@ -389,8 +389,8 @@ nnoremap <Leader><F5> <Cmd>Commands<CR>
 " Vim help and history windows
 " NOTE: For some reason even though :help :mes claims count N shows the N most recent
 " message, for some reason using 1 shows empty line and 2 shows previous plus newline.
-for s:key in ['[[', ']]'] | silent! exe 'unmap! g' . s:key | endfor
-for s:key in [';;', '::'] | silent! exe 'unmap! g' . s:key | endfor
+for s:key in ['[[', ']]'] | silent! exe 'unmap g' . s:key | endfor
+for s:key in [';;', '::'] | silent! exe 'unmap g' . s:key | endfor
 nnoremap <Leader>; <Cmd>let &cmdwinheight = window#get_height(0)<CR>q:
 nnoremap <Leader>/ <Cmd>let &cmdwinheight = window#get_height(0)<CR>q/
 nnoremap <Leader>: <Cmd>History:<CR>
@@ -560,13 +560,18 @@ cnoremap <expr> <S-Right> repeat('<Del>', len(getcmdline()) - getcmdpos() + 1)
 " maps to both in case working from terminal without these maps. Also note iTerm
 " maps mod-delete and mod-backspace keys to shift arrows which do normal mode scrolls.
 for s:mode in ['n', 'v', 'i']
-  exe s:mode . 'noremap <ScrollWheelLeft> <ScrollWheelRight>'
-  exe s:mode . 'noremap <ScrollWheelRight> <ScrollWheelLeft>'
   exe s:mode . 'noremap <expr> <C-u> window#scroll_infer(-0.33, 0)'
   exe s:mode . 'noremap <expr> <C-d> window#scroll_infer(0.33, 0)'
   exe s:mode . 'noremap <expr> <C-b> window#scroll_infer(-0.66, 0)'
   exe s:mode . 'noremap <expr> <C-f> window#scroll_infer(0.66, 0)'
 endfor
+for s:mode in ['n', 'v', 'i'] | if has('gui_running')
+  silent! exe s:mode . 'unmap <ScrollWheelLeft>'
+  silent! exe s:mode . 'unmap <ScrollWheelRight>'
+else  " fix order
+  exe s:mode . 'noremap <ScrollWheelLeft> <ScrollWheelRight>'
+  exe s:mode . 'noremap <ScrollWheelRight> <ScrollWheelLeft>'
+endif | endfor
 inoremap <expr> <Up> window#scroll_infer(-1)
 inoremap <expr> <Down> window#scroll_infer(1)
 inoremap <expr> <C-k> window#scroll_infer(-1)
@@ -626,7 +631,7 @@ cnoremap <silent> <expr> / window#close_wild('/')
 " NOTE: Here fold#update_folds() re-enforces special expr fold settings for markdown
 " and python files then applies default toggle status that differs from buffer-wide
 " &foldlevel for fortran python and tex files (e.g. always open \begin{document}).
-for s:key in ['z', 'f', 'F', 'n', 'N'] | silent! exe 'unmap! z' . s:key | endfor
+for s:key in ['z', 'f', 'F', 'n', 'N'] | silent! exe 'unmap z' . s:key | endfor
 command! -bang -count -nargs=? UpdateFolds call fold#update_folds(<bang>0, <count>)
 nnoremap zv zvzzze
 vnoremap zv <Esc><Cmd>'<,'>foldopen!<CR>zzze
@@ -662,7 +667,6 @@ vnoremap <expr> zo fold#toggle_folds_expr(0)
 " NOTE: Here 'zC' will close fold only up to current level or for definitions
 " inside class (special case for python). For recursive motion mapping similar
 " to 'zc' and 'zo' could use e.g. noremap <expr> zC fold#toggle_folds_expr(1, 1)
-exe 'silent! unmap zn'
 nnoremap zn znzzze
 nnoremap zN zN<Cmd>call fold#update_folds(0)<CR>
 nnoremap zi <Cmd>call fold#toggle_children(0)<CR>
@@ -705,7 +709,6 @@ vnoremap z} <Cmd>call fold#update_level('R')<CR>zzze
 " Navigate jumplist {{{2
 " NOTE: This accounts for iterm function-key maps and karabiner arrow-key maps
 " See: https://stackoverflow.com/a/27194972/4970632
-exe 'silent! unmap! gJ' | exe 'silent! unmap! gK'
 silent! au! jumplist_setup
 augroup jumps_setup
   au!
@@ -1453,7 +1456,7 @@ call s:plug('inkarkat/vim-ReplaceWithRegister')
 call s:plug('henrik/vim-indexed-search')
 call s:plug('andymass/vim-matchup')
 call s:plug('justinmk/vim-sneak')  " simple and clean
-silent! unlet g:loaded_sneak_plugin
+unlet! g:loaded_sneak_plugin
 let g:matchup_mappings_enabled = 1  " enable default mappings
 let g:indexed_search_mappings = 0  " note this also disables <Plug>(mappings)
 
@@ -1621,7 +1624,7 @@ call s:plug('tpope/vim-characterize')  " print character (nicer version of 'ga')
 call s:plug('tpope/vim-speeddating')  " dates and stuff
 call s:plug('sk1418/HowMuch')  " calcuations
 call s:plug('metakirby5/codi.vim')  " calculators
-silent! unlet g:loaded_tcomment
+unlet! g:loaded_tcomment
 let g:HowMuch_no_mappings = 1
 let g:speeddating_no_mappings = 1
 let g:conjoin_map_J = "\1"  " disable mapping in lieu of 'nomap' option

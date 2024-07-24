@@ -123,14 +123,14 @@ endfunction
 " printing as a result. See https://vi.stackexchange.com/a/20639/8084
 " NOTE: Job has to be non-local variable or else can terminate
 " early when references gone. See https://vi.stackexchange.com/a/22597/8084
-let s:vim8 = has('patch-8.0.0039') && exists('*job_start')  " copied from autoreload/plug.vim
+function! shell#get_jobs(...) abort
+  let regex = a:0 ? a:1 : ''
+  let jobs = map(job_info(), 'job_info(v:val)')
+  let jobs = filter(jobs, "v:val.status !=# 'dead'")
+  let jobs = filter(jobs, "join(v:val.cmd, '\t') =~# regex")
+  return jobs
+endfunction
 function! shell#job_win(cmd, ...) abort
-  if !s:vim8
-    echohl ErrorMsg
-    echom 'Error: Running jobs requires vim >= 8.0'
-    echohl None
-    return 1
-  endif
   let cmds = ['/bin/sh', '-c', 'set -x; ' . a:cmd . '; :']
   let hght = winheight('.') / 4
   let opts = {}  " job options, empty by default
