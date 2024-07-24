@@ -2036,10 +2036,14 @@ if s:has_plug('vim-gutentags')  " {{{
     au User GutentagsUpdated call tag#update_files()
     au BufCreate,BufReadPost * call tag#update_files(expand('<afile>'))
   augroup END
-  command! -bang -nargs=* -complete=file Tags call tag#fzf_tags(0, <bang>0, <f-args>)
-  command! -bang -nargs=* -complete=file FTags call tag#fzf_tags(1, <bang>0, <f-args>)
-  command! -bang -nargs=* -complete=file BTags call tag#fzf_btags(<bang>0, <q-args>)
-  command! -nargs=* -complete=dir UpdateFiles call tag#update_files(<f-args>)
+  command! -bang -nargs=* -complete=customlist,file#local_files
+    \ BTags call tag#fzf_btags(<bang>0, <f-args>)
+  command! -bang -nargs=* -complete=customlist,file#local_dirs
+    \ FTags call tag#fzf_tags(1, <bang>0, <f-args>)
+  command! -bang -nargs=* -complete=customlist,file#local_dirs
+    \ Tags call tag#fzf_tags(0, <bang>0, <f-args>)
+  command! -nargs=* -complete=customlist,file#local_dirs
+    \ UpdateFiles call tag#update_files(<f-args>)
   command! -nargs=0 ShowCache call tag#show_cache()
   nnoremap gt <Cmd>BTags<CR>
   nnoremap gT <Cmd>Tags<CR>
@@ -2600,7 +2604,7 @@ if s:has_plug('vim-eunuch') || s:has_plug('vim-vinegar')  " {{{
     au!
     au FileType netrw call shell#setup_netrw()
   augroup END
-  command! -bang -nargs=* -complete=customlist,file#local_names
+  command! -bang -nargs=* -complete=customlist,file#local_files
     \ Rename call file#rename(<q-args>, '<bang>')
   command! -bang -nargs=* -complete=customlist,file#local_paths
     \ Move call file#rename(<q-args>, '<bang>')

@@ -35,39 +35,58 @@ function! file#get_cfile(...) abort
 endfunction
 
 " Generate list of files in directory
+" NOTE: Here directory-only 'local' searches translate empty string to current
+" file directory and '.' to globl working directory. Others treat them the same
 " WARNING: Critical that the list options match the prompt lead or else
 " when a single path is returned <Tab> during input() does not complete it.
-function! file#glob_names(...) abort  " used with fzf open
-  return call('file#_glob_paths', [0, 0] + a:000)
+function! file#glob_dirs(...) abort  " used with fzf open
+  return call('file#_glob_paths', [0, 2] + a:000)
 endfunction
 function! file#glob_paths(...) abort  " used with fzf open
   return call('file#_glob_paths', [0, 1] + a:000)
 endfunction
-function! file#local_names(...) abort  " used with commands
-  return call('file#_glob_paths', [1, 0] + a:000)
+function! file#glob_files(...) abort  " used with fzf open
+  return call('file#_glob_paths', [0, 0] + a:000)
+endfunction
+function! file#local_dirs(...) abort  " used with commands
+  return call('file#_glob_paths', [1, 2] + a:000)
 endfunction
 function! file#local_paths(...) abort  " used with commands
   return call('file#_glob_paths', [1, 1] + a:000)
 endfunction
-function! file#_glob_paths(base, dirs, lead, ...) abort  " glob path names
-  let source = type(a:base) ? a:base : a:base ? expand('%:p:h') : '.'
-  let base0 = a:lead =~# s:regex_abs ? '' : file#fmt_base(source, 0)
-  let base1 = file#fmt_base(fnamemodify(a:lead, ':h'), 0)  " completed subfolders
-  let lead = fnamemodify(a:lead, ':t')  " user input pattern
-  if base1 =~# s:regex_abs
+function! file#local_files(...) abort  " used with commands
+  return call('file#_glob_paths', [1, 0] + a:000)
+endfunction
+function! file#_glob_paths(base, dirs, glob, ...) abort  " glob path names
+  let base = type(a:base) ? a:base : a:base ? expand('%:p:h') : '.'
+  let base = a:dirs > 1 && a:glob =~# '^\./\?$' ? getcwd() : base
+  let base0 = fnamemodify(base, ':p:~')  " absolute default base
+  let base1 = file#fmt_base(base, 0)  " relative default base
+  let head = a:glob =~# '\.\.$' ? a:glob . '/' : a:glob
+  let glob = fnamemodify(head, ':p:t')  " glob pattern
+  let head0 = fnamemodify(fnamemodify(head, ':p:h'), ':p:~')  " absolute manual base
+  let head1 = file#fmt_base(fnamemodify(head, ':h'), 0)  " relative manual base
+  if a:glob =~# s:regex_abs && base0 !=# getcwd()
+    let base = head0
+  elseif head1 =~# s:regex_abs
+    let base = head1
+  elseif head1 =~# '^\.\/\?$'
     let base = base1
-  elseif base1 =~# '^\.\/\?$'
-    let base = base0
   else  " default base
-    let base = base0 . base1
+    let base = base1 . head1
   endif
   let base = empty(base) ? '.' : base
-  unsilent echom 'Source: ' . base . ' ' . string(lead)
-  let paths = globpath(base, lead . '*', 1, 1) + globpath(base, lead . '.?*', 1, 1)
-  call filter(paths, 'a:dirs || !isdirectory(expand(v:val))')  " possibly remove folders
+  let head = escape(base1, '[]/\.*$~')
+  let paths = globpath(base, glob . '*', 1, 1) + globpath(base, glob . '.?*', 1, 1)
+  call filter(paths, 'isdirectory(expand(v:val)) ? a:dirs > 0 : a:dirs < 2')
   call map(paths, 'substitute(v:val, ''^\.\/'', '''', '''')')  " remove './' headers
   call map(paths, 'isdirectory(v:val) ? v:val . ''/'' : v:val')  " append '/' to dirs
-  return map(paths, 'substitute(v:val, ''^'' . base0, '''', '''')')
+  if base ==# head0  " compress to home directory
+    call map(paths, 'fnamemodify(v:val, '':~'')')
+  else  " remove local directory
+    call map(paths, 'substitute(v:val, ''^'' . head, '''', '''')')
+  endif
+  return a:dirs > 1 && a:glob =~# '^\(\./\?\)\?$' ? ['./'] + paths : paths
 endfunction
 
 " Helper functions for fzf completion
@@ -222,7 +241,7 @@ function! file#fzf_open(bang, cmd, ...) abort
     let item = expand(item)
     if item ==# s:new_file  " WARNING: fzf sets 'base' to current working directory
       try
-        let item = utils#input_default('File', expand('<cfile>'), 'file#glob_names')
+        let item = utils#input_default('File', expand('<cfile>'), 'file#glob_files')
       catch /^Vim:Interrupt$/
         let item = ''  " avoid error message
       endtry

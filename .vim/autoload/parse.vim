@@ -42,6 +42,8 @@ function! s:dist_root(head, names, ...) abort
 endfunction
 
 " Get single root or all roots within the path
+" NOTE: Here parse#get_roots('.') fails but parse#get_roots('.vim') retrieves
+" plugged folders. Not sure why but now have :Tags expand directories anyway.
 " NOTE: Order here is critical. Prefer git repos to python repos and prefer
 " truncating deeply nested path names e.g. 'user-settings' jupyterlab folders.
 function! parse#get_root(...) abort
@@ -68,8 +70,8 @@ function! parse#get_root(...) abort
 endfunction
 function! parse#get_roots(...) abort
   let result = []
-  for path in a:0 ? a:000 : ['.']  " resolve removes trailing slash
-    let path = resolve(expand(path))
+  for path in a:0 ? type(a:1) > 1 ? a:1 : a:000 : ['.']
+    let path = resolve(expand(path))  " resolve removes trailing slash
     let path = fnamemodify(path, ':p')
     let path = substitute(path, '/$', '', '')
     let base = finddir('.git', path . ';')  " repo at and above path

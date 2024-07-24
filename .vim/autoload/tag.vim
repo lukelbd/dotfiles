@@ -6,6 +6,7 @@
 " NOTE: This only jumps if the destination 'from' line contains the tag (i.e. not
 " jumping to an outdated position or from a random fzf call) or when at the bottom.
 scriptencoding utf-8
+let s:abs_regex = '^[~$]\|^/\|^\w\+:'  " adapted from eunuch.vim
 function! s:goto_pos(...) abort
   let [bnr, lnum; rest] = a:0 ? a:000 : getpos('.')
   call file#goto_file(bnr ? bnr : bufnr())  " without tab stack
@@ -146,30 +147,35 @@ endfunction
 " Select from buffer tags
 " NOTE: This is similar to fzf except uses custom sink that adds results to window
 " tag stack for navigation with ctrl-bracket maps and tag/pop commands.
-function! s:raise() abort
-  let msg = 'Error: Tags not found or not available.'
-  redraw | echohl ErrorMsg | echom msg | echohl None | return
-endfunction
 function! s:format(size, ...) abort
   let path = a:0 ? "\t" . a:1 . '.vimtags' : ''  " see fzf.vim/bin/tagpreview.sh
-  let name = strcharpart(submatch(1), 0, a:size - 1)
-  let name = len(name) < len(submatch(1)) ? name . '·' : name
+  let part = substitute(submatch(1), '\s*$', '', '')
+  let name = strcharpart(part, 0, a:size - 1)
+  let name = len(name) < len(part) ? name . '·' : name
   let name = printf('%-' . a:size . 's', name)
   return name . "\t" . submatch(2) . submatch(3) . path
 endfunction
-function! tag#fzf_btags(bang, query, ...) abort
+function! tag#fzf_btags(bang, ...) abort
   let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
+  let paths = []  " relative if possible
+  let base = fnamemodify(expand('%:p:h'), ':p')  " ensure trailing slash
+  for path in a:0 ? a:000 : [@%]
+    let names = file#local_names(path)
+    call map(names, 'v:val =~# s:abs_regex ? v:val : base . v:val')
+    call extend(paths, map(names, 'fzf#shellescape(v:val)'))
+  endfor
   let cmd = 'ctags -f - --sort=yes --excmd=number %s 2>/dev/null | sort -s -k 5'
-  let cmd = printf(cmd, fzf#shellescape(expand('%')))
+  let cmd = printf(cmd, join(paths, ' '))
   let opts = fzf#vim#with_preview({'placeholder': '{2}:{3..}'})
   let opts = join(map(get(opts, 'options', []), 'fzf#shellescape(v:val)'), ' ')
-  let opts .= ' --preview-window +{3}-/2 --query ' . shellescape(a:query)
-  let opts .= " -m -d '\t' --nth 1 --with-nth 1,4.. --tiebreak chunk,index"
+  let opts .= " -m -d '\t' --nth 1 --with-nth 1,4.."
+  let opts .= ' --tiebreak chunk,index --preview-window +{3}-/2'
+  let msg = 'Error: Tags not found or not available.'
   try
     let source = call(snr . 'btags_source', [[cmd]])
   catch /.*/
-    return s:raise()
+    redraw | echohl ErrorMsg | echom msg | echohl None | return
   endtry
   let regex = '^\([^\t]*\)\t\([^\t]*\)\(.*\)$'
   let prompt = string('BTags> ')
@@ -177,24 +183,38 @@ function! tag#fzf_btags(bang, query, ...) abort
   call map(source, {_, val -> substitute(val, regex, '\=s:format(40)', '')})
   let options = {
     \ 'source': source,
-    \ 'sink': function('tags#_select_tag', [0]),
+    \ 'sink': function('tags#_select_tag', [2]),
     \ 'options': opts . ' --prompt=' . prompt,
   \ }
   return fzf#run(fzf#wrap('btags', options, a:bang))
 endfunction
 
 " Generate tag files automatically
+" NOTE: Here file#local_dirs() returns directories including '..' within any given
+" directory. Exclude '..' and include the default base when it is only one found.
 " NOTE: Native finddir() and findpath() ignore hidden folders unless explicitly
 " specified with e.g. '.*/**/'. But avoid huge globs since can cause slowdowns
 function! s:get_files(...) abort
-  let [files, roots] = [[], []]
-  for root in call('parse#get_roots', a:000)
+  let [paths, files, roots] = [[], [], []]
+  let globs = parse#get_ignores(0, 2, 0)
+  let regex = join(map(globs, 'glob2regpat(v:val)'), '\|')
+  for path in a:000
+    let dirs = file#local_dirs(path)
+    let base = path =~# '^\./\?$' ? '' : fnamemodify(expand('%:p:h'), ':p')
+    call map(dirs, 'v:val =~# s:abs_regex ? v:val : base . v:val')
+    call filter(dirs, 'fnamemodify(v:val, '':h:t'') !~# regex')
+    let dirs = len(dirs) == 1 && dirs[0] =~# '\.\./$' ? [base] : dirs
+    call filter(dirs, 'fnamemodify(v:val, '':h:t'') !=# ''..''')
+    call extend(paths, map(dirs, 'fnamemodify(v:val, '':p'')'))
+  endfor
+  let paths = empty(paths) ? [base] : paths
+  for root in parse#get_roots(paths)
     let file = root . '/.vimtags'
     let path = RelativePath(file)
     if filereadable(file)
-      call add(files, file)
-    else
-      call add(roots, root)
+      call extend(files, index(files, file) == -1 ? [file] : [])
+    else  " update roots
+      call extend(roots, index(roots, root) == -1 ? [root] : [])
     endif
   endfor
   let paths = join(map(copy(roots), 'string(RelativePath(v:val))'), ' ')
@@ -232,7 +252,10 @@ function! tag#fzf_tags(type, bang, ...) abort
     let nbytes += getfsize(path)
     if nbytes > maxbytes | break | endif
   endfor
-  if empty(args) | return s:raise() | endif
+  if empty(args)
+    let msg = 'Error: Tags not found or not available.'
+    redraw | echohl ErrorMsg | echom msg | echohl None | return
+  endif
   let regex = tags#type_regex(a:type ? &l:filetype : '')
   let regex = substitute(regex, '\\\@<![(|)]', '\\\\\&', 'g')
   let regex = substitute(regex, '\\\([(|)]\)', '\1', 'g')
@@ -249,7 +272,7 @@ function! tag#fzf_tags(type, bang, ...) abort
   let prompt = string(empty(a:type) ? 'Tags> ' : 'FTags> ')
   let options = {
     \ 'source': read . post,
-    \ 'sink': function('tags#_select_tag', [0]),
+    \ 'sink': function('tags#_select_tag', [2]),
     \ 'options': opts . ' --prompt=' . prompt,
   \ }
   return fzf#run(fzf#wrap('tags', options, a:bang))
