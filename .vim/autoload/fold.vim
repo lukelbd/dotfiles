@@ -241,41 +241,44 @@ function! fold#fold_text(...) abort
     let level = len(v:folddashes)
   endif
   let leftidx = charidx(getline(winview.lnum), winview.leftcol)
-  let [label, space, stats] = s:fold_text(line1, line2, level)
-  return strcharpart(label . space . stats, leftidx)
+  let [label, space, lines] = s:fold_text(line1, line2, level)
+  return strcharpart(label . space . lines, leftidx)
 endfunction
 function! s:fold_text(line1, line2, level)
-  let level = repeat(':', a:level) . '+'  " matches builtin foldtext()
   let lines = string(a:line2 - a:line1 + 1)  " number of lines
   let maxlen = get(g:, 'linelength', 88)  " default maximum
-  let errors = edit#get_errors(a:line1, a:line2)  " quickfix items
-  let hunks = git#get_hunks(a:line1, a:line2, 1)  " gitgutter hunks
-  let flags = empty(errors) ? '' : errors  " errors return zero
-  let flags .= empty(hunks) ? '' : hunks  " errors return zero
-  let dots = repeat(' ', len(string(line('$'))) - len(lines))
-  let stats = level . dots . lines  " default statistics
-  let stats = dots . lines . level  " default statistics
+  let delta = len(string(line('$'))) - len(lines)
+  let flags = edit#get_errors(a:line1, a:line2)  " quickfix items
+  let flags .= git#get_hunks(a:line1, a:line2, 1)  " gitgutter hunks
+  let flags = empty(flags) ? flags : '{' . flags . '} '  " counts
+  if exists('*' . &l:filetype . '#fold_text')
+    let [name, args] = [&l:filetype . '#fold_text', [a:line1, a:line2]]
+  else  " default fold text
+    let [name, args] = ['fold#fold_label', [a:line1]]
+  endif
   if &l:diff  " fill with maximum width
-    let [label, stats] = [level . dots . lines, repeat('~', maxlen - strwidth(stats) - 2)]
-  elseif exists('*' . &l:filetype . '#fold_text')
-    let label = {&l:filetype}#fold_text(a:line1, a:line2)
+    let [level, space] = ['', '·']
+    let label = '+- ' . lines . ' identical '
+    let lines = ' -+'
   else  " global default label
-    let label = fold#fold_label(a:line1)
+    let [label, space] = [call(name, args), ' ']
+    let lines = '[' . repeat('·', delta) . lines . ']'
+    let level = ' (' . string(a:level) . ')'
   endif
   let [delim1, delim2] = s:format_delims(label)
   let indent = matchstr(label, '^\s*')
-  let width = maxlen - strwidth(stats) - 1
+  let width = maxlen - strchars(lines) - strchars(level) - 1
   let label = empty(delim2) ? label : label . '···' . delim2
-  let label = empty(flags) ? label : indent . flags . ' ' . strpart(label, len(indent))
-  if strwidth(label) >= width  " truncate fold text
-    let dcheck = strpart(label, width - 4 - strwidth(delim2), 1)
-    let delim2 = dcheck ==# delim1 ? '' : delim2
-    let dcheck = strpart(label, width - 4 - strwidth(delim2))
-    let label = strpart(label, 0, width - 5 - strwidth(delim2))
-    let label = label . '···' . delim2 . '  '
+  let chars = strcharpart(label, strchars(indent))
+  let label = indent . flags . chars
+  if strchars(label) >= width  " truncate fold text
+    let ichar = strcharpart(label, width - 4, 1)
+    let delim = ichar ==# delim1 ? delim2 : ''
+    let label = strcharpart(label, 0, width - 5)
+    let label = empty(delim) ? label . ' ···' : label . '···' . delim
   endif
-  let space = repeat(' ', width - strwidth(label))
-  return [label, space, stats]
+  let space = repeat(space, width - strchars(label))
+  return [label . level, space, lines]
 endfunction
 
 " Helper functions for returning all folds
@@ -330,31 +333,32 @@ endfunction
 function! fold#fzf_folds(...) abort
   let bang = a:0 ? a:1 : 0  " fullscreen
   let folds = fold#fold_source()
-  let [texts1, texts2, texts] = [[], [], []]
+  let maxlen = max(map(copy(folds), 'len(string(abs(v:val[1] - v:val[0])))'))
+  let [labels1, labels2, labels] = [[], [], []]
   for [line1, line2, level] in folds
-    let [text, _, stats] = s:fold_text(line1, line2, level)
-    let [count1, count2] = s:fold_counts(text)
-    let stats = substitute(stats, '^\(\d\):\+', '\1:', '')
-    let stats = substitute(stats, '·', ' ', 'g')
-    let text = substitute(text, '^\s*', '', '')
-    let text = bufname() . ':' . line1 . ':' . stats . ' ' . text
+    let [label, _, lines] = s:fold_text(line1, line2, level)
+    let [count1, count2] = s:fold_counts(label)
+    let lines = substitute(lines, '\D', '', 'g')
+    let lines = repeat(' ', maxlen - strchars(lines)) . lines . '-+'
+    let label = substitute(label, '^\s*', '', '')
+    let label = bufname() . ':' . line1 . ':' . lines . ' ' . label
     if count1  " ale.vim locations
-      call add(texts1, [text, count1])
+      call add(labels1, [label, count1])
     elseif count2  " gitgutter changes
-      call add(texts2, [text, count2])
+      call add(labels2, [label, count2])
     else  " standard label
-      call add(texts, text)
+      call add(labels, label)
     endif
   endfor
-  let texts1 = sort(texts1, {i1, i2 -> i2[1] - i1[1]})
-  let texts2 = sort(texts2, {i1, i2 -> i2[1] - i1[1]})
-  let texts = map(texts1, 'v:val[0]') + map(texts2, 'v:val[0]') + texts
+  let labels1 = sort(labels1, {i1, i2 -> i2[1] - i1[1]})
+  let labels2 = sort(labels2, {i1, i2 -> i2[1] - i1[1]})
+  let labels = map(labels1, 'v:val[0]') + map(labels2, 'v:val[0]') + labels
   let opts = fzf#vim#with_preview({'placeholder': '{1}:{2}'})
   let opts = join(map(get(opts, 'options', []), 'fzf#shellescape(v:val)'), ' ')
   let opts .= ' -d : --with-nth 3.. --preview-window +{2}-/2 --layout=reverse-list'
-  if empty(text) | return | endif
+  if empty(label) | return | endif
   let options = {
-    \ 'source': texts,
+    \ 'source': labels,
     \ 'sink': function('s:fold_sink'),
     \ 'options': opts . " --prompt='Fold> '",
   \ }

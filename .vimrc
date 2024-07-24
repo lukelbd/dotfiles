@@ -397,9 +397,9 @@ nnoremap <Leader>: <Cmd>History:<CR>
 nnoremap <Leader>? <Cmd>History/<CR>
 nnoremap <Leader>v <Cmd>call vim#show_help()<CR>
 nnoremap <Leader>V <Cmd>Helptags<CR>
-nnoremap g; <Cmd>20message<CR>
-nnoremap g: @:
-vnoremap g: @:
+nnoremap g; <Cmd>exe v:count ? v:count . 'message' : '20message'<CR>
+nnoremap g: <Cmd>exe histget('cmd', -v:count1)<CR>
+vnoremap g: <Esc><Cmd>exe "'<,'>" . histget('cmd', -v:count1)<CR>
 
 " Shell commands and help windows {{{2
 " add shortcut to search for all non-ASCII chars (previously used all escape chars).

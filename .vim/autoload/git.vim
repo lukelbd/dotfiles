@@ -227,7 +227,7 @@ function! git#_get_hunks(range1, range2, ...) abort
   let cnts = [0, 0, 0]  " change counts
   let quiet = a:0 ? a:1 : 0  " quicker version
   let hunks = s:get_hunks(quiet)
-  if empty(hunks) | return | endif
+  if empty(hunks) | return '' | endif
   for idx in range(len(hunks))
     let [hunk0, count0, hunk1, count1] = hunks[idx]
     let hunk2 = count1 ? hunk1 + count1 - 1 : hunk1
