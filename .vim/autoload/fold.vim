@@ -245,15 +245,16 @@ function! fold#fold_text(...) abort
   return strcharpart(label . space . stats, leftidx)
 endfunction
 function! s:fold_text(line1, line2, level)
-  let level = a:level . repeat(':', a:level)  " fold level
+  let level = repeat(':', a:level) . '+'  " matches builtin foldtext()
   let lines = string(a:line2 - a:line1 + 1)  " number of lines
-  let maxlen = get(g:, 'linelength', 88) - 1  " default maximum
+  let maxlen = get(g:, 'linelength', 88)  " default maximum
   let errors = edit#get_errors(a:line1, a:line2)  " quickfix items
   let hunks = git#get_hunks(a:line1, a:line2, 1)  " gitgutter hunks
   let flags = empty(errors) ? '' : errors  " errors return zero
   let flags .= empty(hunks) ? '' : hunks  " errors return zero
-  let dots = repeat('·', len(string(line('$'))) - len(lines))
+  let dots = repeat(' ', len(string(line('$'))) - len(lines))
   let stats = level . dots . lines  " default statistics
+  let stats = dots . lines . level  " default statistics
   if &l:diff  " fill with maximum width
     let [label, stats] = [level . dots . lines, repeat('~', maxlen - strwidth(stats) - 2)]
   elseif exists('*' . &l:filetype . '#fold_text')

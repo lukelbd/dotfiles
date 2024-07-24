@@ -2578,8 +2578,8 @@ endif  " }}}
 
 " Utility plugin settings {{{2
 " Shell commands and session restoration
-" WARNING: Critical to load vinegar before sinse setup_netrw() manipulates vinegar
-" mappings, and critical to load enuch first so rename is not overwritten.
+" WARNING: Critical to load vinegar before since setup_netrw() manipulates vinegar
+" mappings, and critical to load eunuch first so rename is not overwritten.
 " TODO: Currently can only clear history with 'C' in active pane not externally. Need
 " to submit PR for better command. See: https://github.com/mbbill/undotree/issues/158
 " NOTE: :Obsession .vimsession activates vim-obsession BufEnter and VimLeavePre
