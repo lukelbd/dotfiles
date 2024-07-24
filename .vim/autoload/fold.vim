@@ -197,9 +197,9 @@ endfunction
 function! s:format_delims(label, ...) abort
   let pairs = {'[': ']', '(': ')', '{': '}', '<': '>'}
   let items = call('matchlist', [a:label, '\([[({<]*\)\s*$'] + a:000)
-  let delim1 = split(get(items, 1, ''), '\zs', 1)
+  let delim1 = split(get(items, 1, ''), '\zs', 0)  " discard empty strings
   let delim2 = map(copy(delim1), {idx, val -> get(pairs, val, '')})
-  let append = &l:filetype ==# 'python' && get(delim1, -1, '') ==# ')'
+  let append = &l:filetype ==# 'python' && get(delim2, -1, '') ==# ')'
   call add(delim2, append && a:label =~# '^\s*\(def\|class\)\>' ? ':' : '')
   return [join(delim1, ''), join(delim2, '')]
 endfunction
@@ -272,9 +272,10 @@ function! s:fold_text(line1, line2, level)
   let chars = strcharpart(label, strchars(indent))
   let label = indent . flags . chars
   if strchars(label) >= width  " truncate fold text
-    let ichar = strcharpart(label, width - 4, 1)
+    let delta = max([strwidth(delim2) - 1, 0])
+    let ichar = strcharpart(label, width - delta - 4, 1)
     let delim = ichar ==# delim1 ? delim2 : ''
-    let label = strcharpart(label, 0, width - 5)
+    let label = strcharpart(label, 0, width - delta - 5)
     let label = empty(delim) ? label . ' ···' : label . '···' . delim
   endif
   let space = repeat(space, width - strchars(label))
