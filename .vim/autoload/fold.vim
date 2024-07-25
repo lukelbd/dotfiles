@@ -266,8 +266,8 @@ function! s:fold_text(line1, line2, level)
   let lines = string(a:line2 - a:line1 + 1)  " number of lines
   let maxlen = get(g:, 'linelength', 88)  " default maximum
   let delta = len(string(line('$'))) - len(lines)
-  let flags = edit#get_errors(a:line1, a:line2)  " quickfix items
-  let flags .= git#get_hunks(a:line1, a:line2, 1)  " gitgutter hunks
+  let flags = edit#_get_errors(a:line1, a:line2)  " quickfix items
+  let flags .= git#_get_hunks(a:line1, a:line2, 1)  " gitgutter hunks
   let flags = empty(flags) ? flags : '{' . flags . '} '  " counts
   if exists('*' . &l:filetype . '#fold_text')
     let [name, args] = [&l:filetype . '#fold_text', [a:line1, a:line2]]
@@ -277,15 +277,14 @@ function! s:fold_text(line1, line2, level)
   if &l:diff  " fill with maximum width
     let [level, space] = ['', '·']
     let label = '+- ' . lines . ' identical '
-    let lines = ' -+'
+    let stats = ' -+'
   else  " global default label
     let [label, space] = [call(name, args), ' ']
-    let lines = '[' . repeat('·', delta) . lines . ']'
-    let level = ' (' . string(a:level) . ')'
+    let stats = '(' . lines . ') [' . a:level . ']'
   endif
   let [delim1, delim2] = s:format_delims(label)
   let indent = matchstr(label, '^\s*')
-  let width = maxlen - strchars(lines) - strchars(level) - 1
+  let width = maxlen - strchars(stats) - 1
   let label = empty(delim2) ? label : label . '···' . delim2
   let chars = strcharpart(label, strchars(indent))
   let label = indent . flags . chars
@@ -294,10 +293,11 @@ function! s:fold_text(line1, line2, level)
     let ichar = strcharpart(label, width - delta - 4, 1)
     let delim = ichar ==# delim1 ? delim2 : ''
     let label = strcharpart(label, 0, width - delta - 5)
+    let label = substitute(label, '\s*$', '', '')
     let label = empty(delim) ? label . ' ···' : label . '···' . delim
   endif
   let space = repeat(space, width - strchars(label))
-  return [label . level, space, lines]
+  return [label, space, stats]
 endfunction
 
 " Helper functions for returning all folds
@@ -355,9 +355,9 @@ function! fold#fzf_folds(...) abort
   let maxlen = max(map(copy(folds), 'len(string(abs(v:val[1] - v:val[0])))'))
   let [labels1, labels2, labels] = [[], [], []]
   for [line1, line2, level] in folds
-    let [label, _, lines] = s:fold_text(line1, line2, level)
+    let [label, _, stats] = s:fold_text(line1, line2, level)
     let [count1, count2] = s:fold_counts(label)
-    let lines = substitute(lines, '\D', '', 'g')
+    let lines = substitute(split(stats)[0], '\D', '', 'g')
     let lines = repeat(' ', maxlen - strchars(lines)) . lines . '-+'
     let label = substitute(label, '^\s*', '', '')
     let label = bufname() . ':' . line1 . ':' . lines . ' ' . label
@@ -601,19 +601,19 @@ endfunction
 " Toggle inner folds within requested range
 " NOTE: Necessary to temporarily open outer folds before toggling inner folds. No way
 " to target them with :fold commands or distinguish adjacent children with same level
+function! s:toggle_show(toggle, nr) abort
+  exe a:toggle ? '' : 'normal! zzze'
+  let head = a:toggle > 1 ? 'Toggled' : a:toggle ? 'Closed' : 'Opened'
+  let msg = head . ' ' . a:nr . ' fold' . (a:nr > 1 ? 's' : '') . '.'
+  let cmd = a:nr > 0 ? 'echo ' . string(msg) : "echoerr 'E490: No folds found'"
+  call feedkeys("\<Cmd>" . cmd . "\<CR>", 'n')
+endfunction
 function! s:toggle_state(line1, line2, ...) abort range
   let level = a:0 ? a:1 : 0
   for lnum in range(a:line1, a:line2)
     let inum = foldclosed(lnum) | let ilevel = foldlevel(inum)
     if inum > 0 && (!level || level == ilevel) | return 1 | endif
   endfor
-endfunction
-function! s:toggle_show(toggle, count) abort
-  exe a:toggle ? '' : 'normal! zzze'
-  let head = a:toggle > 1 ? 'Toggled' : a:toggle ? 'Closed' : 'Opened'
-  let msg = head . ' ' . a:count . ' fold' . (a:count > 1 ? 's' : '') . '.'
-  let cmd = a:count > 0 ? 'echom ' . string(msg) : "echoerr 'E490: No folds found'"
-  call feedkeys("\<Cmd>" . cmd . "\<CR>", 'n')
 endfunction
 function! s:toggle_inner(line1, line2, level, ...)
   let [fold1, fold2] = [foldclosed(a:line1), foldclosedend(a:line2)]
@@ -636,31 +636,6 @@ function! s:toggle_inner(line1, line2, level, ...)
   endfor
   for [_, lnum] in reverse(outer) | exe lnum . 'foldclose' | endfor
   return [toggle, toggled]
-endfunction
-
-" Open or close parent fold under cursor and its children
-" NOTE: If called on already-toggled 'current' folds the explicit 'foldclose/foldopen'
-" toggles the parent. So e.g. 'zCzC' first closes python methods then the class.
-function! fold#toggle_parents(...) abort range
-  let [lmin, lmax] = sort([a:firstline, a:lastline], 'n')
-  call fold#update_folds(0)
-  let counts = [0, 0]
-  for [line1, line2, level] in fold#get_parents(lmin, lmax)
-    if line2 <= line1 | continue | endif
-    let toggle = a:0 ? a:1 : 1 - s:toggle_state(line1, line1)
-    let line1 = max([lmin, line1])  " truncate range
-    let line2 = min([lmax, line2])  " truncate range
-    let args = [line1, line2, level, toggle, 1]
-    let result = call('s:toggle_inner', args)
-    exe line1 . (toggle ? 'foldclose' : 'foldopen')
-    let counts[toggle] += 1 + len(result[1])
-  endfor
-  let toggle = counts[0] && counts[1] ? 2 : counts[1] ? 1 : 0
-  call s:toggle_show(toggle, counts[0] + counts[1]) | return ''
-endfunction
-" For <expr> map accepting motion
-function! fold#toggle_parents_expr(...) abort
-  return utils#motion_func('fold#toggle_parents', a:000, 1)
 endfunction
 
 " Open or close current children under cursor
@@ -692,51 +667,72 @@ function! fold#toggle_children_expr(...) abort
   return utils#motion_func('fold#toggle_children', a:000, 1)
 endfunction
 
+" Open or close parent fold under cursor and its children
+" NOTE: If called on already-toggled 'current' folds the explicit 'foldclose/foldopen'
+" toggles the parent. So e.g. 'zCzC' first closes python methods then the class.
+function! fold#_toggle_parents(line1, line2, ...) abort
+  call fold#update_folds(0)
+  let winview = winsaveview()
+  let nrs = [0, 0]
+  for [line1, line2, level] in fold#get_parents(a:line1, a:line2)
+    if line2 <= line1 | continue | endif
+    let toggle = a:0 ? a:1 : 1 - s:toggle_state(line1, line1)
+    let line1 = max([a:line1, line1])  " truncate range
+    let line2 = min([a:line2, line2])  " truncate range
+    let args = [line1, line2, level, toggle, 1]
+    let result = call('s:toggle_inner', args)
+    exe line1 . (toggle ? 'foldclose' : 'foldopen')
+    let nrs[toggle] += 1 + len(result[1])
+  endfor
+  call winrestview(winview)
+  let cnt = a:0 > 1 ? a:2 : v:count1
+  if cnt > 1
+    let inrs = fold#_toggle_parents(a:line1, a:line2, toggle, cnt - 1)
+    let nrs[0] += inrs[0] | let nrs[1] += inrs[1]
+  endif
+  let toggle = nrs[0] && nrs[1] ? 2 : nrs[1] ? 1 : 0
+  call s:toggle_show(toggle, nrs[0] + nrs[1]) | return ''
+  return nrs[0] + nrs[1]
+endfunction
+" For optional range arguments
+function! fold#toggle_parents(...) range abort
+  return call('fold#_toggle_parents', [a:firstline, a:lastline] + a:000)
+endfunction
+" For <expr> map accepting motion
+function! fold#toggle_parents_expr(...) abort
+  return utils#motion_func('fold#toggle_parents', a:000, 1)
+endfunction
+
 " Open or close inner folds within range (i.e. maximum fold level)
 " NOTE: This permits using e.g. 'zck' and 'zok' even when outside fold and without
 " fear of accideif ntally closing huge block e.g. class or document under cursor.
-function! fold#toggle_folds(...) range abort
-  let [lmin, lmax] = sort([a:firstline, a:lastline], 'n')
-  let winview = a:0 > 1 && !empty(a:2) ? a:2 : winsaveview()
+function! fold#_toggle_folds(line1, line2, ...) abort
   call fold#update_folds(0)
-  let levels = map(range(lmin, lmax), 'foldlevel(v:val)')
-  let folds = fold#get_folds(lmin, lmax, max(levels))
-  let state = s:toggle_state(lmin, lmax)
-  if lmin == lmax || mode() !=# 'n'
-    let motion = 0  " input cursor motion
-  else
-    let motion = lmin == line('.') ? 1 : lmax == line('.') ? -1 : 0
-  endif
-  if motion && state == 0 && max(levels) == min(levels)  " search for inner folds
-    let fmin = min(map(copy(folds), 'v:val[0]'))
-    let fmax = max(map(copy(folds), 'v:val[1]'))
-    if motion < 0
-      let [imin, imax] = [lmin, fmin ? fmin : winview.topline]
-    else
-      let [imin, imax] = [lmax, fmax ? fmax : winview.topline + &l:lines]
-    endif
-    let others = fold#get_folds(imin, imax, max(levels) + 1, 1)  " search for children
-    if !empty(others)
-      let [folds, ifold] = [others, others[0]]
-      if motion < 0  " toggle from the end of line
-        let [lmin, lmax] = [ifold[1], ifold[1]]
-      else  " toggle from the start of line
-        let [lmin, lmax] = [ifold[0], ifold[0]]
-      endif
-    endif
-  endif
-  let toggle = a:0 && a:1 >= 0 ? a:1 : 1 - state
+  let winview = winsaveview()
+  let levels = map(range(a:line1, a:line2), 'foldlevel(v:val)')
+  let folds = fold#get_folds(a:line1, a:line2, max(levels))
+  let state = s:toggle_state(a:line1, a:line2)
+  let cnt = a:0 > 1 ? a:2 : v:count1
   for [line1, line2; rest] in folds
-    let line1 = max([line1, lmin])  " possibly select
-    let line2 = min([line2, lmax])
+    let line1 = max([line1, a:line1])  " possibly select
+    let line2 = min([line2, a:line2])
+    let toggle = a:0 > 0 && a:1 >= 0 ? a:1 : 1 - state
     exe line1 . ',' . line2 . (toggle ? 'foldclose' : 'foldopen')
   endfor
-  call s:toggle_show(toggle, len(folds)) | return ''
-  if empty(folds)
-    call feedkeys("\<Cmd>echoerr 'E490: No folds found'\<CR>", 'n')
-  endif | return ''
+  call winrestview(winview)
+  let cnt = a:0 > 1 ? a:2 : v:count1
+  let nr = len(folds)
+  if cnt > 1
+    let nr += fold#_toggle_folds(a:line1, a:line2, toggle, cnt - 1)
+  endif
+  call s:toggle_show(toggle, nr)
+  return nr
+endfunction
+" For optional range arguments
+function! fold#toggle_folds(...) range abort
+  return call('fold#_toggle_folds', [a:firstline, a:lastline] + a:000)
 endfunction
 " For <expr> map accepting motion
 function! fold#toggle_folds_expr(...) abort
-  return utils#motion_func('fold#toggle_folds', a:000, 1)
+  return utils#motion_func('fold#toggle_folds', a:000)
 endfunction

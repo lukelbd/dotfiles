@@ -31,12 +31,12 @@ endfunction
 " Get number of error messages under the cursor
 " NOTE: This is used to show error messages on closed folds similar
 " to method used to show git-gutter hunk summaries on closed folds.
-function! edit#_get_errors(range1, range2, ...) abort
+function! edit#_get_errors(line1, line2, ...) abort
   let flags = {'E': '!', 'W': '*', 'I': '^'}
   let counts = {}  " flag counts
   let items = get(b:, 'ale_highlight_items', [])
   for item in items
-    if item.bufnr == bufnr() && item.lnum >= a:range1 && item.lnum <= a:range2
+    if item.bufnr == bufnr() && item.lnum >= a:line1 && item.lnum <= a:line2
       let flag = get(flags, item.type, '?')
       let counts[flag] = get(counts, flag, 0) + 1
     endif
@@ -46,7 +46,7 @@ function! edit#_get_errors(range1, range2, ...) abort
 endfunction
 " For optional range arguments
 function! edit#get_errors(...) range abort
-  return utils#range_func('edit#_get_errors', a:000, [a:firstline, a:lastline])
+  return call('edit#_get_errors', [a:firstline, a:lastline] + a:000)
 endfunction
 " For <expr> map accepting motion
 function! edit#get_errors_expr() abort

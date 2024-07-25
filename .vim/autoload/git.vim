@@ -184,13 +184,12 @@ endfunction
 function! s:echo_hunk(hunk) abort
   if empty(a:hunk) | return [] | endif
   let line1 = a:hunk[2]
-  let nline = max([a:hunk[3], 1])
-  let line2 = line1 + nline - 1
+  let line2 = line1 + max([a:hunk[3], 1]) - 1
   let fold1 = foldclosed(line1)
   let fold2 = foldclosedend(line2)
-  let range1 = fold1 > 0 ? fold1 : line1
-  let range2 = fold2 > 0 ? fold2 : line2
-  call git#_get_hunks(range1, range2)
+  let line1 = fold1 > 0 ? fold1 : line1
+  let line2 = fold2 > 0 ? fold2 : line2
+  call git#_get_hunks(line1, line2)
 endfunction
 function! s:get_hunks(...) abort
   let quiet = a:0 ? a:1 : 0
@@ -222,7 +221,7 @@ endfunction
 " lists i.e. starting line and counts before and after changes. Adapated s:isadded()
 " s:isremoved() etc. methods from autoload/gitgutter/diff.vim for partitioning into
 " simple added/changed/removed groups (or just 'changed') as shown below.
-function! git#_get_hunks(range1, range2, ...) abort
+function! git#_get_hunks(line1, line2, ...) abort
   let locs = []  " hunk indices
   let cnts = [0, 0, 0]  " change counts
   let quiet = a:0 ? a:1 : 0  " quicker version
@@ -231,8 +230,8 @@ function! git#_get_hunks(range1, range2, ...) abort
   for idx in range(len(hunks))
     let [hunk0, count0, hunk1, count1] = hunks[idx]
     let hunk2 = count1 ? hunk1 + count1 - 1 : hunk1
-    let clip1 = max([hunk1, a:range1])
-    let clip2 = min([hunk2, a:range2])
+    let clip1 = max([hunk1, a:line1])
+    let clip2 = min([hunk2, a:line2])
     if clip2 < clip1 | continue | endif
     let offset = (hunk2 - clip2) + (clip1 - hunk1)  " count change
     let cnt0 = max([count0 - offset, 0])
@@ -254,11 +253,11 @@ function! git#_get_hunks(range1, range2, ...) abort
 endfunction
 " For optional range arguments
 function! git#get_hunks(...) range abort
-  return utils#range_func('git#_get_hunks', a:000, [a:firstline, a:lastline])
+  return call('git#_get_hunks', [a:firstline, a:lastline] + a:000)
 endfunction
 " For <expr> map accepting motion
 function! git#get_hunks_expr(...) abort
-  return utils#motion_func('git#get_hunks', [-1, -1] + a:000, 1)
+  return utils#motion_func('git#get_hunks', a:000, 1)
 endfunction
 
 " Git gutter staging and unstaging over input lines
@@ -270,7 +269,7 @@ endfunction
 " non-zero since no text was present before the change. Also note gitgutter#hunk#stage()
 " requires cursor inside lines and fails when specifying lines outside of addition hunk
 " (see s:hunk_op) so explicitly navigate lines below before calling stage commands.
-function! git#_exe_hunks(range1, range2, ...) range abort
+function! git#_exe_hunks(line1, line2, ...) abort
   let name = a:0 && a:1 ? 'Undo' : 'Stage'
   let undo = a:0 && a:1 ? 1 : 0
   let locs = []  " hunk locations
@@ -281,7 +280,7 @@ function! git#_exe_hunks(range1, range2, ...) range abort
   if empty(hunks) | return | endif
   for idx in range(len(hunks))
     let [hunk0, count0, hunk1, count1] = hunks[idx]
-    let [iline, jline] = [a:range1 + offset, a:range2 + offset]
+    let [iline, jline] = [a:line1 + offset, a:line2 + offset]
     let [line0, line1] = [hunk0 + offset, hunk1 + offset]
     let line2 = count1 ? line1 + count1 - 1 : line1  " changed closing line
     if iline <= line1 && jline >= line2
@@ -317,11 +316,11 @@ function! git#_exe_buffer(...) abort
 endfunction
 " For optional range arguments
 function! git#exe_hunks(...) range abort
-  return utils#range_func('git#_exe_hunks', a:000, [a:firstline, a:lastline])
+  return call('git#_exe_hunks', [a:firstline, a:lastline] + a:000)
 endfunction
 " For <expr> map accepting motion
 function! git#exe_hunks_expr(...) abort
-  return utils#motion_func('git#exe_hunks', [-1, -1] + a:000)
+  return utils#motion_func('git#exe_hunks', a:000)
 endfunction
 
 " Update gitgutter hunks and show hunks under cursor

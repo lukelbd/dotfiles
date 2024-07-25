@@ -171,12 +171,11 @@ function! utils#map_from(...) abort
 endfunction
 
 " Call function with range supplied by motion
-" WARNING: Plugin text objects may be single-line linewise so avoid check below
-" NOTE: Only motions can cause backwards firstline to lastline order. Manual calls
-" to the function will have sorted lines. This wrapper sorts the range for safety
-" NOTE: Calling :[range]call call(...) for functions declared without range flag
-" executes line-by-line instead of entire block. Prefer :[range]call function(args)
-" usage instead of input arguments so ranges can be passed with V<motion>.
+" NOTE: Vim asks to swap if range is backwards, and '[ '] motions and visual
+" selection ranges are always sorted by default, so no need to sort manually here.
+" NOTE: Calling :[range]call func(...) for functions declared without range flag
+" (including 'call' function!) executes line-by-line instead of entire block. Could
+" also pass range as input args by default, but prefer this so we can use V<motion>
 function! utils#motion_func(name, args, ...) abort
   let signature = string(a:args)[1:-2]  " remove square brackets
   let operator = a:name . '(' . signature . ')'
@@ -186,62 +185,31 @@ function! utils#motion_func(name, args, ...) abort
   if mode() =~# '^\(v\|V\|\)$'  " call operator function with current line range
     return ":call utils#operator_func('')\<CR>"
   elseif mode() ==# 'n'  " await motion and call operator function over those lines
-    set operatorfunc=utils#operator_func
-    return "\<Esc>g@"
+    let &operatorfunc = 'utils#operator_func' | return  "\<Esc>g@"
   else  " fallback
-    echoerr 'E999: Illegal mode: ' . string(mode())
-    return "\<Esc>"
+    echoerr 'E999: Illegal mode: ' . string(mode()) . '.' | return  "\<Esc>"
   endif
 endfunction
 function! utils#operator_func(type, ...) range abort
   if empty(a:type)  " default behavior
-    let nums = [a:firstline, a:lastline]
-    let locs = ["'<", "'>"]
+    let [line1, line2] = [a:firstline, a:lastline]
+    let [col1, col2] = [col("'<"), col("'>")]
   elseif a:type =~? 'line\|char\|block'  " builtin g@ type strings
-    let nums = [line("'["), line("']")]
-    let locs = ["'[", "']"]
+    let [line1, line2] = [line("'["), line("']")]
+    let [col1, col2] = [col("'["), col("']")]
   else  " fallback
     echoerr 'E474: Invalid argument: ' . string(a:type)
     return ''
   endif
-  let [line1, line2] = sort(nums, 'n')
-  let [col1, col2] = map(copy(locs), 'col(v:val)')
-  if a:type !=# 'line' && line1 == line2 && col1 >= col2  " keep single-line hunks
+  unsilent echom line1 . ':' . col1 . ' ' . line2 . ':' . col2
+  if line2 < line1  " WARNING: line blocks don't always properly define columns
+    return ''
+  elseif a:type ==# 'line' && line1 == line2 && col1 >= col2  " empty range
     return ''
   endif
   let view = s:operator_view.bufnr ==# bufnr() ? s:operator_view : {}
   exe line1 . ',' . line2 . 'call ' . s:operator_func
   call winrestview(view) | return ''
-endfunction
-
-" Convert ranges to arguments and jump to next match
-" NOTE: This is generally invoked inside an <expr> mapping (see e.g. python.vim).
-" NOTE: Here utils#range_func() converts command ranges to input arguments and
-" converts zeros to the full range. Used with git#get_hunks() and edit#get_errors()
-function! utils#next_func(count, ...) abort
-  for _ in range(abs(a:count))
-    let [lnum0, lnum] = [-1, line('.')]
-    let [fnum0, fnum] = [lnum, lnum]
-    while lnum0 != lnum && fnum0 > 0 && fnum == fnum0
-      let lnum0 = line('.')
-      let fnum0 = foldclosed('.')
-      for cmd in a:000 | call call(cmd, []) | endfor
-      let lnum = line('.')
-      let fnum = foldclosed('.')
-    endwhile
-  endfor
-endfunction
-function! utils#range_func(name, args, ...) abort range
-  let [range1, range2] = a:0 ? a:1 : [a:firstline, a:lastline]
-  let [arg1, arg2] = [get(a:args, 0, -1), get(a:args, 1, -1)]
-  let line1 = arg1 > 0 ? arg1 : arg1 == 0 ? 1 : range1
-  let line2 = arg2 >= 0 ? arg2 > 0 ? arg2 : line('$') : range2
-  let fold1 = foldclosed(line1)
-  let fold2 = foldclosedend(line2)
-  let span1 = fold1 > 0 ? fold1 : line1
-  let span2 = fold2 > 0 ? fold2 : line2
-  let spans = sort([span1, span2], 'n')
-  return call(a:name, spans + a:args[2:])
 endfunction
 
 " Generate repeatable mappings for arbitrary modes
