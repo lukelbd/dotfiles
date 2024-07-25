@@ -640,8 +640,8 @@ nnoremap zx <Cmd>call fold#update_folds(0, 0)<CR>
 vnoremap zx <Cmd>call fold#update_folds(0, 0)<CR>
 nnoremap zV <Cmd>UpdateFolds!<CR><Cmd>echo 'Updated folds'<CR>zvzzze
 vnoremap zV <Cmd>UpdateFolds!<CR><Cmd>echo 'Updated folds'<CR>zvzzze
-nnoremap zX <Cmd>call fold#update_folds(0, 2)<CR>
-vnoremap zX <Cmd>call fold#update_folds(0, 2)<CR>
+nnoremap zX <Cmd>for _ in range(v:count1) \| call fold#update_folds(0, 2) \| endfor<CR>
+vnoremap zX <Cmd>for _ in range(v:count1) \| call fold#update_folds(0, 2) \| endfor<CR>
 nnoremap zZ <Cmd>UpdateFolds!<CR><Cmd>echo 'Updated folds'<CR>
 vnoremap zZ <Cmd>UpdateFolds!<CR><Cmd>echo 'Updated folds'<CR>
 nnoremap <expr> zz (foldclosed('.') > 0 ? 'zvzz' : foldlevel('.') > 0 ? 'zc' : 'zz') . 'ze'
@@ -651,15 +651,15 @@ vnoremap <expr> zz fold#toggle_folds_expr() . (foldclosed('.') > 0 ? 'zz' : '') 
 " NOTE: Here fold#toggle_folds_expr() calls fold#update_folds() before toggling.
 " NOTE: These will overwrite 'fastfold_fold_command_suffixes' generated fold-updating
 " maps. However now use even faster / more conservative fold#update_folds() method.
-nnoremap zaa <Cmd>call fold#toggle_folds()<CR>
-nnoremap zcc <Cmd>call fold#toggle_folds(1)<CR>
-nnoremap zoo <Cmd>call fold#toggle_folds(0)<CR>
-nnoremap <expr> za fold#toggle_folds_expr()
-nnoremap <expr> zc fold#toggle_folds_expr(1)
-nnoremap <expr> zo fold#toggle_folds_expr(0)
-vnoremap <expr> za fold#toggle_folds_expr()
-vnoremap <expr> zc fold#toggle_folds_expr(1)
-vnoremap <expr> zo fold#toggle_folds_expr(0)
+nnoremap zaa <Cmd>call fold#toggle_folds(-1, v:count1)<CR>
+nnoremap zcc <Cmd>call fold#toggle_folds(1, v:count1)<CR>
+nnoremap zoo <Cmd>call fold#toggle_folds(0, v:count1)<CR>
+nnoremap <expr> za fold#toggle_folds_expr(-1, v:count1)
+nnoremap <expr> zc fold#toggle_folds_expr(1, v:count1)
+nnoremap <expr> zo fold#toggle_folds_expr(0, v:count1)
+vnoremap <expr> za fold#toggle_folds_expr(-1, v:count1)
+vnoremap <expr> zc fold#toggle_folds_expr(1, v:count1)
+vnoremap <expr> zo fold#toggle_folds_expr(0, v:count1)
 
 " Toggle nested or recursive folds after updating
 " NOTE: Here 'zi' will close or open all nested folds under cursor up to level
@@ -672,16 +672,16 @@ nnoremap zn znzzze
 nnoremap zN zN<Cmd>call fold#update_folds(0)<CR>
 nnoremap zi <Cmd>call fold#toggle_children(0)<CR>
 nnoremap zI <Cmd>call fold#toggle_children(1)<CR>
-nnoremap zA <Cmd>call fold#toggle_parents()<CR>
-nnoremap zC <Cmd>call fold#toggle_parents(1)<CR>
-nnoremap zO <Cmd>call fold#toggle_parents(0)<CR>
+nnoremap zA <Cmd>call fold#toggle_parents(-1, v:count1)<CR>
+nnoremap zC <Cmd>call fold#toggle_parents(1, v:count1)<CR>
+nnoremap zO <Cmd>call fold#toggle_parents(0, v:count1)<CR>
 vnoremap zn znzzze
 vnoremap zN zN<Cmd>call fold#update_folds(0)<CR>
 vnoremap <expr> zi fold#toggle_children_expr(0)
 vnoremap <expr> zI fold#toggle_children_expr(1)
-vnoremap <expr> zA fold#toggle_parents_expr()<CR>
-vnoremap <expr> zC fold#toggle_parents_expr(1)
-vnoremap <expr> zO fold#toggle_parents_expr(0)
+vnoremap <expr> zA fold#toggle_parents_expr(-1, v:count1)<CR>
+vnoremap <expr> zC fold#toggle_parents_expr(1, v:count1)
+vnoremap <expr> zO fold#toggle_parents_expr(0, v:count1)
 
 " Change fold level and jump between or inside folds
 " NOTE: The bracket maps fail without silent! when inside first fold in file
@@ -2555,7 +2555,7 @@ endif  " }}}
 " by spell maps ]s, ]S (navigate to spell error, or navigate and fix error).
 if s:has_plug('vim-gitgutter')  " {{{
   command! -nargs=? GitGutterToggle call switch#gitgutter(<args>)
-  command! -bang -range Hunks call git#get_hunks(<range> ? <line1> : 0, <range> ? <line2> : 0, <bang>0)
+  command! -bang -range Hunks call git#_get_hunks(<range> ? <line1> : 0, <range> ? <line2> : 0, <bang>0)
   let s:opts = {'line': 'cursor+1', 'moved': 'any', 'minwidth': g:linelength}
   let g:gitgutter_async = 1  " ensure enabled
   let g:gitgutter_map_keys = 0  " disable defaults
