@@ -347,7 +347,6 @@ endfunction
 
 " Get docstring properties for current object
 " NOTE: This restricts pydocstring mapping to classes and function docstrings.
-let s:regex_doc = '["'']\{3}'
 function! python#get_docstring(...) abort
   let winview = winsaveview()
   let default = [0, 0, 0, 0, '', {}]
@@ -374,8 +373,10 @@ function! python#get_docstring(...) abort
 endfunction
 
 " Get properties for docstring under cursor
-" NOTE: This assumes numpydoc style formatting and parameter sections
+" NOTE: This assumes numpydoc style formatting. Returns initial title lines and
+" parameter groups after the first empty line in the docstring.
 " exe 'global/' . regex . '/normal! gnd"="\n" . @"' . '\<CR>' . ']p'
+let s:regex_doc = '["'']\{3}'
 function! s:get_docstring() abort
   let winview = winsaveview()
   let default = [0, 0, 0, '', [], [], []]
@@ -466,8 +467,6 @@ function! python#next_docstring(count, ...) abort
   exe &foldopen =~# 'block\|all' ? 'normal! zv' : ''
 endfunction
 function! python#insert_docstring(...) abort
-  let snr = utils#get_scripts('vim-pydocstring/autoload/pydocstring.vim')
-  if empty(snr) | return | endif  " let callback = snr[0] . 'exit_callback'
   let result = call('python#get_docstring', a:000)
   let [iline, jline, line0, line1, line2; rest] = result
   if line0 && line2  " remove previous docstring
