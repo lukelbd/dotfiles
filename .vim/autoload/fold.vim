@@ -236,10 +236,15 @@ function! fold#fold_label(line, ...) abort
 endfunction
 
 " Generate truncated fold text. In future should include error cound information.
+" NOTE: Caching important for syntax#_concealed() line. Also previously had issues
+" with flag generation but should be quick if we avoid triggering gitgutter updates.
 " NOTE: Since gitgutter signs are not shown over closed folds include summary of
 " changes in fold text. See https://github.com/airblade/vim-gitgutter/issues/655
 function! fold#fold_text(...) abort
   let winview = winsaveview()  " translate byte column index to character index
+  if !exists('b:fastfold_cache')
+    let b:fastfold_cache = {}
+  endif
   if a:0 && a:1  " debugging mode
     exe winview.lnum | let [line1, line2, level] = fold#get_fold()
     call winrestview(winview)
@@ -248,8 +253,14 @@ function! fold#fold_text(...) abort
     let level = len(v:folddashes)
   endif
   let leftidx = charidx(getline(winview.lnum), winview.leftcol)
-  let [label, space, lines] = s:fold_text(line1, line2, level)
-  return strcharpart(label . space . lines, leftidx)
+  let index = string(line1)
+  let text = get(b:fastfold_cache, line1, '')
+  if empty(text) || !type(text)
+    let [label, space, lines] = s:fold_text(line1, line2, level)
+    let text = label . space . lines
+    let b:fastfold_cache[index] = text
+  endif
+  return strcharpart(text, leftidx)
 endfunction
 function! s:fold_text(line1, line2, level)
   let lines = string(a:line2 - a:line1 + 1)  " number of lines

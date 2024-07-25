@@ -2098,14 +2098,14 @@ if s:has_plug('FastFold')  " {{{
     augroup fold_setup
       au!
       au FileType,BufEnter * call fold#update_method()
-      au TextChanged,TextChangedI * let b:fastfold_queued = 1
+      au TextChanged,TextChangedI * let b:fastfold_queued = 1 | unlet! b:fastfold_cache
     augroup END
   endfunction
   function! s:fold_update() abort
     augroup fold_update
       au!
       au BufEnter * call fold#update_folds(0)
-      au FileType * unlet! b:fastfold_queued | call fold#update_folds(0, 1)
+      au FileType * unlet! b:fastfold_queued | unlet! b:fastfold_cache | call fold#update_folds(0, 1)
     augroup END
   endfunction
   function! s:fold_init(...) abort
