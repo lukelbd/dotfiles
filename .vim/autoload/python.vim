@@ -86,7 +86,7 @@ endfunction
 " Return SimpylFold expressions for decorators, docstrings, constants
 " WARNING: Only call this when SimpylFold updates to improve performance. Might
 " break if SimpylFold renames internal cache variable (monitor).
-function! s:get_decorator(lnum) abort
+function! s:fold_decorator(lnum) abort
   if getline(a:lnum) !~# '^\s*@\k\+' | return [] | endif
   let [lnum, level, indent] = [a:lnum, s:get_level(a:lnum), s:get_indent(a:lnum)]
   while lnum < line('$') && !s:get_isdef(lnum + 1)
@@ -96,7 +96,7 @@ function! s:get_decorator(lnum) abort
   let level = s:get_level(lnum + 1)  " definition level
   return ['>' . level] + repeat([level], lnum - a:lnum + 1)
 endfunction
-function! s:get_docstring(lnum) abort
+function! s:fold_docstring(lnum) abort
   let regex = '[frub]*["'']\{3}'  " fold e.g.. _docstring_snippet = '''...
   let [_, _, pos] = matchstrpos(getline(a:lnum), '^\K\k*\s*=\s*' . regex)
   if pos == -1 | return [] | endif
@@ -107,7 +107,7 @@ function! s:get_docstring(lnum) abort
   endwhile
   return lnum > a:lnum ? ['>1'] + repeat([1], lnum - a:lnum - 1) + ['<1'] : []
 endfunction
-function! s:get_constant(lnum) abort  " e.g. VARIABLE = [... or if condition:...
+function! s:fold_constant(lnum) abort  " e.g. VARIABLE = [... or if condition:...
   let heads = '^\(if\|for\|while\|with\|try\|def\|class\)\>.*:\s*\(#.*\)\?$'
   let blocks = '^\(elif\|else\|except\|finally\)\>.*:\s*\(#.*\)\?$'
   let [lnum, line, indent] = [a:lnum, getline(a:lnum), s:get_indent(a:lnum + 1)]
@@ -135,10 +135,10 @@ function! python#fold_cache() abort
   let [lnum, cache] = [1, b:SimpylFold_cache]
   while lnum <= line('$')
     let level = s:get_level(lnum)
-    let exprs = s:get_decorator(lnum)
+    let exprs = s:fold_decorator(lnum)
     if !empty(exprs) | let b:fold_heads[string(lnum)] = lnum + len(exprs) - 1 | endif
-    let exprs = !level && empty(exprs) ? s:get_docstring(lnum) : exprs
-    let exprs = !level && empty(exprs) ? s:get_constant(lnum) : exprs
+    let exprs = !level && empty(exprs) ? s:fold_docstring(lnum) : exprs
+    let exprs = !level && empty(exprs) ? s:fold_constant(lnum) : exprs
     if empty(exprs) | let lnum += 1 | continue | endif
     for idx in range(len(exprs))  " apply overrides
       let cache[lnum].foldexpr = exprs[idx] | let lnum += 1
@@ -148,7 +148,7 @@ endfunction
 function! python#fold_text(lnum, ...) abort
   let heads = get(b:, 'fold_heads', {})
   let lnum = get(heads, string(a:lnum), a:lnum)
-  let exprs = lnum != a:lnum ? [] : s:get_decorator(a:lnum)
+  let exprs = lnum != a:lnum ? [] : s:fold_decorator(a:lnum)
   if !empty(exprs)  " recache
     let lnum = a:lnum + len(exprs) - 1
     let heads[string(a:lnum)] = lnum
@@ -345,20 +345,95 @@ function! python#fzf_doc() abort
   call fzf#run(fzf#wrap(options))
 endfunction
 
-" Insert pydocstring 'doq' docstrings and convert from single-line to multi-line
-" NOTE: This ensures correct indentation after line break. Could also use doq templates
-" or below alternative using 'gnd' and auto-indent by adding newline to @" match via
-" @= then indent-preserving ]p paste. See https://stackoverflow.com/a/2783670/4970632
-" exe 'global/' . regex . '/normal! gnd"="\n" . @"' . '\<CR>' . ']p'
-let s:regex_doc = '["'']\{3}'
-function! python#_process(line, label, ...) abort
-  let label = substitute(a:label, '^\s*', '', '')
-  call cursor(a:line, 1)
-  if search(s:regex_doc, 'ce')
+" Update and replace auto-inserted docstrings
+" NOTE: This moves docstring title to newline after opener
+" NOTE: The idea here is to auto-remove and auto-add parameters from
+" the docstring depending on parameters in the function definition.
+function! s:set_docstring(result, ...) abort
+  if line('.') == 1 | return 1 | endif
+  let [line0, line1, line2, label, params, other] = a:result
+  let label = substitute(label, '^\s*', '', '')
+  call cursor(line0, 1)
+  if search(s:regex_doc, 'ce', line0)
     let keys = empty(label) ? '' : "\<Esc>\"_cc" . label
     exe "normal! a\<CR>" . keys
   endif
+  let delta = 0  " docstring offset
+  call cursor(line0, col([line0, '$']))
+  let [_, lnum, _, _, parts; rest] = s:get_docstring()
+  for [name, iline, jline; lines1] in parts
+    let orig = filter(copy(params), 'v:val[0] ==# name')
+    if empty(orig) | continue | endif
+    let [iline, jline] = [iline + delta, jline + delta]
+    call deletebufline(bufnr(), iline, jline)
+    let [_, _, _; lines0] = orig[0]
+    call appendbufline(bufnr(), iline - 1, lines0)
+    let delta += len(lines0) - len(lines1)
+  endfor
+  call appendbufline(bufnr(), lnum + delta - 1, other)
   return a:0 ? a:1 : 0
+endfunction
+function! s:get_docstring() abort
+  let winview = winsaveview()
+  let default = [0, 0, 0, '', [], []]
+  let result = succinct#get_delims(s:regex_doc, s:regex_doc)
+  if empty(get(result, 0, 0)) | return default | endif
+  let [_, _, line0, col0, line2, col2] = result
+  let label = getline(min([line0 + 1, line2]))
+  let label = label =~# s:regex_doc ? '' : label
+  let indent = strpart(getline(line0), 0, col0 - 1)
+  let indent = indent =~# '^\s*$' ? indent : ''
+  let indent = !empty(label) ? matchstr(label, '^\s*') : indent
+  call cursor(min([line0 + 1, line2]), 1)
+  call search('^' . indent . '\k\+\s*:', 'W', line2)
+  let line1 = search('^\s*$', 'nW', line2)
+  let line1 = line1 ? line1 : line2
+  let [bounds, params] = [[], []]  " parameters
+  call cursor(min([line0 + 1, line2]), 1)
+  while search('^' . indent . '\k\+\s*:', 'W', line1)
+    let [lnum, text] = [line('.'), getline('.')]
+    call add(get(bounds, -1, []), lnum - 1)
+    call add(bounds, [matchstr(text, '\k\+'), lnum])
+  endwhile
+  call add(get(bounds, -1, []), line1 - 1)
+  for [key, iline, jline] in bounds
+    let parts = [key, iline, jline] + getline(iline, jline)
+    call add(params, parts)
+  endfor
+  let other = getline(line1, line2 - 1)
+  call winrestview(winview)
+  return [line0, line1, line2, label, params, other]
+endfunction
+
+" Navigate and insert pydocstring 'doq' docstrings
+" exe 'global/' . regex . '/normal! gnd"="\n" . @"' . '\<CR>' . ']p'
+" NOTE: This ensures correct indentation after line break. Could also use doq templates
+" or below alternative using 'gnd' and auto-indent by adding newline to @" match via
+" @= then indent-preserving ]p paste. See https://stackoverflow.com/a/2783670/4970632
+let s:regex_doc = '["'']\{3}'
+function! python#get_docstring(...) abort
+  let winview = winsaveview()
+  let default = [0, 0, 0, 0, '', {}]
+  let lnum = a:0 ? a:1 : line('.')
+  let itag = tags#get_tag(lnum)
+  if empty(itag) || itag[2] !~# '[mfc]'
+    let msg = 'Error: Cursor is not inside class or function'
+    redraw | echohl ErrorMsg | echom msg | echohl None
+    call winrestview(winview) | return default
+  endif
+  call cursor(str2nr(itag[1]), 1)  " definition line
+  let regex = escape(itag[0], '[]\/.*$~') . '('
+  let iline = search(regex, 'e', line('.'))  " definition start
+  let jline = searchpair('(', '', ')', 'W')  " returns end (note 'c' and '):' fail)
+  if !iline || !jline
+    let msg = 'Error: Object position ' . string(itag[0]) . ' not found'
+    redraw | echohl ErrorMsg | echom msg | echohl None
+    call winrestview(winview) | return default
+  endif
+  let lnum = jline + 1
+  call cursor(lnum, col([lnum, '$']))
+  let result = s:get_docstring()
+  return [iline, jline] + result
 endfunction
 function! python#next_docstring(count, ...) abort
   let flags = a:count >= 0 ? 'w' : 'wb'
@@ -376,42 +451,20 @@ function! python#next_docstring(count, ...) abort
   endfor
   exe &foldopen =~# 'block\|all' ? 'normal! zv' : ''
 endfunction
-function! python#insert_docstring() abort
-  let winview = winsaveview()
-  let itag = tags#get_tag(line('.'))
-  if empty(itag) || itag[2] !~# '[mfc]'
-    let msg = 'Error: Cursor is not inside class or function'
-    redraw | echohl ErrorMsg | echom msg | echohl None
-    call winrestview(winview) | return
+function! python#insert_docstring(...) abort
+  let result = call('python#get_docstring', a:000)
+  let [iline, jline, line0, line1, line2; rest] = result
+  if line0 && line2  " remove previous docstring
+    call deletebufline(bufnr(), line0, line2)
   endif
-  let tline = str2nr(itag[1])  " definition line
-  call cursor(tline, 1)
-  let regex = escape(itag[0], '[]\/.*$~') . '('
-  let line1 = search(regex, 'e', tline)
-  let line2 = searchpair('(', '', ')', 'W')  " returns end (note 'c' and '):' fail)
-  if !line1 || !line2
-    let msg = 'Error: Invalid object ' . string(itag[0]) . ' or position not found'
-    redraw | echohl ErrorMsg | echom msg | echohl None
-    call winrestview(winview) | return
-  endif
-  let lnum = line2 + 1
-  let label = ''
-  call cursor(lnum, col([lnum, '$']))
-  let result = succinct#get_delims(s:regex_doc, s:regex_doc)
-  if !empty(get(result, 0, 0))
-    let [_, _, iline, _, jline, _] = result
-    let label = getline(iline + 1)
-    let label = label =~# s:regex_doc ? '' : label
-    call deletebufline(bufnr(), iline, jline)
-  endif
-  call cursor(line1, col([line1, '$']))
-  call pydocstring#insert('', 1, line1, line2)
+  call cursor(iline, col([iline, '$']))
+  call pydocstring#insert('', 1, iline, jline)
   let jobs = shell#get_jobs('\<doq\>')
   if len(jobs) != 1
     let msg = 'Warning: Unable to unique pydocstring job (found ' . len(jobs) . ')'
     redraw | echohl WarningMsg | echom msg | echohl None | return 1
   endif
   let job = ch_getjob(jobs[0].channel)
-  let opts = {'exit_cb': {id, stat -> python#_process(lnum, label, stat)}}
+  let opts = {'exit_cb': {id, status -> s:set_docstring(result[2:], status)}}
   call job_setoptions(job, opts)
 endfunction

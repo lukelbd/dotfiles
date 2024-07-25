@@ -454,7 +454,7 @@ augroup panel_setup
   au CmdwinEnter * call vim#setup_cmdwin() | call window#setup_panel(1)
   au TerminalWinOpen * call window#setup_panel(1)
   au BufRead,BufEnter fugitive://* if &filetype !=# 'fugitive' | call window#setup_panel() | endif
-  au FileType ale-info doautocmd BufWinEnter
+  au FileType ale-info,checkhealth doautocmd BufWinEnter
   au FileType help call vim#setup_help()
   au FileType qf nnoremap <buffer> <CR> <CR>zv
   au FileType man call shell#setup_man()
