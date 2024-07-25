@@ -349,10 +349,10 @@ endfunction
 " NOTE: This moves docstring title to newline after opener
 " NOTE: The idea here is to auto-remove and auto-add parameters from
 " the docstring depending on parameters in the function definition.
-function! s:set_docstring(result, ...) abort
-  if line('.') == 1 | return 1 | endif
-  let [line0, line1, line2, label, params, other] = a:result
+function! s:set_docstring(m, result) abort
+  let [line0, line1, line2, label, lines, params, other] = a:result
   let label = substitute(label, '^\s*', '', '')
+  let winview = winsaveview()
   call cursor(line0, 1)
   if search(s:regex_doc, 'ce', line0)
     let keys = empty(label) ? '' : "\<Esc>\"_cc" . label
@@ -360,22 +360,26 @@ function! s:set_docstring(result, ...) abort
   endif
   let delta = 0  " docstring offset
   call cursor(line0, col([line0, '$']))
-  let [_, lnum, _, _, parts; rest] = s:get_docstring()
-  for [name, iline, jline; lines1] in parts
+  let [num0, num1, num2, _, _, parts, _] = s:get_docstring()
+  if !num0 || !num1 || !num2
+    call appendbufline(bufnr(), line0 - 1, lines)
+    call winrestview(winview) | return a:m
+  endif
+  for [name, inum, jnum; lines1] in parts
     let orig = filter(copy(params), 'v:val[0] ==# name')
     if empty(orig) | continue | endif
-    let [iline, jline] = [iline + delta, jline + delta]
-    call deletebufline(bufnr(), iline, jline)
+    let [inum, jnum] = [inum + delta, jnum + delta]
+    call deletebufline(bufnr(), inum, jnum)
     let [_, _, _; lines0] = orig[0]
-    call appendbufline(bufnr(), iline - 1, lines0)
+    call appendbufline(bufnr(), inum - 1, lines0)
     let delta += len(lines0) - len(lines1)
   endfor
-  call appendbufline(bufnr(), lnum + delta - 1, other)
-  return a:0 ? a:1 : 0
+  call appendbufline(bufnr(), num1 + delta - 1, other)
+  call winrestview(winview) | return a:m
 endfunction
 function! s:get_docstring() abort
   let winview = winsaveview()
-  let default = [0, 0, 0, '', [], []]
+  let default = [0, 0, 0, '', [], [], []]
   let result = succinct#get_delims(s:regex_doc, s:regex_doc)
   if empty(get(result, 0, 0)) | return default | endif
   let [_, _, line0, col0, line2, col2] = result
@@ -400,9 +404,10 @@ function! s:get_docstring() abort
     let parts = [key, iline, jline] + getline(iline, jline)
     call add(params, parts)
   endfor
+  let lines = getline(line0, line2)
   let other = getline(line1, line2 - 1)
   call winrestview(winview)
-  return [line0, line1, line2, label, params, other]
+  return [line0, line1, line2, label, lines, params, other]
 endfunction
 
 " Navigate and insert pydocstring 'doq' docstrings
@@ -452,6 +457,9 @@ function! python#next_docstring(count, ...) abort
   exe &foldopen =~# 'block\|all' ? 'normal! zv' : ''
 endfunction
 function! python#insert_docstring(...) abort
+  let snr = utils#get_scripts('vim-pydocstring/autoload/pydocstring.vim')
+  if empty(snr) | return | endif
+  let callback = snr[0] . 'exit_callback'
   let result = call('python#get_docstring', a:000)
   let [iline, jline, line0, line1, line2; rest] = result
   if line0 && line2  " remove previous docstring
@@ -465,6 +473,6 @@ function! python#insert_docstring(...) abort
     redraw | echohl WarningMsg | echom msg | echohl None | return 1
   endif
   let job = ch_getjob(jobs[0].channel)
-  let opts = {'exit_cb': {id, status -> s:set_docstring(result[2:], status)}}
+  let opts = {'exit_cb': {_, m -> s:set_docstring(m, result[2:])}}
   call job_setoptions(job, opts)
 endfunction
