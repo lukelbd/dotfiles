@@ -160,7 +160,7 @@ function! tag#fzf_btags(bang, ...) abort
   if empty(snr) | return | endif
   let paths = []  " relative if possible
   let base = fnamemodify(expand('%:p:h'), ':p')  " ensure trailing slash
-  for path in a:0 ? a:000 : [@%]
+  for path in a:0 ? a:000 : [expand('%:t')]
     let names = file#local_names(path)
     call map(names, 'v:val =~# s:abs_regex ? v:val : base . v:val')
     call extend(paths, map(names, 'fzf#shellescape(v:val)'))

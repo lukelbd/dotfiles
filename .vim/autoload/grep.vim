@@ -35,6 +35,36 @@ function! grep#regex(regex) abort  " convert to pcre syntax
   return fzf#shellescape(regex)  " similar to native method but supports other shells
 endfunction
 
+" Call Ag Rg BLines or Lines from mapping (see also file.vim)
+" NOTE: Using <expr> instead of this tiny helper function causes <C-c> to
+" display annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
+function! grep#complete_search(lead, line, cursor)
+  let regex = '\n\@<=>\?\s*[0-9]*\s*\([^\n]*\)\(\n\|$\)\@='
+  let match = 'empty(a:lead) || v:val[:len(a:lead) - 1] ==# a:lead'
+  let opts = execute('history search')
+  let opts = substitute(opts, regex, '\1', 'g')  " remove number prompt
+  let opts = filter(split(opts, '\n'), match)
+  return reverse([@/] + opts[1:])  " match to user input
+endfunction
+function! grep#call_grep(cmd, global, level) abort
+  let paths = parse#get_paths(1, a:global, a:level)
+  let head = a:cmd ==# 'lines' ? 'Search' : toupper(a:cmd[0]) . a:cmd[1:]
+  let name = a:level > 2 ? 'directory' : a:level > 1 ? 'project' : a:level ? 'folder' : 'buffer'
+  let name = len(paths) > 1 ? a:level > 2 ? 'directories' : name . 's' : name
+  if a:global && len(paths) > 1  " open files or folders across session
+    let label = len(paths) . ' ' . name
+  elseif a:cmd ==# 'lines'
+    let label = 'current buffer'
+  else  " specific paths
+    let label = name . ' ' . join(paths, ' ')
+  endi
+  let prompt = head . ' ' . label
+  let regex = utils#input_default(prompt, @/, 'grep#complete_search')
+  if empty(regex) | return | endif
+  let args = [a:global, a:level, regex]
+  call call('grep#call_' . tolower(a:cmd), args)
+endfunction
+
 " Call Blines or Lines from command
 " NOTE: This supports :Lines navigation across existing open windows and tabs (native
 " version handles buffer switching separately from s:action_for() invocation).
@@ -57,7 +87,6 @@ function! grep#call_lines(global, level, regex, ...) abort
   let opts = '-d "\t" --tabstop 1 --nth ' . (2 + show) . '..'
   let opts .= ' --with-nth ' . (a:global ? 1 + show : 2 + show) . '..'
   let opts .= ' --layout reverse-list --tiebreak chunk,index --ansi --extended'
-  let opts .= ' --query ' . string(succinct#regex(a:regex, 'omns'))
   let [_, _, case] = grep#parse(a:global, a:level, a:regex)
   let prompt = toupper(cmd[0]) . tolower(cmd[1:]) . '> '
   let regex1 = a:global ? '' : '^\e\?[^\e]*\D' . bufnr('') . '\t'
@@ -70,7 +99,7 @@ function! grep#call_lines(global, level, regex, ...) abort
   return fzf#run(fzf#wrap(cmd, options, a:0 ? a:1 : 0))
 endfunction
 
-" Call Ag Rg Blines or Lines from command
+" Call Ag or Rg grep from command
 " NOTE: If called manually then always enable recursive search and disable
 " custom '~/.ignore' file (e.g. in case searching .vim/plugged folder).
 " NOTE: Rg and Ag read '.gitignore' and '.ignore' from search directories. Disable
@@ -106,34 +135,4 @@ function! grep#call_rg(global, level, regex, ...) abort
   let filter = ' | sed "s@$HOME@~@"'  " post-process
   call fzf#vim#grep(source . filter, opts, 0)  " 0 is no fullscreen
   redraw | echo 'Rg ' . regex . ' (level ' . a:level . ')'
-endfunction
-
-" Call Ag Rg BLines or Lines from mapping (see also file.vim)
-" NOTE: Using <expr> instead of this tiny helper function causes <C-c> to
-" display annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
-function! grep#complete_search(lead, line, cursor)
-  let regex = '\n\@<=>\?\s*[0-9]*\s*\([^\n]*\)\(\n\|$\)\@='
-  let match = 'empty(a:lead) || v:val[:len(a:lead) - 1] ==# a:lead'
-  let opts = execute('history search')
-  let opts = substitute(opts, regex, '\1', 'g')  " remove number prompt
-  let opts = filter(split(opts, '\n'), match)
-  return reverse([@/] + opts[1:])  " match to user input
-endfunction
-function! grep#call_grep(cmd, global, level) abort
-  let paths = parse#get_paths(1, a:global, a:level)
-  let head = a:cmd ==# 'lines' ? 'Search' : toupper(a:cmd[0]) . a:cmd[1:]
-  let name = a:level > 2 ? 'directory' : a:level > 1 ? 'project' : a:level ? 'folder' : 'buffer'
-  let name = len(paths) > 1 ? a:level > 2 ? 'directories' : name . 's' : name
-  if a:global && len(paths) > 1  " open files or folders across session
-    let label = len(paths) . ' ' . name
-  elseif a:cmd ==# 'lines'
-    let label = 'current buffer'
-  else  " specific paths
-    let label = name . ' ' . join(paths, ' ')
-  endi
-  let prompt = head . ' ' . label
-  let regex = utils#input_default(prompt, @/, 'grep#complete_search')
-  if empty(regex) | return | endif
-  let args = [a:global, a:level, regex]
-  call call('grep#call_' . tolower(a:cmd), args)
 endfunction

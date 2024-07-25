@@ -163,7 +163,7 @@ let &g:numberwidth = 4  " number column minimum width
 let &g:scrolloff = 4  " screen lines above and below cursor
 let &g:shortmess .= &buftype ==# 'nofile' ? 'I' : ''  " no intro when starting vim
 let &g:shiftwidth = 2  " default 2 spaces
-let &g:sidescrolloff = 4  " screen columns left and right of cursor
+let &g:sidescrolloff = 1  " screen columns left and right of cursor
 let &g:signcolumn = 'auto'  " show signs automatically number column
 let &g:softtabstop = 2  " default 2 spaces
 let &g:spell = 0  " global spell disable (only use text files)
@@ -467,6 +467,7 @@ augroup panel_setup
 augroup END
 
 " Navigate recent tabs
+" TODO: Return to behavior where CursorHold is required to add tag to stack.
 " WARNING: The g:tab_stack variable is used by tags#get_recents() to put recently
 " used tabs in stack at higher priority than others. Critical to keep variables.
 silent! au! recents_setup

@@ -376,11 +376,11 @@ endfunction
 " NOTE: This assumes numpydoc style formatting. Returns initial title lines and
 " parameter groups after the first empty line in the docstring.
 " exe 'global/' . regex . '/normal! gnd"="\n" . @"' . '\<CR>' . ']p'
-let s:regex_doc = '["'']\{3}'
 function! s:get_docstring() abort
+  let regex = '["'']\{3}'
   let winview = winsaveview()
   let default = [0, 0, 0, '', [], [], []]
-  let result = succinct#get_delims(s:regex_doc, s:regex_doc)
+  let result = succinct#get_delims(regex, regex)
   if empty(get(result, 0, 0)) | return default | endif
   let [_, _, line0, col0, line2, col2] = result
   let iline = min([line0 + 1, line2])
@@ -388,7 +388,7 @@ function! s:get_docstring() abort
   call search('^\s*$', 'W', line2)  " line same if fails
   let labels = getline(iline, line('.') - 1)
   let label = getline(min([line0 + 1, line2]))
-  let label = label =~# s:regex_doc ? '' : label
+  let label = label =~# regex ? '' : label
   let indent = strpart(getline(line0), 0, col0 - 1)
   let indent = indent =~# '^\s*$' ? indent : ''
   let indent = !empty(label) ? matchstr(label, '^\s*') : indent
@@ -421,7 +421,7 @@ endfunction
 function! s:set_docstring(m, result) abort
   let [line0, line1, line2, lines, labels, params, other] = a:result
   let winview = winsaveview() | call cursor(line0, 1)
-  if !search(s:regex_doc, 'ce', line0) | return | endif
+  if !search('["'']\{3}', 'ce', line0) | return | endif
   let [num0, num1, num2, _, _, parts, _] = s:get_docstring()
   if !num0 || !num1 || !num2
     call appendbufline(bufnr(), line0 - 1, lines)
@@ -457,10 +457,10 @@ function! python#next_docstring(count, ...) abort
   else  " include comments
     let head = '\(' . comment#get_regex() . '.*\)\@<!'
   endif
-  let inum = foldclosed('.')
+  let closed = foldclosed('.')
+  let regex = head . '[frub]*["'']\{3}\_s*\zs'
   let skip = "!tags#get_inside(-1, 'Constant')"
-  let skip .= inum > 0 ? " || foldclosed('.') == " . inum : ''
-  let regex = head . '[frub]*' . s:regex_doc . '\_s*\zs'
+  let skip .= closed > 0 ? " || foldclosed('.') == " . closed : ''
   for _ in range(abs(a:count))  " cursor is on first non-whitespace after triple-quote
     call search(regex, flags, 0, 0, skip)
   endfor
