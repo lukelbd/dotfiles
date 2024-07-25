@@ -345,76 +345,8 @@ function! python#fzf_doc() abort
   call fzf#run(fzf#wrap(options))
 endfunction
 
-" Update and replace auto-inserted docstrings
-" NOTE: This moves docstring title to newline after opener
-" NOTE: The idea here is to auto-remove and auto-add parameters from
-" the docstring depending on parameters in the function definition.
-function! s:set_docstring(m, result) abort
-  let [line0, line1, line2, label, lines, params, other] = a:result
-  let label = substitute(label, '^\s*', '', '')
-  let winview = winsaveview()
-  call cursor(line0, 1)
-  if search(s:regex_doc, 'ce', line0)
-    let keys = empty(label) ? '' : "\<Esc>\"_cc" . label
-    exe "normal! a\<CR>" . keys
-  endif
-  let delta = 0  " docstring offset
-  call cursor(line0, col([line0, '$']))
-  let [num0, num1, num2, _, _, parts, _] = s:get_docstring()
-  if !num0 || !num1 || !num2
-    call appendbufline(bufnr(), line0 - 1, lines)
-    call winrestview(winview) | return a:m
-  endif
-  for [name, inum, jnum; lines1] in parts
-    let orig = filter(copy(params), 'v:val[0] ==# name')
-    if empty(orig) | continue | endif
-    let [inum, jnum] = [inum + delta, jnum + delta]
-    call deletebufline(bufnr(), inum, jnum)
-    let [_, _, _; lines0] = orig[0]
-    call appendbufline(bufnr(), inum - 1, lines0)
-    let delta += len(lines0) - len(lines1)
-  endfor
-  call appendbufline(bufnr(), num1 + delta - 1, other)
-  call winrestview(winview) | return a:m
-endfunction
-function! s:get_docstring() abort
-  let winview = winsaveview()
-  let default = [0, 0, 0, '', [], [], []]
-  let result = succinct#get_delims(s:regex_doc, s:regex_doc)
-  if empty(get(result, 0, 0)) | return default | endif
-  let [_, _, line0, col0, line2, col2] = result
-  let label = getline(min([line0 + 1, line2]))
-  let label = label =~# s:regex_doc ? '' : label
-  let indent = strpart(getline(line0), 0, col0 - 1)
-  let indent = indent =~# '^\s*$' ? indent : ''
-  let indent = !empty(label) ? matchstr(label, '^\s*') : indent
-  call cursor(min([line0 + 1, line2]), 1)
-  call search('^' . indent . '\k\+\s*:', 'W', line2)
-  let line1 = search('^\s*$', 'nW', line2)
-  let line1 = line1 ? line1 : line2
-  let [bounds, params] = [[], []]  " parameters
-  call cursor(min([line0 + 1, line2]), 1)
-  while search('^' . indent . '\k\+\s*:', 'W', line1)
-    let [lnum, text] = [line('.'), getline('.')]
-    call add(get(bounds, -1, []), lnum - 1)
-    call add(bounds, [matchstr(text, '\k\+'), lnum])
-  endwhile
-  call add(get(bounds, -1, []), line1 - 1)
-  for [key, iline, jline] in bounds
-    let parts = [key, iline, jline] + getline(iline, jline)
-    call add(params, parts)
-  endfor
-  let lines = getline(line0, line2)
-  let other = getline(line1, line2 - 1)
-  call winrestview(winview)
-  return [line0, line1, line2, label, lines, params, other]
-endfunction
-
-" Navigate and insert pydocstring 'doq' docstrings
-" exe 'global/' . regex . '/normal! gnd"="\n" . @"' . '\<CR>' . ']p'
-" NOTE: This ensures correct indentation after line break. Could also use doq templates
-" or below alternative using 'gnd' and auto-indent by adding newline to @" match via
-" @= then indent-preserving ]p paste. See https://stackoverflow.com/a/2783670/4970632
+" Get docstring properties for current object
+" NOTE: This restricts pydocstring mapping to classes and function docstrings.
 let s:regex_doc = '["'']\{3}'
 function! python#get_docstring(...) abort
   let winview = winsaveview()
@@ -440,6 +372,83 @@ function! python#get_docstring(...) abort
   let result = s:get_docstring()
   return [iline, jline] + result
 endfunction
+
+" Get properties for docstring under cursor
+" NOTE: This assumes numpydoc style formatting and parameter sections
+" exe 'global/' . regex . '/normal! gnd"="\n" . @"' . '\<CR>' . ']p'
+function! s:get_docstring() abort
+  let winview = winsaveview()
+  let default = [0, 0, 0, '', [], [], []]
+  let result = succinct#get_delims(s:regex_doc, s:regex_doc)
+  if empty(get(result, 0, 0)) | return default | endif
+  let [_, _, line0, col0, line2, col2] = result
+  let iline = min([line0 + 1, line2])
+  call cursor(iline, 1)  " label start
+  call search('^\s*$', 'W', line2)  " line same if fails
+  let labels = getline(iline, line('.') - 1)
+  let label = getline(min([line0 + 1, line2]))
+  let label = label =~# s:regex_doc ? '' : label
+  let indent = strpart(getline(line0), 0, col0 - 1)
+  let indent = indent =~# '^\s*$' ? indent : ''
+  let indent = !empty(label) ? matchstr(label, '^\s*') : indent
+  call cursor(min([line0 + 1, line2]), 1)
+  call search('^' . indent . '\k\+\s*:', 'W', line2)
+  let line1 = search('^\s*$', 'nW', line2)
+  let line1 = line1 ? line1 : line2
+  let [bounds, params] = [[], []]  " parameters
+  call cursor(min([line0 + 1, line2]), 1)
+  while search('^' . indent . '\k\+\s*:', 'W', line1)
+    let [lnum, text] = [line('.'), getline('.')]
+    call add(get(bounds, -1, []), lnum - 1)
+    call add(bounds, [matchstr(text, '\k\+'), lnum])
+  endwhile
+  call add(get(bounds, -1, []), line1 - 1)
+  for [key, iline, jline] in bounds
+    let parts = [key, iline, jline] + getline(iline, jline)
+    call add(params, parts)
+  endfor
+  let lines = getline(line0, line2)
+  let other = getline(line1, line2 - 1)
+  call winrestview(winview)
+  return [line0, line1, line2, lines, labels, params, other]
+endfunction
+
+" Update and replace auto-inserted docstrings
+" NOTE: This ensures correct indentation after line break. Could also use doq templates
+" or below alternative using 'gnd' and auto-indent by adding newline to @" match via
+" @= then indent-preserving ]p paste. See https://stackoverflow.com/a/2783670/4970632
+function! s:set_docstring(m, result) abort
+  let [line0, line1, line2, lines, labels, params, other] = a:result
+  let winview = winsaveview() | call cursor(line0, 1)
+  if !search(s:regex_doc, 'ce', line0) | return | endif
+  let [num0, num1, num2, _, _, parts, _] = s:get_docstring()
+  if !num0 || !num1 || !num2
+    call appendbufline(bufnr(), line0 - 1, lines)
+    call winrestview(winview) | return a:m
+  endif
+  let delta = len(labels)  " docstring offset
+  exe "normal! a\<CR>"
+  if !empty(labels)  " should auto-indent
+    call deletebufline(bufnr(), line0 + 1)
+    call appendbufline(bufnr(), line0, labels)
+  endif
+  call cursor(line0 + 1, col([line0 + 1, '$']))
+  for [name, inum, jnum; lines1] in parts
+    let orig = filter(copy(params), 'v:val[0] ==# name')
+    if empty(orig) | continue | endif
+    let [inum, jnum] = [inum + delta, jnum + delta]
+    call deletebufline(bufnr(), inum, jnum)
+    let [_, _, _; lines0] = orig[0]
+    call appendbufline(bufnr(), inum - 1, lines0)
+    let delta += len(lines0) - len(lines1)
+  endfor
+  call appendbufline(bufnr(), num1 + delta - 1, other)
+  call winrestview(winview) | return a:m
+endfunction
+
+" Navigate and insert pydocstring 'doq' docstrings
+" NOTE: The idea here is to auto-remove and auto-add parameters from
+" the docstring depending on parameters in the function definition.
 function! python#next_docstring(count, ...) abort
   let flags = a:count >= 0 ? 'w' : 'wb'
   if a:0 && a:1
@@ -458,8 +467,7 @@ function! python#next_docstring(count, ...) abort
 endfunction
 function! python#insert_docstring(...) abort
   let snr = utils#get_scripts('vim-pydocstring/autoload/pydocstring.vim')
-  if empty(snr) | return | endif
-  let callback = snr[0] . 'exit_callback'
+  if empty(snr) | return | endif  " let callback = snr[0] . 'exit_callback'
   let result = call('python#get_docstring', a:000)
   let [iline, jline, line0, line1, line2; rest] = result
   if line0 && line2  " remove previous docstring
