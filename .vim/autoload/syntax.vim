@@ -6,27 +6,37 @@
 " syntax 'conceal' or 'concealends'. In the former case leverage fact that matchadd
 " method is only used to make tex and markdown characters invisible, so no need to
 " compare replacement characters or check groups -- simply skip those columns.
+function! syntax#get_concealed(...) abort
+  let lnum = a:0 > 0 ? a:1 : line('.')
+  let cnum = a:0 > 1 ? a:2 : col('.')
+  let cols = a:0 > 2 ? a:3 : syntax#_matches(lnum)
+  let item = syntax#_concealed(lnum, cnum)
+  return type(item) ? item : index(cols, cnum) != -1
+endfunction
 function! syntax#_concealed(...) abort
-  let [line, cols] = [getline(a:0 ? a:1 : '.'), []]  " concealed with empty string
-  let matches = filter(getmatches(), "v:val.group ==# 'Conceal'")
-  for regex in uniq(map(matches, 'v:val.pattern'))
-    let idx = 0 | while idx >= 0 && idx < len(line)
-      let [str, jdx, idx] = matchstrpos(line, regex, idx)
-      call extend(cols, empty(str) ? [] : range(jdx + 1, idx))
+  let lnum = a:0 > 0 ? a:1 : line('.')
+  let cnum = a:0 > 1 ? a:2 : col('.')
+  let char = mode() ==# '' ? 'v' : mode()
+  if cnum < 1 || &l:concealcursor !~? char[0]
+    let [nr, str] = [0, '']
+  else  " check if concealed
+    let [nr, str, _] = synconcealed(lnum, cnum)
+  endif
+  return nr > 0 ? str : 0
+endfunction
+function! syntax#_matches(...) abort
+  let regexes = filter(getmatches(), "v:val.group ==# 'Conceal'")
+  let regexes = uniq(map(regexes, 'v:val.pattern'))
+  let string = getline(a:0 ? a:1 : '.')
+  let cols = []  " concealed with empty string
+  for regex in regexes
+    let idx = 0
+    while idx >= 0 && idx < len(string)
+      let [str, jdx, idx] = matchstrpos(string, regex, idx)
+      let idxs = empty(str) ? [] : range(jdx + 1, idx)
+      call extend(cols, idxs)
     endwhile
   endfor | return cols
-endfunction
-function! syntax#get_concealed(...) abort
-  let cnum = a:0 > 0 ? a:1 : col('.')
-  let cols = a:0 > 1 ? a:2 : syntax#_concealed()
-  let cmode = mode() ==# '' ? 'v' : mode()
-  let hidden = index(cols, cnum) != -1
-  if cnum && &l:concealcursor =~? cmode[:0]
-    let [concealed, cchar, _] = synconcealed('.', cnum)
-  else
-    let [concealed, cchar] = [0, '']
-  endif
-  return concealed ? cchar : hidden ? 1 : 0
 endfunction
 
 " Jump to next conceal charactee
@@ -34,43 +44,43 @@ endfunction
 " NOTE: This will be inaccurate for horizontal motions spanning multiple lines
 " but generally not noticeable in that case (e.g. 20l just means 'go far away').
 function! syntax#next_nonconceal(count, ...) abort
-  let [delta, offset] = a:count < 0 ? [-1, -1] : [1, 0]
-  let [lnum, line] = [line('.'), getline('.')]
-  let [cnum, cmax] = [col('.'), col('$')]
   let [icnt, jcnt] = [a:count, 0]
-  let cols = a:0 ? a:1 : syntax#_concealed(lnum)
-  while delta * icnt > 0
+  let [direc, offset] = icnt < 0 ? [-1, -1] : [1, 0]
+  let [lnum, cnum, cmax] = [line('.'), col('.'), col('$')]
+  let cols = a:0 ? a:1 : syntax#_matches(lnum)
+  let string = getline('.')
+  while direc * icnt > 0
     if a:count < 0 && cnum <= 1 || a:count > 0 && cnum >= cmax
       let jcnt += icnt | break
     endif
-    let concealed = syntax#get_concealed(cnum + offset, cols)
-    if !type(concealed)
+    let value = syntax#get_concealed(lnum, cnum + offset, cols)
+    if !type(value)
       if a:count < 0
-        let cnum -= len(matchstr(line[:cnum - 2], '.$'))
-      else  " vint: next-line -ProhibitUsingUndeclaredVariable
-        let cnum += len(matchstr(line[cnum - 1:], '^.'))
+        let cnum -= len(matchstr(string[:cnum - 2], '.$'))
+      else  " vint: next-string -ProhibitUsingUndeclaredVariable
+        let cnum += len(matchstr(string[cnum - 1:], '^.'))
       endif
-      let [sub, add] = [concealed ? 0 : 1, 1]
+      let [sub, add] = [value ? 0 : 1, 1]
     else
       let pnum = cnum  " previous colum number
-      let cnum += delta  " increment column number
+      let cnum += direc  " increment column number
       while cnum > 1 && cnum < cmax
-        let icon = syntax#get_concealed(cnum + offset, cols)
-        if !type(icon) && empty(icon) || type(icon) && icon !=# concealed
+        let val = syntax#get_concealed(lnum, cnum + offset, cols)
+        if !type(val) && empty(val) || type(val) && val !=# value
           break
         else  " increment column number
-          let cnum += delta
+          let cnum += direc
         endif
       endwhile
-      let sub = strchars(concealed)
+      let sub = strchars(value)
       if a:count < 0
-        let add = strchars(line[max([cnum - 1, 0]):pnum - 2])
+        let add = strchars(string[max([cnum - 1, 0]):pnum - 2])
       else
-        let add = strchars(line[pnum - 1:cnum - 2])
+        let add = strchars(string[pnum - 1:cnum - 2])
       endif
     endif
-    let icnt -= delta * sub  " iterate input count
-    let jcnt += delta * add  " iterate output count
+    let icnt -= direc * sub  " iterate input count
+    let jcnt += direc * add  " iterate output count
   endwhile
   return jcnt > 0 ? jcnt . 'l' : jcnt < 0 ? -jcnt . 'h' : ''
 endfunction

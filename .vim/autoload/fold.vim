@@ -192,8 +192,10 @@ function! fold#get_parents(...) abort
 endfunction
 
 " Return default fold label
+" NOTE: Python and tex fold text functions both start from fold#fold_label().
 " NOTE: This filters trailing comments, removes git-diff chunk text following stats,
-" and adds following line if the fold line is a single open delimiter (e.g. json).
+" adds next line if the text is a single open delimiter (e.g. json), and replaces
+" syntax conceal characters (tex#fold_text() handles backslash matchadd() conceal).
 function! s:format_delims(label, ...) abort
   let pairs = {'[': ']', '(': ')', '{': '}', '<': '>'}
   let items = call('matchlist', [a:label, '\([[({<]*\)\s*$'] + a:000)
@@ -204,28 +206,33 @@ function! s:format_delims(label, ...) abort
   return [join(delim1, ''), join(delim2, '')]
 endfunction
 function! s:format_inner(label, line) abort
+  let regex = '\s*\([[({<]*\)\s*$'
   let label1 = substitute(a:label, '^\s*', '', '')
   let [delim1, outer] = s:format_delims(label1)
   if label1 !=# delim1 | return '' | endif  " not naked delimiter
   let label2 = fold#fold_label(a:line, 1)
   let [delim2, _] = s:format_delims(label2)
   if label2 ==# delim2 | return '' | endif  " no additional info
-  let inner = substitute(label2, '\s*\([[({<]*\)\s*$', '', 'g')
+  let inner = substitute(label2, regex, '', 'g')
   return ' ' . inner . ' ··· ' . outer  " e.g. json folds
 endfunction
 function! fold#fold_label(line, ...) abort
-  let initial = getline(a:line + s:has_divider(a:line))
   let fugitive = !empty(get(b:, 'fugitive_type', '')) || &l:filetype =~# '^git$\|^diff$'
   let marker = split(&l:foldmarker, ',')[0] . '\d*\s*$'
+  let delta = '^\(@@.\{-}@@\).*$'  " git hunk difference
   let regex = '\(\S\@<=\s\+' . comment#get_regex(0) . '.*\)\?\s*$'
-  let regex = a:0 && a:1 ? '\(^\s*\|' . regex . '\)' : regex
-  let label = substitute(initial, marker, '', '')
-  let label = substitute(label, regex, '', 'g')
-  if fugitive  " remove context information following delta
-    let label = substitute(label, '^\(@@.\{-}@@\).*$', '\1', '')
-  elseif !a:0 || !a:1  " append next line for naked open delimiters
-    let label .= s:format_inner(label, a:line + 1)
-  endif | return label
+  let lnum = a:line + s:has_divider(a:line)
+  let label = getline(lnum)
+  let label = substitute(label, marker, '', '')  " trailing markers
+  let label = substitute(label, regex, '', 'g')  " trailing comments
+  let label = fugitive ? substitute(label, delta, '\1', '') : label
+  let chars = split(label, '\zs')  " remaining characters
+  let items = map(range(len(chars)), 'syntax#_concealed(lnum, v:val + 1)')
+  let chars = map(range(len(chars)), 'type(items[v:val]) ? items[v:val] : chars[v:val]')
+  let label = join(chars, '')  " unconcealed characters
+  let label = a:0 && a:1 ? substitute(label, '^\s*', '', 'g') : label
+  let extra = fugitive || a:0 && a:1 ? '' : s:format_inner(label, a:line + 1)
+  return label . extra
 endfunction
 
 " Generate truncated fold text. In future should include error cound information.

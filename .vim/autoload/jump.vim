@@ -301,18 +301,19 @@ endfunction
 " issue where deleting to end-of-line with 'e' either omits character includes newline
 function! jump#next_word(key, ...) abort
   let adjust = mode(1) =~# '^no' && a:key ==? 'e' ? 'l' : ''
-  let [lnum, cols] = [line('.'), syntax#_concealed()]
-  let [delta, offset] = a:key =~? '^[we]$' ? [1, 0] : [-1, -1]
+  let [lnum, cols] = [-1, -1]
+  let [direc, offset] = a:key =~? '^[we]$' ? [1, 0] : [-1, -1]
   for _ in range(a:0 ? a:1 : v:count1)
-    let cols = lnum == line('.') ? cols : syntax#_concealed()
-    let concealed = syntax#get_concealed(col('.') + offset, cols)
-    let [keys, lnum] = ['', line('.')]
-    if type(concealed) || !empty(concealed)
-      let keys .= syntax#next_nonconceal(delta, cols)
-      let keys .= delta > 0 ? 'h' : 'l'
+    let [keys, iline, icol] = ['', line('.'), col('.')]
+    let cols = lnum == iline ? cols : syntax#_matches(iline)
+    let item = syntax#get_concealed(iline, icol + offset, cols)
+    if type(item) || !empty(item)
+      let keys .= syntax#next_nonconceal(direc, cols)
+      let keys .= direc > 0 ? 'h' : 'l'
     endif
     exe 'normal! ' . keys . a:key
     exe empty(adjust) ? '' : 'normal! ' . adjust
+    let lnum = line('.')
   endfor
 endfunction
 
