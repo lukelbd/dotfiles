@@ -50,13 +50,14 @@ endfunction
 " before proceeding with other actions. Use right-arrow from end-of-line to accept
 " completion option and possibly continue with further expansion. See vimrc for details
 function! window#close_popup(map, ...) abort
-  let s = a:0 > 1 && a:2 ? '' : a:map
-  if a:0 && a:1 > 1  " select item or perform action
-    let [map1, map2, map3] = ["\<C-y>" . s, "\<C-n>\<C-y>" . s, a:map]
-  elseif a:0 && a:1 > 0  " select item only if scrolled
-    let [map1, map2, map3] = ["\<C-y>" . s, a:map, a:map]
+  let level = a:0 ? a:1 : 0
+  let suffix = a:0 > 1 && a:2 ? '' : a:map
+  if level > 1  " select item or perform action
+    let [map1, map2, map3] = ["\<C-y>" . suffix, "\<C-n>\<C-y>" . suffix, a:map]
+  elseif level > 0  " select item only if scrolled
+    let [map1, map2, map3] = ["\<C-y>" . suffix, a:map, a:map]
   else  " exit popup or perform action
-    let [map1, map2, map3] = ["\<C-e>" . s, "\<C-e>" . s, a:map]
+    let [map1, map2, map3] = ["\<C-e>" . suffix, "\<C-e>" . suffix, a:map]
   endif
   let state = get(b:, 'scroll_state', 0) | let b:scroll_state = 0
   return state && pumvisible() ? map1 : pumvisible() ? map2 : map3

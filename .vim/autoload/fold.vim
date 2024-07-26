@@ -227,7 +227,7 @@ function! fold#fold_label(line, ...) abort
   let label = substitute(label, regex, '', 'g')  " trailing comments
   let label = fugitive ? substitute(label, delta, '\1', '') : label
   let chars = split(label, '\zs')  " remaining characters
-  let items = map(range(len(chars)), 'syntax#_concealed(lnum, v:val + 1)')
+  let items = map(range(len(chars)), 'syntax#_concealed(lnum, v:val + 1, ''n'')')
   let chars = map(range(len(chars)), 'type(items[v:val]) ? items[v:val] : chars[v:val]')
   let label = join(chars, '')  " unconcealed characters
   let label = a:0 && a:1 ? substitute(label, '^\s*', '', 'g') : label
@@ -235,33 +235,9 @@ function! fold#fold_label(line, ...) abort
   return label . extra
 endfunction
 
-" Generate truncated fold text. In future should include error cound information.
-" NOTE: Caching important for syntax#_concealed() line. Also previously had issues
-" with flag generation but should be quick if we avoid triggering gitgutter updates.
+" Generate fold text label
 " NOTE: Since gitgutter signs are not shown over closed folds include summary of
 " changes in fold text. See https://github.com/airblade/vim-gitgutter/issues/655
-function! fold#fold_text(...) abort
-  let winview = winsaveview()  " translate byte column index to character index
-  if !exists('b:fastfold_cache')
-    let b:fastfold_cache = {}
-  endif
-  if a:0 && a:1  " debugging mode
-    exe winview.lnum | let [line1, line2, level] = fold#get_fold()
-    call winrestview(winview)
-  else  " internal mode
-    let [line1, line2] = [v:foldstart, v:foldend]
-    let level = len(v:folddashes)
-  endif
-  let leftidx = charidx(getline(winview.lnum), winview.leftcol)
-  let index = string(line1)
-  let text = get(b:fastfold_cache, line1, '')
-  if empty(text) || !type(text)
-    let [label, space, lines] = s:fold_text(line1, line2, level)
-    let text = label . space . lines
-    let b:fastfold_cache[index] = text
-  endif
-  return strcharpart(text, leftidx)
-endfunction
 function! s:fold_text(line1, line2, level)
   let lines = string(a:line2 - a:line1 + 1)  " number of lines
   let maxlen = get(g:, 'linelength', 88)  " default maximum
@@ -298,6 +274,58 @@ function! s:fold_text(line1, line2, level)
   endif
   let space = repeat(space, width - strchars(label))
   return [label, space, stats]
+endfunction
+
+" Generate cached and truncated fold text
+" NOTE: Have to call this manually if insert keys are mapped. See edit#insert_delims 
+" WARNING: Caching important for syntax#_concealed() and for python s:is_decorator()
+" (also had issues with flag generation but should be quick if we avoid triggering
+" gitgutter updates). Update cache indices on InsertCharPre when v:char ==# '\r' and
+" on TextYankPost using v:event.operator and v:event.regtype
+" but too complex, instead and TextChanged is not quite as common as TextChangedI.
+function! fold#_recache(...) abort
+  let queued = get(b:, 'foldtext_queued', 1)
+  unlet! b:foldtext_queued
+  if a:0 ? a:1 : queued  " trigger foldtext() generation
+    unlet! b:foldtext_cache
+    unlet! b:foldtext_delta
+  endif
+endfunction
+function! fold#_recache_insert(...) abort  " from InsertCharPre
+  let col1 = col('.') == 1 && line('.') > 1
+  let col2 = col('.') == col('$') && line('.') < line('$')
+  let char = a:0 ? a:1 : v:char  " see edit#insert_delims()
+  let bool = char ==# "\<CR>" || col1 && char ==# "\<BS>" || col2 && char ==# "\<Delete>"
+  call fold#_recache(bool)
+endfunction
+function! fold#_recache_normal(...) abort  " from TextYankPost
+  let key = get(v:event, 'operator', '')
+  if key !~# '^[cd]$' | return | endif
+  let char = get(v:event, 'regtype', 'v')
+  let text = getreg(get(v:event, 'regname', ''))
+  let bool = char ==# 'V' || text =~# "\n"
+  let b:foldtext_queued = bool  " then await TextChanged
+endfunction
+function! fold#fold_text(...) abort
+  let winview = winsaveview()  " translate byte column index to character index
+  if !exists('b:foldtext_cache')
+    let b:foldtext_cache = {}
+  endif
+  if a:0 && a:1  " debugging mode
+    exe winview.lnum | let [line1, line2, level] = fold#get_fold()
+    call winrestview(winview)
+  else  " internal mode
+    let [line1, line2] = [v:foldstart, v:foldend]
+    let level = len(v:folddashes)
+  endif
+  let leftidx = charidx(getline(winview.lnum), winview.leftcol)
+  let label = get(b:foldtext_cache, string(line1), '')
+  if empty(label) || !type(label)
+    let [label, space, lines] = s:fold_text(line1, line2, level)
+    let label = label . space . lines
+    let b:foldtext_cache[string(line1)] = label
+  endif
+  return strcharpart(label, leftidx)
 endfunction
 
 " Helper functions for returning all folds
@@ -512,6 +540,7 @@ function! fold#update_folds(force, ...) abort
   endif
   " Optionally update folds
   if force || refold  " re-apply or convert
+    call fold#_recache(1)
     if a:force
       call SimpylFold#Recache()
     endif
@@ -602,10 +631,10 @@ endfunction
 " NOTE: Necessary to temporarily open outer folds before toggling inner folds. No way
 " to target them with :fold commands or distinguish adjacent children with same level
 function! s:toggle_show(toggle, nr) abort
-  exe a:toggle ? '' : 'normal! zzze'
-  let head = a:toggle > 1 ? 'Toggled' : a:toggle ? 'Closed' : 'Opened'
-  let msg = head . ' ' . a:nr . ' fold' . (a:nr > 1 ? 's' : '') . '.'
+  let key = a:toggle > 1 ? 'Toggled' : a:toggle ? 'Closed' : 'Opened'
+  let msg = key . ' ' . a:nr . ' fold' . (a:nr > 1 ? 's' : '') . '.'
   let cmd = a:nr > 0 ? 'echo ' . string(msg) : "echoerr 'E490: No folds found'"
+  exe a:nr > 0 && a:toggle == 0 ? 'normal! zzze' : ''
   call feedkeys("\<Cmd>" . cmd . "\<CR>", 'n')
 endfunction
 function! s:toggle_state(line1, line2, ...) abort range

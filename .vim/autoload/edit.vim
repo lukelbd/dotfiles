@@ -186,11 +186,12 @@ endfunction
 " Insert mode delete-by-tabs and delimit-mate keys
 " NOTE: Native delimitMate#ExpandReturn() issues <Esc> then fails to split brackets due
 " to InsertLeave autocommand that repositions cursor. Use <C-c> to avoid InsertLeave.
+let s:insert_chars = {'s': "\<Space>", 'r': "\<CR>", 'b': "\<BS>"}
 let s:insert_delims = {'s': 'ExpandSpace', 'r': 'ExpandReturn', 'b': 'BS'}
 function! edit#insert_init(...) abort
   let key = a:0 ? a:1 : get(b:, 'insert_mode', '')
-  let b:insert_mode = key  " see above
-  return key
+  if key =~? 'o' | call fold#_recache(1) | endif
+  let b:insert_mode = key | return key  " see above
 endfunction
 function! edit#insert_undo(...) abort
   let key = a:0 ? a:1 : get(b:, 'insert_mode', '')  " default to queued
@@ -198,9 +199,11 @@ function! edit#insert_undo(...) abort
   return "\<C-g>u"
 endfunction
 function! edit#insert_delims(key, ...) abort
+  let char = get(s:insert_chars, a:key, '')
   let name = get(s:insert_delims, a:key, a:key)
   let keys = call('delimitMate#' . name, a:000)
-  let keys = substitute(keys, "\<Esc>", "\<C-c>", 'g') | return keys
+  let keys = substitute(keys, "\<Esc>", "\<C-c>", 'g')
+  call fold#_recache_insert(char) | return keys
 endfunction
 function! edit#insert_delete(...) abort  " vint: -ProhibitUsingUndeclaredVariable
   let [idx, text] = [col('.') - 1, getline('.')]

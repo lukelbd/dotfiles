@@ -16,8 +16,9 @@ endfunction
 function! syntax#_concealed(...) abort
   let lnum = a:0 > 0 ? a:1 : line('.')
   let cnum = a:0 > 1 ? a:2 : col('.')
-  let char = mode() ==# '' ? 'v' : mode()
-  if cnum < 1 || &l:concealcursor !~? char[0]
+  let value = a:0 > 2 ? a:3 : mode()
+  let value = value ==# '' ? 'v' : value
+  if cnum < 1 || &l:concealcursor !~? value[0]
     let [nr, str] = [0, '']
   else  " check if concealed
     let [nr, str, _] = synconcealed(lnum, cnum)

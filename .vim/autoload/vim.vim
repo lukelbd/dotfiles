@@ -33,8 +33,10 @@ function! vim#config_refresh(bang, ...) abort
   endfor
   let folds = filter(fold#fold_source(), 'foldclosed(v:val[0]) < 0')
   call map(paths, "fnamemodify(v:val, ':~')[2:]")
-  filetype detect  " update syntax, filetype, folds
-  for fold in folds | exe fold[0] . 'foldopen' | endfor
+  doautocmd VimEnter | filetype detect  " update syntax, filetype, folds
+  for fold in folds
+    exe foldlevel(fold[0]) ? fold[0] . 'foldopen' : ''
+  endfor
   call winrestview(winview)
   redraw | echom 'Loaded: ' . join(paths, ', ') . '.'
   let g:refresh = localtime()

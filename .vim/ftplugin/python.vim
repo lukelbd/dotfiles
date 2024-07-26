@@ -29,16 +29,10 @@ noremap <buffer> g)) <Cmd>call feedkeys('g)ic', 'm')<CR><Cmd>call feedkeys("cscf
 noremap <expr> <buffer> g( python#dict_to_kw_expr(1)
 noremap <expr> <buffer> g) python#dict_to_kw_expr(0)
 
-" Add indention-based 'm' text objects
+" Create string delimiters (include [frub] prefixes)
 " BracelessEnable +indent  " bug causes screen view to jump
 " BracelessEnable +highlight  " slows things down even on mac
-if exists(':BracelessEnable')
-  BracelessEnable
-endif
-
-" Add multiline docstring 'd' delimiters
-" NOTE: This will include matches e.g. 'r' prefixes. Also re-apply single quote
-" mappings for consistency but should work in python files anyway.
+exe 'BracelessEnable'
 let b:succinct_delims = {
   \ "'": '''\r''',
   \ '"': '"\r"',

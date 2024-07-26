@@ -120,10 +120,9 @@ function! s:fold_constant(lnum) abort  " e.g. VARIABLE = [... or if condition:..
   return lnum > a:lnum ? ['>1'] + repeat([1], lnum - a:lnum - 1) + ['<1'] : []
 endfunction
 
-" Return fold expression and text accounting for global constants and docstrings
-" NOTE: This includes text following try-except blocks and docstring openers, but
-" skips numpydoc and rest-style dash separators. Should add to this.
-let s:maxlines = 100  " maxumimum lines to search
+" Return cached fold expression
+" NOTE: This works by modifying SimpylFold generated cache. To speed up fold text
+" also use separate fold#fold_text() cache and populate with decorator offsets.
 function! python#fold_expr(lnum) abort
   let recache = !exists('b:SimpylFold_cache')
   call SimpylFold#FoldExpr(a:lnum)  " auto recache
@@ -131,41 +130,53 @@ function! python#fold_expr(lnum) abort
   return b:SimpylFold_cache[a:lnum]['foldexpr']
 endfunction
 function! python#fold_cache() abort
-  let b:fold_heads = {}
+  let b:foldtext_delta = {}
   let [lnum, cache] = [1, b:SimpylFold_cache]
   while lnum <= line('$')
+    let index = string(lnum)
     let level = s:get_level(lnum)
     let exprs = s:fold_decorator(lnum)
-    if !empty(exprs) | let b:fold_heads[string(lnum)] = lnum + len(exprs) - 1 | endif
-    let exprs = !level && empty(exprs) ? s:fold_docstring(lnum) : exprs
-    let exprs = !level && empty(exprs) ? s:fold_constant(lnum) : exprs
-    if empty(exprs) | let lnum += 1 | continue | endif
+    if !empty(exprs)  " line offset
+      let b:foldtext_delta[index] = len(exprs) - 1
+    endif
+    let exprs = level == 0 && empty(exprs) ? s:fold_docstring(lnum) : exprs
+    let exprs = level == 0 && empty(exprs) ? s:fold_constant(lnum) : exprs
+    if empty(exprs)  " cache unmodified
+      let lnum += 1 | continue
+    endif
     for idx in range(len(exprs))  " apply overrides
       let cache[lnum].foldexpr = exprs[idx] | let lnum += 1
     endfor
   endwhile
 endfunction
+
+" Return fold expression and text accounting for global constants and docstrings
+" NOTE: This includes text following try-except blocks and docstring openers, but
+" skips numpydoc and rest-style dash separators. Should add to this.
 function! python#fold_text(lnum, ...) abort
-  let heads = get(b:, 'fold_heads', {})
-  let lnum = get(heads, string(a:lnum), a:lnum)
-  let exprs = lnum != a:lnum ? [] : s:fold_decorator(a:lnum)
-  if !empty(exprs)  " recache
-    let lnum = a:lnum + len(exprs) - 1
-    let heads[string(a:lnum)] = lnum
+  let nline = 100  " maxumimum lines to search
+  let cache = get(b:, 'foldtext_delta', {})
+  let index = string(a:lnum)
+  let delta = get(cache, index, -1)
+  if delta < 0
+    let delta = len(s:fold_decorator(a:lnum))
+    let delta = max([delta - 1, 0])
+    let cache[index] = delta
   endif
-  let [line1, line2] = [lnum + 1, lnum + s:maxlines]
+  let regex = '["'']\{3}'  " docstring expression
+  let lnum = a:lnum + delta
   let label = fold#fold_label(lnum, 0)
   let width = get(g:, 'linelength', 88) - 10  " minimum width
-  let regex = '["'']\{3}'  " docstring expression
+  let [iline, jline] = [lnum + 1, lnum + nline]
   if label =~# '^try:\s*$'  " append lines
-    let label .= ' ' . fold#fold_label(line1, 1)  " remove indent
+    let label .= ' ' . fold#fold_label(iline, 1)  " remove indent
   endif
   if label =~# regex . '\s*$'  " append lines
-    for lnum in range(line1, min([line2, a:0 ? a:1 : line2]))
+    for lnum in range(iline, min([jline, a:0 ? a:1 : jline]))
       let itext = fold#fold_label(lnum, 1)
       let istop = itext =~# regex  " docstring close
       let itext = itext =~# '[-=]\{3,}' ? '' : itext
-      let space = !istop && lnum > line1 ? ' ' : '' 
+      let space = !istop && lnum > iline ? ' ' : '' 
       let label .= space . itext
       if istop || len(label) > width | break | endif
     endfor

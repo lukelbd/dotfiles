@@ -401,11 +401,14 @@ endfunction
 function! file#reload() abort
   let type = get(b:, 'fugitive_type', '')
   if empty(type)  " edit from disk
-    edit | call fold#update_folds(1, 1)
+    edit | doautocmd TextChanged | call fold#update_folds(0, 3)
+    normal! zzze
   elseif type ==# 'blob'  " return to file
-    exe 'Gedit' | normal! zv
+    exe 'Gedit'
+    normal! zv
   else  " unknown
-    redraw | echohl ErrorMsg | echom 'Error: Not in fugitive blob' | echohl None
+    let msg = 'Error: Not in fugitive blob'
+    redraw | echohl ErrorMsg | echom msg | echohl None
   endif
 endfunction
 function! file#rename(name, bang)
