@@ -1821,15 +1821,6 @@ silent! delcommand SplitjoinSplit
 " Matches and delimiters {{{2
 " NOTE: Here vim-tags searching integrates with indexed-search and vim-succinct
 " surround delimiters integrate with matchup '%' keys.
-if s:has_plug('vim-matchup')  " {{{
-  let g:matchup_delim_nomids = 1  " skip e.g. 'else' during % jumps and text objects
-  let g:matchup_delim_noskips = 1  " skip e.g. 'if' 'endif' in comments
-  let g:matchup_matchparen_enabled = 1  " enable matchupt matching on startup
-  let g:matchup_motion_keepjumps = 1  " preserve jumps when navigating
-  let g:matchup_surround_enabled = 1  " enable 'ds%' 'cs%' mappings
-  let g:matchup_transmute_enabled = 0  " issues with tex, use vim-succinct instead
-  let g:matchup_text_obj_linewise_operators = ['y', 'd', 'c', 'v', 'V', "\<C-v>"]
-endif  " }}}
 if s:has_plug('vim-indexed-search')  " {{{
   let g:indexed_search_center = 0  " disable centered match jumping
   let g:indexed_search_colors = 0  " disable colors for speed
@@ -1839,6 +1830,17 @@ if s:has_plug('vim-indexed-search')  " {{{
   let g:indexed_search_shortmess = 1  " shorter message
   let g:indexed_search_numbered_only = 1  " only show numbers
   let g:indexed_search_n_always_searches_forward = 1  " see also vim-sneak
+endif  " }}}
+if s:has_plug('vim-matchup')  " {{{
+  nmap <expr> <2-LeftMouse> foldclosed('.') > 0 ? 'zvvaz' : '<Plug>(matchup-double-click)'
+  vmap <expr> <2-LeftMouse> foldclosed('.') > 0 ? 'zvvaz' : '<Esc><Plug>(matchup-double-click)'
+  let g:matchup_delim_nomids = 1  " skip e.g. 'else' during % jumps and text objects
+  let g:matchup_delim_noskips = 1  " skip e.g. 'if' 'endif' in comments
+  let g:matchup_matchparen_enabled = 1  " enable matchupt matching on startup
+  let g:matchup_motion_keepjumps = 1  " preserve jumps when navigating
+  let g:matchup_surround_enabled = 1  " enable 'ds%' 'cs%' mappings
+  let g:matchup_transmute_enabled = 0  " issues with tex, use vim-succinct instead
+  let g:matchup_text_obj_linewise_operators = ['y', 'd', 'c', 'v', 'V', "\<C-v>"]
 endif  " }}}
 
 " Navigation and delimiters
