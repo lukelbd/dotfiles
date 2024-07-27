@@ -201,7 +201,6 @@ function! utils#operator_func(type, ...) range abort
     echoerr 'E474: Invalid argument: ' . string(a:type)
     return ''
   endif
-  unsilent echom line1 . ':' . col1 . ' ' . line2 . ':' . col2
   if line2 < line1  " WARNING: line blocks don't always properly define columns
     return ''
   elseif a:type ==# 'line' && line1 == line2 && col1 >= col2  " empty range

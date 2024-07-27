@@ -318,13 +318,14 @@ function! fold#fold_text(...) abort
     let [line1, line2] = [v:foldstart, v:foldend]
     let level = len(v:folddashes)
   endif
-  let leftidx = charidx(getline(winview.lnum), winview.leftcol)
-  let label = get(b:foldtext_cache, string(line1), '')
+  let index = string(line1)
+  let label = get(b:foldtext_cache, index, '')
   if empty(label) || !type(label)
     let [label, space, lines] = s:fold_text(line1, line2, level)
     let label = label . space . lines
-    let b:foldtext_cache[string(line1)] = label
+    let b:foldtext_cache[index] = label
   endif
+  let leftidx = charidx(getline(winview.lnum), winview.leftcol)
   return strcharpart(label, leftidx)
 endfunction
 

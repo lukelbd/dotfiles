@@ -154,14 +154,16 @@ endfunction
 " NOTE: This includes text following try-except blocks and docstring openers, but
 " skips numpydoc and rest-style dash separators. Should add to this.
 function! python#fold_text(lnum, ...) abort
+  if !exists('b:foldtext_delta')
+    let b:foldtext_delta = {}
+  endif
   let nline = 100  " maxumimum lines to search
-  let cache = get(b:, 'foldtext_delta', {})
   let index = string(a:lnum)
-  let delta = get(cache, index, -1)
+  let delta = get(b:foldtext_delta, index, -1)
   if delta < 0
     let delta = len(s:fold_decorator(a:lnum))
     let delta = max([delta - 1, 0])
-    let cache[index] = delta
+    let b:foldtext_delta[index] = delta
   endif
   let regex = '["'']\{3}'  " docstring expression
   let lnum = a:lnum + delta
