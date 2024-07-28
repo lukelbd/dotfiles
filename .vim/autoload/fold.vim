@@ -373,37 +373,38 @@ function! s:fold_sink(fold) abort
   exe 'normal! zvzzze'
 endfunction
 function! s:fold_counts(fold) abort
-  let hunk = '\%(%s\(\d\+\)\)\?'  " hunk regex
-  let regex = join(map(['!', '+', '\~', '-'], 'printf(hunk, v:val)'), '')
-  let parts = map(matchlist(a:fold, regex)[1:4], 'str2nr(v:val)')
-  return [parts[0], parts[1] + parts[2] + parts[3]]  " note str2nr('') is zero
+  let flags = ['!', '\*', '\^', '+', '\~', '-']
+  let regex = join(map(flags, '''\%('' . v:val . ''\(\d\+\)\)\?'''), '')
+  let nrs = map(matchlist(a:fold, '^\s*{' . regex . '}')[1:6], 'str2nr(v:val)')
+  return empty(nrs) ? [0, 0] : [nrs[0] + nrs[1] + nrs[2], nrs[3] + nrs[4] + nrs[5]]
 endfunction
 function! fold#fzf_folds(...) abort
   let bang = a:0 ? a:1 : 0  " fullscreen
   let folds = fold#fold_source()
   let maxlen = max(map(copy(folds), 'len(string(abs(v:val[1] - v:val[0])))'))
-  let [labels1, labels2, labels] = [[], [], []]
+  let [labels0, labels1] = [[], []]
   for [line1, line2, level] in folds
     let [label, _, stats] = s:fold_text(line1, line2, level)
-    let [count1, count2] = s:fold_counts(label)
-    let lines = substitute(split(stats)[0], '\D', '', 'g')
-    let lines = repeat(' ', maxlen - strchars(lines)) . lines . '-+'
+    let [icount, jcount] = s:fold_counts(label)
+    let stats = substitute(stats, '[^0-9 ]', '', 'g')
+    let [lines, level] = map(split(stats), 'str2nr(v:val)')
+    let space = repeat(' ', maxlen - strchars(lines) + 1)
+    let stats = '[' . level . ']' . ' ' . '(' . lines . ')'
     let label = substitute(label, '^\s*', '', '')
-    let label = bufname() . ':' . line1 . ':' . lines . ' ' . label
-    if count1  " ale.vim locations
-      call add(labels1, [label, count1])
-    elseif count2  " gitgutter changes
-      call add(labels2, [label, count2])
+    let label = bufname() . ':' . line1 . ':' . stats . ' ' . label
+    if icount || jcount  " ale.vim locations
+      call add(labels1, [label, icount, jcount])
     else  " standard label
-      call add(labels, label)
+      call add(labels0, [label, level, lines])
     endif
   endfor
-  let labels1 = sort(labels1, {i1, i2 -> i2[1] - i1[1]})
-  let labels2 = sort(labels2, {i1, i2 -> i2[1] - i1[1]})
-  let labels = map(labels1, 'v:val[0]') + map(labels2, 'v:val[0]') + labels
+  call sort(labels1, {i1, i2 -> i1[1] == i2[1] ? i2[2] - i1[2] : i2[1] - i1[1]})
+  call sort(labels0, {i1, i2 -> i1[1] == i2[1] ? i2[2] - i1[2] : i1[1] - i2[1]})
+  let labels = map(labels1, 'v:val[0]') + map(labels0, 'v:val[0]')
   let opts = fzf#vim#with_preview({'placeholder': '{1}:{2}'})
   let opts = join(map(get(opts, 'options', []), 'fzf#shellescape(v:val)'), ' ')
-  let opts .= ' -d : --with-nth 3.. --preview-window +{2}-/2 --layout=reverse-list'
+  let opts .= ' -d : --with-nth 3.. --preview-window +{2}-/2'
+  let opts .= ' --layout=reverse-list --tiebreak=chunk,index'
   if empty(label) | return | endif
   let options = {
     \ 'source': labels,
