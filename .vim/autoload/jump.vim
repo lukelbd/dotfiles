@@ -242,7 +242,7 @@ function! jump#next_loc(count, ...) abort
     redraw | echohl ErrorMsg | echom msg | echohl None | return
   endif
   let lnum = backward ? foldclosed('.') : foldclosedend('.')
-  if !skip && lnum > 0 && &l:foldopen !~# 'quickfix\|all'  " ignore current fold
+  if !skip && lnum > 0 && &l:foldopen !~# 'block\|all'  " ignore current fold
     let [lnum, cnum] = [lnum, backward ? 1 : col([lnum, '$'])]
   else  " include current fold
     let [lnum, cnum] = [line('.'), col('.')]
@@ -262,7 +262,7 @@ function! jump#next_loc(count, ...) abort
     return jump#next_loc(a:count - 1, quickfix, backward, string, 0)
   else  " jump to error
     exe cmd . ' ' . inr | call s:echo_loc(inr)
-    exe &l:foldopen =~# 'quickfix\|all' ? 'normal! zv' : ''
+    exe &l:foldopen =~# 'block\|all' ? 'normal! zv' : ''
   endif
 endfunction
 
