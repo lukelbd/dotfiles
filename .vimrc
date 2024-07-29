@@ -1895,17 +1895,17 @@ if s:has_plug('vim-textobj-user')  " {{{
     \ '\(\k\|[#&*:.-]\)\@<!\(\k\|[#&*:.-]\)\@=',
     \ '\(\k\|[#&*:.-]\)\@<=\(\k\|[#&*:.-]\)\@!',
   \ ]
-  let s:textobj_comment1 = {
-    \ 'select-i': 'i.', 'select-i-function': 'textobj#comment#select_i',
-    \ 'select-a': 'a.', 'select-a-function': 'textobj#comment#select_big_a',
-  \ }
-  let s:textobj_comment2 = {
-    \ 'select-i': 'iC', 'select-i-function': 'textobj#comment#select_a',
-    \ 'select-a': 'aC', 'select-a-function': 'textobj#comment#select_big_a',
-  \ }
   let s:textobj_entire = {
     \ 'select-a': 'aE',  'select-a-function': 'textobj#entire#select_a',
     \ 'select-i': 'iE',  'select-i-function': 'textobj#entire#select_i'
+  \ }
+  let s:textobj_comment1 = {
+    \ 'select-i': 'i.', 'select-i-function': 'comment#object_comment_a',
+    \ 'select-a': 'a.', 'select-a-function': 'comment#object_comment_big_a',
+  \ }
+  let s:textobj_comment2 = {
+    \ 'select-i': 'iC', 'select-i-function': 'comment#object_comment_i',
+    \ 'select-a': 'aC', 'select-a-function': 'comment#object_comment_big_a',
   \ }
   let s:textobj_fold1 = {
     \ 'select-i': 'iz', 'select-i-function': 'fold#object_fold_i',
@@ -1923,7 +1923,7 @@ if s:has_plug('vim-textobj-user')  " {{{
     \ 'select-i': 'ig',  'select-i-function': 'edit#object_segment_i',
     \ 'select-a': 'ag',  'select-a-function': 'edit#object_segment_a',
   \ }
-  for s:key in ['.', 'n', 'h', 'C', 'z', 'Z']  " required after renaming
+  for s:key in ['.', 'C', 'n', 'h', 'z', 'Z']  " required after renaming
     exe 'silent! unmap i' . s:key
     exe 'silent! unmap a' . s:key
   endfor
