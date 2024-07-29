@@ -984,6 +984,7 @@ augroup repeat_setup
   au BufLeave,BufWritePre,BufReadPre *
     \ let g:repeat_tick = get(g:, 'repeat_tick', b:changedtick) == b:changedtick ? 0 : -1
 augroup END
+vnoremap . <Cmd>call repeat#run(v:count)<CR>
 nnoremap . <Cmd>call repeat#run(v:count)<CR>
 nnoremap u <Cmd>call repeat#undo(0, v:count)<CR>
 nnoremap U <Cmd>call repeat#undo(1, v:count)<CR>

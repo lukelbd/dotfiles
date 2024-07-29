@@ -743,11 +743,11 @@ function! fold#_toggle_folds(line1, line2, ...) abort
   let levels = map(range(a:line1, a:line2), 'foldlevel(v:val)')
   let folds = fold#get_folds(a:line1, a:line2, max(levels))
   let state = s:toggle_state(a:line1, a:line2)
+  let toggle = a:0 > 0 && a:1 >= 0 ? a:1 : 1 - state
   let cnt = a:0 > 1 ? a:2 : v:count1
   for [line1, line2; rest] in folds
     let line1 = max([line1, a:line1])  " possibly select
     let line2 = min([line2, a:line2])
-    let toggle = a:0 > 0 && a:1 >= 0 ? a:1 : 1 - state
     exe line1 . ',' . line2 . (toggle ? 'foldclose' : 'foldopen')
   endfor
   call winrestview(winview)
