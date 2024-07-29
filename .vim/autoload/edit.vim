@@ -146,14 +146,24 @@ function! edit#format_lines_expr(...) abort
   return utils#motion_func('edit#format_lines', a:000)
 endfunction
 
-" Indent or join lines by count
+" Join and indent lines by count
 " NOTE: Here join comments with two spaces instead of one (pep8 consistency)
 " NOTE: Native vim indent uses count to move over number of lines, but redundant
 " with e.g. 'd2k', so instead use count to denote indentation level.
 " NOTE: Native vim join uses count to join n lines including parent line, so e.g.
 " 1J and 2J have the same effect. This adds to count to make join more intuitive
+function! edit#indent_lines(dedent, ...) range abort
+  let cnt = a:0 ? a:1 : v:count1
+  let range = mode() =~? 'v\|' ? "'<,'>" : a:firstline . ',' . a:lastline
+  let keys = "\<Cmd>" . range . repeat(a:dedent ? '<' : '>', cnt) . "\<CR>"
+  let cmd = '"\<Cmd>call edit#indent_lines(' . a:dedent . ')\<CR>"'
+  let feed = "\<Cmd>call repeat#set(" . cmd . ', ' . cnt . ")\<CR>"
+  call feedkeys("\<Esc>" . keys . feed, 'n')
+endfunction
 function! edit#join_lines(backward, ...) range abort
   let [line1, line2, cnum] = [a:firstline, a:lastline, col('.')]
+  let bang = a:0 && a:1 ? '!' : ''
+  let cmd = exists(':Join') ? 'Join' : 'join'
   if a:backward  " reverse join
     let line1 -= line2 > line1 ? v:count : v:count1
   else  " forward join
@@ -163,16 +173,12 @@ function! edit#join_lines(backward, ...) range abort
   let regex = '\S\zs\s\(' . regex . '\)'  " \zs comes before comment
   let args = [regex, 'cnW', line1, 0, "tags#get_inside(0, 'Comment')"]
   call cursor(line1, 1) | let [_, col1] = call('searchpos', args)
-  let bang = a:0 && a:1 ? '!' : ''
-  let cmd = exists(':Join') ? 'Join' : 'join'
   exe line1 . ',' . line2 . cmd . bang
   call cursor(line1, 1) | let [_, col2] = call('searchpos', args)
   exe !col1 && col2 ?  line1 . 's@' . regex . '@  \1@e' : ''
   call cursor(line1, cnum)
-endfunction
-" Indent input lines
-function! edit#indent_lines(dedent, count) range abort
-  exe a:firstline . ',' . a:lastline . repeat(a:dedent ? '<' : '>', a:count)
+  call repeat#set(':call edit#join_lines(' . a:backward . ")\<CR>", v:count)
+  redraw | echo (line2 - line1 + 1) . ' lines joined'
 endfunction
 " For <expr> map accepting motion
 function! edit#indent_lines_expr(...) abort

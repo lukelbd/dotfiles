@@ -28,8 +28,8 @@ if !s:jump1 && !s:jump2  " no single bracket mappings
   map <buffer> ]] <Plug>TagsForwardTop
 endif
 if !s:indent1 && !s:indent2 | exe 'nnoremap <buffer> == <Esc>=='
-  nnoremap <expr> <buffer> >> '<Esc>' . repeat('>>', v:count1)
-  nnoremap <expr> <buffer> << '<Esc>' . repeat('<<', v:count1)
+  nnoremap <buffer> >> <Cmd>call edit#indent_lines(0, v:count1)<CR>
+  nnoremap <buffer> << <Cmd>call edit#indent_lines(1, v:count1)<CR>
 endif
 
 " Update folds and syntax
