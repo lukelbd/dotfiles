@@ -105,11 +105,11 @@ function! edit#change_lines(...) abort
 endfunction
 
 " Format lines using the &formatoptions setting
-" NOTE: This implements line wrapping and joining settings, and accounts for comment
-" continuation and automatic indentation based on shiftwidth or formatlistpat.
 " NOTE: This wraps to optional input count column rather than text width, and
 " disables vim-markdown hack that enforces bullet continuations via &comments entries
 " See: https://vi.stackexchange.com/a/7712/8084 and :help g@
+" NOTE: Here formatoptions implements newline/join/wrap settings, including comment
+" continuation and automatic indentation based on shiftwidth or formatlistpat.
 function! edit#format_lines(...) range abort
   let regex = substitute(&l:formatlistpat, '^\^', '', '')  " include comments
   let regex = '^\(' . comment#get_regex(0) . '\)\?' . regex
@@ -146,20 +146,32 @@ function! edit#format_lines_expr(...) abort
   return utils#motion_func('edit#format_lines', a:000)
 endfunction
 
-" Join and indent lines by count
-" NOTE: Here join comments with two spaces instead of one (pep8 consistency)
+" Indent and dedent lines count times
+" NOTE: Critical to feed so that vim emits native indent message
 " NOTE: Native vim indent uses count to move over number of lines, but redundant
 " with e.g. 'd2k', so instead use count to denote indentation level.
-" NOTE: Native vim join uses count to join n lines including parent line, so e.g.
-" 1J and 2J have the same effect. This adds to count to make join more intuitive
 function! edit#indent_lines(dedent, ...) range abort
   let cnt = a:0 ? a:1 : v:count1
-  let range = mode() =~? 'v\|' ? "'<,'>" : a:firstline . ',' . a:lastline
-  let keys = "\<Cmd>" . range . repeat(a:dedent ? '<' : '>', cnt) . "\<CR>"
+  if mode() =~? 'v\|'  " e.g. visual-mode repeat
+    let range = "'<,'>"
+  else  " e.g. utils#motion_func() range
+    let range = a:firstline . ',' . a:lastline
+  endif
+  let keys = repeat(a:dedent ? '<' : '>', cnt)
+  let keys = "\<Cmd>" . range . keys . "\<CR>"
   let cmd = '"\<Cmd>call edit#indent_lines(' . a:dedent . ')\<CR>"'
   let feed = "\<Cmd>call repeat#set(" . cmd . ', ' . cnt . ")\<CR>"
   call feedkeys("\<Esc>" . keys . feed, 'n')
 endfunction
+" For <expr> map accepting motion
+function! edit#indent_lines_expr(...) abort
+  return utils#motion_func('edit#indent_lines', a:000)
+endfunction
+
+" Join count number of lines
+" NOTE: Here join comments with two spaces instead of one (pep8 consistency)
+" NOTE: Native vim join uses count to join n lines including parent line, so e.g.
+" 1J and 2J have the same effect. This adds to count to make join more intuitive
 function! edit#join_lines(backward, ...) range abort
   let [line1, line2, cnum] = [a:firstline, a:lastline, col('.')]
   let bang = a:0 && a:1 ? '!' : ''
@@ -179,10 +191,6 @@ function! edit#join_lines(backward, ...) range abort
   call cursor(line1, cnum)
   call repeat#set(':call edit#join_lines(' . a:backward . ")\<CR>", v:count)
   redraw | echo (line2 - line1 + 1) . ' lines joined'
-endfunction
-" For <expr> map accepting motion
-function! edit#indent_lines_expr(...) abort
-  return utils#motion_func('edit#indent_lines', a:000)
 endfunction
 " For <expr> map accepting motion
 function! edit#join_lines_expr(...) abort
