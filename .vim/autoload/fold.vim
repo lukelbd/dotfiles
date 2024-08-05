@@ -632,19 +632,23 @@ endfunction
 " Toggle inner folds within requested range
 " NOTE: Necessary to temporarily open outer folds before toggling inner folds. No way
 " to target them with :fold commands or distinguish adjacent children with same level
-function! s:toggle_show(toggle, nr) abort
-  let key = a:toggle > 1 ? 'Toggled' : a:toggle ? 'Closed' : 'Opened'
-  let msg = key . ' ' . a:nr . ' fold' . (a:nr > 1 ? 's' : '') . '.'
-  let cmd = a:nr > 0 ? 'echo ' . string(msg) : "echoerr 'E490: No folds found'"
-  exe a:nr > 0 && a:toggle == 0 ? 'normal! zzze' : ''
-  call feedkeys("\<Cmd>" . cmd . "\<CR>", 'n')
-endfunction
 function! s:toggle_state(line1, line2, ...) abort range
   let level = a:0 ? a:1 : 0
   for lnum in range(a:line1, a:line2)
     let inum = foldclosed(lnum) | let ilevel = foldlevel(inum)
     if inum > 0 && (!level || level == ilevel) | return 1 | endif
   endfor
+endfunction
+function! s:toggle_message(toggle, nr) abort
+  let msg = a:toggle > 1 ? 'Toggled' : a:toggle ? 'Closed' : 'Opened'
+  if a:nr > 0
+    let [cmd, msg] = ['echo', msg . ' ' . a:nr . ' fold' . (a:nr > 1 ? 's' : '')]
+  else
+    let [cmd, msg] = ['echoerr', 'E490: No folds found']
+  endif
+  let keys = a:nr && !a:toggle ? 'zzze' : ''
+  let feed = "\<Cmd>redraw\<CR>\<Cmd>" . cmd . ' ' . string(msg) . "\<CR>"
+  call feedkeys(keys . feed, 'n')
 endfunction
 function! s:toggle_inner(line1, line2, level, ...)
   let [fold1, fold2] = [foldclosed(a:line1), foldclosedend(a:line2)]
@@ -691,7 +695,7 @@ function! fold#toggle_children(top, ...) abort range
     let counts[toggle] += len(folds)  " if zero then continue
   endfor
   let toggle = counts[0] && counts[1] ? 2 : counts[1] ? 1 : 0
-  call s:toggle_show(toggle, counts[0] + counts[1]) | return ''
+  call s:toggle_message(toggle, counts[0] + counts[1])
 endfunction
 " For <expr> map accepting motion
 function! fold#toggle_children_expr(...) abort
@@ -722,8 +726,7 @@ function! fold#_toggle_parents(line1, line2, ...) abort
     let nrs[0] += inrs[0] | let nrs[1] += inrs[1]
   endif
   let toggle = nrs[0] && nrs[1] ? 2 : nrs[1] ? 1 : 0
-  call s:toggle_show(toggle, nrs[0] + nrs[1]) | return ''
-  return nrs[0] + nrs[1]
+  call s:toggle_message(toggle, nrs[0] + nrs[1])
 endfunction
 " For optional range arguments
 function! fold#toggle_parents(...) range abort
@@ -756,7 +759,7 @@ function! fold#_toggle_folds(line1, line2, ...) abort
   if cnt > 1
     let nr += fold#_toggle_folds(a:line1, a:line2, toggle, cnt - 1)
   endif
-  call s:toggle_show(toggle, nr)
+  call s:toggle_message(toggle, nr)
   return nr
 endfunction
 " For optional range arguments

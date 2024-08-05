@@ -111,10 +111,10 @@ endfunction
 function! vim#setup_cmdwin() abort
   call switch#copy(1, 1)  " hide special characters
   nnoremap <buffer> <C-s> <Nop>
-  inoremap <buffer> <expr> <CR> "\<C-m>"
+  nnoremap <buffer> <Esc> <Cmd>call window#close_pane()<CR>
   nnoremap <buffer> <expr> <CR> (line('.') == line('$') ? '<Up>' : '' ) . '<C-c><CR>'
-  nnoremap <buffer> <expr> ; (line('.') == line('$') ? '<Up>' : '' ) . '<C-c><CR>'
-  nnoremap <buffer> <expr> / (line('.') == line('$') ? '<Up>' : '' ) . '<C-c><CR>'
+  nnoremap <buffer> <expr> ; (line('.') == line('$') ? '<Up>' : '' ) . '<C-c><End>'
+  nnoremap <buffer> <expr> / (line('.') == line('$') ? '<Up>' : '' ) . '<C-c><End>'
   nnoremap <buffer> <Plug>ExecuteFile1 <C-c><CR>
 endfunction
 

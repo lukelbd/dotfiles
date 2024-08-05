@@ -120,16 +120,17 @@ function! s:call_git(msg, line1, count, range, bang, mods, cmd, ...) range abort
   else
     let imod = 'botright'
   endif
-  let args = [a:line1, a:count, a:range, a:bang, imod, icmd]
+  silent let args = [a:line1, a:count, a:range, a:bang, imod, icmd]
   silent let cmd = call('fugitive#Command', args + a:000)
   let verbose = s:call_fugitive(bnum, lnum, cmd, a:cmd)
-  let input = 'Git ' . a:cmd
-  let error = 'Warning: ' . (type(a:msg) ? a:msg : string(input) . ' was empty')
+  let error = type(a:msg) ? a:msg : string('Git ' . a:cmd)
+  let error = 'Warning: ' . error . ' was empty'
   if verbose && bnum == bufnr()  " empty result
     redraw | echohl WarningMsg | echom error | echohl None
   elseif verbose
-    redraw | echo input
+    redraw | echo 'Git ' . a:cmd
   endif
+  call fold#_recache(1)
 endfunction
 
 " Call git commit with or without editor
@@ -181,23 +182,27 @@ endfunction
 " Helper functions for git gutter utilities
 " NOTE: Git gutter works by triggering on &updatetime after CursorHold only if
 " text was changed and starts async process. Here temporarily make synchronous.
-function! s:echo_hunk(hunk) abort
-  if empty(a:hunk) | return [] | endif
-  let line1 = a:hunk[2]
-  let line2 = line1 + max([a:hunk[3], 1]) - 1
-  let fold1 = foldclosed(line1)
-  let fold2 = foldclosedend(line2)
-  let line1 = fold1 > 0 ? fold1 : line1
-  let line2 = fold2 > 0 ? fold2 : line2
-  call git#_get_hunks(line1, line2)
+function! s:show_hunks(locs, max, msg, ...) abort
+  if empty(a:locs)
+    let msg = 'E490: No hunks found'
+  elseif len(uniq(sort(a:locs))) == a:max
+    let msg = a:msg . ' (' . a:max . ' total)'
+  else  " show hunk ranges
+    let [min, max] = [min(a:locs), max(a:locs)]
+    let range = min == max ? a:locs[0] : min . '-' . max
+    let msg = a:msg . ' (' . range . ' of ' . a:max . ')'
+  endif
+  let cmd = empty(a:locs) ? 'echoerr' : a:0 && a:1 ? 'echom' : 'echo'
+  let feed = "\<Cmd>redraw\<CR>\<Cmd>" . cmd . ' ' . string(msg) . "\<CR>"
+  call feedkeys(feed, 'n')
 endfunction
 function! s:get_hunks(...) abort
-  let quiet = a:0 ? a:1 : 0
+  let skip = a:0 ? a:1 : 0
   let bnr = bufnr()
   if &l:diff
     return 0
   endif
-  if !quiet
+  if !skip
     try  " synchronous update
       let g:gitgutter_async = 0
       call gitgutter#process_buffer(bnr, 0)
@@ -209,7 +214,7 @@ function! s:get_hunks(...) abort
     return 0  " ignore gitgutter pumvisible() condition
   endif
   let hunks = gitgutter#hunk#hunks(bnr)
-  if !quiet && empty(hunks)
+  if !skip && empty(hunks)
     let msg = 'Error: No hunks in file'
     redraw | echohl WarningMsg | echom msg | echohl None
   endif
@@ -224,8 +229,8 @@ endfunction
 function! git#_get_hunks(line1, line2, ...) abort
   let locs = []  " hunk indices
   let cnts = [0, 0, 0]  " change counts
-  let quiet = a:0 ? a:1 : 0  " quicker version
-  let hunks = s:get_hunks(quiet)
+  let skip = a:0 ? a:1 : 0  " skip synchronous
+  let hunks = s:get_hunks(skip)
   if empty(hunks) | return '' | endif
   for idx in range(len(hunks))
     let [hunk0, count0, hunk1, count1] = hunks[idx]
@@ -244,10 +249,9 @@ function! git#_get_hunks(line1, line2, ...) abort
   let delta = cnts[0] ? '+' . cnts[0] : ''
   let delta .= cnts[1] ? '~' . cnts[1] : ''
   let delta .= cnts[2] ? '-' . cnts[2] : ''
-  if !quiet && !empty(locs) " show message
-    let index = min(locs) == max(locs) ? locs[0] : min(locs) . '-' . max(locs)
-    let index = '(' . index . ' of ' . len(hunks) . ')'
-    redraw | echo 'Hunk(s): ' . delta . ' ' . index
+  if !skip && !empty(locs) " show message
+    let msg = 'Hunk(s): ' . delta
+    call s:show_hunks(locs, len(hunks), msg, 0)
   endif
   return delta
 endfunction
@@ -270,7 +274,7 @@ endfunction
 " requires cursor inside lines and fails when specifying lines outside of addition hunk
 " (see s:hunk_op) so explicitly navigate lines below before calling stage commands.
 function! git#_exe_hunks(line1, line2, ...) abort
-  let name = a:0 && a:1 ? 'Undo' : 'Stage'
+  let cmd = a:0 && a:1 ? 'Undo' : 'Stage'
   let undo = a:0 && a:1 ? 1 : 0
   let locs = []  " hunk locations
   let ranges = []  " ranges staged
@@ -294,25 +298,19 @@ function! git#_exe_hunks(line1, line2, ...) abort
     else  " no update needed
       continue
     endif
-    exe line1 | exe join(range, ',') . 'GitGutter' . name . 'Hunk'
+    exe line1 | exe join(range, ',') . 'GitGutter' . cmd . 'Hunk'
     let range = empty(range) ? [line1, line2] : range
     let range = map(uniq(range), 'v:val - offset')
     let offset += a:0 && a:1 ? count0 - count1 : 0
     call add(locs, idx + 1)  " included hunk
     call add(ranges, join(range, '-'))
   endfor
-  let range = join(ranges, ', ')  " line ranges
   call winrestview(winview)
-  if !empty(range)  " synchronous update fails here for some reason
-    let index = min(locs) == max(locs) ? locs[0] : min(locs) . '-' . max(locs)
-    let index = '(' . index . ' of ' . len(hunks) . ')'
-    redraw | echom name . ' hunk(s): ' . range . ' ' . index
-    call timer_start(200, 'git#_exe_buffer')
+  call fold#_recache(1)
+  if !empty(ranges)  " show information
+    let msg = cmd . ' hunk(s): ' . join(ranges, ', ')
+    call s:show_hunks(locs, len(hunks), msg, 1)
   endif
-endfunction
-" For delayed updates after staging
-function! git#_exe_buffer(...) abort
-  return gitgutter#process_buffer(bufnr(), 1)
 endfunction
 " For optional range arguments
 function! git#exe_hunks(...) range abort
@@ -320,7 +318,7 @@ function! git#exe_hunks(...) range abort
 endfunction
 " For <expr> map accepting motion
 function! git#exe_hunks_expr(...) abort
-  return utils#motion_func('git#exe_hunks', a:000)
+  return utils#motion_func('git#exe_hunks', a:000, 1)
 endfunction
 
 " Update gitgutter hunks and show hunks under cursor
@@ -344,7 +342,7 @@ function! git#next_hunk(count, ...) abort
     let keys = abs(cnt) . (forward ? ']c' : '[c')
     exe 'normal! ' . keys | return
   endif
-  let hunk = s:get_hunk()  " hunk under cursor
+  let hunk = s:current_hunk()  " hunk under cursor
   if stage && !empty(hunk)
     let cnt += forward ? -1 : 1
     call s:next_hunk(hunk, 1)
@@ -367,7 +365,7 @@ function! git#next_hunk(count, ...) abort
     redraw | echohl WarningMsg | echom msg | echohl None
   elseif !stage  " WARNING: 'G' changes v:count1 which messes up repeat.vim [G/]G
     exe &l:foldopen =~# 'block\|all' ? 'normal! zv' : ''
-    call s:echo_hunk(hunk)
+    call s:show_hunk(hunk)
   endif
 endfunction
 
@@ -401,7 +399,7 @@ function! git#next_conflict(count, ...) abort
     call cursor(pos0)  " always open folds (same as gitgutter)
     exe 'normal! zv'
   else  " echo warning
-    let msg = 'Error: No conflicts' |
+    let msg = 'Error: No conflicts'
     redraw | echohl ErrorMsg | echom msg | echohl None | call winrestview(winview)
   endif
 endfunction
@@ -416,7 +414,7 @@ function! git#object_hunk_a() abort
   return s:object_hunk(1)
 endfunction
 function! s:object_hunk(...) abort
-  let hunk = s:get_hunk()
+  let hunk = s:current_hunk()
   if empty(hunk)
     let msg = 'E490: No hunk found'
     redraw | echohl ErrorMsg | echom msg | echohl None
@@ -439,7 +437,13 @@ endfunction
 " Show hunk under cursor
 " NOTE: Compare to vim-lsp and ale.vim utilities. Here we do not auto-open
 " hunk difference popups since they are way bigger than those plugins.
-function! s:get_hunk() abort
+function! s:show_hunk(hunk) abort
+  if empty(a:hunk) | return | endif
+  let [line1, line2] = [a:hunk[2], a:hunk[2] + max([a:hunk[3], 1]) - 1]
+  let [fold1, fold2] = [foldclosed(line1), foldclosedend(line2)]
+  return git#_get_hunks(fold1 > 0 ? fold1 : line1, fold2 > 0 ? fold2 : line2)
+endfunction
+function! s:current_hunk() abort
   let hunks = s:get_hunks(1)
   if empty(hunks) | return [] | endif
   let hunk = []
@@ -449,12 +453,12 @@ function! s:get_hunk() abort
     endif
   endfor | return hunk
 endfunction
-function! git#show_hunk() abort
+function! git#current_hunk() abort
   call map(popup_list(), 'popup_close(v:val)')
   call switch#gitgutter(1, 1)  " turn on if possible
   let hunks = s:get_hunks()
   if empty(hunks) | return | endif
-  let hunk = s:get_hunk()
+  let hunk = s:current_hunk()
   if empty(hunk)
     let msg = 'Error: No hunk under cursor'
     redraw | echohl ErrorMsg | echom msg | echohl None | return
@@ -463,7 +467,7 @@ function! git#show_hunk() abort
   call window#setup_preview()
   let winids = popup_list()
   if empty(winids) | return | endif
-  call s:echo_hunk(hunk)
+  call s:show_hunk(hunk)
 endfunction
 
 " Helper functions for fugitive commands

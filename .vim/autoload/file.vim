@@ -328,23 +328,21 @@ endfunction
 function! file#show_cfile() abort
   let files = file#get_cfile(1)
   if empty(files)
-    echom 'File or pattern ' . string(expand('<cfile>')) . ' does not exist.'
+    echo 'File or pattern ' . string(expand('<cfile>')) . ' does not exist.'
   else
-    echom 'File(s) ' . join(map(files, 'string(v:val)'), ', ') . ' exist.'
+    echo 'File(s) ' . join(map(files, 'string(v:val)'), ', ') . ' exist.'
   endif
 endfunction
 function! file#show_paths(...) abort
-  let chars = ' *[]()?!#%&<>'
-  let paths = a:0 ? a:000 : [@%]
-  for path in paths
+  for path in a:0 ? a:000 : [@%]
     let root = parse#get_root(path)
     let root = RelativePath(root)
     let show = RelativePath(path)
     let root = empty(root) ? fnamemodify(getcwd(), ':~:.') : root
     let work = fnamemodify(getcwd(), ':~')
-    echom 'Path: ' . escape(show, chars)
-    echom 'Project: ' . escape(root, chars)
-    echom 'Session: ' . escape(work, chars)
+    echo 'Path: ' . fnameescape(show)
+    echo 'Project: ' . fnameescape(root)
+    echo 'Session: ' . fnameescape(work)
   endfor
 endfunction
 

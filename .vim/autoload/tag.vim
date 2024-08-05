@@ -161,7 +161,7 @@ function! tag#fzf_btags(bang, ...) abort
   let paths = []  " relative if possible
   let base = fnamemodify(expand('%:p:h'), ':p')  " ensure trailing slash
   for path in a:0 ? a:000 : [expand('%:t')]
-    let names = file#local_names(path)
+    let names = file#local_files(path)
     call map(names, 'v:val =~# s:abs_regex ? v:val : base . v:val')
     call extend(paths, map(names, 'fzf#shellescape(v:val)'))
   endfor
@@ -289,27 +289,25 @@ endfunction
 function! tag#setup_taglist() abort
   for char in 'ud' | silent! exe 'nunmap <buffer> ' . char | endfor
 endfunction
-function! tag#update_files(...) abort
+function! tag#update_files(remove, ...) abort
   if a:0  " append to existing
-    let toggle = !type(a:1) ? a:1 : 1  " type zero i.e. number (see :help empty)
-    let args = copy(a:000[!type(a:1):])
-    let bufs = map(args, 'bufnr(v:val)')
+    let bnrs = copy(a:000)
+    call map(bnrs, 'bufnr(v:val)')
   else  " reset defaults
-    let toggle = 1 | setglobal tags=
-    let [bufs, tabs] = [[], range(1, tabpagenr('$'))]
-    call map(tabs, 'extend(bufs, tabpagebuflist(v:val))')
+    let bnrs = [] | setglobal tags=
+    call map(range(1, tabpagenr('$')), 'extend(bnrs, tabpagebuflist(v:val))')
   endif
-  for bnr in bufs  " possible iteration
+  for bnr in bnrs
     let opts = getbufvar(bnr, 'gutentags_files', {})
     let path = get(opts, 'ctags', '')
-    if empty(path) || !filewritable(resolve(path))
-      continue  " invalid path
+    if empty(path) || !a:remove && !filewritable(resolve(path))
+      continue  " invalid tags file
     endif
     let path = substitute(path, ',', '\\\\,', 'g')  " see above
     let path = substitute(path, ' ', '\\\\\\ ', 'g')  " see above
-    exe 'setglobal tags' . (toggle ? '+=' : '-=') . path
+    exe 'setglobal tags' . (a:remove ? '-=' : '+=') . path
   endfor
-  for bnr in bufs
+  for bnr in bnrs
     let tags = tags#tag_files(bufname(bnr))  " prefer buffer file
     call map(tags, {_, val -> substitute(val, '\(,\| \)', '\\\1', 'g')})  " see above
     call setbufvar(bnr, '&tags', join(tags, ','))  " see above

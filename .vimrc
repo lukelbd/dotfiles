@@ -306,9 +306,10 @@ endfor
 " Files and buffers {{{1
 "-----------------------------------------------------------------------------"
 " Handle buffers and windows {{{2
-" NOTE: To avoid accidentally closing vim do not use mapped shortcuts. Instead
-" require manual closure with :qall or :quitall.
-command! -nargs=? Autosave call switch#autosave(<args>)
+" NOTE: Here :Drop is similar to :tab drop but handles popup windows
+" NOTE: To avoid accidentally closing vim require :qa instead of mapping
+command! -bar -nargs=? Autosave call switch#autosave(<args>)
+command! -nargs=* -complete=file Drop call file#drop_file(<f-args>)
 nnoremap q <Cmd>call window#close_panes()<CR>
 nnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><Cmd>echo<CR>
 vnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
@@ -322,8 +323,8 @@ nnoremap <Leader>W <Cmd>call switch#autosave()<CR>
 " NOTE: Here :Mru shows tracked files during session, will replace current buffer.
 command! -bang -nargs=? Refresh runtime autoload/vim.vim
   \ | call vim#config_refresh(<bang>0, <q-args>)
-command! -nargs=? Scripts echom 'Scripts matching ' . string(<q-args>) . ':'
-  \ | for s:path in utils#get_scripts(<q-args>) | echom s:path | endfor
+command! -nargs=? Scripts echo 'Scripts matching ' . string(<q-args>) . ':'
+  \ | echo join(utils#get_scripts(<q-args>), "\n")
 nnoremap <leader>E <Cmd>call file#reload()<CR>
 nnoremap <Leader>r <Cmd>redraw! \| echo ''<CR>
 nnoremap <Leader>R <Cmd>Refresh<CR>
@@ -331,20 +332,19 @@ let g:MRU_Open_File_Relative = 1
 
 " Buffer selection and management
 " NOTE: Here :WipeBufs replaces :Wipeout plugin since has more sources
-command! -bang -nargs=* History call file#fzf_history(<q-args>, <bang>0)
-command! -bang -nargs=0 Recents call file#fzf_recent(<bang>0)
-command! -nargs=0 ShowBufs call file#show_bufs()
-command! -nargs=0 WipeBufs call file#wipe_bufs()
+command! -bar -nargs=0 ShowBufs call file#show_bufs()
+command! -bar -nargs=0 WipeBufs call file#wipe_bufs()
+command! -bar -bang -nargs=* History call file#fzf_history(<q-args>, <bang>0)
+command! -bar -bang -nargs=0 Recents call file#fzf_recent(<bang>0)
 nnoremap <Leader>q <Cmd>ShowBufs<CR>
 nnoremap <Leader>Q <Cmd>WipeBufs<CR>
 nnoremap g, <Cmd>call file#fzf_history('')<CR>
 nnoremap g< <Cmd>call file#fzf_recent()<CR>
 
 " General file related utilities {{{2
-" NOTE: Here :Drop is similar to :tab drop but handles popup windows
-command! -nargs=* -complete=file Drop call file#drop_file(<f-args>)
+" NOTE: Here toggle between local or global current directory
+command! -bar -nargs=? Local call switch#localdir(<args>)
 command! -nargs=? Paths call file#show_paths(<f-args>)
-command! -nargs=? Local call switch#localdir(<args>)
 nnoremap zp <Cmd>Paths<CR>
 nnoremap zP <Cmd>Local<CR>
 nnoremap gp <Cmd>call file#show_cfile()<CR>
@@ -354,10 +354,14 @@ nnoremap gP <Cmd>call call('file#drop_file', file#get_cfile())<CR>
 " NOTE: Anything that is not :Files gets passed to :Drop command
 " nnoremap <C-g> <Cmd>Locate<CR>  " uses giant database from Unix 'locate'
 " command! -bang -nargs=* -complete=file Files call file#fzf_files(<bang>0, <f-args>)
-command! -bang -nargs=* -complete=file Files call file#fzf_files(<bang>0, <f-args>)
-command! -bang -nargs=* -complete=file Vsplit call file#fzf_paths(<bang>0, 0, 0, 'botright vsplit', <f-args>)
-command! -bang -nargs=* -complete=file Split call file#fzf_paths(<bang>0, 0, 0, 'botright split', <f-args>)
-command! -bang -nargs=* -complete=file Open call file#fzf_paths(<bang>0, 0, 0, 'Drop', <f-args>)
+command! -bang -nargs=* -complete=file Files
+  \ call file#fzf_files(<bang>0, <f-args>)
+command! -bang -nargs=* -complete=file Vsplit
+  \ call file#fzf_paths(<bang>0, 0, 0, 'botright vsplit', <f-args>)
+command! -bang -nargs=* -complete=file Split
+  \ call file#fzf_paths(<bang>0, 0, 0, 'botright split', <f-args>)
+command! -bang -nargs=* -complete=file Open
+  \ call file#fzf_paths(<bang>0, 0, 0, 'Drop', <f-args>)
 nnoremap <C-e> <Cmd>call file#fzf_paths(0, 0, 0, 'Split')<CR>
 nnoremap <C-r> <Cmd>call file#fzf_paths(0, 0, 0, 'Vsplit')<CR>
 nnoremap <C-y> <Cmd>call file#fzf_paths(0, 0, 1, 'Files')<CR>
@@ -405,40 +409,35 @@ vnoremap g: <Esc><Cmd>echo histget('cmd', -v:count1) \| exe "'<,'>" . histget('c
 " add shortcut to search for all non-ASCII chars (previously used all escape chars).
 " NOTE: Here 'Man' overrides buffer-local 'Man' command defined on man filetypes, so
 " must use autoload function. Also see: https://stackoverflow.com/a/41168966/4970632
-command! -nargs=? -complete=shellcmd Help call stack#push_stack('help', 'shell#help_page', <f-args>)
-command! -nargs=? -complete=shellcmd Man call stack#push_stack('man', 'shell#man_page', <f-args>)
-command! -nargs=0 ClearMan call stack#clear_stack('man')
-command! -nargs=0 ListHelp call stack#print_stack('help')
-command! -nargs=0 ListMan call stack#print_stack('man')
-command! -nargs=? PopMan call stack#pop_stack('man', <q-args>, 1)
+command! -bar -nargs=? -complete=shellcmd Help
+  \ call stack#push_stack('help', 'shell#help_page', <f-args>)
+command! -bar -nargs=? -complete=shellcmd Man
+  \ call stack#push_stack('man', 'shell#man_page', <f-args>)
+command! -bar -nargs=0 ClearMan call stack#clear_stack('man')
+command! -bar -nargs=0 ListHelp call stack#print_stack('help')
+command! -bar -nargs=0 ListMan call stack#print_stack('man')
+command! -bar -nargs=? PopMan call stack#pop_stack('man', <q-args>, 1)
 nnoremap <Leader>n <Cmd>call stack#push_stack('help', 'shell#help_page')<CR>
 nnoremap <Leader>m <Cmd>call stack#push_stack('man', 'shell#man_page')<CR>
 nnoremap <Leader>N <Cmd>call shell#fzf_help()<CR>
 nnoremap <Leader>M <Cmd>call shell#fzf_man()<CR>
 
-" 'Execute' script with different options
+" Execute script and toggle terminal
 " NOTE: Current idea is to use 'ZZ' for running entire file and 'Z<motion>' for
 " running chunks of code. Currently 'Z' only defined for python so use workaround.
 " NOTE: Critical to label these maps so one is not a prefix of another
 " or else we can get a delay. For example do not define <Plug>Execute
+command! -bar -nargs=? -complete=dir Terminal call shell#show_terminal(<f-args>)
 nmap Z <Plug>ExecuteMotion
-vmap Z <Plug>ExecuteMotion
 nmap ZZ <Plug>ExecuteFile0
 nmap <Leader>z <Plug>ExecuteFile1
 nmap <Leader>Z <Plug>ExecuteFile2
+vmap <nowait> Z <Plug>ExecuteMotion
 nnoremap <Plug>ExecuteFile0 <Nop>
 nnoremap <Plug>ExecuteFile1 <Nop>
 nnoremap <Plug>ExecuteFile2 <Nop>
 nnoremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
 vnoremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
-
-" Toggle built-in terminal (mnemonic '!' is similar to ':!')
-" NOTE: Map Ctrl-c to literal keypress so it does not close window and use environment
-" variable with .bashrc setting to auto-enter to the current file directory.
-" See: https://vi.stackexchange.com/q/14519/8084
-" silent! tnoremap <silent> <Esc> <C-w>:q!<CR>  " disables all iTerm shortcuts
-command! -complete=dir -nargs=? Terminal call shell#show_terminal(<f-args>)
-silent! tnoremap <expr> <C-c> "\<C-c>"
 nnoremap <Leader>! <Cmd>call shell#show_terminal()<CR>
 
 "-----------------------------------------------------------------------------"
@@ -451,7 +450,7 @@ let g:tags_skip_filetypes = s:panel_filetypes
 let g:tabline_skip_filetypes = s:panel_filetypes
 augroup panel_setup
   au!
-  au CmdwinEnter * call vim#setup_cmdwin() | call window#setup_panel(1)
+  au CmdwinEnter * call vim#setup_cmdwin() | call window#setup_panel()
   au TerminalWinOpen * call window#setup_panel(1)
   au BufRead,BufEnter fugitive://* if &filetype !=# 'fugitive' | call window#setup_panel() | endif
   au FileType ale-info,checkhealth doautocmd BufWinEnter
@@ -477,9 +476,9 @@ augroup tabs_setup
   au BufWinLeave * call stack#pop_stack('tab', expand('<afile>'))
   au CursorHold * if localtime() - get(g:, 'tab_time', 0) > 10 | call window#update_stack(0) | endif
 augroup END
-command! -nargs=0 ClearTabs call stack#clear_stack('tab') | call window#update_stack(0)
-command! -nargs=0 ListTabs call stack#print_stack('tab')
-command! -nargs=? PopTabs call stack#pop_stack('tab', <q-args>, 1)
+command! -bar -nargs=0 ClearTabs call stack#clear_stack('tab') | call window#update_stack(0)
+command! -bar -nargs=0 ListTabs call stack#print_stack('tab')
+command! -bar -nargs=? PopTabs call stack#pop_stack('tab', <q-args>, 1)
 nnoremap <C-Space> <Cmd>call window#update_stack(0, -1, 2)<CR>
 nnoremap <F1> <Cmd>call window#scroll_stack(-v:count1)<CR>
 nnoremap <F2> <Cmd>call window#scroll_stack(v:count1)<CR>
@@ -639,7 +638,7 @@ augroup foldtext_setup
   au InsertCharPre * call fold#_recache_insert()
   au CursorHold,CursorHoldI * call fold#_recache(1)
 augroup END
-command! -bang -count -nargs=? UpdateFolds call fold#update_folds(<bang>0, <count>)
+command! -bar -bang -count -nargs=? UpdateFolds call fold#update_folds(<bang>0, <count>)
 nnoremap zv <Cmd>call fold#update_folds(0)<CR>zv
 vnoremap zv <Esc><Cmd>call fold#update_folds(0)<CR><Cmd>'<,'>foldopen!<CR>
 nnoremap zV <Cmd>UpdateFolds!<CR><Cmd>echo 'Updated folds'<CR>zv
@@ -721,7 +720,7 @@ augroup jumps_setup
   au!
   au CursorHold,TextChanged,InsertLeave * if utils#none_pending() | call jump#push_jump() | endif
 augroup END
-command! -bang -nargs=0 Jumps call jump#fzf_jumps(<bang>0)
+command! -bar -bang -nargs=0 Jumps call jump#fzf_jumps(<bang>0)
 nnoremap g<Down> <Cmd>call jump#fzf_jumps()<CR>
 nnoremap g<Up> <Cmd>call jump#fzf_jumps()<CR>
 noremap <C-j> <Esc><Cmd>call jump#next_jump(-v:count1)<CR>
@@ -732,7 +731,7 @@ noremap <Up> <Esc><Cmd>call jump#next_jump(v:count1)<CR>
 " Navigate buffer changelist with up/down arrows
 " NOTE: This accounts for iterm function-key maps and karabiner arrow-key maps
 " change entries removed. Here <F5>/<F6> are <Ctrl-/>/<Ctrl-\> in iterm
-command! -bang -nargs=0 Changes call jump#fzf_changes(<bang>0)
+command! -bar -bang -nargs=0 Changes call jump#fzf_changes(<bang>0)
 nnoremap g<Left> <Cmd>call jump#fzf_changes()<CR>
 nnoremap g<Right> <Cmd>call jump#fzf_changes()<CR>
 noremap <C-h> <Esc><Cmd>call jump#next_change(-v:count1)<CR>
@@ -743,11 +742,13 @@ noremap <Right> <Esc><Cmd>call jump#next_change(v:count1)<CR>
 " Navigate across recent tag jumps
 " NOTE: Apply in vimrc to avoid overwriting. This works by overriding both fzf and
 " internal tag jumping utils. Ignores tags resulting from direct :tag or <C-]>
-command! -nargs=0 ClearTags call stack#clear_stack('tag')
-command! -nargs=0 ListTags call stack#print_stack('tag')
-command! -nargs=? PopTags call stack#pop_stack('tag', <q-args>, 1)
-command! -nargs=* -complete=file ShowIgnores
-  \ echom 'Tag ignores: ' . join(parse#get_ignores(0, 0, 0, <f-args>), ' ')
+command! -bar -bang -nargs=0 UpdateBuffer exe <bang>0 ? 'unlet! b:tags_update_time' : ''
+  \ | exe 'UpdateFolds' | exe 'UpdateTags' | exe 'GutentagsUpdate'
+command! -bar -bang -nargs=0 UpdateProject exe <bang>0 ? 'unlet! b:tags_update_time' : ''
+  \ | exe 'UpdateFolds!' | exe 'UpdateTags!' | exe 'GutentagsUpdate!'
+command! -bar -nargs=0 ClearTags call stack#clear_stack('tag')
+command! -bar -nargs=0 ListTags call stack#print_stack('tag')
+command! -bar -nargs=? PopTags call stack#pop_stack('tag', <q-args>, 1)
 noremap <F3> <Esc>m'<Cmd>call tag#next_stack(-v:count1)<CR>
 noremap <F4> <Esc>m'<Cmd>call tag#next_stack(v:count1)<CR>
 
@@ -756,9 +757,9 @@ noremap <F4> <Esc>m'<Cmd>call tag#next_stack(v:count1)<CR>
 " NOTE: Uppercase marks unlike lowercase marks work between files and are saved in
 " viminfo, so use them. Also numbered marks are mostly internal, can be configured
 " to restore cursor position after restarting, also used in viminfo.
-command! -bang -nargs=0 Marks call mark#fzf_marks(<bang>0)
-command! -nargs=* SetMarks call mark#set_marks(<f-args>)
-command! -nargs=* DelMarks call mark#del_marks(<f-args>)
+command! -bar -bang -nargs=0 Marks call mark#fzf_marks(<bang>0)
+command! -bar -nargs=* SetMarks call mark#set_marks(<f-args>)
+command! -bar -nargs=* DelMarks call mark#del_marks(<f-args>)
 nnoremap z_ <Cmd>call mark#set_marks(parse#get_register('m'))<CR>
 nnoremap <expr> g_ v:count ? '`' . parse#get_register('`') : '<Cmd>call mark#fzf_marks()<CR>'
 nnoremap <Leader>_ <Cmd>call mark#del_marks(get(g:, 'mark_name', 'A'))<CR>
@@ -770,10 +771,10 @@ noremap <F8> <Esc><Cmd>call mark#next_mark(v:count1)<CR>
 " NOTE: In general location list and quickfix list filled by ale, but quickfix also
 " temporarily filled by lsp commands or fzf mappings, so add below generalized
 " mapping for jumping between e.g. variables, grep matches, tag matches, etc.
-command! -count=1 -nargs=? Lprev call jump#next_loc(<count>, 'loc', 1, <f-args>)
-command! -count=1 -nargs=? Lnext call jump#next_loc(<count>, 'loc', 0, <f-args>)
-command! -count=1 -nargs=? Qprev call jump#next_loc(<count>, 'qf', 1, <f-args>)
-command! -count=1 -nargs=? Qnext call jump#next_loc(<count>, 'qf', 0, <f-args>)
+command! -bar -count=1 -nargs=? Lprev call jump#next_loc(<count>, 'loc', 1, <f-args>)
+command! -bar -count=1 -nargs=? Lnext call jump#next_loc(<count>, 'loc', 0, <f-args>)
+command! -bar -count=1 -nargs=? Qprev call jump#next_loc(<count>, 'qf', 1, <f-args>)
+command! -bar -count=1 -nargs=? Qnext call jump#next_loc(<count>, 'qf', 0, <f-args>)
 nnoremap [{ <Cmd>exe v:count1 . 'Qprev'<CR><Cmd>call window#show_list(1)<CR><Cmd>wincmd p<CR>
 nnoremap ]} <Cmd>exe v:count1 . 'Qnext'<CR><Cmd>call window#show_list(1)<CR><Cmd>wincmd p<CR>
 nnoremap [x <Cmd>exe v:count1 . 'Lprev'<CR>
@@ -821,13 +822,13 @@ vnoremap <expr> z? edit#sel_lines_expr(1)
 " to explicitly specify path (without arguments each name has different default).
 " NOTE: Commands add flexibility to native fzf.vim commands. Note Rg is faster and
 " has nicer output so use by default: https://unix.stackexchange.com/a/524094/112647
-command! -range=0 -bang -nargs=* -complete=file Grep call call('grep#call_rg', [<bang>0, <count>, tags#get_search(2), <f-args>])
-command! -range=0 -bang -nargs=* -complete=file Find call call('grep#call_rg', [<bang>0, <count>, tags#get_search(1), <f-args>])
-command! -range=0 -bang -nargs=+ -complete=file Ag call grep#call_ag(<bang>0, <count>, <f-args>)
-command! -range=0 -bang -nargs=+ -complete=file Rg call grep#call_rg(<bang>0, <count>, <f-args>)
+command! -bang -range=0 -nargs=* -complete=file Grep call call('grep#call_rg', [<bang>0, <count>, tags#get_search(2), <f-args>])
+command! -bang -range=0 -nargs=* -complete=file Find call call('grep#call_rg', [<bang>0, <count>, tags#get_search(1), <f-args>])
+command! -bang -range=0 -nargs=+ -complete=file Ag call grep#call_ag(<bang>0, <count>, <f-args>)
+command! -bang -range=0 -nargs=+ -complete=file Rg call grep#call_rg(<bang>0, <count>, <f-args>)
 nnoremap g' <Cmd>call grep#call_grep('rg', 0, 2)<CR>
-nnoremap g" <Cmd>call grep#call_grep('rg', 0, 3)<CR>
-nnoremap z' <Cmd>call grep#call_grep('rg', 1, 2)<CR>
+nnoremap g" <Cmd>call grep#call_grep('rg', 1, 2)<CR>
+nnoremap z' <Cmd>call grep#call_grep('rg', 0, 3)<CR>
 nnoremap z" <Cmd>call grep#call_grep('rg', 1, 3)<CR>
 
 " Grepping uncommented print statements
@@ -1071,7 +1072,7 @@ augroup tab_setup
   au!
   au BufWinEnter * call switch#tabs(index(s:tab_filetypes, &l:filetype) >= 0, 1)
 augroup END
-command! -nargs=? TabToggle call switch#tabs(<args>)
+command! -bar -nargs=? TabToggle call switch#tabs(<args>)
 nnoremap <Leader><Tab> <Cmd>call switch#tabs()<CR>
 nnoremap <expr> > '<Esc>' . edit#indent_lines_expr(0, v:count1)
 nnoremap <expr> < '<Esc>' . edit#indent_lines_expr(1, v:count1)
@@ -1093,7 +1094,7 @@ call utils#repeat_map('n', 'cL', 'ChangeSplit', 'myi<CR><Esc><Cmd>keepjumps norm
 " Uses :Join command added by conjoin plugin
 " NOTE: Here e.g. '2J' joins 'next two lines' instead of 'current plus one'
 " NOTE: Use insert-mode <C-F> to format line if '!^F' present in &indentkeys
-command! -range -nargs=? Format <line1>,<line2>call edit#format_lines(<args>)
+command! -bar -range -nargs=? Format <line1>,<line2>call edit#format_lines(<args>)
 nnoremap gqq <Cmd>call edit#format_lines(v:count)<CR>
 nnoremap <expr> gq edit#format_lines_expr(v:count)
 vnoremap <expr> gq edit#format_lines_expr(v:count)
@@ -1114,8 +1115,8 @@ augroup copy_setup
   au!
   au BufWinEnter * call switch#copy(0, index(s:copy_filetypes, &l:filetype) >= 0, 1)
 augroup END
-command! -nargs=? CopyToggle call switch#copy(1, <args>)
-command! -nargs=? ConcealToggle call switch#conceal(<args>)  " mainly just for tex
+command! -bar -nargs=? CopyToggle call switch#copy(1, <args>)
+command! -bar -nargs=? ConcealToggle call switch#conceal(<args>)
 cnoremap <expr> <C-v> switch#caps()
 inoremap <expr> <C-v> switch#caps()
 nnoremap <Leader>c <Cmd>call switch#copy(1)<CR>
@@ -1190,8 +1191,8 @@ augroup spell_setup
   au!
   au BufWinEnter * let &l:spell = index(s:lang_filetypes, &l:filetype) >= 0
 augroup END
-command! SpellToggle call switch#spell(<args>)
-command! LangToggle call switch#lang(<args>)
+command! -bar -nargs=? SpellToggle call switch#spell(<args>)
+command! -bar -nargs=? LangToggle call switch#lang(<args>)
 nnoremap <Leader>s <Cmd>call switch#spell()<CR>
 nnoremap <Leader>S <Cmd>call switch#lang()<CR>
 for s:path in glob('~/.vim/spell/*.add', 1, 1)
@@ -1359,6 +1360,8 @@ let g:filetype_cls = 'tex'  " default .cls filetype
 
 " Helper function for downloaded plugins
 " NOTE: This allows adding to s:forks above without changing anything else
+command! -bar -nargs=* ListPlug
+  \ echo 'Plugins: ' . join(s:get_plug(<q-args>), ', ')
 function! s:get_plug(regex) abort
   return filter(split(&runtimepath, ','), "v:val =~# '" . a:regex . "'")
 endfunction
@@ -1375,10 +1378,11 @@ function! s:plug(plug, ...) abort
     redraw | echohl WarningMsg | echom msg | echohl None
   endif
 endfunction
-command! -nargs=1 GetPlug echom 'Plugins: ' . join(s:get_plug(<q-args>), ', ')
 
 " Helper function for pushing user-specific plugins
 " See: https://github.com/junegunn/vim-plug/issues/32
+command! -bar -nargs=* PushPlug
+  \ call s:push(0, <f-args>)
 function! s:has_plug(key) abort
   return &runtimepath =~# '/' . a:key . '\>'
 endfunction
@@ -1400,7 +1404,6 @@ function! s:push(auto, arg) abort
     exe 'set runtimepath^=' . item | exe 'set runtimepath+=' . item . '/after'
   endif
 endfunction
-command! -nargs=* AddPlug call s:push(0, <f-args>)
 
 " Core utilities and integration {{{2
 " Use bash 'vim-session' to start form existing .vimsession or start new session with
@@ -2014,17 +2017,18 @@ if s:has_plug('taglist')  " {{{
 endif  " }}}
 if s:has_plug('vim-tags')  " {{{
   exe 'silent! unmap gyy' | exe 'silent! unmap zyy'
-  command! -count -nargs=? TagToggle
-    \ call call('switch#tags', <range> ? [<count>] : [<args>])
-  command! -bang -nargs=* ShowTable let s:args = <bang>0 ? ['all'] : [<f-args>]
-    \ | echo call('tags#table_kinds', s:args) . "\n" . call('tags#table_tags', s:args)
+  command! -bar -nargs=* -complete=file ShowIgnores echo 'Tag ignores: ' . join(parse#get_ignores(0, 0, 0, <f-args>), ' ')
+  command! -bar -count -nargs=? TagToggle
+    \ call switch#tags(<range> ? <count> : <args>)
+  command! -bang -nargs=* ShowTable echo tags#table_kinds(<bang>0 ? 'all' : <f-args>)
+    \ . "\n" . tags#table_tags(<bang>0 ? 'all' : <f-args>)
   nnoremap <Leader>t <Cmd>ShowTable<CR>
   nnoremap <Leader>T <Cmd>ShowTable!<CR>
   nnoremap <C-t> <Cmd>call tag#fzf_stack()<CR>
-  nnoremap gy <Cmd>call tags#select_tag(0)<CR>
+  nnoremap gt <Cmd>call tags#select_tag(0)<CR>
+  nnoremap zt <Cmd>call tags#select_tag(1)<CR>
   nnoremap gY <Cmd>call tags#select_tag(2)<CR>
-  nnoremap zy <Cmd>call tags#select_tag(1)<CR>
-  nnoremap zY <Cmd>UpdateFolds \| UpdateFiles \| UpdateTags \| GutentagsUpdate<CR><Cmd>echo 'Updated buffer tags'<CR>
+  nnoremap zy <Cmd>UpdateBuffer<CR><Cmd>redraw<CR><Cmd>echo 'Updated buffer tags'<CR>
   let s:major = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
   let s:minor = {'fortran': 'ekltvEL', 'python': 'xviI', 'vim': 'vnC', 'tex': 'gioetBCN'}
   let g:tags_keep_jumps = 1  " default is zero
@@ -2040,28 +2044,24 @@ if s:has_plug('vim-tags')  " {{{
 endif  " }}}
 
 " Project-wide ctags management
+" TODO: Consider adding tags#update_files(0, expand('<afile>')) on buffer deletion
 " NOTE: Adding directories with '--exclude' flags fails in gutentags since it manually
 " feeds files to 'ctags' executable which bypasses recursive exclude folder-name
 " checking. Instead exclude folders using manual file generation executable.
 if s:has_plug('vim-gutentags')  " {{{
   augroup tags_setup
     au!
-    au User GutentagsUpdated call tag#update_files()
-    au BufCreate,BufReadPost * call tag#update_files(expand('<afile>'))
+    au User GutentagsUpdated call tag#update_files(0)  " restore defaults
+    au BufCreate,BufReadPost * call tag#update_files(0, expand('<afile>'))
   augroup END
-  command! -bang -nargs=* -complete=customlist,file#local_files
-    \ BTags call tag#fzf_btags(<bang>0, <f-args>)
-  command! -bang -nargs=* -complete=customlist,file#local_dirs
-    \ FTags call tag#fzf_tags(1, <bang>0, <f-args>)
-  command! -bang -nargs=* -complete=customlist,file#local_dirs
-    \ Tags call tag#fzf_tags(0, <bang>0, <f-args>)
-  command! -nargs=* -complete=customlist,file#local_dirs
-    \ UpdateFiles call tag#update_files(<f-args>)
-  command! -nargs=0 ShowCache call tag#show_cache()
-  nnoremap gt <Cmd>BTags<CR>
+  command! -nargs=* -complete=buffer UpdateFiles call tag#update_files(<f-args>)
+  command! -bang -nargs=* -complete=customlist,file#local_files BTags call tag#fzf_btags(<bang>0, <f-args>)
+  command! -bang -nargs=* -complete=customlist,file#local_dirs FTags call tag#fzf_tags(1, <bang>0, <f-args>)
+  command! -bang -nargs=* -complete=customlist,file#local_dirs Tags call tag#fzf_tags(0, <bang>0, <f-args>)
+  nnoremap zT <Cmd>FTags<CR>
   nnoremap gT <Cmd>Tags<CR>
-  nnoremap zt <Cmd>FTags<CR>
-  nnoremap zT <Cmd>UpdateFolds \| UpdateFiles \| UpdateTags! \| GutentagsUpdate!<CR><Cmd>echo 'Updated project tags'<CR>
+  nnoremap zt <Cmd>BTags<CR>
+  nnoremap zY <Cmd>UpdateBuffer<CR><Cmd>redraw<CR><Cmd>echo 'Updated project tags'<CR>
   let g:gutentags_trace = 0  " toggle debug mode (also try :ShowIgnores)
   let g:gutentags_background_update = 1  " disable for debugging, printing updates
   let g:gutentags_ctags_auto_set_tags = 0  " tag#update_files() handles this instead
@@ -2220,11 +2220,11 @@ endif  " }}}
 " native syntax foldmethod. Also tried tagfunc=lsp#tagfunc but now use LspDefinition
 if s:has_plug('vim-lsp')  " {{{
   let g:_foldopen = 'call feedkeys(&foldopen =~# ''quickfix\|all'' ? "zv" : "", "n")'
-  command! -nargs=? LspToggle call switch#lsp(<args>)
-  command! -nargs=? ClearDoc call stack#clear_stack('doc')
-  command! -nargs=? ListDoc call stack#print_stack('doc')
-  command! -nargs=? PopDoc call stack#pop_stack('doc', <q-args>, 1)
-  command! -nargs=? Doc call stack#push_stack('doc', 'python#doc_page', <f-args>)
+  command! -bar -nargs=? LspToggle call switch#lsp(<args>)
+  command! -bar -nargs=? ClearDoc call stack#clear_stack('doc')
+  command! -bar -nargs=? ListDoc call stack#print_stack('doc')
+  command! -bar -nargs=? PopDoc call stack#pop_stack('doc', <q-args>, 1)
+  command! -bar -nargs=? Doc call stack#push_stack('doc', 'python#doc_page', <f-args>)
   noremap [r <Cmd>LspPreviousReference<CR>
   noremap ]r <Cmd>LspNextReference<CR>
   nnoremap gr <Cmd>LspReferences<CR>
@@ -2274,7 +2274,7 @@ if s:has_plug('ddc.vim')  " {{{
     au InsertEnter * if &l:filetype ==# 'vim' | setlocal iskeyword+=: | endif
     au InsertLeave * if &l:filetype ==# 'vim' | setlocal iskeyword-=: | endif
   augroup END
-  command! -nargs=? DdcToggle call switch#ddc(<args>)
+  command! -bar -bang -nargs=? DdcToggle call switch#ddc(<args>)
   nnoremap <Leader>* <Cmd>call switch#ddc()<CR>
   let g:popup_preview_config = {
     \ 'border': v:true,
@@ -2365,7 +2365,7 @@ if s:has_plug('ale')  " {{{
     au BufRead ipython_*config.py,jupyter_*config.py let b:ale_enabled = 0
     au FileType ale-preview call window#setup_preview()
   augroup END
-  command! -nargs=? AleToggle call switch#ale(<args>)
+  command! -bar -bang -nargs=? AleToggle call switch#ale(<args>)
   nnoremap <Leader>x <Cmd>call window#show_list(0)<CR>
   nnoremap <Leader>X <Cmd>call window#show_list(1)<CR>
   nnoremap <Leader>@ <Cmd>call switch#ale()<CR>
@@ -2488,8 +2488,8 @@ if s:has_plug('conflict-marker.vim')  " {{{
   endfunction
   let s:groups = ['Ours', 'Theirs', 'CommonAncestorsHunk']
   let s:groups = join(map(s:groups, '"ConflictMarker" . v:val'))
-  command! -count=1 Cprev call git#next_conflict(<count>, 1)
-  command! -count=1 Cnext call git#next_conflict(<count>, 0)
+  command! -bar -count=1 Cprev call git#next_conflict(<count>, 1)
+  command! -bar -count=1 Cnext call git#next_conflict(<count>, 0)
   call utils#repeat_map('', '[F', 'ConflictBackward', '<Cmd>exe v:count1 . "Cprev" \| ConflictMarkerThemselves<CR>')
   call utils#repeat_map('', ']F', 'ConflictForward', '<Cmd>exe v:count1 . "Cnext" \| ConflictMarkerThemselves<CR>')
   noremap [f <Cmd>exe v:count1 . 'Cprev'<CR>
@@ -2563,8 +2563,10 @@ endif  " }}}
 " navigation maps ]g, ]G (navigate to hunks, or navigate and stage hunks) were inspired
 " by spell maps ]s, ]S (navigate to spell error, or navigate and fix error).
 if s:has_plug('vim-gitgutter')  " {{{
-  command! -nargs=? GitGutterToggle call switch#gitgutter(<args>)
-  command! -bang -range Hunks call git#_get_hunks(<range> ? <line1> : 0, <range> ? <line2> : 0, <bang>0)
+  command! -bar -bang -nargs=? GitGutterToggle
+    \ call switch#gitgutter(<args>)
+  command! -bar -bang -range Hunks
+    \ call git#_get_hunks(<range> ? <line1> : 1, <range> ? <line2> : line('$'), <bang>0)
   let s:opts = {'line': 'cursor+1', 'moved': 'any', 'minwidth': g:linelength}
   let g:gitgutter_async = 1  " ensure enabled
   let g:gitgutter_map_keys = 0  " disable defaults
@@ -2589,7 +2591,7 @@ if s:has_plug('vim-gitgutter')  " {{{
   noremap ]g <Cmd>call git#next_hunk(v:count1, 0)<CR>
   nnoremap zg <Cmd>GitGutter<CR><Cmd>echo 'Updated buffer hunks'<CR>
   nnoremap zG <Cmd>GitGutterAll<CR><Cmd>echo 'Updated global hunks'<CR>
-  nnoremap <Leader>g <Cmd>call git#show_hunk()<CR>
+  nnoremap <Leader>g <Cmd>call git#current_hunk()<CR>
   nnoremap <Leader>G <Cmd>call switch#gitgutter()<CR>
 endif  " }}}
 
@@ -2800,12 +2802,12 @@ augroup syntax_setup
   au Syntax * unlet! b:af_py_loaded | unlet! b:af_rst_loaded
   au Syntax * unlet! b:common_syntax | exe 'runtime after/common.vim'
 augroup END
-command! -nargs=? ShowGroups call syntax#show_stack(<f-args>)
-command! -nargs=0 ShowNames exe 'help highlight-groups' | exe 'normal! zt'
-command! -nargs=0 ShowBases exe 'help group-name' | exe 'normal! zt'
-command! -nargs=0 ShowColors call vim#show_runtime('syntax', 'colortest')
-command! -nargs=0 ShowSyntax call vim#show_runtime('syntax')
-command! -nargs=0 ShowPlugin call vim#show_runtime('ftplugin')
+command! -bar -nargs=* ShowGroups call syntax#show_stack(<f-args>)
+command! -bar -nargs=0 ShowNames exe 'help highlight-groups' | exe 'normal! zt'
+command! -bar -nargs=0 ShowBases exe 'help group-name' | exe 'normal! zt'
+command! -bar -nargs=0 ShowColors call vim#show_runtime('syntax', 'colortest')
+command! -bar -nargs=0 ShowSyntax call vim#show_runtime('syntax')
+command! -bar -nargs=0 ShowPlugin call vim#show_runtime('ftplugin')
 nnoremap <Leader>` <Cmd>ShowGroups<CR>
 nnoremap <Leader>1 <Cmd>ShowPlugin<CR>
 nnoremap <Leader>2 <Cmd>ShowSyntax<CR>
@@ -2820,7 +2822,7 @@ augroup mark_setup
   au!
   au VimEnter * call mark#init_marks()
 augroup END
-command! -bang -count=0 Syntax
+command! -bar -bang -count=0 Syntax
   \ call syntax#sync_lines(<range> == 2 ? abs(<line2> - <line1>) : <count>, <bang>0)
 nnoremap <Leader>e <Cmd>Syntax<CR>
 nnoremap <Leader>6 <Cmd>Syntax 100<CR>
@@ -2830,9 +2832,9 @@ nnoremap <Leader>8 <Cmd>Colorize<CR>
 " Scroll color schemes and toggle colorize
 " NOTE: Here :Colorize is from colorizer.vim and :Colors from fzf.vim. Note coloring
 " hex strings can cause massive slowdowns so disable by default.
-command! -nargs=? -complete=color Scheme call syntax#next_scheme(<f-args>)
-command! -count=1 Sprev call syntax#next_scheme(-<count>)
-command! -count=1 Snext call syntax#next_scheme(<count>)
+command! -bar -nargs=? -complete=color Scheme call syntax#next_scheme(<f-args>)
+command! -bar -count=1 Sprev call syntax#next_scheme(-<count>)
+command! -bar -count=1 Snext call syntax#next_scheme(<count>)
 call utils#repeat_map('n', 'g{', 'Sprev', ':<C-u>Sprev<CR>')
 call utils#repeat_map('n', 'g}', 'Snext', ':<C-u>Snext<CR>')
 nnoremap <Leader>9 <Cmd>Colors<CR>

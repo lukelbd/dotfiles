@@ -203,8 +203,8 @@ function! shell#setup_man(...) abort
 endfunction
 
 " Show directory network and terminal
-" WARNING: Critical to load vim-vinegar plugin/vinegar.vim before
-" setup_netrw() or else mappings are overwritten (see vimrc).
+" NOTE: Map Ctrl-c to literal keypress so it does not close window and use environment
+" variable to use file directory. See: https://vi.stackexchange.com/q/14519/8084
 function! shell#setup_netrw() abort
   let maps = [['n', '<CR>', 't'], ['n', '.', 'gn'], ['n', ',', '-'], ['nx', ';', '.']]
   call call('utils#map_from', maps)
@@ -216,12 +216,18 @@ function! shell#show_netrw(cmd, local) abort
   exe a:cmd . ' ' . base | goto
   exe a:cmd =~# 'vsplit' ? 'vert resize ' . width : 'resize ' . height 
 endfunction
-function! shell#show_terminal() abort
-  if has('terminal')
-    let $VIMTERMDIR = expand('%:p:h')
-    terminal | call feedkeys('cd $VIMTERMDIR', 'tn')
-  else  " raise error
-    let msg = 'Error: Terminal not supported.'
-    redraw | echohl ErrorMsg | echom msg | echohl None | return
+function! shell#show_terminal(...) abort
+  let path = a:0 ? a:1 : '%:p:h'
+  let path = resolve(expand(path))
+  if has('terminal') && isdirectory(path)
+    tnoremap <expr> <C-c> "\<C-c>"
+    let $VIMTERMDIR = path | terminal
+    return feedkeys("cd $VIMTERMDIR\<CR>", 'tn')
   endif
+  if !has('terminal')
+    let msg = 'Error: Terminal not supported'
+  else  " bad directory
+    let msg = 'Error: Invalid directory ' . string(path)
+  endif
+  redraw | echohl ErrorMsg | echom msg | echohl None | return
 endfunction

@@ -94,17 +94,18 @@ endfunction
 " NOTE: Have to trigger 'InsertLeave' so status line updates (for some reason only
 " works after timer when :colorscheme triggers ColorScheme autocommand). Also note
 " g:colors_name is convention shared by most color schemes, no official vim setting.
-function! syntax#next_scheme(arg) abort
+function! syntax#next_scheme(...) abort
   let default = get(g:, 'colors_default', 'default')
   if !exists('g:colors_all')
     let g:colors_all = getcompletion('', 'color')
   endif
-  if type(a:arg)  " use input scheme
-    let name = a:arg
+  if a:0 && type(a:1)  " use input scheme
+    let name = a:1
   else  " iterate over schemes
+    let delta = a:0 ? a:1 : 0
     let name = get(g:, 'colors_name', default)
     let idx = indexof(g:colors_all, {idx, val -> val ==# name})
-    let idx = idx == -1 ? index(g:colors_all, default) : idx + a:arg
+    let idx = idx == -1 ? index(g:colors_all, default) : idx + delta
     let idx = idx % len(g:colors_all)
     let name = g:colors_all[idx]
   endif
