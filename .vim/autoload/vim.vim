@@ -33,7 +33,7 @@ function! vim#config_refresh(bang, ...) abort
   endfor
   let folds = filter(fold#fold_source(), 'foldclosed(v:val[0]) < 0')
   call map(paths, "fnamemodify(v:val, ':~')[2:]")
-  doautocmd VimEnter | filetype detect  " update syntax, filetype, folds
+  doautocmd VimEnter | filetype detect
   for fold in folds
     exe foldlevel(fold[0]) ? fold[0] . 'foldopen' : ''
   endfor

@@ -2115,7 +2115,7 @@ if s:has_plug('FastFold')  " {{{
     augroup fold_update
       au!
       au BufEnter * call fold#update_folds(0)
-      au FileType * unlet! b:foldtext_cache | call fold#update_folds(0, 1)
+      au FileType * unlet! b:fastfold_queued | unlet! b:foldtext_cache | call fold#update_folds(0, 1)
     augroup END
   endfunction
   function! s:fold_init(...) abort
