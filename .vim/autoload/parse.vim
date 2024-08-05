@@ -152,13 +152,13 @@ function! parse#get_ignores(level, skip, mode, ...) abort
   let nofiles = a:skip == 2
   let nodirs = a:skip == 1
   let paths = []  " search level
-  if a:level <= 0
+  if a:level >= 2
     call add(paths, '~/.gitignore')
   endif
-  if a:level <= 1
+  if a:level >= 1
     call add(paths, '~/.ignore')
   endif
-  if a:level <= 2  " slowest so put last
+  if a:level >= 0  " slowest so put last
     call add(paths, '~/.wildignore')
   endif
   let result = []

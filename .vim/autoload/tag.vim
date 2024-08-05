@@ -196,7 +196,7 @@ endfunction
 " specified with e.g. '.*/**/'. But avoid huge globs since can cause slowdowns
 function! s:get_files(...) abort
   let [paths, files, roots] = [[], [], []]
-  let globs = parse#get_ignores(0, 2, 0)
+  let globs = parse#get_ignores(2, 2, 0)
   let regex = join(map(globs, 'glob2regpat(v:val)'), '\|')
   for path in a:000
     let dirs = file#local_dirs(path)

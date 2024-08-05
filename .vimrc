@@ -168,7 +168,7 @@ let &g:signcolumn = 'auto'  " show signs automatically number column
 let &g:softtabstop = 2  " default 2 spaces
 let &g:spell = 0  " global spell disable (only use text files)
 let &g:tabstop = 2  " default 2 spaces
-let &g:wildignore = join(parse#get_ignores(2, 1, 0), ',')
+let &g:wildignore = join(parse#get_ignores(0, 1, 0), ',')
 
 " Shared plugin settings {{{2
 " Filetypes for several different settings
@@ -1452,7 +1452,7 @@ let g:fzf_buffers_jump = 1  " jump to existing window if already open
 let g:fzf_history_dir = expand('~/.fzf-hist')  " navigate searches with ctrl-n, ctrl-p
 let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
 let g:fzf_require_dir = 0  " see lukelbd/fzf.vim completion-edits branch
-let g:fzf_tags_command = 'ctags -R -f .vimtags ' . join(parse#get_ignores(0, 0, 1), ' ')
+let g:fzf_tags_command = 'ctags -R -f .vimtags ' . join(parse#get_ignores(2, 0, 1), ' ')
 
 " Navigation and searching
 " NOTE: The vim-tags @#&*/?! mappings auto-integrate with vim-indexed-search. Also
@@ -2017,18 +2017,19 @@ if s:has_plug('taglist')  " {{{
 endif  " }}}
 if s:has_plug('vim-tags')  " {{{
   exe 'silent! unmap gyy' | exe 'silent! unmap zyy'
-  command! -bar -nargs=* -complete=file ShowIgnores echo 'Tag ignores: ' . join(parse#get_ignores(0, 0, 0, <f-args>), ' ')
   command! -bar -count -nargs=? TagToggle
     \ call switch#tags(<range> ? <count> : <args>)
-  command! -bang -nargs=* ShowTable echo tags#table_kinds(<bang>0 ? 'all' : <f-args>)
-    \ . "\n" . tags#table_tags(<bang>0 ? 'all' : <f-args>)
+  command! -nargs=* -complete=file ShowIgnores let s:arg = parse#get_ignores(2, 0, 0, <f-args>)
+    \ | echo 'Tag ignores: ' . join(s:arg, ' ')
+  command! -bang -nargs=* -complete=buffer ShowTable let s:arg = <bang>0 ? ['all'] : [<f-args>]
+    \ | echo call('tags#table_kinds', s:arg) . "\n" . call('tags#table_tags', s:arg)
   nnoremap <Leader>t <Cmd>ShowTable<CR>
   nnoremap <Leader>T <Cmd>ShowTable!<CR>
   nnoremap <C-t> <Cmd>call tag#fzf_stack()<CR>
-  nnoremap gt <Cmd>call tags#select_tag(0)<CR>
-  nnoremap zt <Cmd>call tags#select_tag(1)<CR>
+  nnoremap gy <Cmd>call tags#select_tag(0)<CR>
   nnoremap gY <Cmd>call tags#select_tag(2)<CR>
-  nnoremap zy <Cmd>UpdateBuffer<CR><Cmd>redraw<CR><Cmd>echo 'Updated buffer tags'<CR>
+  nnoremap zy <Cmd>call tags#select_tag(1)<CR>
+  nnoremap zY <Cmd>UpdateBuffer<CR><Cmd>redraw<CR><Cmd>echo 'Updated buffer tags'<CR>
   let s:major = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
   let s:minor = {'fortran': 'ekltvEL', 'python': 'xviI', 'vim': 'vnC', 'tex': 'gioetBCN'}
   let g:tags_keep_jumps = 1  " default is zero
@@ -2058,19 +2059,19 @@ if s:has_plug('vim-gutentags')  " {{{
   command! -bang -nargs=* -complete=customlist,file#local_files BTags call tag#fzf_btags(<bang>0, <f-args>)
   command! -bang -nargs=* -complete=customlist,file#local_dirs FTags call tag#fzf_tags(1, <bang>0, <f-args>)
   command! -bang -nargs=* -complete=customlist,file#local_dirs Tags call tag#fzf_tags(0, <bang>0, <f-args>)
-  nnoremap zT <Cmd>FTags<CR>
+  nnoremap gt <Cmd>BTags<CR>
   nnoremap gT <Cmd>Tags<CR>
-  nnoremap zt <Cmd>BTags<CR>
-  nnoremap zY <Cmd>UpdateBuffer<CR><Cmd>redraw<CR><Cmd>echo 'Updated project tags'<CR>
+  nnoremap zy <Cmd>FTags<CR>
+  nnoremap zY <Cmd>UpdateProject<CR><Cmd>redraw<CR><Cmd>echo 'Updated project tags'<CR>
   let g:gutentags_trace = 0  " toggle debug mode (also try :ShowIgnores)
   let g:gutentags_background_update = 1  " disable for debugging, printing updates
   let g:gutentags_ctags_auto_set_tags = 0  " tag#update_files() handles this instead
   let g:gutentags_ctags_executable = 'ctags'  " note this respects .ctags config
   let g:gutentags_ctags_exclude_wildignore = 1  " exclude &wildignore too
   let g:gutentags_ctags_exclude = []  " instead manage manually (see below)
-  let g:gutentags_ctags_extra_args = parse#get_ignores(0, 1, 1)  " exclude and exclude-exception flags
+  let g:gutentags_ctags_extra_args = parse#get_ignores(2, 1, 1)  " exclude and exclude-exception flags
   let g:gutentags_file_list_command = {
-    \ 'default': 'find . ' . join(parse#get_ignores(0, 2, 2), ' ') . ' -print',
+    \ 'default': 'find . ' . join(parse#get_ignores(2, 2, 2), ' ') . ' -print',
     \ 'markers': {'.git': 'git ls-files', '.hg': 'hg files'},
   \ }
   let g:gutentags_ctags_tagfile = '.vimtags'  " similar to .vimsession
