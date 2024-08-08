@@ -201,7 +201,7 @@ function! syntax#update_groups() abort
     highlight link jsonComment Comment
   elseif &filetype ==# 'vim'  " repair comments: https://github.com/vim/vim/issues/11307
     syntax match vimQuoteComment '^[ \t:]*".*$' contains=vimComment.*,@Spell
-    highlight link vimQuoteComment Comment | syntax clear vimInsert vimCommentTitle
+    highlight link vimQuoteComment Comment | silent! syntax clear vimInsert vimCommentTitle vimCommentError
   elseif &filetype ==# 'fortran'  " repair comments (ensure space and skip c = value)
     syntax match fortranComment excludenl '^\s*[cC]\s\+=\@!.*$' contains=@spell,@fortranCommentGroup
     highlight link fortranComment Comment
