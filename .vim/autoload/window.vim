@@ -321,27 +321,28 @@ endfunction
 
 " Scroll complete menu or preview popup windows
 " NOTE: This prevents vim's baked-in circular complete menu scrolling.
-" Scroll normal mode lines
 function! window#scroll_normal(scroll, ...) abort
+  let reverse = a:scroll > 0 ? 0 : 1  " forward or reverse scroll
   let height = a:0 ? a:1 : winheight(0)
-  let cnt = type(a:scroll) ? float2nr(a:scroll * height) : a:scroll
-  let rev = a:scroll > 0 ? 0 : 1  " forward or reverse scroll
-  let cmd = 'call scrollwrapped#scroll(' . abs(cnt) . ', ' . rev . ')'
-  return mode() =~? '^[ir]' ? '' : "\<Cmd>" . cmd . "\<CR>"  " only normal mode
+  let cnt = abs(float2nr(a:scroll * height))
+  let cmd = "\<Cmd>call scrollwrapped#scroll(" . cnt . ', ' . reverse . ")\<CR>"
+  return mode() =~? '^[ir]' ? '' : cmd
 endfunction
-" Scroll and update the count
 function! window#scroll_infer(scroll, ...) abort
-  let filter = "getbufvar(winbufnr(v:val), '&filetype') !=# 'ale-preview'"
-  let preview_ids = filter(popup_list(), filter)
+  let nopopup = a:0 ? a:1 : 0
+  let preview_ids = filter(
+    \ popup_list(),
+    \ {_, win -> getbufvar(winbufnr(win), '&filetype') !=# 'ale-preview'}
+  \ )
   let popup_pos = pum_getpos()
-  if a:0 && a:1 || !empty(popup_pos)  " automatically returns empty if not present
+  if !nopopup && !empty(popup_pos)  " automatically returns empty if not present
     return call('s:scroll_popup', [a:scroll])
   elseif !empty(preview_ids)
     return call('s:scroll_preview', [a:scroll] + preview_ids)
-  elseif a:0 && !a:1
+  elseif type(a:scroll)  " standard scrolling methofd
     return call('window#scroll_normal', [a:scroll])
   else  " default fallback is arrow press
-    return a:scroll > 0 ? "\<Down>" : a:scroll < 0 ? "\<Up>" : ''
+    return repeat(a:scroll > 0 ? "\<Down>" : "\<Up>", abs(a:scroll))
   endif
 endfunction
 

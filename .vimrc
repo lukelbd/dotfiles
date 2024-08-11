@@ -58,7 +58,7 @@ set cmdheight=1  " increase to avoid pressing enter to continue
 set cmdwinheight=13  " i.e. show 12 previous commands (but changed by maps below)
 set colorcolumn=89,121  " color column after recommended length of 88
 set complete=.,w,b,u,t,i,k  " prevent slowdowns with ddc
-set completeopt-=preview  " use custom denops-popup-preview plugin
+set completeopt=menu  " use custom denops-popup-preview plugin
 set concealcursor=nc  " conceal in normal mode and during incsearch (see also common.vim)
 set conceallevel=2  " hide conceal text completely (see also common.vim)
 set formatoptions=rojclqn  " comment and wrapping (see fo-table and common.vim)
@@ -560,10 +560,10 @@ cnoremap <expr> <S-Right> repeat('<Del>', len(getcmdline()) - getcmdpos() + 1)
 " maps to both in case working from terminal without these maps. Also note iTerm
 " maps mod-delete and mod-backspace keys to shift arrows which do normal mode scrolls.
 for s:mode in ['n', 'v', 'i']
-  exe s:mode . 'noremap <expr> <C-u> window#scroll_infer(-0.33, 0)'
-  exe s:mode . 'noremap <expr> <C-d> window#scroll_infer(0.33, 0)'
-  exe s:mode . 'noremap <expr> <C-b> window#scroll_infer(-0.66, 0)'
-  exe s:mode . 'noremap <expr> <C-f> window#scroll_infer(0.66, 0)'
+  exe s:mode . 'noremap <expr> <C-u> window#scroll_infer(-0.33)'
+  exe s:mode . 'noremap <expr> <C-d> window#scroll_infer(0.33)'
+  exe s:mode . 'noremap <expr> <C-b> window#scroll_infer(-0.66)'
+  exe s:mode . 'noremap <expr> <C-f> window#scroll_infer(0.66)'
 endfor
 for s:mode in ['n', 'v', 'i'] | if has('gui_running')
   silent! exe s:mode . 'unmap <ScrollWheelLeft>'
@@ -572,6 +572,8 @@ else  " fix order
   exe s:mode . 'noremap <ScrollWheelLeft> <ScrollWheelRight>'
   exe s:mode . 'noremap <ScrollWheelRight> <ScrollWheelLeft>'
 endif | endfor
+inoremap <expr> <F3> window#scroll_infer(-0.5, 1)
+inoremap <expr> <F4> window#scroll_infer(0.5, 1)
 inoremap <expr> <Up> window#scroll_infer(-1)
 inoremap <expr> <Down> window#scroll_infer(1)
 inoremap <expr> <C-k> window#scroll_infer(-1)
@@ -1535,7 +1537,7 @@ endif
 " call s:plug('Shougo/ddc-ui-pum')  " non-native user interface
 if s:enable_ddc
   call s:plug('vim-denops/denops.vim')  " ddc dependency
-  call s:plug('Shougo/ddc.vim', {'commit': '74743f5'})  " fourth generation (requires deno)
+  call s:plug('Shougo/ddc.vim')  " fourth generation (requires deno)
   call s:plug('Shougo/ddc-ui-native')  " native user interface
   call s:plug('matsui54/denops-popup-preview.vim')  " show previews during pmenu selection
 endif
@@ -1553,17 +1555,18 @@ endif
 " call s:plug('Shougo/ddc-nvim-lsp')  " language server protocoal completion for neovim only
 " call s:plug('Shougo/ddc-matcher_head')  " filter for heading match
 " call s:plug('Shougo/ddc-sorter_rank')  " filter for sorting rank
-" call s:plug('Shougo/ddc-source-omni')  " include &omnifunc results
 " call s:plug('delphinus/ddc-ctags')  " completion using 'ctags' command
-" call s:plug('akemrir/ddc-tags-exec')  " completion using tagfiles() lines
 " call s:plug('Shougo/ddc-source-cmdline-history')  " command history (requires ddc-ui-pum)
 " call s:plug('Shougo/ddc-source-cmdline')  " valid commands (requires ddc-ui-pum)
 " call s:plug('Shougo/ddc-filter-sorter_rank')  " sorting for sources (use fuzzy instead)
 " call s:plug('matsui54/ddc-postfilter_score')  " sorting for postFilter (use fuzzy instead)
+" call s:plug('akemrir/ddc-tags-exec')  " tag file completion (forked)
+" call s:plug('lukelbd/ddc-source-vim-lsp')  " vim-lsp completion (forked)
 if s:enable_ddc
   call s:plug('tani/ddc-fuzzy')  " fuzzy matcher and sorter similar to fzf
   call s:plug('matsui54/ddc-buffer')  " matching words from buffer (as in neocomplete)
-  call s:plug('shun/ddc-source-vim-lsp')  " language server protocol completion for vim 8+
+  call s:plug('matsui54/ddc-source-dictionary')  " matching dictionary words
+  call s:plug('Shougo/ddc-source-omni')  " include &omnifunc results (seems broken)
   call s:plug('Shougo/ddc-source-around')  " matching words near cursor
   call s:plug('LumaKernel/ddc-source-file', {'commit': '7233513'})  " matching file names
 endif
@@ -1683,11 +1686,11 @@ let g:SimpylFold_docstring_preview = 0  " disable foldtext() override
 " call s:plug('neoclide/jsonc.vim')  " vscode-style expanded json syntax, but overkill
 " call s:plug('AndrewRadev/inline_edit.vim')  " inline syntax highlighting
 " call s:plug('vim-python/python-syntax')  " nicer python syntax (copied instead)
+" call s:plug('chrisbra/csv.vim')  " csv syntax highlighting
 call s:plug('vim-scripts/applescript.vim')  " applescript syntax support
 call s:plug('andymass/vim-matlab')  " recently updated vim-matlab fork from matchup author
 call s:plug('preservim/vim-markdown')  " see .vim/after/syntax.vim for kludge fix
-call s:plug('chrisbra/csv.vim')  " csv syntax highlighting
-call s:plug('Rykka/riv.vim')  " restructured text, syntax folds
+" call s:plug('Rykka/riv.vim')  " restructured text, syntax folds
 call s:plug('tmux-plugins/vim-tmux')  " tmux syntax highlighting
 call s:plug('anntzer/vim-cython')  " cython syntax highlighting
 call s:plug('tpope/vim-liquid')  " liquid syntax highlighting
@@ -1798,6 +1801,7 @@ let g:gutentags_enabled = 1
 " textobj#user#plugin, (2) the initial statusline will possibly be incomplete, and
 " (3) cannot wrap indexed-search plugin with tags file.
 call s:push(1, 'ddc-source-tags')
+call s:push(1, 'ddc-source-vim-lsp')
 call s:push(1, 'vim-succinct')
 call s:push(1, 'vim-tags')
 call s:push(1, 'vim-statusline')
@@ -1856,8 +1860,8 @@ if s:has_plug('vim-succinct')  " {{{
     \ 'f': '\1function: \1(\r)',
     \ 'A': '\1array: \1[\r]'
   \ }
-  inoremap <F3> <Plug>PrevDelim
-  inoremap <F4> <Plug>NextDelim
+  inoremap <C-g>, <Plug>PrevDelim
+  inoremap <C-g>. <Plug>NextDelim
   let g:succinct_snippet_map = '<C-e>'  " default mapping
   let g:succinct_surround_map = '<C-s>'  " default mapping
   let g:delimitMate_expand_cr = 2  " expand even if non empty
@@ -2182,7 +2186,12 @@ if s:has_plug('vim-lsp-settings')  " {{{
   let s:julia_settings = {}
   let s:python_settings = {
     \ 'configurationSources': ['flake8'],
-    \ 'plugins': {'jedi': {'auto_import_modules': ['numpy', 'pandas', 'matplotlib', 'proplot']}},
+    \ 'plugins': {
+    \   'jedi': {'auto_import_modules': ['numpy', 'pandas', 'matplotlib', 'proplot']},
+    \   'jedi_completion': {'enabled': 1, 'include_params': 0, 'include_function_objects': 0, 'include_class_objects': 0},
+    \   'jedi_signature_help': {'enabled': v:false},
+    \   'jedi_symbols': {'enabled': v:false},
+    \ },
   \ }
   let g:lsp_settings = {
     \ 'pylsp': {'workspace_config': {'pylsp': s:python_settings}},
@@ -2206,7 +2215,7 @@ if s:has_plug('vim-lsp-settings')  " {{{
   let g:lsp_settings_global_settings_dir = '~/.vim_lsp_settings'  " move here next?
   let g:lsp_settings_servers_dir = '~/.vim_lsp_settings/servers'
   let g:lsp_signature_help_delay = 100  " milliseconds
-  let g:lsp_signature_help_enabled = 1  " signature help
+  let g:lsp_signature_help_enabled = 0  " signature help
   let g:lsp_use_native_client = 1  " improve speed, use c for communicaiton
 endif  " }}}
 
@@ -2254,8 +2263,10 @@ if s:has_plug('vim-lsp')  " {{{
 endif  " }}}
 
 " Lsp completion settings (see :help ddc-options).
-" Note underscore seems to indicate all sources (used for global filter options)
-" and filetype-specific options added with ddc#custom#patch_filetype(filetype, ...).
+" Here ddc is 'dark deno completion', seems to work by modifying internals with
+" typescript vim api, does not call complete() or complete_add() functions.
+" NOTE: Filetype-specific options added with ddc#custom#patch_filetype(type, ...)
+" and underscore indicates all sources. Note cmdlineSources is for neovim only.
 " NOTE: Previously had installation permissions issues so used various '--allow'
 " flags to support. See: https://github.com/Shougo/ddc.vim/issues/120
 " NOTE: Try to limit memory to 50M. Engine flags are passed to '--v8-flags' flag
@@ -2264,11 +2275,7 @@ endif  " }}}
 " to speed up or disable fuzzy completion. See: https://github.com/Shougo/ddc-ui-native
 " and https://github.com/Shougo/ddc.vim#configuration. Also for general config
 " inspiration see https://www.reddit.com/r/neovim/comments/sm2epa/comment/hvv13pe/.
-" {'border': v:false, 'maxWidth': 80, 'maxHeight': 30}
-" ['around', 'buffer', 'file', 'ctags', 'vim-lsp', 'vsnip']
-" 'vsnip': {'mark': 'S', 'maxItems': 5}}
-" 'ctags': {'mark': 'T', 'isVolatile': v:true, 'maxItems': 5}}
-" call ddc#custom#patch_global('cmdlineSources', s:ddc_cmdline)
+" call ddc#custom#patch_global('cmdlineSources', s:ddc_cmdline)  " neovim only
 if s:has_plug('ddc.vim')  " {{{
   augroup ddc_setup
     au!
@@ -2288,7 +2295,7 @@ if s:has_plug('ddc.vim')  " {{{
     \ '--allow-env', '--allow-net', '--allow-read', '--allow-write', '--allow-run',
     \ '--v8-flags=--max-heap-size=100,--max-old-space-size=100',
   \ ]
-  let g:ddc_sources = ['around', 'buffer', 'file', 'tags', 'vim-lsp']
+  let g:ddc_sources = ['around', 'buffer', 'file', 'omni', 'tags', 'vim-lsp']  " 'dictionary' slow
   let s:ddc_cmdline = {
     \ ':': ['cmdline-history', 'cmdline', 'around'],
     \ '@': ['cmdline-history', 'input', 'file', 'around'],
@@ -2300,34 +2307,49 @@ if s:has_plug('ddc.vim')  " {{{
   \ }  " requires non-native ddc-ui-pum
   let g:ddc_options = {
     \ 'postFilters': ['sorter_fuzzy'],
-    \ 'sourceParams': {'around': {'maxSize': 500}},
     \ 'filterParams': {'matcher_fuzzy': {'splitMode': 'word'}},
+    \ 'sourceParams': {
+    \   'around': {'maxSize': 500},
+    \   'vim-lsp': {'ignoreCompleteProvider': v:true},
+    \   'dictionary': {'showMenu': v:false, 'dictPaths': ['/usr/share/dict/words']},
+    \ },
     \ 'sourceOptions': {
     \   '_': {
     \     'matchers': ['matcher_fuzzy'],
     \     'sorters': ['sorter_fuzzy'],
     \     'converters': ['converter_fuzzy'],
     \     'minAutoCompleteLength': 1,
+    \     'maxAutoCompleteLength': 20,
+    \     'maxKeywordLength': 20,
     \   },
     \   'around': {
     \     'mark': 'A',
-    \     'maxItems': 5,
+    \     'maxItems': 3,
+    \   },
+    \   'omni': {
+    \     'mark': 'O',
+    \     'maxItems': 3,
     \   },
     \   'buffer': {
     \     'mark': 'B',
-    \     'maxItems': 5,
+    \     'maxItems': 3,
     \   },
     \   'file': {
     \     'mark': 'F',
-    \     'maxItems': 5,
+    \     'maxItems': 3,
     \     'forceCompletionPattern': '\S/\S*',
     \   },
-    \ 'tags': {
+    \   'dictionary': {
+    \     'mark': 'D',
+    \     'maxItems': 3,
+    \     'isVolatile': v:true,
+    \   },
+    \   'tags': {
     \     'mark': 'T',
     \     'maxItems': 15,
     \     'isVolatile': v:true,
     \     'forceCompletionPattern': '\\.|:|->',
-    \  },
+    \    },
     \   'vim-lsp': {
     \     'mark': 'L',
     \     'maxItems': 15,
