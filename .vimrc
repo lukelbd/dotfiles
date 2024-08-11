@@ -2309,7 +2309,8 @@ if s:has_plug('ddc.vim')  " {{{
     \ 'postFilters': ['sorter_fuzzy'],
     \ 'filterParams': {'matcher_fuzzy': {'splitMode': 'word'}},
     \ 'sourceParams': {
-    \   'around': {'maxSize': 500},
+    \   'around': {'maxSize': 200},
+    \   'tags': {'maxSize': 200},
     \   'vim-lsp': {'ignoreCompleteProvider': v:true},
     \   'dictionary': {'showMenu': v:false, 'dictPaths': ['/usr/share/dict/words']},
     \ },

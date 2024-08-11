@@ -1950,7 +1950,7 @@ _fzf_define_complete() {
 _fzf_generic_completion() {
   local cur mode
   mode=$1; shift;
-  cur=${COMP_WORDS[COMP_CWORD]}
+  [ "${#COMP_WORDS[@]}" -gt 0 ] && cur=${COMP_WORDS[COMP_CWORD]}
   if [[ "$cur" =~ \$[^/]*$ ]]; then  # subsequent e.g. $HOME/<Tab> expands variables
     _fzf_complete '-m' -- "$@" < <(compgen -v | sed 's|^|'"${cur%\$*}"'\$|')
   elif [ "$mode" -ge 1 ]; then  # directories only
@@ -1961,26 +1961,25 @@ _fzf_generic_completion() {
   COMPREPLY=("${COMPREPLY[@]/\\~/\~}")
 }
 _fzf_default_completion() {
-  local cur dir fmt mode flags
+  local cur mode path paths args iargs
   mode=$1; shift;
-  [ "${#COMP_WORDS[@]}" -gt 0 ] && cur=${COMP_WORDS[COMP_CWORD]} || cur=''
-  if [[ "$cur" =~ ^\~ ]]; then
-    dir=${cur/#\~/$HOME} fmt=%p
-  elif [[ "$cur" =~ '/' ]]; then
-    dir=${cur%/*} fmt=%p
-  else
-    dir=. fmt=%P
+  [ "${#COMP_WORDS[@]}" -gt 0 ] && cur=${COMP_WORDS[COMP_CWORD]}
+  [ -r "$HOME/.fzf.commands" ] && rm "$HOME/.fzf.commands"
+  args=(-mindepth 1 -maxdepth 1) cur=${cur/#\~/$HOME}
+  if [[ "$cur" =~ / ]]; then
+    iargs=(\( -type f -executable -printf "%p \n" , -type d -printf "%p/\n" \))
+    [ "$cur" == / ] && path=$cur || path=${cur%/*}
+    COMP_CWORD=0 _fzf_complete '+m' -- "$@" < \
+      <(find -L "$path" "${args[@]}" "${iargs[@]}" | sed "s|^$HOME|~|")
+  else  # print without header
+    paths=(.) iargs=(\( -type f -executable -printf "%P \n" , -type d -printf "%P/\n" \))
+    while IFS=: read -d: -r path; do
+      path=$(readlink "$path")
+      [ -d "$path" ] && paths+=("$path")
+    done <<< "${PATH:+"${PATH}:"}"  # append if non-empty
+    COMP_CWORD=0 _fzf_complete '+m' -- "$@" < \
+      <(cat <(find -L "${paths[@]}" "${args[@]}" "${iargs[@]}") <(compgen -A alias -A function))
   fi
-  flags=(-type f -executable -printf "$fmt \n")
-  [ "$mode" -gt 0 ] && flags+=(, -type d -printf "$fmt/\n")
-  test "$(find $HOME/.fzf.commands -mmin -10080 2>/dev/null)" || {
-    echo 'Updating fzf command cache...' >&2
-    compgen -c | grep -v '[!.:{}]' | sort | uniq >$HOME/.fzf.commands
-  }
-  COMP_CWORD=0 _fzf_complete '+m' -- "$@" < <(cat \
-    <(find -L "$dir" -mindepth 1 -maxdepth 1 \( "${flags[@]}" \) | sed "s|^$HOME|~|") \
-    <(compgen -A function) <(tac $HOME/.fzf.commands | sed 's/$/ /') \
-  )
 }
 
 # Add command-specific completion functions {{{2

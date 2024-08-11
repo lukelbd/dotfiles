@@ -17,37 +17,35 @@ function! shell#help_page(...) abort
     let page = utils#input_default('Help info', default, 'shellcmd')
   endif
   if empty(page) | return 1 | endif
-  let [name; args] = split(page, '\s\+', 1)
-  if name ==# 'git' && len(filter(args, "v:val[:0] !=# '-'"))
-    return shell#man_page('git-' . join(args, ' '))  " identical result
-  endif
-  if args[0] ==# 'cdo'
-    call insert(args, '--help', 1)
+  let [name; strs] = split(page, '\s\+', 1)
+  if name ==# 'git' && !empty(filter(strs, "v:val[:0] !=# '-'"))
+    return shell#man_page('git-' . join(strs, ' '))  " identical result
+  elseif name ==# 'cdo'
+    call insert(strs, '--help')
   else
-    call add(args, '--help')
+    call add(strs, '--help')
   endif
+  let name .= join(strs, ' ')
   let type = &l:filetype
   let bnr = bufnr()
-  let cmd = join(args, ' ')
   if type !=# 'stdout'
     tabedit | setlocal nobuflisted bufhidden=hide buftype=nofile filetype=stdout
     doautocmd BufWinEnter
   endif
-  if bufexists(cmd)
-    silent exe bufnr(cmd) . 'buffer'
+  if bufexists(name)
+    silent exe bufnr(name) . 'buffer'
   else
-    let result = split(system(cmd . ' 2>&1'), "\n") | call append(0, result) | goto
+    let result = split(system(name . ' 2>&1'), "\n") | call append(0, result) | goto
   endif
   if line('$') > 3
-    silent exe 'file ' . fnameescape(cmd)
+    silent exe 'file ' . fnameescape(name)
     let s:help_prev = page
   else
     if type !=# 'stdout'  " see above
       silent quit! | silent call file#drop_file(bufname(bnr))
     endif
-    echohl ErrorMsg
-    echom "Error: Help info '" . cmd . "' not found"
-    echohl None | return 1
+    let msg = 'Error: Help info ' . string(name) . ' not found'
+    redraw | echohl ErrorMsg | unsilent echom msg | echohl None | return 1
   endif
 endfunction
 function! shell#fzf_help() abort
@@ -68,7 +66,7 @@ function! s:load_page(...) abort
   call stack#pop_stack('tab', bufnr())  " avoid premature addition to stack
 endfunction
 function! shell#man_page(...) abort
-  let bnr = bufnr()
+  let [tnr, wnr] = [tabpagenr(), winnr()]
   let opt1 = expand('<cword>')
   let opt2 = get(s:, 'man_prev', '')
   let default = executable(opt1) || empty(opt2) ? opt1 : opt2
@@ -80,19 +78,24 @@ function! shell#man_page(...) abort
   else  " default man
     let [page, pnum] = [utils#input_default('Man page', default, 'shellcmd'), 0]
   endif
+  unsilent echom 'page: ' . page . ' ' . pnum
   if empty(page) | return 1 | endif
   let type = &l:filetype
   let name = page . '(' . max([pnum, 1]) . ')'
   let args = reverse(pnum ? [page, pnum] : [page])
+  unsilent echom 'page: ' . name
   if type !=# 'man'
     tabedit | setlocal filetype=man
   endif
   if bufexists(name)
+    unsilent echom 'exists!!!'
     exe bufnr(name) . 'buffer'
   else  " load new man page
+    unsilent echom 'new!!!'
     call call('s:load_page', [''] + args)
   endif
   if line('$') > 1  " jump to relevant file
+    unsilent echom 'success!!!'
     if getline(1) =~# 'BUILTIN' || getline(2) =~# 'BUILTIN'
       if has('macunix') && page !=# 'builtin' | call s:load_page('', 'bash') | endif
       keepjumps goto | call search('^ \{7}' . page . ' [.*$', '')
@@ -100,11 +103,13 @@ function! shell#man_page(...) abort
     silent exe 'file ' . name
     let s:man_prev = page
   else
+    unsilent echom 'fail!!!'
     if type !=# 'man'
-      silent quit! | silent call file#drop_file(bufname(bnr))
+      silent quit!
+      exe tnr . 'tabnext' | exe wnr . 'wincmd w'
     endif
     let msg = 'Error: Man page ' . string(page) . ' not found'
-    redraw | echohl ErrorMsg | echom msg | echohl None | return 1
+    redraw | echohl ErrorMsg | unsilent echom msg | echohl None | return 1
   endif
 endfunction
 function! shell#fzf_man() abort

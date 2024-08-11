@@ -328,9 +328,9 @@ function! python#doc_page(...) abort
       if len(result) >= 5 | let page = iopt | break | endif
     endfor
     if len(result) < 5
-      let msg = 'Error: Doc page not found: '  " show options
+      let msg = 'Error: Doc page not found: '  " add options (avoid push_stack silent)
       let msg .= join(map(opts, {idx, val -> string(val)}), ', ')
-      echohl ErrorMsg | echom msg | echohl None | return 1
+      redraw | echohl ErrorMsg | unsilent echom msg | echohl None | return 1
     endif
   endif
   let exists = bufexists(page)
