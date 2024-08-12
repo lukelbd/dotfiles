@@ -9,10 +9,10 @@ let g:tex_conceal = 'agmdb'  " conceal accents symbols and math symbols
 let g:tex_stylish = 1  " allow @ in makeatletter and e.g. [_^] outside math
 
 " Spell check settings
-let g:tex_nospell = 0
-let g:tex_no_error = 1  " remove error highlights
-let g:tex_verbspell = 0  " remove from verbatim mode
-let g:tex_comment_nospell = 1  " include in comments
+let g:tex_no_error = 1  " error highlights
+let g:tex_nospell = 0  " general spellcheck
+let g:tex_verbspell = 0  " verbatim spellcheck
+let g:tex_comment_nospell = 1  " comment spellcheck
 
 " External plugin settings
 let b:delimitMate_quotes = '$ |'

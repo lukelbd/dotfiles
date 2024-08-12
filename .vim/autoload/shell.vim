@@ -78,24 +78,19 @@ function! shell#man_page(...) abort
   else  " default man
     let [page, pnum] = [utils#input_default('Man page', default, 'shellcmd'), 0]
   endif
-  unsilent echom 'page: ' . page . ' ' . pnum
   if empty(page) | return 1 | endif
   let type = &l:filetype
   let name = page . '(' . max([pnum, 1]) . ')'
   let args = reverse(pnum ? [page, pnum] : [page])
-  unsilent echom 'page: ' . name
   if type !=# 'man'
     tabedit | setlocal filetype=man
   endif
   if bufexists(name)
-    unsilent echom 'exists!!!'
     exe bufnr(name) . 'buffer'
   else  " load new man page
-    unsilent echom 'new!!!'
     call call('s:load_page', [''] + args)
   endif
   if line('$') > 1  " jump to relevant file
-    unsilent echom 'success!!!'
     if getline(1) =~# 'BUILTIN' || getline(2) =~# 'BUILTIN'
       if has('macunix') && page !=# 'builtin' | call s:load_page('', 'bash') | endif
       keepjumps goto | call search('^ \{7}' . page . ' [.*$', '')
@@ -103,7 +98,6 @@ function! shell#man_page(...) abort
     silent exe 'file ' . name
     let s:man_prev = page
   else
-    unsilent echom 'fail!!!'
     if type !=# 'man'
       silent quit!
       exe tnr . 'tabnext' | exe wnr . 'wincmd w'
