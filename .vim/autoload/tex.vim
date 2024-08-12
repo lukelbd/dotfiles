@@ -8,9 +8,8 @@ function! s:label_source() abort
   let tags = filter(copy(tags), 'v:val[2] ==# "l"')
   let tags = map(tags, 'v:val[0] . " (" . v:val[1] . ")"')  " label (line number)
   if empty(tags)
-    echohl WarningMsg
-    echom 'Error: No ' . (exists('b:tags_by_name') ? 'tags in file' : 'labels found')
-    echohl None
+    let msg = 'Error: No ' . (exists('b:tags_by_name') ? 'tags in file' : 'labels found')
+    redraw | echohl WarningMsg | echom msg | echohl None
   endif
   return tags
 endfunction
@@ -22,9 +21,8 @@ function! s:label_sink(items) abort
   if mode() =~# 'i'
     call feedkeys(succinct#process_value(join(items, ',')), 'tni')
   else
-    echohl WarningMsg
-    echom 'Warning: No longer in insert mode. Not inserting labels.'
-    echohl None
+    let msg = 'Warning: No longer in insert mode. Not inserting labels.'
+    redraw | echohl WarningMsg | echom msg | echohl None
   endif
 endfunction
 function! tex#fzf_labels() abort
@@ -61,6 +59,7 @@ function! tex#fold_text(lnum, ...) abort
   endif
   if label =~# '{\s*\(%.*\)\?$'  " append lines
     let [line1, line2] = [lnum + 1, lnum + s:maxlines]
+    let label = substitute(label, '{%.*$', '{', label)
     for lnum in range(line1, min([line2, a:0 ? a:1 : line2]))
       let bool = lnum == line1 || label[-1:] ==# '{'
       let label .= (bool ? '' : ' ') . fold#fold_label(lnum, 1)
@@ -95,9 +94,8 @@ function! s:cite_source() abort
       if filereadable(path)
         call add(bibs, path)
       else
-        echohl WarningMsg
-        echom "Warning: Bib file '" . path . "' does not exist.'"
-        echohl None
+        let msg = 'Warning: Bib file ' . string(path) . ' does not exist.'
+        redraw | echohl WarningMsg | echom msg | echohl None
       endif
     endfor
   endif
@@ -124,9 +122,8 @@ function! s:cite_sink(items) abort
   if mode() =~# 'i'
     call feedkeys(succinct#process_value(result), 'tni')
   else
-    echohl WarningMsg
-    echom 'Warning: No longer in insert mode. Not inserting citations.'
-    echohl None
+    let msg = 'Warning: No longer in insert mode. Not inserting citations.'
+    redraw | echohl WarningMsg | echom msg | echohl None
   endif
 endfunction
 function! tex#fzf_cite() abort
@@ -163,9 +160,8 @@ function! s:graphic_source() abort
     elseif isdirectory(relpath)
       call add(pathlist, relpath)
     else
-      echohl WarningMsg
-      echom "Warning: Directory '" . abspath . "' does not exist."
-      echohl None
+      let msg = 'Warning: Directory ' . string(abspath) . ' does not exist.'
+      redraw | echohl WarningMsg | echom msg | echohl None
     endif
   endfor
   let files = []
@@ -187,9 +183,8 @@ function! s:graphic_sink(items) abort
   if mode() =~# 'i'
     call feedkeys(succinct#process_value(join(items, ',')), 'tni')
   else
-    echohl WarningMsg
-    echom 'Warning: No longer in insert mode. Not inserting graphics.'
-    echohl None
+    let msg = 'Warning: No longer in insert mode. Not inserting graphics.'
+    redraw | echohl WarningMsg | echom msg | echohl None
   endif
 endfunction
 function! tex#fzf_graphics() abort
@@ -211,7 +206,8 @@ endfunction
 " Wrap in math environment only if cursor is not already inside one
 " NOTE: Check syntax to *left* of cursor because we add text to that environment
 function! tex#ensure_math(value) abort
-  let output = succinct#process_value(a:value)
+  let output = succinct#_pre_process(a:value)
+  let output = succinct#process_value(output)
   if empty(output)
     return output
   endif
@@ -229,7 +225,8 @@ endfunction
 " Format unit string for LaTeX
 " NOTE: This includes standard \, spacing and \mathrm{} encasing. See also climopy
 function! tex#format_units(value) abort
-  let input = succinct#process_value(a:value)
+  let input = succinct#_pre_process(a:value)
+  let input = succinct#process_value(input)
   if empty(input)
     return ''
   endif
@@ -243,10 +240,8 @@ function! tex#format_units(value) abort
     else
       let items = matchlist(parts[idx], regex)
       if empty(items)
-        echohl WarningMsg
-        echom 'Warning: Invalid units string.'
-        echohl None
-        return ''
+        let msg = 'Warning: Invalid units string.'
+        redraw | echohl WarningMsg | echom msg | echohl None | return ''
       endif
       let part = items[1]
       if part !~# '^[+-]\?[0-9.]\+$'

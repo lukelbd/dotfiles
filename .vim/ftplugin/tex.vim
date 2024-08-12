@@ -4,32 +4,24 @@
 " Configure syntax highlighting
 " NOTE: g:tex_fast indicates highlight regions to *enable* (so setting to empty string
 " speeds things up). Here omit comment regions 'c' to prevent them from getting folded.
-let g:tex_fast = 'bmMprsSvV'  " exclude 'c'
+let g:tex_fast = 'bmMprsSvV'  " exclude comment regions c to prevent folding
+let g:tex_conceal = 'agmdb'  " conceal accents symbols and math symbols
+let g:tex_stylish = 1  " allow @ in makeatletter and e.g. [_^] outside math
 
-" Only conceal accents, symbols, and math
-let g:tex_conceal = 'agmdb'
-
-" Allow @ in makeatletter and e.g. [_^] outside math zones
-let g:tex_stylish = 1
-
-" Remove error highlights and allow spell check
-let g:tex_no_error = 1
+" Spell check settings
 let g:tex_nospell = 0
+let g:tex_no_error = 1  " remove error highlights
+let g:tex_verbspell = 0  " remove from verbatim mode
+let g:tex_comment_nospell = 1  " include in comments
 
-" Remove spell check from verbatim mode
-let g:tex_verbspell = 0
-let g:tex_comment_nospell = 1
-
-" Delimiter settings
+" External plugin settings
 let b:delimitMate_quotes = '$ |'
 let b:delimitMate_matchpairs = "(:),{:},[:],`:'"
-
-" Bibtex cache directory
-let s:cache_dir = expand('~/Library/Caches/bibtex')
+let s:cache_dir = expand('~/Library/Caches/bibtex')  " bibtex cache directory
 if isdirectory(s:cache_dir) | let $FZF_BIBTEX_CACHEDIR = s:cache_dir | endif
 
-" Running custom or default latexmk command in background
-" NOTE: When 'PREVIOUS_VERSION: file.tex' or 'PERVIOUS_VERSION=file.tex' is on first
+" Run latexmk command and mappings
+" NOTE: If 'PREVIOUS_VERSION: file.tex' or 'PERVIOUS_VERSION=file.tex' is on first
 " line, '--diff' flags passed to :Latexmk are replaced with '--prev=file.tex'.
 function! s:latexmk(...) abort
   let opts = {}  " job options, empty by default
@@ -44,9 +36,6 @@ function! s:latexmk(...) abort
   let popup = flags !~# '\(^\|\s\)\(-a\|--aux\)\>'
   call shell#job_win(command, popup)
 endfunction
-
-" Latexmk command and shortcuts
-" NOTE: These maps overwrite testing maps but no harm for tex files
 command! -buffer -nargs=* Latexmk call s:latexmk(<q-args>)
 noremap <buffer> <Leader>{ <Cmd>call <sid>latexmk('--diff')<CR>
 noremap <buffer> <Leader>} <Cmd>call <sid>latexmk('--word')<CR>
