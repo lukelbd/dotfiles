@@ -1002,7 +1002,7 @@ refactor() {
 #-----------------------------------------------------------------------------
 # Remote session utilities {{{1
 #-----------------------------------------------------------------------------
-# General stuff {{{2
+# Helper utilities {{{2
 # Supercomputer queue utilities
 alias suser="squeue -u \$USER"
 alias sjobs="squeue -u \$USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d a-z"
@@ -1011,7 +1011,7 @@ alias sjobs="squeue -u \$USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d a
 alias connections="ps aux | grep -v grep | grep 'ssh '"
 SSH_ENV="$HOME/.ssh/environment"  # for below
 
-# View ip address
+# View ip address and available ports
 # See: https://stackoverflow.com/q/13322485/4970632
 # See: https://apple.stackexchange.com/q/20547/214359
 address() {
@@ -1021,8 +1021,6 @@ address() {
     ifconfig | grep "inet " | grep -Fv 127.0.0.1 | awk '{print $2}'
   fi
 }
-
-# List available ports
 ports() {
   if [ $# -eq 0 ]; then
     sudo lsof -iTCP -sTCP:LISTEN -n -P
@@ -1033,13 +1031,12 @@ ports() {
   fi
 }
 
-# Address and port names {{{2
-# Define address names and ports. To enable passwordless login, use "ssh-copy-id $host".
-# For cheyenne, to hook up to existing screen/tmux sessions, pick one of the 1-6 login
-# nodes. From testing it seems 4 is most empty (probably human psychology thing; 3 seems
-# random, 1-2 are obvious first and second choices, 5 is nice round number, 6 is last)
+# Address names and ports. To enable passwordless login, use "ssh-copy-id $host".
 # WARNING: For ports lower than 1024 have to be ROOT so instead use ports ranging
 # from 2000 to 9000. See: https://stackoverflow.com/a/67240407/4970632
+# NOTE: For cheyenne, to hook up to existing tmux sessions, pick one of the 1-6 login
+# nodes. From testing it seems 4 is most empty (probably human psychology thing; 3 seems
+# random, 1-2 are obvious first and second choices, 5 is nice round number, 6 is last)
 _address_port() {
   local address port host
   [ -z "$1" ] && host=${HOSTNAME%%.*} || host="$1"
@@ -1096,7 +1093,7 @@ _port() {
   res=$(_address_port "$@") && echo "${res#*:}"
 }
 
-# Core ssh wrapper {{{2
+# Core ssh utilities {{{2
 # SSH wrapper that sets up ports used for jupyter and scp copying
 # For initial idea see: https://stackoverflow.com/a/25486130/4970632
 # For why we alias the function see: https://serverfault.com/a/656535/427991
@@ -1126,7 +1123,7 @@ _ssh() {
   command ssh -t $flags "$address"
 }
 
-# Refresh connection {{{2
+# Refresh ssh connection
 # Reestablish two-way connections between server and local macbook. Use standard
 # port numbers. This function can be called on macbook or on remote server.
 # ssh -f (port-forwarding in background) -N (don't issue command)
@@ -1151,7 +1148,7 @@ ssh-refresh() {
   echo "Exit status $stat for connection over ports: ${ports[*]:1}."
 }
 
-# Initialize connection {{{2
+# Connection utilities {{{2
 # Trigger ssh-agent if not already running and add the Github private key. Make sure
 # to make private key passwordless for easy login. All we want is to avoid storing
 # plaintext username/password in ~/.git-credentials, but free private key is fine.
@@ -1943,10 +1940,9 @@ _fzf_define_complete() {
 }
 
 # Override fzf path completion {{{2
-# NOTE: This overrides default find command by appending slashes to directories, then
-# overrides default '%q' quoted printing by replacing escaped tildes with unexpanded.
-# NOTE: This supports command completion for empty lines, first word in the line, and
-# `man`, `help`, `type`, and `which`. Caches commands in .fzf.commands to save time
+# NOTE: This overrides generic completion by appending slashes to directories and sets
+# empty completion to include directories. Also use find for executable completion
+# since compgen -c outputs all at once instead of continuously (i.e. causes delay).
 _fzf_generic_completion() {
   local cur mode
   mode=$1; shift;
@@ -1961,24 +1957,27 @@ _fzf_generic_completion() {
   COMPREPLY=("${COMPREPLY[@]/\\~/\~}")
 }
 _fzf_default_completion() {
-  local cur mode path paths args iargs
+  local args cur cmd cmds flags mode path paths
   mode=$1; shift;
   [ "${#COMP_WORDS[@]}" -gt 0 ] && cur=${COMP_WORDS[COMP_CWORD]}
   [ -r "$HOME/.fzf.commands" ] && rm "$HOME/.fzf.commands"
-  args=(-mindepth 1 -maxdepth 1) cur=${cur/#\~/$HOME}
-  if [[ "$cur" =~ / ]]; then
-    iargs=(\( -type f -executable -printf "%p \n" , -type d -printf "%p/\n" \))
+  flags=(-mindepth 1 -maxdepth 1) cur=${cur/#\~/$HOME}
+  if [[ "$cur" =~ / ]]; then  # base directory
+    args=(\( -type f -executable -printf "%p \n" , -type d -printf "%p/\n" \))
     [ "$cur" == / ] && path=$cur || path=${cur%/*}
     COMP_CWORD=0 _fzf_complete '+m' -- "$@" < \
-      <(find -L "$path" "${args[@]}" "${iargs[@]}" | sed "s|^$HOME|~|")
-  else  # print without header
-    paths=(.) iargs=(\( -type f -executable -printf "%P \n" , -type d -printf "%P/\n" \))
+      <(find -L "$path" "${flags[@]}" "${args[@]}" 2>/dev/null | sed "s|^$HOME|~|")
+  else  # no base directory
+    args=(\( -type f -executable -printf "%P \n" , -type d -printf "%P/\n" \))
+    paths=(.) cmds=()
     while IFS=: read -d: -r path; do
-      path=$(readlink "$path")
-      [ -d "$path" ] && paths+=("$path")
+      [ -d "$path" ] && paths+=("$path")  # works with symlinks
     done <<< "${PATH:+"${PATH}:"}"  # append if non-empty
+    while read -r cmd; do
+      type -P "$cmd" &>/dev/null || cmds+=("$cmd")
+    done < <(compgen -A{builtin,function,alias} | sort | uniq)
     COMP_CWORD=0 _fzf_complete '+m' -- "$@" < \
-      <(cat <(find -L "${paths[@]}" "${args[@]}" "${iargs[@]}") <(compgen -A alias -A function))
+      <(cat <(find -L "${paths[@]}" "${flags[@]}" "${args[@]}" 2>/dev/null) <(printf '%s\n' "${cmds[@]}"))
   fi
 }
 
