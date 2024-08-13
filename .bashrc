@@ -346,7 +346,6 @@ _setup_message 'Utility setup'
 [ -r "$HOME/.dircolors.ansi" ] && eval "$(dircolors ~/.dircolors.ansi)"
 alias cd='cd -P'                    # don't want this on my mac temporarily
 alias ls='ls --color=always -AF'    # ls with dirs differentiate from files
-alias ld='ls --color=always -AFd'   # ls with details and file sizes
 alias ll='ls --color=always -AFhl'  # ls with details and file sizes
 alias dirs='dirs -p | tac | xargs'  # show dir stack matching prompt order
 alias curl='curl -O'                # always download associated file
@@ -396,26 +395,55 @@ else  # shellcheck disable=2142
   alias bindings="bind -ps | egrep '\\\\C|\\\\e' | grep -v do-lowercase-version | sort"
 fi
 
-# Show directory information
+# Path utilities {{{2
+# NOTE: Used to use this in a couple awk scripts in git config aliases
+# See: https://stackoverflow.com/a/23002317/4970632
+# See: https://unix.stackexchange.com/a/259254/112647
+ld() {  # list directories
+  local dir=.
+  [ $# -gt 1 ] && echo "Too many directories." && return 1
+  [ $# -gt 0 ] && dir=$1;  # shellcheck disable=2010
+  ls -l1 "$@" | grep '/$' | tr -s ' ' | cut -d ' ' -f9 | align
+}
+lf() {  # list files
+  local dir=.
+  [ $# -gt 1 ] && echo "Too many directories." && return 1
+  [ $# -gt 0 ] && dir=$1;  # shellcheck disable=2010
+  ls -l1 "$@" | grep -v '/$' | tr -s ' ' | cut -d ' ' -f9 | align
+}
+abspath() {  # absolute path (mac, linux, or anything with bash)
+  if [ -d "$1" ]; then
+    (cd "$1" && pwd)
+  elif [ -f "$1" ]; then
+    if [[ "$1" = /* ]]; then
+      echo "$1"
+    elif [[ "$1" == */* ]]; then
+      echo "$(cd "${1%/*}" && pwd)/${1##*/}"
+    else
+      echo "$(pwd)/$1"
+    fi
+  fi
+}
+
+# Directory information
+# See: https://superuser.com/a/352387/506762
 # NOTE: This relies on workflow where ~/scratch folders are symlinks pointing
 # to data storage hard disks. Otherwise need to hardcode server-specific folders.
-# shellcheck disable=2032
 alias du='du -h'
 alias d0='du -h -d 1'  # single directory, see also r0 a0
 alias df='df -h'
-dl() {
-  local dir=.
-  [ $# -gt 1 ] && echo "Too many directories." && return 1
-  [ $# -gt 0 ] && dir=$1
-  find "$dir" -maxdepth 1 -mindepth 1 -type d -print \
-    | align
-}
-dh() {
-  local dir=.
-  [ $# -gt 1 ] && echo "Too many directories." && return 1
-  [ $# -gt 0 ] && dir=$1
-  find "$dir" -maxdepth 1 -mindepth 1 -type d -exec command du -hs {} \; \
-    | sort -sh
+sl() { find "$@" -maxdepth 1 -exec command du -hs {} \; 2>/dev/null | sort -sh; }
+sf() { sl "$@" -type f; }
+sd() { sl "$@" -type d; }
+isempty() {
+  local path paths
+  read -r -a paths < <(find "$@" -maxdepth 1 -mindepth 1 2>/dev/null)
+  path="${paths[0]##*/}"
+  if [ ${#paths[@]} -le 1 ] && { [ -z "$path" ] || [ "$path" == .DS_Store ]; }; then
+    echo "Path '$1' is empty." && return 0
+  else
+    echo "Path '$1' is not empty." && return 1
+  fi
 }
 scratch() {
   local init log sub dir
@@ -431,33 +459,39 @@ scratch() {
   done
 }
 
-# Helper utilities {{{2
+# Internal utilities {{{2
 # See: https://unix.stackexchange.com/a/369220/112647
-# NOTE: This is used for below listing utilities. Tried only column -t and fold -n
-# but no built-in utility for both wrapping and column alignment.
+# See: https://stackoverflow.com/a/24005600/4970632
+# NOTE: Here 'align' supports ansi escape characters. Also tried only column -t
+# and fold -n but no built-in utility for both wrapping and column alignment.
 bc() { echo "$*" | tr 'x' '*' | command bc -l | awk '{printf "%f", $0}'; }  # 'x' --> '*'
+raw() { sed -r 's/\x1b\[[^@-~]*[@-~]//g' "$@"; }
 align() {
-  local idx item items cnt cnts col cols fmts
+  local cnt cnts col cols idx jdx fmt fmts raw raws str strs
   cols=$(tput cols 2>/dev/null || echo 88)
-  while IFS= read -r item; do
-    item=${item#./} items+=("$item")
-    item=$(echo -e "$item") cnts+=("${#item}")
+  while IFS= read -r str; do
+    str=${str#./} strs+=("$str");  # shellcheck disable=2001
+    raw=$(echo "$str" | raw) raws+=("$raw") cnts+=("${#raw}")
   done
   cnt=$(printf '%s\n' "${cnts[@]}" | sort -nr | head -n1)
-  cnt=${cnt:-10}
-  col=$((cols / $((cnt + 2))))
+  [ "$#" -gt 0 ] && col=$1 || col=$((2 + cols / $((${cnt:-10}))))
   for idx in $(seq 1 "$col"); do  # sed -n 'start~count' echos every count line
     cnt=$(printf '%s\n' "${cnts[@]}" | sed -n "${idx}~${col}p" | sort -nr | head -n1)
-    fmts+=("%-$((${cnt:-10}))s")
+    fmts+=("$((${cnt:-10} + 4))")  # match native ls spaces
   done
-  for idx in $(seq 0 $col ${#items[@]}); do
-    item=("${items[@]:idx:col}");  # shellcheck disable=2059
-    printf "${fmts[*]:0:${#item[@]}}\n" "${item[@]}"
+  for idx in $(seq 0 $col $((${#strs[@]} - 1))); do
+    str=("${strs[@]:idx:col}");  # shellcheck disable=2059
+    for jdx in $(seq 0 $((${#str[@]} - 1))); do
+      fmt=$((fmts[jdx] + ${#strs[idx + jdx]} - ${#raws[idx + jdx]}))
+      printf "%-${fmt}s" "${strs[idx + jdx]}"
+    done && echo
   done
 }
 
+# User interaction
 # Receive affirmative or negative response using input message
-# Exit according to user input
+confirm-no() { _confirm 0 "$@"; }
+confirm-yes() { _confirm 1 "$@"; }
 _confirm() {
   local default paren
   mode=$1 && shift  # whether default is yes or no
@@ -481,51 +515,6 @@ _confirm() {
     fi
     break
   done
-}
-confirm-no() { _confirm 0 "$@"; }
-confirm-yes() { _confirm 1 "$@"; }
-
-# Absolute path, works everywhere (mac, linux, or anything with bash)
-# NOTE: Used to use this in a couple awk scripts in git config aliases
-# See: https://stackoverflow.com/a/23002317/4970632
-# See: https://unix.stackexchange.com/a/259254/112647
-# See: https://superuser.com/a/352387/506762
-abspath() {
-  if [ -d "$1" ]; then
-    (cd "$1" && pwd)
-  elif [ -f "$1" ]; then
-    if [[ "$1" = /* ]]; then
-      echo "$1"
-    elif [[ "$1" == */* ]]; then
-      echo "$(cd "${1%/*}" && pwd)/${1##*/}"
-    else
-      echo "$(pwd)/$1"
-    fi
-  fi
-}
-bytes2human() {
-  local nums
-  # shellcheck disable=2015
-  [ $# -gt 0 ] && nums=("$@") || read -r -a nums  # from stdin
-  for i in "${nums[@]}"; do
-    b=${i:-0}; d=''; s=0; S=(Bytes {K,M,G,T,P,E,Z,Y}iB)
-    while ((b > 1024)); do
-        d=$(printf ".%02d" $((b % 1024 * 100 / 1024)))
-        b=$((b / 1024))
-        s=$((s + 1))
-    done
-    echo "$b$d${S[$s]}"
-  done
-}
-isempty() {
-  local item items
-  read -r -a items < <(find "$1" -maxdepth 1 -mindepth 1 2>/dev/null)
-  item="${items[0]##*/}"
-  if [ ${#items[@]} -le 1 ] && { [ -z "$item" ] || [ "$item" == .DS_Store ]; }; then
-    echo "Path '$1' is empty." && return 0
-  else
-    echo "Path '$1' is not empty." && return 1
-  fi
 }
 
 # Pager and editor overrides {{{2
@@ -1464,10 +1453,10 @@ alias server="python -m http.server"
 alias jekyll="bundle exec jekyll serve $_jekyll_flags 2>/dev/null"  # ignore deprecations
 
 #-----------------------------------------------------------------------------
-# Dataset utilities {{{1
+# Data and file utilities {{{1
 #-----------------------------------------------------------------------------
-# Parsing stuff {{{2
-# Code parsing tools
+# Parsing and extraction {{{2
+# NOTE: This is used in model development
 namelist() {  # list all namelist parameters
   local file files
   files=("$@")
@@ -1477,7 +1466,10 @@ namelist() {  # list all namelist parameters
     cut -d= -f1 -s "$file" | grep -v '!' | xargs
   done
 }
-graphicspath() {  # list all graphics paths (used in autoload tex.vim)
+
+# List graphics paths in file
+# NOTE: This is used in autoload tex.vim
+graphicspath() {
   awk -v RS='[^\n]*{' '
     inside && /}/ {path=$0; if(init) inside=0} {init=0}
     inside && /(\n|^)}/ {inside=0}
@@ -1487,8 +1479,8 @@ graphicspath() {  # list all graphics paths (used in autoload tex.vim)
   ' "$@"  # RS is the 'record separator' and RT is '*this* record separator'
 }
 
-# Extract files {{{2
-# Shell actually passes *already expanded* glob pattern when you call it as
+# Extract compressed files
+# NOTE: Shell actually passes *already expanded* glob pattern when you call it as
 # argument to a function; so, need to cat all input arguments with @ into list
 extract() {
   for name in "$@"; do
@@ -1515,22 +1507,20 @@ extract() {
   done
 }
 
-# NetCDF tools {{{2
+
+# NetCDF file inspection {{{2
 # ncks behavior very different between versions, so use ncdump instead
-# * Note if HDF4 is installed in your anaconda distro, ncdump points to *that location*
-#   before the homebrew install location 'brew tap homebrew/science, brew install cdo'.
-# * This is bad, because the current version can't read netcdf4 files; you really
-#   don't need HDF4, so just don't install it.
-nchelp() {
-  echo "Available commands:"
-  echo "ncenv ncinfo ncdims ncvars ncglobals
-        nclist ncdimlist ncvarlist
-        ncvarinfo ncvardump ncvartable ncvardetails" | column -t
-}
-ncenv() {  # show variables on a compute cluster
-  echo "Environment variables:"
-  for var in $(compgen -v | grep -i netcdf); do
-    echo ${var}: ${!var}
+# NOTE: If HDF4 is installed in your anaconda distro, ncdump points to *that location*
+# before the homebrew install location 'brew tap homebrew/science, brew install cdo'.
+# Current version can't read netcdf4 files; since don't need HDF4 don't install it.
+nchelp() { echo "Commands:" && compgen -A function | grep ^nc | align; }
+ncenv() { echo "Variables:" && for var in $(compgen -v | grep -i netcdf); do echo ${var}: ${!var}; done; }
+ncinfo() {  # show variable info (and linebreak before global attributes)
+  local file
+  [ $# -lt 1 ] && echo "Usage: ncinfo FILE" && return 1
+  for file in "$@"; do
+    echo "File: $file"
+    command ncdump -h "$file" | sed '1,1d;$d'
   done
 }
 ncversion() {
@@ -1549,19 +1539,12 @@ ncversion() {
   done
 }
 
-# General summaries {{{2
-ncinfo() {
-  # Show just the variable info (and linebreak before global attributes)
-  # ncdump -h "$1" | sed '/^$/q' | sed '1,1d;$d'
-  local file
-  [ $# -lt 1 ] && echo "Usage: ncinfo FILE" && return 1
-  for file in "$@"; do
-    echo "File: $file"
-    command ncdump -h "$file" | sed '1,1d;$d'
-  done
-}
-ncdims() {
-  # Show just the dimension header.
+# General lists and information
+# ncdump -h "$1" | sed '/^$/q' | sed '1,1d;$d'
+# NOTE: ncvars space makes sure it isn't another variable that has trailing-substring
+# identical to this variable, -A prints TRAILING lines starting from FIRST match, -B
+# means print x PRECEDING lines starting from LAST match.
+ncdims() {  # show dimension header
   local file
   [ $# -lt 1 ] && echo "Usage: ncdims FILE" && return 1
   for file in "$@"; do
@@ -1571,10 +1554,7 @@ ncdims() {
       | tr -d ';' | tr -s ' ' | column -t
   done
 }
-ncvars() {
-  # Space makes sure it isn't another variable that has trailing-substring identical
-  # to this variable, -A prints TRAILING lines starting from FIRST match, -B means
-  # prinx x PRECEDING lines starting from LAST match.
+ncvars() {  # show variable names
   local file
   [ $# -lt 1 ] && echo "Usage: ncvars FILE" && return 1
   for file in "$@"; do
@@ -1583,8 +1563,7 @@ ncvars() {
       sed $'s/^\t//g' | grep -v "^$" | grep -v "^variables:$"
   done
 }
-ncglobals() {
-  # Show just the global attributes.
+ncglobals() {  # show global attributes
   local file
   [ $# -lt 1 ] && echo "Usage: ncglobals FILE" && return 1
   for file in "$@"; do
@@ -1593,11 +1572,10 @@ ncglobals() {
   done
 }
 
-# Listing stuff {{{2
-nclist() {
-  # Only get text between variables: and linebreak before global attributes
-  # note variables don't always have dimensions (i.e. constants). For constants
-  # will look like " double var ;" instead of " double var(x,y) ;"
+# NetCDF variable inspection {{{2
+# NOTE: Variables don't always have dimensions (i.e. constants). For
+# constants will look like " double var ;" instead of " double var(x,y) ;"
+nclist() {  # get list of items
   local file
   [ $# -lt 1 ] && echo "Usage: nclist FILE" && return 1
   for file in "$@"; do
@@ -1607,8 +1585,7 @@ nclist() {
       | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
   done
 }
-ncdimlist() {
-  # Get list of dimensions.
+ncdimlist() {  # get list of dimensions
   local file
   [ $# -lt 1 ] && echo "Usage: ncdimlist FILE" && return 1
   for file in "$@"; do
@@ -1617,8 +1594,7 @@ ncdimlist() {
       | cut -d'=' -f1 -s | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
   done
 }
-ncvarlist() {
-  # Only get text between variables: and linebreak before global attributes.
+ncvarlist() {  # get text between variables (+ linebreak before global attributes)
   local file list dmnlist varlist
   [ $# -lt 1 ] && echo "Usage: ncvarlist FILE" && return 1
   for file in "$@"; do
@@ -1634,10 +1610,11 @@ ncvarlist() {
 }
 
 # Variable inquiries {{{2
+# See: https://docs.unidata.ucar.edu/nug/current/_c_d_l.html#cdl_data_types).
+# See: https://docs.unidata.ucar.edu/nug/current/md_types.html
+# NOTE: Here ncvardump uses grep to print everything before the variable data section
+# starts, then sed to trim the first curly brace line and re-reversing.
 ncvarinfo() {
-  # As above but just for one variable.
-  # See: https://docs.unidata.ucar.edu/nug/current/_c_d_l.html#cdl_data_types).
-  # See: https://docs.unidata.ucar.edu/nug/current/md_types.html
   local file types
   types='(char|byte|short|ushort|int|uint|long|int64|uint64|float|real|double)'
   [ $# -lt 2 ] && echo "Usage: ncvarinfo VAR FILE" && return 1
@@ -1648,10 +1625,7 @@ ncvarinfo() {
       | sed "s/$1://g" | sed $'s/^\t//g'
   done
 }
-ncvardump() {
-  # Dump variable contents (first argument) from file (second argument), using grep
-  # to print everything before the variable data section starts, then using sed to
-  # trim the first curly brace line and re-reversing.
+ncvardump() {  # dump variable contents $1 from file $2
   local file
   [ $# -lt 2 ] && echo "Usage: ncvardump VAR FILE" && return 1
   for file in "${@:2}"; do
@@ -1661,6 +1635,9 @@ ncvardump() {
       | sed '1,1d' | tac
   done
 }
+
+# Variable tables
+
 ncvartable() {
   # Print a summary table of the data at each level for "sanity checking"
   # just tests one timestep slice at every level; the tr -s ' ' trims multiple
@@ -1687,90 +1664,20 @@ ncvardetails() {
 #-----------------------------------------------------------------------------
 # PDF and image utilities {{{1
 #-----------------------------------------------------------------------------
-# Converting between things {{{2
-# Flatten gets rid of transparency/renders it against white background, and
-# the units/density specify a <N>dpi resulting bitmap file. Another option
-# is "-background white -alpha remove", try this. Note imagemagick does *not* handle
-# vector formats; will rasterize output image and embed in a pdf, so cannot flatten
-# transparent components with convert -flatten in.pdf out.pdf. Note the PNAS journal
-# says 1000-1200dpi recommended for line art images and stuff with text.
+# PDF and image utilities {{{2
+# NOTE: Here pdftk preserves vector graphics and transparency
+# See: https://pypi.org/project/pdfminer/ (pdf2txt)
+# See: https://stackoverflow.com/a/2507825/4970632
+wctex() {
+  local text=$(tex2text "$1"); echo "$text" && echo "$text" | wc -w
+}
 pdf2text() {  # extracting text (including appropriate newlines, etc.) from file
-  # See: https://stackoverflow.com/a/52184549/4970632
-  # See: https://pypi.org/project/pdfminer/
-  # Note command 'pdf2text.py' was renamed to bin file.
   command pdf2txt "$@"
 }
-gif2png() {  # often needed because LaTeX can't read gif files
-  for f in "$@"; do
-    ! [[ "$f" =~ .gif$ ]] \
-      && echo "Warning: Skipping ${f##*/} (must be .gif)" && continue
-    echo "Converting ${f##*/}..."
-    convert "$f" "${f%.gif}.png"
-  done
-}
-pdf2png() {
-  for f in "$@"; do
-    ! [[ "$f" =~ .pdf$ ]] \
-      && echo "Warning: Skipping ${f##*/} (must be .pdf)" && continue
-    echo "Converting ${f##*/}..."
-    convert -flatten \
-      -units PixelsPerInch -density 1200 -background white "$f" "${f%.pdf}.png"
-  done
-}
-svg2png() {
-  # See: https://stackoverflow.com/a/50300526/4970632 (python is faster and convert 'dpi' is ignored)
-  for f in "$@"; do
-    ! [[ "$f" =~ .svg$ ]] \
-      && echo "Warning: Skipping ${f##*/} (must be .svg)" && continue
-    echo "Converting ${f##*/}..."
-    python -c "
-      import cairosvg
-      cairosvg.svg2png(
-        url='$f', write_to='${f%.svg}.png', scale=3, background_color='white'
-      )"
-    # && convert -flatten -units PixelsPerInch -density 1200 -background white "$f" "${f%.svg}.png"
-  done
-}
-webm2mp4() {
-  for f in "$@"; do
-    # See: https://stackoverflow.com/a/49379904/4970632
-    ! [[ "$f" =~ .webm$ ]] \
-      && echo "Warning: Skipping ${f##*/} (must be .webm)" && continue
-    echo "Converting ${f##*/}..."
-    ffmpeg -i "$f" -crf 18 -c:v libx264 "${f%.webm}.mp4"
-  done
-}
-
-# Modifying and merging pdfs {{{2
-pdf2flat() {
-  # This page is helpful:
-  # https://unix.stackexchange.com/a/358157/112647
-  # 1. pdftk keeps vector graphics
-  # 2. convert just converts to bitmap and eliminates transparency
-  # 3. pdf2ps piping retains quality (ps uses vector graphics, but can't do transparency)
-  # convert "$f" "${f}_flat.pdf"
-  # pdftk "$f" output "${f}_flat.pdf" flatten
-  for f in "$@"; do
-    ! [[ "$f" =~ .pdf$ ]] \
-      && echo "Warning: Skipping ${f##*/} (must be .pdf)" && continue
-    [[ "$f" =~ _flat ]] \
-      && echo "Warning: Skipping ${f##*/} (has 'flat' in name)" && continue
-    echo "Converting $f..." && pdf2ps "$f" - | ps2pdf - "${f%.pdf}_flat.pdf"
-  done
-}
-png2flat() {
-  # See: https://stackoverflow.com/questions/46467523/how-to-change-picture-background-color-using-imagemagick
-  for f in "$@"; do
-    ! [[ "$f" =~ .png$ ]] \
-      && echo "Warning: Skipping ${f##*/} (must be .png)" && continue
-    [[ "$f" =~ _flat ]] \
-      && echo "Warning: Skipping ${f##*/} (has 'flat' in name)" && continue
-    convert "$f" -opaque white -flatten "${f%.png}_flat.png"
-  done
+tex2text() {  # ignore certain environments e.g. abstract
+  command detex -e 'abstract,addendum,tabular,align,equation,align*,equation*' | grep -v .pdf | grep -v 'fig[0-9]'
 }
 pdfmerge() {
-  # See: https://stackoverflow.com/a/2507825/4970632
-  # NOTE: Unlike bash arrays argument arrays are 1-indexed since $0 is -bash
   [ $# -lt 2 ] && echo "Error: At least 3 arguments required." && return 1
   for file in "$@"; do
     ! [[ "$file" =~ .pdf$ ]] && echo "Error: Files must be PDFs." && return 1
@@ -1779,8 +1686,35 @@ pdfmerge() {
   pdftk "$@" cat output "${1%.pdf} (merged).pdf"
 }
 
-# Converting between fonts {{{2
-# Requires brew install fontforge
+# Flatten documents
+# NOTE: Imagemagick does *not* handle vector formats; will rasterize output image and
+# embed in a pdf, so cannot flatten with e.g. convert -flatten in.pdf out.pdf. Instead
+# See: https://unix.stackexchange.com/a/358157/112647
+# See: https://stackoverflow.com/questions/46467523/how-to-change-picture-background-color-using-imagemagick
+png2flat() {
+  local file
+  for file in "$@"; do
+    ! [[ "$file" =~ .png$ ]] \
+      && echo "Warning: Skipping ${file##*/} (must be .png)" && continue
+    [[ "$file" =~ _flat ]] \
+      && echo "Warning: Skipping ${file##*/} (has 'flat' in name)" && continue
+    convert "$file" -opaque white -flatten "${file%.png}_flat.png"
+  done
+}
+pdf2flat() {
+  local file
+  for file in "$@"; do
+    ! [[ "$file" =~ .pdf$ ]] \
+      && echo "Warning: Skipping ${file##*/} (must be .pdf)" && continue
+    [[ "$file" =~ _flat ]] \
+      && echo "Warning: Skipping ${file##*/} (has 'flat' in name)" && continue
+    echo "Converting $file..." && pdf2ps "$file" - | ps2pdf - "${file%.pdf}_flat.pdf"
+  done
+}
+
+# Convert file formats {{{2
+# NOTE: Requires 'brew install fontforge' utility
+# See: https://fontforge.org/en-US/
 otf2ttf() {
   for f in "$@"; do
     ! [[ "$f" =~ .otf$ ]] \
@@ -1807,19 +1741,56 @@ ttf2otf() {
   done
 }
 
-# Rudimentary wordcount {{{2
-# The -e flag ignores certain environments (e.g. abstract environment)
-wctex() {
-  local detexed
-  detexed=$( \
-    detex -e 'abstract,addendum,tabular,align,equation,align*,equation*' "$1" \
-    | grep -v .pdf | grep -v 'fig[0-9]' \
-  )
-  echo "$detexed" | xargs  # print result in one giant line
-  echo "$detexed" | wc -w  # get word count
+# Convert between bitmap formats
+# NOTE: Requires ffmpeg utility (e.g. macports) and imagemagick for 'convert'
+# See: https://stackoverflow.com/a/49379904/4970632
+gif2png() {  # often needed because LaTeX can't read gif files
+  local file
+  for file in "$@"; do
+    ! [[ "$file" =~ .gif$ ]] \
+      && echo "Warning: Skipping ${file##*/} (must be .gif)" && continue
+    echo "Converting ${file##*/}..."
+    convert "$file" "${file%.gif}.png"
+  done
+}
+webm2mp4() {
+  local file
+  for file in "$@"; do
+    ! [[ "$file" =~ .webm$ ]] \
+      && echo "Warning: Skipping ${file##*/} (must be .webm)" && continue
+    echo "Converting ${file##*/}..."
+    ffmpeg -i "$file" -crf 18 -c:v libx264 "${file%.webm}.mp4"
+  done
 }
 
-# This is *the end* of all function and alias declarations
+# Convert vector format to bitmap
+# See: https://stackoverflow.com/a/50300526/4970632 (python is faster and convert 'dpi' is ignored)
+# NOTE: Flatten gets rid of transparency/renders it against white background, and
+# the units/density specify a <N>dpi resulting bitmap file. Another option
+# is "-background white -alpha remove", try this. Note the PNAS journal
+# says 1000-1200dpi recommended for line art images and stuff with text.
+pdf2png() {
+  local file
+  for file in "$@"; do
+    ! [[ "$file" =~ .pdf$ ]] \
+      && echo "Warning: Skipping ${file##*/} (must be .pdf)" && continue
+    echo "Converting ${file##*/}..."
+    convert -flatten \
+      -units PixelsPerInch -density 1200 -background white "$file" "${file%.pdf}.png"
+  done
+}
+svg2png() {
+  local file
+  for file in "$@"; do
+    ! [[ "$file" =~ .svg$ ]] \
+      && echo "Warning: Skipping ${file##*/} (must be .svg)" && continue
+    echo "Converting ${file##*/}..." && python -c "
+      import cairosvg
+      cairosvg.svg2png(url='$file', write_to='${file%.svg}.png', scale=3, background_color='white')"
+  done
+}
+
+# *End* of function and alias declarations
 echo 'done'
 
 #-----------------------------------------------------------------------------
@@ -2018,19 +1989,19 @@ if [ "${FZF_SKIP:-0}" == 0 ]; then
 fi
 
 #-----------------------------------------------------------------------------
-# Conda stuff {{{1
+# Conda configuration {{{1
 #-----------------------------------------------------------------------------
 # General utilities {{{2
 # NOTE: Must save brew path before setup (conflicts with conda; try 'brew doctor')
 # See: https://github.com/conda-forge/miniforge
-alias brew="PATH=\"$PATH\" brew"
+alias brew="PATH=\"$PATH\" brew"  # {{{
 if [ -d "$HOME/mambaforge" ]; then
   _conda=$HOME/mambaforge
 elif [ -d "$HOME/miniforge" ]; then
   _conda=$HOME/miniforge
 else
   unset _conda
-fi
+fi  # }}}
 
 # Pip install static copy of specific branch
 # See: https://stackoverflow.com/a/27134362/4970632
