@@ -638,7 +638,7 @@ augroup foldtext_setup
   au TextChanged * call fold#_recache()
   au TextYankPost * call fold#_recache_normal()
   au InsertCharPre * call fold#_recache_insert()
-  au CursorHold,CursorHoldI * call fold#_recache(1)
+  au FocusGained,CursorHold,CursorHoldI * call fold#_recache(1)
 augroup END
 command! -bar -bang -count -nargs=? UpdateFolds call fold#update_folds(<bang>0, <count>)
 nnoremap zv <Cmd>call fold#update_folds(0)<CR>zv
@@ -1690,7 +1690,7 @@ let g:SimpylFold_docstring_preview = 0  " disable foldtext() override
 call s:plug('vim-scripts/applescript.vim')  " applescript syntax support
 call s:plug('andymass/vim-matlab')  " recently updated vim-matlab fork from matchup author
 call s:plug('preservim/vim-markdown')  " see .vim/after/syntax.vim for kludge fix
-" call s:plug('Rykka/riv.vim')  " restructured text, syntax folds
+call s:plug('Rykka/riv.vim')  " restructured text, syntax folds
 call s:plug('tmux-plugins/vim-tmux')  " tmux syntax highlighting
 call s:plug('anntzer/vim-cython')  " cython syntax highlighting
 call s:plug('tpope/vim-liquid')  " liquid syntax highlighting

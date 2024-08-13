@@ -1,8 +1,8 @@
 #!/bin/bash
 #-----------------------------------------------------------------------------
-# General shell defaults {{{1
+# General shell settings {{{1
 #-----------------------------------------------------------------------------
-# Installation and configuration notes {{{2
+# General notes {{{2
 # shellcheck disable=1090,2181,2120,2076
 # NOTE: Can fix issue where contexts.app do not see iterm2 by enabling 'secure input'
 # and running a sudo command. See: https://apple.stackexchange.com/a/453855/214359
@@ -93,7 +93,7 @@
 #   ~# -- Give list of forwarded connections in this session
 #   ~? -- Give list of these commands
 #-----------------------------------------------------------------------------
-# Apply general settings {{{2
+# Shared settings {{{2
 # Prompt "<comp name>[<job count>]:<push dir N>:...:<push dir 1>:<work dir> <user>$"
 # Ensure the prompt is applied only once so modules can modify it
 # See: https://unix.stackexchange.com/a/124408/112647
@@ -154,7 +154,7 @@ _setup_shell() {         # apply shell options (list available with shopt -p)
 _setup_shell 2>/dev/null  # ignore if opton unavailable
 unalias -a  # critical (also use declare -F for definitions)
 
-# Apply machine dependent settings {{{2
+# Machine settings {{{2
 # * List homebrew installs with 'brew list' (narrow with --formulae or --casks).
 #   Show package info with 'brew info package'. Use 'brew install trash' for trash cmd
 # * List macport installs with 'port installed requested'.
@@ -273,7 +273,7 @@ case "${HOSTNAME%%.*}" in
     ;;
 esac
 
-# Access custom executables and git repos {{{2
+# Environment settings {{{2
 # NOTE: Install go with mamba for availability on workstations without pseudo
 # access. Then install shfmt with: go install mvdan.cc/sh/v3/cmd/shfmt@latest
 # NOTE: Install deno with mamba to get correct binaries. Using install script
@@ -339,7 +339,7 @@ echo 'done'
 #-----------------------------------------------------------------------------
 # General aliases and functions {{{1
 #-----------------------------------------------------------------------------
-# Inspecting and listing {{{2
+# Listing and inspecting {{{2
 # Standardize colors and configure ls and cd commands
 # For less/man/etc. colors see: https://unix.stackexchange.com/a/329092/112647
 _setup_message 'Utility setup'
@@ -372,8 +372,9 @@ fi
 # readline functions, but strings specifying our own) and the -s show bindings bound
 # to macos (can be combination of key-presses and shell commands).
 # For more info see: https://stackoverflow.com/a/949006/4970632.
-alias actions='bind -P'  # the functions, for example 'forward-char'
-alias options='bind -v | sort'  # the 'set' options, and their values
+alias escapes='/bin/stty -e'  # escapes (linux and coreutils)
+alias actions='bind -P'  # functions e.g. 'forward-char'
+alias options='bind -v | sort'  # 'set' options and values
 alias aliases='compgen -a'  # shell aliases
 alias variables='compgen -v'  # shell variables
 alias functions='compgen -A function'  # shell functions
@@ -381,12 +382,10 @@ alias builtins='compgen -b'  # bash builtins
 alias commands='compgen -c'  # bash commands
 alias keywords='compgen -k'  # bash commands
 alias modules='module avail 2>&1 | cat '
-alias bindings_stty='stty -a'  # show bindings (linux and coreutils)
 alias windows='tmux list-windows'  # show tmux windows
 alias panes='tmux list-panes'  # show tmux panes
 kinds() { ctags --list-kinds="$*"; }  # list language shortcuts
 kinds-all() { ctags --list-kinds-full="$*"; }  # list language shortcuts
-# alias bindings_stty='stty -e'  # show bindings (native mac)
 if $_macos; then  # see https://apple.stackexchange.com/a/352770/214359
   alias cores="sysctl -a | grep -E 'machdep.cpu.*(brand|count)'"
   alias hardware='sw_vers'  # see https://apple.stackexchange.com/a/255553/214359
@@ -397,58 +396,28 @@ else  # shellcheck disable=2142
   alias bindings="bind -ps | egrep '\\\\C|\\\\e' | grep -v do-lowercase-version | sort"
 fi
 
-# Folder statistics {{{2
-# Helper functions for below
-# The _columnize function splits lines into columns so they fill the terminal window
-calc() {  # wrapper around bc, make 'x'-->'*' so don't have to quote glob all the time
-  echo "$*" | tr 'x' '*' | bc -l | awk '{printf "%f", $0}'
-}
-join() {  # join array elements by some separator
-  local IFS="$1" && shift && echo "$*"
-}
-_columnize() {
-  local input output final tcols ncols maxlen nlines
-  ncols=1  # start with 1
-  maxlen=0  # initial
-  input=$(cat /dev/stdin)
-  tcols=$(tput cols) || { echo "Failed to get terminal width."; return 1; }
-  nlines=$(printf "%s" "$input" | wc -l)  # check against initial line count
-  output="$input"  # default
-  while true; do
-    final="$output"  # record previous output, this is what we will print
-    output=$(printf "%s" "$input" | xargs -n$ncols | column -t)
-    maxlen=$(printf "%s" "$output" | wc -L)
-    [ "$maxlen" -gt "$tcols" ] && break  # this time *do not* print latest result, will result in line break due to terminal edge
-    [ "$ncols" -gt "$nlines" ] && final=$output && break  # test *before* increment, want to use that output
-    ncols=$((ncols + 1))
-  done
-  printf "%s" "$final"
-}
-
-# Directory sizes, normal and detailed, analagous to ls/ll
+# Show directory information
+# NOTE: This relies on workflow where ~/scratch folders are symlinks pointing
+# to data storage hard disks. Otherwise need to hardcode server-specific folders.
 # shellcheck disable=2032
 alias du='du -h'
 alias d0='du -h -d 1'  # single directory, see also r0 a0
 alias df='df -h'
 dl() {
-  local dir='.'
+  local dir=.
   [ $# -gt 1 ] && echo "Too many directories." && return 1
-  [ $# -eq 1 ] && dir="$1"
+  [ $# -gt 0 ] && dir=$1
   find "$dir" -maxdepth 1 -mindepth 1 -type d -print \
-    | sed 's|^\./||' | sed 's| |\\ |g' | _columnize
+    | align
 }
 dh() {
-  local dir='.'
+  local dir=.
   [ $# -gt 1 ] && echo "Too many directories." && return 1
-  [ $# -eq 1 ] && dir="$1";  # shellcheck disable=2033
-  find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; \
+  [ $# -gt 0 ] && dir=$1
+  find "$dir" -maxdepth 1 -mindepth 1 -type d -exec command du -hs {} \; \
     | sort -sh
 }
-
-# Save a log of directory space to home directory
-# NOTE: This relies on workflow where ~/scratch folders are symlinks pointing
-# to data storage hard disks. Otherwise need to hardcode server-specific folders.
-space() {
+scratch() {
   local init log sub dir
   log=$HOME/storage.log
   [ -r "$log" ] && init='\n\n' || init=''
@@ -462,71 +431,30 @@ space() {
   done
 }
 
-# Logging and processes {{{2
-# Listing jobs
-# TODO: Add to these utilities?
-alias toc='mpstat -P ALL 1'  # table of core processes (similar to 'top')
-alias restarts='last reboot | less'
-log() {
-  while ! [ -r "$1" ]; do
-    echo "Waiting..."
-    sleep 3
-  done
-  tail -f "$1"
-}
-tos() {  # table of shell processes (similar to 'top')
-  if [ -z "$1" ]; then
-    regex='$4 !~ /^(bash|ps|awk|grep|xargs|tr|cut)$/'
-  else
-    regex='$4 == "$1"'
-  fi
-  ps | awk 'NR == 1 {next}; '"$regex"'{print $1 " " $4}'
-}
-
-# Killing jobs and supercomputer stuff
- # NOTE: Any background processes started by scripts are not included in pskill!
-alias qrm='rm ~/*.[oe][0-9][0-9][0-9]* ~/.qcmd*'  # remove (empty) job logs
-qls() {
-  qstat -f -w \
-    | grep -v '^\s*[A-IK-Z]' \
-    | grep -E '^\s*$|^\s*[jJ]ob|^\s*resources|^\s*queue|^\s*[mqs]time'
-}
-qkill() {  # kill PBS processes at once, useful when debugging and submitting teeny jobs
-  local proc
-  for proc in $(qstat | tail -n +3 | cut -d' ' -f1 | cut -d. -f1); do  # start at line 3
-    qdel "$proc"
-    echo "Deleted job $proc"
-  done
-}
-jkill() {  # background jobs by percent sign
-  local count
-  count=$(jobs | wc -l | xargs)
-  for i in $(seq 1 "$count"); do
-    echo "Killing job $i..."
-    eval "kill %$i"
-  done
-}
-pskill() {  # jobs by ps name
-  local strs
-  $_macos && echo "Error: Mac ps does not list only shell processes." && return 1
-  [ $# -ne 0 ] && strs=("$@") || strs=(all)
-  for str in "${strs[@]}"; do
-    echo "Killing $str jobs..."
-    [ "$str" == all ] && str=""
-    # tos "$str" | awk '{print $1}' | xargs kill 2>/dev/null
-    pids=($(tos "$str" | awk '{print $1}'))
-    echo "Process ids: ${pids[*]}"
-    kill "${pids[@]}"
-  done
-}
-
-#-----------------------------------------------------------------------------
-# Editing and scripting utilities {{{1
-#-----------------------------------------------------------------------------
 # Helper utilities {{{2
-# Environment variables
-export EDITOR='command vim'  # default editor, nice and simple
-export LC_ALL=en_US.UTF-8  # needed to make Vim syntastic work
+# See: https://unix.stackexchange.com/a/369220/112647
+# NOTE: This is used for below listing utilities. Tried only column -t and fold -n
+# but no built-in utility for both wrapping and column alignment.
+bc() { echo "$*" | tr 'x' '*' | command bc -l | awk '{printf "%f", $0}'; }  # 'x' --> '*'
+align() {
+  local idx item items cnt cnts col cols fmts
+  cols=$(tput cols 2>/dev/null || echo 88)
+  while IFS= read -r item; do
+    item=${item#./} items+=("$item")
+    item=$(echo -e "$item") cnts+=("${#item}")
+  done
+  cnt=$(printf '%s\n' "${cnts[@]}" | sort -nr | head -n1)
+  cnt=${cnt:-10}
+  col=$((cols / $((cnt + 2))))
+  for idx in $(seq 1 "$col"); do  # sed -n 'start~count' echos every count line
+    cnt=$(printf '%s\n' "${cnts[@]}" | sed -n "${idx}~${col}p" | sort -nr | head -n1)
+    fmts+=("%-$((${cnt:-10}))s")
+  done
+  for idx in $(seq 0 $col ${#items[@]}); do
+    item=("${items[@]:idx:col}");  # shellcheck disable=2059
+    printf "${fmts[*]:0:${#item[@]}}\n" "${item[@]}"
+  done
+}
 
 # Receive affirmative or negative response using input message
 # Exit according to user input
@@ -558,7 +486,10 @@ confirm-no() { _confirm 0 "$@"; }
 confirm-yes() { _confirm 1 "$@"; }
 
 # Absolute path, works everywhere (mac, linux, or anything with bash)
+# NOTE: Used to use this in a couple awk scripts in git config aliases
 # See: https://stackoverflow.com/a/23002317/4970632
+# See: https://unix.stackexchange.com/a/259254/112647
+# See: https://superuser.com/a/352387/506762
 abspath() {
   if [ -d "$1" ]; then
     (cd "$1" && pwd)
@@ -572,10 +503,6 @@ abspath() {
     fi
   fi
 }
-
-# Convert bytes to human
-# From: https://unix.stackexchange.com/a/259254/112647
-# NOTE: Used to use this in a couple awk scripts in git config aliases
 bytes2human() {
   local nums
   # shellcheck disable=2015
@@ -590,9 +517,6 @@ bytes2human() {
     echo "$b$d${S[$s]}"
   done
 }
-
-# Helper function: return if directory is empty or essentially
-# empty. See: https://superuser.com/a/352387/506762
 isempty() {
   local item items
   read -r -a items < <(find "$1" -maxdepth 1 -mindepth 1 2>/dev/null)
@@ -604,9 +528,11 @@ isempty() {
   fi
 }
 
-# Page and help displays {{{2
+# Pager and editor overrides {{{2
 # Either pipe the output of the remaining commands into the less pager
 # or open the files. Use the latter only for executables on $PATH
+export EDITOR='command vim'  # default editor, nice and simple
+export LC_ALL=en_US.UTF-8  # needed to make Vim syntastic work
 less() {
   local cmd
   cmd=$(command -v "$1" 2>/dev/null)
@@ -652,7 +578,32 @@ man() {
   fi
 }
 
-# Git and vim overrides {{{2
+# Vim man and help commands
+# See: https://vi.stackexchange.com/a/6114
+# NOTE: Previously cleared screen and deleted scrollback history but now
+# just use &restorescreen=1 and &t_ti and &t_te escape codes.
+# NOTE: The man and help functions are seldom used. Prefer native pagers or running
+# help and man mappings from vim sessions (see .vim/autoload/shell.vim).
+iman() {
+  local arg="$*"
+  [[ "$arg" =~ " " ]] && arg=${arg//-/ }
+  [ $# -eq 0 ] && echo "Requires one argument." && return 1
+  if command man "$arg" 1>/dev/null; then  # could display error message
+    vim --cmd 'set buftype=nofile' -c "call shell#man_page(0, '$*')"
+  fi
+}
+ihelp() {
+  local result
+  [ $# -eq 0 ] && echo "Requires argument." && return 1
+  [ "$1" == cdo ] && result=$("$1" --help "${@:2}" 2>&1) || result=$("$@" --help 2>&1)
+  if [ "$(echo "$result" | wc -l)" -gt 2 ]; then
+    vim --cmd 'set buftype=nofile' -c "call shell#help_page(0, '$*')"
+  else
+    echo "No help information for $*."
+  fi
+}
+
+# Sessions and repositories {{{2
 # Handle git commit messages and require 'git stash push'
 # NOTE: 'git stash --staged push' will stash only staged changes. Should use more often.
 # https://stackoverflow.com/q/48751491/4970632
@@ -673,79 +624,6 @@ git() {
     done
   fi
   command git "$@"
-}
-
-# Handle vim commands and helper functions
-# See: https://vi.stackexchange.com/a/6114
-# NOTE: Previously cleared screen and deleted scrollback history but now
-# just use &restorescreen=1 and &t_ti and &t_te escape codes.
-# NOTE: The man and help functions are seldom used. Prefer native pagers or running
-# help and man mappings from vim sessions (see .vim/autoload/shell.vim).
-vi() {
-  HOME=/dev/null command vim -i NONE -u NONE "$@"
-}
-vim() {
-  [ "${#files[@]}" -gt 0 ] && flags+=(-p)
-  command vim --cmd 'set restorescreen' -p "$@"
-  [[ " $* " =~ (--version|--help|-h) ]] && return
-}
-iman() {
-  local arg="$*"
-  [[ "$arg" =~ " " ]] && arg=${arg//-/ }
-  [ $# -eq 0 ] && echo "Requires one argument." && return 1
-  if command man "$arg" 1>/dev/null; then  # could display error message
-    vim --cmd 'set buftype=nofile' -c "call shell#man_page(0, '$*')"
-  fi
-}
-ihelp() {
-  local result
-  [ $# -eq 0 ] && echo "Requires argument." && return 1
-  [ "$1" == cdo ] && result=$("$1" --help "${@:2}" 2>&1) || result=$("$@" --help 2>&1)
-  if [ "$(echo "$result" | wc -l)" -gt 2 ]; then
-    vim --cmd 'set buftype=nofile' -c "call shell#help_page(0, '$*')"
-  else
-    echo "No help information for $*."
-  fi
-}
-
-# Handle vim and tmux sessions
-# See: https://apple.stackexchange.com/q/31872/214359
-# NOTE: Previously had manual overrides for various fold commands. But not
-# anymore, seems unnecessary with simple FastFold + native folding.
-# some reason folds are otherwise re-closed upon openening each file.
-# sed -i '/zt/a setlocal nofoldenable' "$path"  # disable folds after opening file
-# sed -i 'N;/normal! z[oc]/!P;D' "$path"  # remove previous fold commands
-# sed -i '/^[0-9]*,[0-9]*fold$/d' "$path"  # remove manual fold definitions
-tmux() {
-  if [ "$#" -gt 0 ]; then
-    command tmux "$@"
-  elif command tmux list-sessions | grep iterm; then
-    command tmux -CC attach -t iterm
-  else
-    command tmux -CC new-session -t iterm
-  fi
-}
-session() {
-  local arg path flags root alt  # flags and session file
-  for arg in "$@"; do
-    if [[ "$arg" =~ ^-.* ]]; then
-      flags+=("$arg")
-    elif [ -z "$path" ]; then
-      path="$arg"
-    else
-      echo 'Error: Too many input args.'
-      return 1
-    fi
-  done
-  [ -z "$path" ] && path=.vimsession
-  [ -r ".vimsession-$path" ] && path=.vimsession-$path
-  [ -r ".vimsession_$path" ] && path=.vimsession_$path
-  [ -r "$path" ] || { echo "Error: Session file '$path' not found."; return 1; }
-  root=$(abspath "$path")  # absolute path with slashes
-  root=${root%/*}  # root directory to detect
-  alt=${root/$HOME/\~}  # alternative root with tilde
-  sed -i "\\:^lcd \\($root\\|$alt\\)\$:d" "$path"  # remove outdated lcd calls
-  vim -S "$path" "${flags[@]}"  # call above function
 }
 
 # Open files optionally based on name
@@ -785,6 +663,45 @@ open() {
     echo "Opening file \"$file\"."
     command open -a "$app" "${flags[@]}" "$file"
   done
+}
+
+# Vim overrides and scrollback repair
+# See: https://apple.stackexchange.com/q/31872/214359
+# NOTE: Previously had manual overrides for various fold commands. But not
+# anymore, seems unnecessary with simple FastFold + native folding.
+# some reason folds are otherwise re-closed upon openening each file.
+# sed -i '/zt/a setlocal nofoldenable' "$path"  # disable folds after opening file
+# sed -i 'N;/normal! z[oc]/!P;D' "$path"  # remove previous fold commands
+# sed -i '/^[0-9]*,[0-9]*fold$/d' "$path"  # remove manual fold definitions
+vi() {
+  HOME=/dev/null command vim -i NONE -u NONE "$@"
+}
+vim() {
+  [ "${#files[@]}" -gt 0 ] && flags+=(-p)
+  command vim --cmd 'set restorescreen' -p "$@"
+  [[ " $* " =~ (--version|--help|-h) ]] && return
+}
+session() {
+  local arg path flags root alt  # flags and session file
+  for arg in "$@"; do
+    if [[ "$arg" =~ ^-.* ]]; then
+      flags+=("$arg")
+    elif [ -z "$path" ]; then
+      path="$arg"
+    else
+      echo 'Error: Too many input args.'
+      return 1
+    fi
+  done
+  [ -z "$path" ] && path=.vimsession
+  [ -r ".vimsession-$path" ] && path=.vimsession-$path
+  [ -r ".vimsession_$path" ] && path=.vimsession_$path
+  [ -r "$path" ] || { echo "Error: Session file '$path' not found."; return 1; }
+  root=$(abspath "$path")  # absolute path with slashes
+  root=${root%/*}  # root directory to detect
+  alt=${root/$HOME/\~}  # alternative root with tilde
+  sed -i "\\:^lcd \\($root\\|$alt\\)\$:d" "$path"  # remove outdated lcd calls
+  vim -S "$path" "${flags[@]}"  # call above function
 }
 
 #-----------------------------------------------------------------------------
@@ -1284,6 +1201,63 @@ figcp() {
   [ $# -eq $forward ] || { echo "Error: Expected argument count $#."; return 1; }
   path=$(git rev-parse --show-toplevel)/  # assumes identical paths (note trailing slash is critical)
   _scp_bulk "${flags[@]}" "$forward" $@ "$path" "$path"  # address may expand to nothing
+}
+
+# Processes and sessions {{{2
+# NOTE: Here naked 'tmux' triggers iterm2 integration via 'tmux -CC'
+# See: https://iterm2.com/documentation-tmux-integration.html
+alias toc='mpstat -P ALL 1'  # table of core processes (similar to 'top')
+alias restarts='last reboot | less'
+log() {  # logging results
+  while ! [ -r "$1" ]; do
+    echo 'Waiting...' && sleep 3
+  done
+  tail -f "$1"
+}
+tos() {  # table of shell processes (similar to 'top')
+  if [ -z "$1" ]; then
+    regex='$4 !~ /^(bash|ps|awk|grep|xargs|tr|cut)$/'
+  else
+    regex='$4 == "$1"'
+  fi
+  ps | awk 'NR == 1 {next}; '"$regex"'{print $1 " " $4}'
+}
+tmux() {
+  if [ "$#" -gt 0 ]; then
+    command tmux "$@"
+  elif command tmux list-sessions | grep iterm; then
+    command tmux -CC attach -t iterm
+  else
+    command tmux -CC new-session -t iterm
+  fi
+}
+
+# Killing jobs and supercomputer stuff
+ # TODO: Revisit these and consider updating
+ # NOTE: Any background processes started by scripts are not included in pkill
+alias qrm='rm ~/*.[oe][0-9][0-9][0-9]* ~/.qcmd*'  # remove (empty) job logs
+qls() { qstat -f -w | grep -v '^\s*[A-IK-Z]' | grep -E '^\s*($|[jJ]ob|[mqs]time|queue|resources)'; }
+qkill() {  # kill process at once (useful when debugging)
+  local proc
+  for proc in $(qstat | tail -n +3 | cut -d' ' -f1 | cut -d. -f1); do  # start at line 3
+    qdel "$proc" && echo "Deleted job $proc"
+  done
+}
+jkill() {  # background jobs by percent sign
+  local idx cnt
+  cnt=$(jobs | wc -l | xargs)
+  for idx in $(seq 1 "$cnt"); do
+    echo "Killing job $idx..." && eval "kill %$idx"
+  done
+}
+pkill() {  # jobs by ps name
+  local str strs
+  $_macos && echo "Error: Mac ps does not list only shell processes." && return 1
+  [ $# -ne 0 ] && strs=("$@") || strs=(all)
+  for str in "${strs[@]}"; do
+    echo "Killing $str jobs..." && [ "$str" == all ] && str=""
+    pids=($(tos "$str" | awk '{print $1}')) && echo "Process ids: ${pids[*]}" && kill "${pids[@]}"
+  done
 }
 
 #-----------------------------------------------------------------------------
@@ -1978,7 +1952,7 @@ _fzf_default_completion() {
     done <<< "${PATH:+"${PATH}:"}"  # append if non-empty
     while read -r cmd; do
       type -P "$cmd" &>/dev/null || cmds+=("$cmd")
-    done < <(compgen -A{builtin,function,alias} | sort | uniq)
+    done < <(compgen -A builtin -A function -A alias | sort | uniq)
     COMP_CWORD=0 _fzf_complete '+m' -- "$@" < \
       <(cat <(find -L "${paths[@]}" "${flags[@]}" "${args[@]}" 2>/dev/null) <(printf '%s\n' "${cmds[@]}"))
   fi
