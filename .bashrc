@@ -790,14 +790,8 @@ open() {
 #-----------------------------------------------------------------------------
 # Searching utilities {{{1
 #-----------------------------------------------------------------------------
-# Parse ignores {{{2
-# See also vim tags#ignores()
-# TODO: Add utility for *just* ignoring directories not others. Or add utility
-# for ignoring absolutely nothing but preserving syntax of other utilities.
-# NOTE: Unlike 'ctags --exclude' and 'grep --exclude-dir' flags 'find -o -name'
-# fails for naked subfolder names since files are matched separately from folders.
-# NOTE: Overarching rule is that we do *not* descend into giant subfolders containing
-# distributions e.g. mambaforge or plugged unless explicitly go inside them.
+# Shared ignore patterns {{{2
+# NOTE: See also vim tags#ignores() function
 # NOTE: This supports internal grepping and finding utilities. Could also be
 # expanded to support .fzf finding utilities by setting the ignored files.
 ignores() {
@@ -837,22 +831,13 @@ ignores() {
   fi
 }
 
-# Grep or find files and pattern {{{2
-# NOTE: Currently silver searcher does not respect global '~/.ignore' folder in $HOME
-# so use override. See: https://github.com/ggreer/the_silver_searcher/issues/1097
-# NOTE: Exclude list should be kept in sync with '.ignore' for ripgrep 'rg' and silver
-# searcher 'ag'. Should install with 'mamba install the_silver_searcher ripgrep'. Also
-# note that directories are only excluded if they are *not below* current directory.
-# NOTE: Include list should be kept in sync with 'dircolors.ansi'. Seems 'grep' has no
-# way to include extensionless executables. Note when trying to skip hidden files,
-# grep --exclude=.* will skip current directory (so require subsequent character [^.])
-# and if dotglob is unset then 'find' cannot match hidden files with [.]* (so use .*)
-_ignore_ag='--path-to-ignore ~/.ignore --path-to-ignore ~/.wildignore'
-_ignore_rg='--ignore-file ~/.ignore --ignore-file ~/.wildignore'
-alias ag="ag $_ignore_ag --skip-vcs-ignores --hidden"  # see also .vimrc, .ignore
-alias rg="rg $_ignore_rg --no-ignore-vcs --hidden"  # see also .vimrc, .ignore
-alias a0="ag $_ignore_ag --skip-vcs-ignores --hidden --depth 0"  # see also 'd0'
-alias r0="rg $_ignore_rg --no-ignore-vcs --hidden --max-depth 1"  # see also 'd0'
+# Find and refactor utilities {{{2
+# TODO: Add utility for *just* ignoring directories not others. Or add utility
+# for ignoring absolutely nothing but preserving syntax of other utilities.
+# NOTE: Unlike 'ctags --exclude' and 'grep --exclude-dir' flags 'find -o -name'
+# fails for naked subfolder names since files are matched separately from folders.
+# NOTE: Overarching rule is that we do *not* descend into giant subfolders containing
+# distributions e.g. mambaforge or plugged unless explicitly go inside them.
 _find() {
   local commands exclude include header
   include="$1"
@@ -869,6 +854,42 @@ _find() {
   command find "${commands[0]}" "${header[@]}" \
     "${exclude[@]}" -name "${commands[@]:1}"  # arguments after directory
 }
+
+# Aliases and functions
+# TODO: Use vim-lsp rename utility instead? Figure out how to preview?
+# NOTE: The awk script builds a hash array (i.e. dictionary) that records number of
+# occurences of file paths (should be 1 but this is convenient way to record them).
+f0() { _find 0 "$@"; }  # custom find with ignore excludes and no hidden files
+f1() { _find 1 "$@"; }  # custom find with ignore excludes and hidden files
+f2() { _find 2 "$@"; }  # custom find with no excludes
+refactor() {
+  local cmd file files result
+  $_macos && cmd=gsed || cmd=sed
+  [ $# -eq 2 ] \
+    || { echo 'Error: refactor() requires two input arguments.'; return 1; }
+  result=$(f0 . '*' -print -exec $cmd -E -n "s@^@  @g;s@$1@$2@gp" {} \;) \
+    || { echo "Error: Search $1 to $2 failed."; return 1; }
+  readarray -t files < <(echo "$result"$'\nEOF' | \
+    awk '/^  / { fs[f]++ }; /^[^ ]/ { f=$1 }; END { for (f in fs) { print f } }') \
+    || { echo "Error: Filtering files failed."; return 1; }  # readarray is bash 4+
+  echo $'Preview:\n'"$result"
+  IFS=$'\n' echo $'Files to change:\n'"$(printf '%s\n' "${files[@]}")"
+  if confirm-no 'Proceed with refactor?'; then
+    for file in "${files[@]}"; do
+      $cmd -E -i "s@$1@$2@g" "$file" \
+      || { echo "Error: Refactor on $file failed."; return 1; }
+    done
+  fi
+}
+
+# Grep and search utilities {{{2
+# NOTE: Exclude list should be kept in sync with '.ignore' for ripgrep 'rg' and silver
+# searcher 'ag'. Should install with 'mamba install the_silver_searcher ripgrep'. Also
+# note that directories are only excluded if they are *not below* current directory.
+# NOTE: Include list should be kept in sync with 'dircolors.ansi'. Seems 'grep' has no
+# way to include extensionless executables. Note when trying to skip hidden files,
+# grep --exclude=.* will skip current directory (so require subsequent character [^.])
+# and if dotglob is unset then 'find' cannot match hidden files with [.]* (so use .*)
 _grep() {
   local commands exclude include
   include="$1"
@@ -885,17 +906,27 @@ _grep() {
   command grep -i -r -E --color=auto --exclude-dir='_*' \
     "${exclude[@]}" "${commands[@]}"  # only regex and paths allowed
 }
-g0() { _grep 0 "$@"; }  # custom grep with ignore excludes and no hidden files
-f0() { _find 0 "$@"; }  # custom find with ignore excludes and no hidden files
-g1() { _grep 1 "$@"; }  # custom grep with ignore excludes and hidden files
-f1() { _find 1 "$@"; }  # custom find with ignore excludes and hidden files
-g2() { _grep 2 "$@"; }  # custom grep with no excludes
-f2() { _find 2 "$@"; }  # custom find with no excludes
 
-# Differencing utilities {{{2
-# Here 'fs' prints git status-style directory diffs, 'fd' prints git diff-style file
-# diffs, 'ds' prints recursive directory status differences, and 'dd' prints basic
-# directory modification time diferences. See below for more info.
+# Aliases and functions
+# NOTE: Currently silver searcher does not respect global '~/.ignore' folder in $HOME
+# so use override. See: https://github.com/ggreer/the_silver_searcher/issues/1097
+_ignore_ag='--path-to-ignore ~/.ignore --path-to-ignore ~/.wildignore'
+_ignore_rg='--ignore-file ~/.ignore --ignore-file ~/.wildignore'
+alias ag="ag $_ignore_ag --skip-vcs-ignores --hidden"  # see also .vimrc, .ignore
+alias rg="rg $_ignore_rg --no-ignore-vcs --hidden"  # see also .vimrc, .ignore
+alias a0="ag $_ignore_ag --skip-vcs-ignores --hidden --depth 0"  # see also 'd0'
+alias r0="rg $_ignore_rg --no-ignore-vcs --hidden --max-depth 1"  # see also 'd0'
+g0() { _grep 0 "$@"; }  # custom grep with ignore excludes and no hidden files
+g1() { _grep 1 "$@"; }  # custom grep with ignore excludes and hidden files
+g2() { _grep 2 "$@"; }  # custom grep with no excludes
+note() { f0 "${1:-.}" '*' -a -type f -print -a -exec grep -i -n '\bnote:' {} \;; }
+todo() { f0 "${1:-.}" '*' -a -type f -print -a -exec grep -i -n '\btodo:' {} \;; }
+error() { f0 "${1:-.}" '*' -a -type f -print -a -exec grep -i -n '\berror:' {} \;; }
+warning() { f0 "${1:-.}" '*' -a -type f -print -a -exec grep -i -n '\bwarning:' {} \;; }
+
+# Git difference utilities {{{2
+# Here 'fs' is git status-style comparison, 'fd' git diff-style comparison, and 'merge'
+# combines files, adapted from this answer: https://stackoverflow.com/a/9123563/4970632
 # NOTE: The --textconv option described here: https://stackoverflow.com/a/52201926/4970632
 # NOTE: Tried using :(exclude) and :! but does not work with no-index. See following:
 # https://stackoverflow.com/a/58845608/4970632 and https://stackoverflow.com/a/53475515/4970632
@@ -912,13 +943,34 @@ fd() {  # git diff-style file differences
     | grep -v -e 'warning:' \
     | tac | sed -e '/Binary files/,+3d' | tac
 }
+merge() {
+  [ $# -ne 2 ] && echo "Usage: merge FILE1 FILE2" && return 1
+  [[ ! -r $1 || ! -r $2 ]] && echo "Error: File(s) are not readable." && return 1
+  local ext out  # no extension
+  if [[ "${1##*/}" =~ \. || "${2##*/}" =~ \. ]]; then
+    [ "${1##*.}" != "${2##*.}" ] && echo "Error: Files need same extension." && return 1
+    ext=.${1##*.}
+  fi
+  out=merge$ext
+  touch "tmp$ext"  # use empty file as the 'root' of the merge
+  cp "$1" "backup$ext"
+  git merge-file "$1" "tmp$ext" "$2"  # will write to file 1
+  mv "$1" "$out"
+  mv "backup$ext" "$1"
+  rm "tmp$ext"
+  echo "Files merged into \"$out\"."
+}
+
+# Directory differences time differences
+# Here 'ds' is git status-style difference and 'dd' is custom directory difference
+# that compares modification times if both present or shows which files are missing.
 ds() {  # git status-style directory differences
   [ $# -ne 2 ] && echo "Usage: ds DIR1 DIR2" && return 1
   echo "Directory: $1"
   echo "Directory: $2"
   command diff -rq -x '.vimsession' "$1" "$2"
 }
-dd() {  # directory modification time differences
+dd() {
   [ $# -ne 2 ] && echo "Usage: dt DIR1 DIR2" && return 1
   local dir dir1 dir2 cat1 cat2 cat3 cat4 cat5 file files flags
   flags=($(ignores 1))
@@ -941,62 +993,13 @@ dd() {  # directory modification time differences
       elif [ "$dir1/$file" -ot "$dir2/$file" ]; then
         cat4+="File $dir2/$file is newer."$'\n'
       else
-        cat5+="Files $dir1/$file in $dir2/$file are same age."$'\n'
+        cat5+="Files $dir1/$file in $dir2/$file have same age."$'\n'
       fi
     fi
   done < <(echo "$files" | sort)
   for cat in "$cat1" "$cat2" "$cat3" "$cat4" "$cat5"; do
     printf "%s" "$cat"
   done
-}
-
-# Combine and refactor {{{2
-# Merge fileA and fileB into merge.{ext}
-# See this answer: https://stackoverflow.com/a/9123563/4970632
-merge() {
-  [ $# -ne 2 ] && echo "Usage: merge FILE1 FILE2" && return 1
-  [[ ! -r $1 || ! -r $2 ]] && echo "Error: File(s) are not readable." && return 1
-  local ext out  # no extension
-  if [[ "${1##*/}" =~ \. || "${2##*/}" =~ \. ]]; then
-    [ "${1##*.}" != "${2##*.}" ] && echo "Error: Files need same extension." && return 1
-    ext=.${1##*.}
-  fi
-  out=merge$ext
-  touch "tmp$ext"  # use empty file as the 'root' of the merge
-  cp "$1" "backup$ext"
-  git merge-file "$1" "tmp$ext" "$2"  # will write to file 1
-  mv "$1" "$out"
-  mv "backup$ext" "$1"
-  rm "tmp$ext"
-  echo "Files merged into \"$out\"."
-}
-
-# Refactor, coding, and logging tools
-# TODO: Use vim-lsp rename utility instead? Figure out how to preview?
-# NOTE: The awk script builds a hash array (i.e. dictionary) that records number of
-# occurences of file paths (should be 1 but this is convenient way to record them).
-note() { f0 "${1:-.}" '*' -a -type f -print -a -exec grep -i -n '\bnote:' {} \;; }
-todo() { f0 "${1:-.}" '*' -a -type f -print -a -exec grep -i -n '\btodo:' {} \;; }
-error() { f0 "${1:-.}" '*' -a -type f -print -a -exec grep -i -n '\berror:' {} \;; }
-warning() { f0 "${1:-.}" '*' -a -type f -print -a -exec grep -i -n '\bwarning:' {} \;; }
-refactor() {
-  local cmd file files result
-  $_macos && cmd=gsed || cmd=sed
-  [ $# -eq 2 ] \
-    || { echo 'Error: refactor() requires two input arguments.'; return 1; }
-  result=$(f0 . '*' -print -exec $cmd -E -n "s@^@  @g;s@$1@$2@gp" {} \;) \
-    || { echo "Error: Search $1 to $2 failed."; return 1; }
-  readarray -t files < <(echo "$result"$'\nEOF' | \
-    awk '/^  / { fs[f]++ }; /^[^ ]/ { f=$1 }; END { for (f in fs) { print f } }') \
-    || { echo "Error: Filtering files failed."; return 1; }  # readarray is bash 4+
-  echo $'Preview:\n'"$result"
-  IFS=$'\n' echo $'Files to change:\n'"$(printf '%s\n' "${files[@]}")"
-  if confirm-no 'Proceed with refactor?'; then
-    for file in "${files[@]}"; do
-      $cmd -E -i "s@$1@$2@g" "$file" \
-      || { echo "Error: Refactor on $file failed."; return 1; }
-    done
-  fi
 }
 
 #-----------------------------------------------------------------------------

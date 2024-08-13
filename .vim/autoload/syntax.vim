@@ -263,11 +263,11 @@ endfunction
 function! syntax#update_highlights() abort
   let pairs = []  " highlight links
   call s:highlight_group('Normal', '', '', '')
-  call s:highlight_group('Todo', '', has('gui_running') ? 'LightGray' : 'Gray', 'bold')
-  call s:highlight_group('LineNR', '', has('gui_running') ? 'Gray' : 'Black', '')
+  call s:highlight_group('LineNR', '', has('gui_running') ? 'DarkGray' : 'Black', '')
   call s:highlight_group('CursorLine', has('gui_running') ? 'DarkGray' : 'Black', 0, '')
-  call s:highlight_group('ColorColumn', has('gui_running') ? 'LightGray' : 'Gray', 0, '')
-  call s:highlight_group('Folded', '', 'White', 'bold')
+  call s:highlight_group('ColorColumn', has('gui_running') ? 'DarkGray' : 'Black', 0, '')
+  call s:highlight_group('ModeMsg', 0, 'LightGray', 'bold')
+  call s:highlight_group('Todo', '', 'Gray', '')
   call s:highlight_group('DiffAdd', 'Black', '', 'bold')
   call s:highlight_group('DiffChange', '', '', '')
   call s:highlight_group('DiffDelete', 'Black', 'Black', '')
@@ -276,7 +276,6 @@ function! syntax#update_highlights() abort
   call s:highlight_group('ErrorMsg', 'DarkRed', 'White', '')
   call s:highlight_group('WarningMsg', 'LightRed', 'Black', '')
   call s:highlight_group('InfoMsg', 'LightYellow', 'Black', '')
-  call s:highlight_group('ModeMsg', 0, 'White', 'bold')
   call s:highlight_group('StrikeThrough', 0, 0, 'strikethrough')
   call s:highlight_group('StatusLineTerm', 'LightYellow', 'Black', '')
   call s:highlight_group('StatusLineTermNC', '', 'LightYellow', '')

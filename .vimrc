@@ -56,7 +56,7 @@ set breakindent  " visually indent wrapped lines
 set buflisted  " list all buffers by default
 set cmdheight=1  " increase to avoid pressing enter to continue
 set cmdwinheight=13  " i.e. show 12 previous commands (but changed by maps below)
-set colorcolumn=89,121  " color column after recommended length of 88
+set colorcolumn=+1,+2,121,122  " color column after recommended length of 88
 set complete=.,w,b,u,t,i,k  " prevent slowdowns with ddc
 set completeopt=menu  " use custom denops-popup-preview plugin
 set concealcursor=nc  " conceal in normal mode and during incsearch (see also common.vim)
