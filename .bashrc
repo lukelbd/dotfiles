@@ -396,21 +396,12 @@ else  # shellcheck disable=2142
 fi
 
 # Path utilities {{{2
+# shellcheck disable=2010
 # NOTE: Used to use this in a couple awk scripts in git config aliases
 # See: https://stackoverflow.com/a/23002317/4970632
 # See: https://unix.stackexchange.com/a/259254/112647
-ld() {  # list directories
-  local dir=.
-  [ $# -gt 1 ] && echo "Too many directories." && return 1
-  [ $# -gt 0 ] && dir=$1;  # shellcheck disable=2010
-  ls -l1 "$@" | grep '/$' | tr -s ' ' | cut -d ' ' -f9 | align
-}
-lf() {  # list files
-  local dir=.
-  [ $# -gt 1 ] && echo "Too many directories." && return 1
-  [ $# -gt 0 ] && dir=$1;  # shellcheck disable=2010
-  ls -l1 "$@" | grep -v '/$' | tr -s ' ' | cut -d ' ' -f9 | align
-}
+ld() { ls -l1 "$@" | grep '/$' | tr -s ' ' | cut -d ' ' -f9 | align; };  # shellcheck disable=2010
+lf() { ls -l1 "$@" | grep -v '/$' | tr -s ' ' | cut -d ' ' -f9 | align; }
 abspath() {  # absolute path (mac, linux, or anything with bash)
   if [ -d "$1" ]; then
     (cd "$1" && pwd)
@@ -465,24 +456,28 @@ scratch() {
 # NOTE: Here 'align' supports ansi escape characters. Also tried only column -t
 # and fold -n but no built-in utility for both wrapping and column alignment.
 bc() { echo "$*" | tr 'x' '*' | command bc -l | awk '{printf "%f", $0}'; }  # 'x' --> '*'
-raw() { sed -r 's/\x1b\[[^@-~]*[@-~]//g' "$@"; }
+min() { awk 'n=="" {n=$1+0} $1<0+n {n=$1} END {print n}' "$@"; }
+max() { awk 'n=="" {n=$1+0} $1>0+n {n=$1} END {print n}' "$@"; }
+raw() { sed -E 's/\x1b\[[^@-~]*[@-~]//g' "$@"; }  # \x1b\[[0-9;]*m? for ansi
 align() {
-  local cnt cnts col cols idx jdx fmt fmts raw raws str strs
-  cols=$(tput cols 2>/dev/null || echo 88)
-  while IFS= read -r str; do
-    str=${str#./} strs+=("$str");  # shellcheck disable=2001
-    raw=$(echo "$str" | raw) raws+=("$raw") cnts+=("${#raw}")
+  local cnt cnts fmt idx jdx num nums raws strs size width total
+  IFS=$'\n' read -r -d '' -a strs
+  IFS=$'\n' read -r -d '' -a raws < <(printf '%s\n' "${strs[@]}" | raw)
+  size=0 width=${COLUMNS:-88}
+  for num in $(seq 1 "${#raws[@]}"); do
+    nums=() total=0
+    for idx in $(seq 1 "$num"); do  # sed -n 'start~count' echos every count line
+      cnt=$(printf '%s\n' "${raws[@]}" | sed -n "${idx}~${num}p" | wc -L)
+      cnt=$((${cnt:-10} + 2)) nums+=("$cnt") total=$((total + cnt))
+    done
+    [ "$num" -gt 1 ] && [ "$total" -gt "$width" ] && break
+    size=$num cnts=("${nums[@]}")
   done
-  cnt=$(printf '%s\n' "${cnts[@]}" | sort -nr | head -n1)
-  [ "$#" -gt 0 ] && col=$1 || col=$((2 + cols / $((${cnt:-10}))))
-  for idx in $(seq 1 "$col"); do  # sed -n 'start~count' echos every count line
-    cnt=$(printf '%s\n' "${cnts[@]}" | sed -n "${idx}~${col}p" | sort -nr | head -n1)
-    fmts+=("$((${cnt:-10} + 4))")  # match native ls spaces
-  done
-  for idx in $(seq 0 $col $((${#strs[@]} - 1))); do
-    str=("${strs[@]:idx:col}");  # shellcheck disable=2059
-    for jdx in $(seq 0 $((${#str[@]} - 1))); do
-      fmt=$((fmts[jdx] + ${#strs[idx + jdx]} - ${#raws[idx + jdx]}))
+  for idx in $(seq 0 $size $((${#raws[@]} - 1))); do
+    num=$((${#raws[@]} - idx - 1))
+    [ "$num" -gt "$size" ] && num=$size
+    for jdx in $(seq 0 $((num - 1))); do
+      fmt=$((cnts[jdx] + ${#strs[idx + jdx]} - ${#raws[idx + jdx]}))
       printf "%-${fmt}s" "${strs[idx + jdx]}"
     done && echo
   done
