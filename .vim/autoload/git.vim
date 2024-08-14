@@ -65,9 +65,9 @@ function! s:call_fugitive(bnum, lnum, cmd, ...) abort
   else  " panel generated
     let [width, height] = [winwidth(0), winheight(0)]
     let resize = get(s:cmd_resize, name, 0)  " default panel size
-    silent exe a:cmd | let panel = a:bnum != bufnr()
-    if panel | setlocal bufhidden=delete | endif
-    if panel && line('$') <= 1 | quit | call winrestview(winview) | endif
+    silent exe a:cmd | let check = bufnr() != a:bnum
+    if check | setlocal bufhidden=delete | endif
+    if check && line('$') <= 1 | quit | call winrestview(winview) | endif
     if a:bnum == bufnr() && input =~# '^blame'  " syncbind is no-op if not vertical
       exe a:lnum | exe 'normal! z.' | call feedkeys("\<Cmd>syncbind\<CR>", 'n')
     elseif a:bnum != bufnr() && name ==# 'status'  " open change statistics
@@ -128,7 +128,10 @@ function! s:call_git(msg, line1, count, range, bang, mods, cmd, ...) range abort
   if verbose && bnum == bufnr()  " empty result
     redraw | echohl WarningMsg | echom error | echohl None
   elseif verbose
+    unsilent echom 'Test!'
     redraw | echo 'Git ' . a:cmd
+  else
+    unsilent echom 'Bad! ' . verbose . ' ' . bnum . ' ' . bufnr()
   endif
   call fold#_recache(1)
 endfunction
