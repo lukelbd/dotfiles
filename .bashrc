@@ -400,17 +400,24 @@ fi
 # See: https://unix.stackexchange.com/a/259254/112647
 # NOTE: Add ls '-d' flag only if arguments provided (avoids recursion into folders)
 # NOTE: Previously used abspath in a couple awk scripts and git config aliases
-lf() {
-  local arg cnt flag
-  for arg in "$@"; do [[ "$arg" =~ ^[^-] ]] && cnt=$((cnt + 1)); done
-  [ "${cnt:-0}" -gt 1 ] && flag=-ld1 || flag=-l1;  # shellcheck disable=2010
-  ls "$flag" "$@" | grep -v '/$' | tr -s ' ' | cut -d ' ' -f9 | align;
-}
-ld() {
-  local arg cnt flag
-  for arg in "$@"; do [[ "$arg"  =~ ^[^-]  ]] && cnt=$((cnt + 1)); done
-  [ "${cnt:-0}" -gt 1 ] && flag=-ld1 || flag=-l1;  # shellcheck disable=2010
-  ls "$flag" "$@" | grep '/$' | tr -s ' ' | cut -d ' ' -f9 | align;
+lf() { _lspaths 0 "$@"; }
+ld() { _lspaths 1 "$@"; }
+fl() { _lspaths 0 -l "$@"; }
+dl() { _lspaths 1 -l "$@"; }
+_lspaths() {
+  local arg cnt mode flag flags skip
+  mode=${1:-0}; shift
+  for arg in "$@"; do
+    [[ "$arg" =~ ^[^-] ]] && cnt=$((cnt + 1))
+    [[ "$arg" =~ ^-[a-z]*[l1] ]] && skip=1
+  done
+  [ "$mode" -eq 0 ] && flag=-v
+  [ "${cnt:-0}" -gt 1 ] && flags=-ld1 || flags=-l1
+  if [ -n "$skip" ]; then  # shellcheck disable=2010
+    ls $flags "$@" | grep $flag '/$'
+  else  # shellcheck disable=2010
+    ls $flags "$@" | grep $flag '/$' | tr -s ' ' | cut -d ' ' -f9 | align
+  fi
 }
 abspath() {  # absolute path (mac, linux, or anything with bash)
   if [ -d "$1" ]; then
