@@ -396,12 +396,22 @@ else  # shellcheck disable=2142
 fi
 
 # Path utilities {{{2
-# shellcheck disable=2010
-# NOTE: Used to use this in a couple awk scripts in git config aliases
 # See: https://stackoverflow.com/a/23002317/4970632
 # See: https://unix.stackexchange.com/a/259254/112647
-ld() { ls -l1 "$@" | grep '/$' | tr -s ' ' | cut -d ' ' -f9 | align; };  # shellcheck disable=2010
-lf() { ls -l1 "$@" | grep -v '/$' | tr -s ' ' | cut -d ' ' -f9 | align; }
+# NOTE: Add ls '-d' flag only if arguments provided (avoids recursion into folders)
+# NOTE: Previously used abspath in a couple awk scripts and git config aliases
+lf() {
+  local arg cnt flag
+  for arg in "$@"; do [[ "$arg" =~ ^[^-] ]] && cnt=$((cnt + 1)); done
+  [ "${cnt:-0}" -gt 1 ] && flag=-ld1 || flag=-l1;  # shellcheck disable=2010
+  ls "$flag" "$@" | grep -v '/$' | tr -s ' ' | cut -d ' ' -f9 | align;
+}
+ld() {
+  local arg cnt flag
+  for arg in "$@"; do [[ "$arg"  =~ ^[^-]  ]] && cnt=$((cnt + 1)); done
+  [ "${cnt:-0}" -gt 1 ] && flag=-ld1 || flag=-l1;  # shellcheck disable=2010
+  ls "$flag" "$@" | grep '/$' | tr -s ' ' | cut -d ' ' -f9 | align;
+}
 abspath() {  # absolute path (mac, linux, or anything with bash)
   if [ -d "$1" ]; then
     (cd "$1" && pwd)
@@ -463,7 +473,7 @@ align() {
   local cnt cnts fmt idx jdx num nums raws strs size width total
   IFS=$'\n' read -r -d '' -a strs
   IFS=$'\n' read -r -d '' -a raws < <(printf '%s\n' "${strs[@]}" | raw)
-  size=0 width=${COLUMNS:-88}
+  size=1 width=${COLUMNS:-88}
   for num in $(seq 1 "${#raws[@]}"); do
     nums=() total=0
     for idx in $(seq 1 "$num"); do  # sed -n 'start~count' echos every count line
