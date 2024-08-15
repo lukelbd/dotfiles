@@ -128,10 +128,8 @@ function! s:call_git(msg, line1, count, range, bang, mods, cmd, ...) range abort
   if verbose && bnum == bufnr()  " empty result
     redraw | echohl WarningMsg | echom error | echohl None
   elseif verbose
-    unsilent echom 'Test!'
     redraw | echo 'Git ' . a:cmd
   else
-    unsilent echom 'Bad! ' . verbose . ' ' . bnum . ' ' . bufnr()
   endif
   call fold#_recache(1)
 endfunction
