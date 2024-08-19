@@ -129,7 +129,7 @@ _setup_shell() {         # apply shell options (list available with shopt -p)
   shopt -s autocd        # typing naked directry name will cd into it
   shopt -s cdspell       # attempt spelling crrection of cd arguments
   shopt -s cdable_vars   # cd into shell ariable directories, no $ necessary
-  shopt -s checkwinsize  # allow window esizing
+  shopt -s checkwinsize  # allow resizing and add $COLUMNS $LINES variables
   shopt -s cmdhist       # save multi-line comands as one command in history
   shopt -s direxpand     # expand directoris
   shopt -s dirspell      # attempt spelling orrection of dirname
@@ -405,15 +405,15 @@ ld() { _lspaths 1 "$@"; }
 fl() { _lspaths 0 -l "$@"; }
 dl() { _lspaths 1 -l "$@"; }
 _lspaths() {
-  local arg cnt mode flag flags skip
+  local arg cnt mode flag flags long
   mode=${1:-0}; shift
   for arg in "$@"; do
     [[ "$arg" =~ ^[^-] ]] && cnt=$((cnt + 1))
-    [[ "$arg" =~ ^-[a-z]*[l1] ]] && skip=1
+    [[ "$arg" =~ ^-[a-z]*[l1] ]] && long=1
   done
   [ "$mode" -eq 0 ] && flag=-v
   [ "${cnt:-0}" -gt 1 ] && flags=-ld1 || flags=-l1
-  if [ -n "$skip" ]; then  # shellcheck disable=2010
+  if [ -n "$long" ]; then  # shellcheck disable=2010
     ls $flags "$@" | grep $flag '/$'
   else  # shellcheck disable=2010
     ls $flags "$@" | grep $flag '/$' | tr -s ' ' | cut -d ' ' -f9 | align
@@ -480,7 +480,7 @@ align() {
   local cnt cnts fmt idx jdx num nums raws strs size width total
   IFS=$'\n' read -r -d '' -a strs
   IFS=$'\n' read -r -d '' -a raws < <(printf '%s\n' "${strs[@]}" | raw)
-  size=1 width=${COLUMNS:-88}
+  size=1 width=${COLUMNS:-88}  # requires shopt -s checkwinsize
   for num in $(seq 1 "${#raws[@]}"); do
     nums=() total=0
     for idx in $(seq 1 "$num"); do  # sed -n 'start~count' echos every count line

@@ -84,7 +84,7 @@ function! grep#call_lines(global, level, regex, ...) abort
   let empty = a:global ? 0 : 1  " include empty lines
   let regex = a:regex =~# '^\s\+$' ? '' : a:regex
   let [show, source] = fzf#vim#_lines(empty)
-  let opts = " -d '\t' --tabstop 1 --nth " . (2 + show) . '..'
+  let opts = " -d '\t' --tabstop 1 --nth " . (a:global ? 2 + show : 2) . '..'
   let opts .= ' --with-nth ' . (a:global ? 1 + show : 2 + show) . '..'
   let opts .= ' --layout reverse-list --tiebreak index --extended --ansi'
   let [_, _, case] = grep#parse(a:global, a:level, a:regex)
