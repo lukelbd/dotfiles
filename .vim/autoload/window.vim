@@ -257,18 +257,24 @@ endfunction
 " location to top of stack on CursorHold but always scroll with explicit commands.
 " NOTE: This only triggers after spending time on window instead of e.g. browsing
 " across tabs with maps, similar to jumplist. Then can access jumps in each window.
-function! window#scroll_stack(count) abort
-  let [iloc, _] = stack#get_loc('tab')  " do not auto-detect index
-  call window#update_stack(1, iloc)  " update stack and avoid recursion
+function! window#next_stack(count, ...) abort
+  let remove = a:0 ? a:1 : 0
+  let [idx, _] = stack#get_loc('tab')
+  call window#update_stack(1, idx)  " manually update to avoid recursion
+  let name = stack#get_name('tab')  " name for possible stack removal
   call stack#push_stack('tab', function('file#goto_file'), a:count)
-  let [iloc, _] = stack#get_loc('tab')  " do not auto-detect index
-  call window#update_stack(1, iloc)
+  let [idx, _] = stack#get_loc('tab')
+  call window#update_stack(1, idx)
+  if remove && !empty(name)
+    call stack#pop_stack('tab', name)
+    silent! exe 'redrawtabline'
+  endif
 endfunction  " possibly not a file
 function! window#update_stack(scroll, ...) abort  " set current buffer
   if !v:vim_did_enter
     return
   endif
-  let iloc = a:0 > 0 ? a:1 : -1  " location to use
+  let index = a:0 > 0 ? a:1 : -1  " location to use
   let verb = a:0 > 1 ? a:2 : 0  " disable message by default
   let skip = index(g:tags_skip_filetypes, &filetype)
   let bname = bufname()  " possibly not a file
@@ -280,7 +286,7 @@ function! window#update_stack(scroll, ...) abort  " set current buffer
   for bnr in tabpagebuflist()
     if !empty(name) | call setbufvar(bnr, 'tab_name', name) | endif
   endfor
-  call stack#update_stack('tab', a:scroll, iloc, verb)
+  call stack#update_stack('tab', a:scroll, index, verb)
   let g:tab_time = localtime()  " previous update time
 endfunction
 

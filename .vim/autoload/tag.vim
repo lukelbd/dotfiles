@@ -92,12 +92,23 @@ function! s:clean_stack() abort
     call stack#pop_stack('tag', item)
   endfor
 endfunction
-function! tag#next_stack(...) abort
+function! tag#update_stack(...) abort  " see also window#update_stack()
+  let itag = tags#get_tag(a:0 ? a:1 : line('.'))
+  if len(itag) < 2 | return | endif
+  let [name, lnum; rest] = itag
+  let path = expand('%:p')
+  if !filereadable(path) | return | endif
+  let g:tag_name = [path, lnum, name]
+  let result = stack#push_stack('tag', '', 0, -1)
+  if !result | call stack#print_item('tag') | endif
+endfunction
+function! tag#next_stack(...) abort  " see also window#next_stack()
   exe "normal! m'"
   call s:clean_stack()
-  let icnt = a:0 ? a:1 : v:count1
-  let item = stack#get_item('tag')
-  let [name, icnt] = s:goto_stack(item, icnt)
+  let remove = a:0 > 1 ? a:2 : 0
+  let icnt = a:0 > 0 ? a:1 : v:count1
+  let itag = stack#get_item('tag')
+  let [name, icnt] = s:goto_stack(itag, icnt)
   let iarg = icnt >= 0 ? 1 : -1
   if !icnt  " push currently assigned name to stack
     let result = stack#push_stack('tag', '', 0, -1)
@@ -111,6 +122,8 @@ function! tag#next_stack(...) abort
     call call('s:goto_pos', ipos)  " possibly empty
   endif
   exe &l:foldopen =~# 'tag\|all' ? 'normal! zv' : ''
+  silent! exe 'redrawstatus'
+  if remove | call stack#pop_stack('tag', itag) | endif
   if !result | call stack#print_item('tag') | endif
 endfunction
 

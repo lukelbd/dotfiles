@@ -10,7 +10,7 @@ function! stack#get_loc(head, ...) abort
 endfunction
 function! stack#get_name(head, ...) abort
   let [key, iarg] = [a:head . '_name', a:0 ? a:1 : '']  " set by input function
-  return type(a:1) ? iarg : getbufvar(iarg, key, get(g:, key, ''))
+  return a:0 && type(a:1) ? iarg : getbufvar(iarg, key, get(g:, key, ''))
 endfunction
 function! stack#get_item(head, ...) abort
   let [stack, idx] = s:get_stack(a:head)
@@ -43,8 +43,8 @@ function! stack#print_item(head, ...) abort
   let item = a:0 ? a:1 : stack#get_item(a:head)
   let label = s:get_label(item)
   let head = toupper(a:head[0]) . tolower(a:head[1:])
-  let iloc = (idx + 1) . '/' . len(stack)
-  redraw | echo head . ': ' . label . ' (' . iloc . ')'
+  let index = (idx + 1) . '/' . len(stack)
+  redraw | echo head . ': ' . label . ' (' . index . ')'
 endfunction
 function! stack#print_stack(head) abort
   let [stack, idx] = s:get_stack(a:head)
@@ -112,8 +112,8 @@ endfunction
 " buffer. Functions should return non-zero on failure (either manually or through
 " vim error triggered on function with abort-label, which returns -1 by default).
 function! stack#pop_stack(head, ...) abort
-  let level = a:0 > 1 ? a:2 : 0
   let name = a:0 > 0 ? a:1 : stack#get_name(a:head)
+  let level = a:0 > 1 ? a:2 : 0  " verbose level
   let isnum = type(name) == 1 && name =~# '^\d\+$'
   let isfile = type(name) == 1 && filereadable(resolve(name))
   let name = isnum ? str2nr(name) : isfile ? fnamemodify(name, ':p') : name

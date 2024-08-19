@@ -81,12 +81,12 @@ function! s:goto_lines(result) abort
 endfunction
 function! grep#call_lines(global, level, regex, ...) abort
   let cmd = a:global ? 'lines' : 'blines'
-  let opts = a:global ? {'sink*': function('s:goto_lines')} : {}
+  let empty = a:global ? 0 : 1  " include empty lines
   let regex = a:regex =~# '^\s\+$' ? '' : a:regex
-  let [show, source] = fzf#vim#_lines(a:global ? 0 : 1)
-  let opts = '-d "\t" --tabstop 1 --nth ' . (2 + show) . '..'
+  let [show, source] = fzf#vim#_lines(empty)
+  let opts = " -d '\t' --tabstop 1 --nth " . (2 + show) . '..'
   let opts .= ' --with-nth ' . (a:global ? 1 + show : 2 + show) . '..'
-  let opts .= ' --layout reverse-list --tiebreak chunk,index --ansi --extended'
+  let opts .= ' --layout reverse-list --tiebreak index --extended --ansi'
   let [_, _, case] = grep#parse(a:global, a:level, a:regex)
   let prompt = toupper(cmd[0]) . tolower(cmd[1:]) . '> '
   let regex1 = a:global ? '' : '^\e\?[^\e]*\D' . bufnr('') . '\t'

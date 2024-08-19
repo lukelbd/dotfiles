@@ -14,8 +14,10 @@
 " codes obtained from below links (also :help t_k1-9 and :help t_F1+9)
 " NOTE: Here cursor shape requires either ptmux passthrough codes (see 'vitality.vim')
 " or below terminal overrides. Previously used ':au FocusLost * stopinsert' workaround
-" F1/F2: 0x1b 0x4f 0x50/0x51  (Ctrl-, Ctrl-.) (5-digit codes failed)
+" F1/F2: 0x1b 0x4f 0x50/0x51 (Ctrl-, Ctrl-.) (5-digit codes failed)
 " F3/F4: 0x1b 0x4f 0x52/0x53 (Ctrl-[ Ctrl-])
+" S-F1/S-F2: 0x1b 0x5b 0x31 0x3b 0x32 0x50/0x51 (S-Ctrl-, S-Ctrl-.)
+" S-F3/S-F4: 0x1b 0x5b 0x31 0x3b 0x32 0x52/0x53 (S-Ctrl-[ S-Ctrl-])
 " F5/F6: 0x1b 0x5b 0x31 0x35/0x37 0x7e (Ctrl-; Ctrl-') (3-digit codes failed)
 " F7/F8: 0x1b 0x5b 0x31 0x38/0x39 0x7e (Ctrl-i Ctrl-m)
 " F9/F10: 0x1b 0x5b 0x32 0x30/0x31 0x7e (currently unused) (forum codes required)
@@ -480,8 +482,10 @@ command! -bar -nargs=0 ClearTabs call stack#clear_stack('tab') | call window#upd
 command! -bar -nargs=0 ListTabs call stack#print_stack('tab')
 command! -bar -nargs=? PopTabs call stack#pop_stack('tab', <q-args>, 1)
 nnoremap <C-Space> <Cmd>call window#update_stack(0, -1, 2)<CR>
-nnoremap <F1> <Cmd>call window#scroll_stack(-v:count1)<CR>
-nnoremap <F2> <Cmd>call window#scroll_stack(v:count1)<CR>
+nnoremap <S-F1> <Cmd>call window#next_stack(-v:count1, 1)<CR>
+nnoremap <S-F2> <Cmd>call window#next_stack(v:count1, 1)<CR>
+nnoremap <F1> <Cmd>call window#next_stack(-v:count1)<CR>
+nnoremap <F2> <Cmd>call window#next_stack(v:count1)<CR>
 
 " Tab selection and management
 " WARNING: FZF cannot create terminals when called inside expr mappings.
@@ -751,6 +755,9 @@ command! -bar -bang -nargs=0 UpdateProject exe <bang>0 ? 'unlet! b:tags_update_t
 command! -bar -nargs=0 ClearTags call stack#clear_stack('tag')
 command! -bar -nargs=0 ListTags call stack#print_stack('tag')
 command! -bar -nargs=? PopTags call stack#pop_stack('tag', <q-args>, 1)
+nnoremap <C-S-Space> <Cmd>call tag#update_stack()<CR>
+noremap <S-F3> <Esc>m'<Cmd>call tag#next_stack(-v:count1, 1)<CR>
+noremap <S-F4> <Esc>m'<Cmd>call tag#next_stack(v:count1, 1)<CR>
 noremap <F3> <Esc>m'<Cmd>call tag#next_stack(-v:count1)<CR>
 noremap <F4> <Esc>m'<Cmd>call tag#next_stack(v:count1)<CR>
 
