@@ -398,27 +398,13 @@ fi
 # Path utilities {{{2
 # See: https://stackoverflow.com/a/23002317/4970632
 # See: https://unix.stackexchange.com/a/259254/112647
-# NOTE: Add ls '-d' flag only if arguments provided (avoids recursion into folders)
 # NOTE: Previously used abspath in a couple awk scripts and git config aliases
-lf() { _lspaths 0 "$@"; }
-ld() { _lspaths 1 "$@"; }
-fl() { _lspaths 0 -l "$@"; }
-dl() { _lspaths 1 -l "$@"; }
-_lspaths() {
-  local arg cnt mode flag flags long
-  mode=${1:-0}; shift
-  for arg in "$@"; do
-    [[ "$arg" =~ ^[^-] ]] && cnt=$((cnt + 1))
-    [[ "$arg" =~ ^-[a-z]*[l1] ]] && long=1
-  done
-  [ "$mode" -eq 0 ] && flag=-v
-  [ "${cnt:-0}" -gt 1 ] && flags=-ld1 || flags=-l1
-  if [ -n "$long" ]; then  # shellcheck disable=2010
-    ls $flags "$@" | grep $flag '/$'
-  else  # shellcheck disable=2010
-    ls $flags "$@" | grep $flag '/$' | tr -s ' ' | cut -d ' ' -f9 | align
-  fi
-}
+# NOTE: Here '_paths' avoids recursion into folders by adding '-d' only if arguments
+# provided and identifies folders/symlinks to folders using output format '-FL'
+lf() { _paths 0 "$@"; }
+ld() { _paths 1 "$@"; }
+fl() { _paths 0 -l "$@"; }
+dl() { _paths 1 -l "$@"; }
 abspath() {  # absolute path (mac, linux, or anything with bash)
   if [ -d "$1" ]; then
     (cd "$1" && pwd)
@@ -430,6 +416,25 @@ abspath() {  # absolute path (mac, linux, or anything with bash)
     else
       echo "$(pwd)/$1"
     fi
+  fi
+}
+_paths() {
+  local arg args count flag iflag mode multi
+  mode=${1:-0}; shift
+  for arg in "$@"; do
+    [[ "$arg" =~ ^[^-] ]] && count=$((count + 1))
+    [[ "$arg" =~ ^-[a-z]*1 ]] && multi=1
+    [[ "$arg" =~ ^-[a-z]*l ]] && multi=2
+  done
+  [ "${count:-0}" -gt 1 ] && flag=-d
+  [ "$mode" -eq 0 ] && iflag=-v
+  args=(--color=always -AF -l1 $flag)
+  if [ "${multi:-0}" -eq 0 ]; then  # shellcheck disable=2010
+    command ls "${args[@]}" "$@" | grep $iflag '/$' | tr -s ' ' | cut -d ' ' -f9 | align
+  elif [ "$multi" -eq 1 ]; then  # shellcheck disable=2010
+    command ls "${args[@]}" "$@" | grep $iflag '/$' | tr -s ' ' | cut -d ' ' -f9
+  else  # shellcheck disable=2010
+    command ls "${args[@]}" "$@" | grep $iflag '/$'
   fi
 }
 
