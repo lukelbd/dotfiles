@@ -150,9 +150,9 @@ function! python#fold_cache() abort
   endwhile
 endfunction
 
-" Return fold expression and text accounting for global constants and docstrings
-" NOTE: This includes text following try-except blocks and docstring openers, but
-" skips numpydoc and rest-style dash separators. Should add to this.
+" Return filetype-specific fold text
+" NOTE: This includes text following try-except blocks, multi-line global constants,
+" and multi-line docstring openers, but skips numpydoc and rest-style dash separators.
 function! python#fold_text(lnum, ...) abort
   if !exists('b:foldtext_delta')
     let b:foldtext_delta = {}

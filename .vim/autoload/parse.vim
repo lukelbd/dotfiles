@@ -291,7 +291,7 @@ function! parse#get_register(mode, ...) abort
   if !empty(warn)
     redraw | echohl WarningMsg | echom 'Warning: ' . trim(warn) | echohl None
   elseif name !=# '"'  " show register
-    redraw | echom group . ': ' . name[0] . (empty(label) ? '' : ' (' . label . ')')
+    redraw | echo group . ': ' . name[0] . (empty(label) ? '' : ' (' . label . ')')
   endif
   if a:mode =~# '[ic]'  " insert or cmdline mode
     let name = "\<C-r>" . name
@@ -342,12 +342,12 @@ function! parse#set_translate(name, mode) abort
   if has_key(info, 'points_to') | call remove(info, 'points_to') | endif
   if a:name ==# '"' || a:name ==# '0'
     if a:name ==# '0' && a:mode ==# 'q' && getreg(a:name) !~# '\p\|\t'
-      echom 'Cancelled macro' | return a:name
+      redraw | echo 'Cancelled macro' | return a:name
     elseif a:name !=# '0' || a:mode ==# 'q'  " push 0 for recordings only
       call parse#set_register(info, name1, name2)
     endif
   endif
   if a:mode ==# 'q'  " show recording
-    echom 'Macro @' . (a:name ==# '0' ? name1 : a:name) . ': ' . getreg(a:name)
+    redraw | echo 'Macro @' . (a:name ==# '0' ? name1 : a:name) . ': ' . getreg(a:name)
   endif | return name1
 endfunction
