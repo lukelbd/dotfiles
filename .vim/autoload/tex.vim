@@ -252,7 +252,7 @@ function! tex#format_units(value) abort
       endif
     endif
     if idx != len(parts) - 1
-      let part = part . ' \, '
+      let part = part . '\,'
     endif
     let output .= part
   endfor

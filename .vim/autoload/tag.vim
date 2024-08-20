@@ -99,8 +99,9 @@ function! tag#update_stack(...) abort  " see also window#update_stack()
   let path = expand('%:p')
   if !filereadable(path) | return | endif
   let g:tag_name = [path, lnum, name]
-  let result = stack#push_stack('tag', '', 0, -1)
+  let result = stack#push_stack('tag', '', '', -1)
   if !result | call stack#print_item('tag') | endif
+  silent! exe 'redrawstatus'
 endfunction
 function! tag#next_stack(...) abort  " see also window#next_stack()
   exe "normal! m'"
@@ -207,7 +208,7 @@ endfunction
 " directory. Exclude '..' and include the default base when it is only one found.
 " NOTE: Native finddir() and findpath() ignore hidden folders unless explicitly
 " specified with e.g. '.*/**/'. But avoid huge globs since can cause slowdowns
-function! s:get_files(...) abort
+function! s:get_files(bang, ...) abort
   let [paths, files, roots] = [[], [], []]
   let globs = parse#get_ignores(2, 2, 0)
   let regex = join(map(globs, 'glob2regpat(v:val)'), '\|')
@@ -232,7 +233,7 @@ function! s:get_files(...) abort
   endfor
   let paths = join(map(copy(roots), 'string(RelativePath(v:val))'), ' ')
   let prompt = 'Generate ' . len(roots) . ' tag files (paths ' . paths . ')?'
-  if !empty(roots) && confirm(prompt, "&no\n&yes") > 1
+  if a:bang && !empty(roots) && confirm(prompt, "&no\n&yes") > 1
     for root in roots
       let file = root . '/.vimtags'
       let path = RelativePath(file)
@@ -257,7 +258,7 @@ function! tag#fzf_tags(type, bang, ...) abort
   if empty(scripts) | return | endif
   let script = fnamemodify(scripts[0], ':p:h:h:h') . '/bin/tags.pl'
   if !executable(script) | return | endif
-  let paths = a:0 ? call('s:get_files', a:000) : tags#tag_files()
+  let paths = a:0 ? call('s:get_files', [a:bang] + a:000) : tags#tag_files()
   let [args, nbytes, maxbytes] = [[], 0, 1024 * 1024 * 200]
   for path in paths
     if !filereadable(path) | continue | endif

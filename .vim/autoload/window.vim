@@ -288,6 +288,7 @@ function! window#update_stack(scroll, ...) abort  " set current buffer
   endfor
   call stack#update_stack('tab', a:scroll, index, verb)
   let g:tab_time = localtime()  " previous update time
+  silent! exe 'redrawstatus'
 endfunction
 
 " Insert complete menu items and scroll complete or preview windows (whichever open).

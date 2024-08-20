@@ -86,14 +86,16 @@ function! stack#clear_stack(head) abort
     redraw | echohl WarningMsg | echom msg | echohl None
   endtry
 endfunction
-function! stack#update_stack(head, scroll, ...) abort
-  let nmax = a:scroll ? -1 : 5
-  let level = a:0 > 1 ? a:2 : 0  " verbose mode
+function! stack#update_stack(head, ...) abort
+  let scroll = a:0 > 0 && !type(a:1)
+  let index = a:0 > 1 ? a:2 : -1  " scroll index
+  let level = a:0 > 2 ? a:3 : 0  " verbose mode
+  let nmax = scroll ? -1 : 5
   let [stack, idx, name, kdx] = s:get_index(a:head, bufnr(), nmax)
   if empty(name) | return | endif
-  if a:0 && a:1 >= 0 && a:1 < len(stack)  " scroll to input index
-    let jdx = a:1
-  elseif a:scroll && kdx >= 0  " scroll to inferred entry
+  if index >= 0 && index < len(stack)  " scroll to input index
+    let jdx = index
+  elseif scroll && kdx >= 0  " scroll to inferred entry
     let jdx = kdx
   elseif kdx == -1  " add missing entry
     call add(stack, name) | let jdx = len(stack) - 1
@@ -135,8 +137,8 @@ function! stack#pop_stack(head, ...) abort
   endif
 endfunction
 function! stack#push_stack(head, func, ...) abort
+  let scroll = a:0 > 0 && !type(a:1)
   let level = a:0 > 1 ? a:2 : 1
-  let scroll = a:0 && !type(a:1)
   let [stack, idx] = s:get_stack(a:head)
   if !scroll  " fzf-sink, user-input, or default e.g. push_stack(...[, ''])
     let jdx = -1  " i.e. auto-detect
