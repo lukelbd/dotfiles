@@ -727,12 +727,12 @@ augroup jumps_setup
   au CursorHold,TextChanged,InsertLeave * if utils#none_pending() | call jump#push_jump() | endif
 augroup END
 command! -bar -bang -nargs=0 Jumps call jump#fzf_jumps(<bang>0)
-nnoremap g<Down> <Cmd>call jump#fzf_jumps()<CR>
 nnoremap g<Up> <Cmd>call jump#fzf_jumps()<CR>
-noremap <C-j> <Esc><Cmd>call jump#next_jump(-v:count1)<CR>
-noremap <C-k> <Esc><Cmd>call jump#next_jump(v:count1)<CR>
-noremap <Down> <Esc><Cmd>call jump#next_jump(-v:count1)<CR>
-noremap <Up> <Esc><Cmd>call jump#next_jump(v:count1)<CR>
+nnoremap g<Down> <Cmd>call jump#fzf_jumps()<CR>
+noremap <C-k> <Esc><Cmd>call jump#next_jump(-v:count1)<CR>
+noremap <C-j> <Esc><Cmd>call jump#next_jump(v:count1)<CR>
+noremap <Up> <Esc><Cmd>call jump#next_jump(-v:count1)<CR>
+noremap <Down> <Esc><Cmd>call jump#next_jump(v:count1)<CR>
 
 " Navigate buffer changelist with up/down arrows
 " NOTE: This accounts for iterm function-key maps and karabiner arrow-key maps

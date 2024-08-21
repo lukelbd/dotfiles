@@ -84,12 +84,13 @@ function! s:next_list(mode, count) abort  " navigate to nth location in list
   let jdx = idx + a:count + idel  " jump from e.g. '11'/10 to 9/10
   let name = a:mode ? 'change' : 'jump'
   let head = toupper(name[0]) . name[1:] . ' location: '
+  let index = len(opts) - jdx
   if jdx >= 0 && jdx < len(opts)  " jump to location
     call s:feed_list(a:mode, opts[jdx]['loc'], tabpagenr(), winnr())
-    call feedkeys("\<Cmd>redraw | echo '" . head . (jdx + 1) . '/' . len(opts) . "'\<CR>", 'n')
+    call feedkeys("\<Cmd>redraw | echo '" . head . index . '/' . len(opts) . "'\<CR>", 'n')
   elseif !iend && a:count == 1 && jdx == len(opts)  " silently restore position
     if bnum != bufnr() | exe bnum . 'buffer' | endif | call cursor(lnum, cnum + 1)
-    call feedkeys("\<Cmd>redraw | echo '" . head . jdx . '/' . len(opts) . "'\<CR>", 'n')
+    call feedkeys("\<Cmd>redraw | echo '" . head . index . '/' . len(opts) . "'\<CR>", 'n')
   else  " no-op warning message
     let msg = 'Error: At ' . (a:count >= 0 ? 'end' : 'start') . ' of ' . name . 'list'
     redraw | echohl WarningMsg | echom msg | echohl None

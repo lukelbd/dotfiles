@@ -43,7 +43,7 @@ function! stack#print_item(head, ...) abort
   let item = a:0 ? a:1 : stack#get_item(a:head)
   let label = s:get_label(item)
   let head = toupper(a:head[0]) . tolower(a:head[1:])
-  let index = (idx + 1) . '/' . len(stack)
+  let index = (len(stack) - idx) . '/' . len(stack)
   redraw | echo head . ': ' . label . ' (' . index . ')'
 endfunction
 function! stack#print_stack(head) abort
@@ -54,7 +54,8 @@ function! stack#print_stack(head) abort
     let pad = repeat(' ', digits - len(string(jdx)) + 1)
     let flag = idx == jdx ? '>' : ' '
     let label = s:get_label(stack[jdx])
-    echo flag . pad . jdx . ': ' . label
+    let index = len(stack) - jdx
+    echo flag . pad . index . ': ' . label
   endfor
 endfunction
 function! s:get_label(arg) abort
