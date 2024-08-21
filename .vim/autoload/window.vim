@@ -270,12 +270,13 @@ function! window#next_stack(count, ...) abort
     silent! exe 'redrawtabline'
   endif
 endfunction  " possibly not a file
-function! window#update_stack(scroll, ...) abort  " set current buffer
+function! window#update_stack(...) abort  " set current buffer
   if !v:vim_did_enter
     return
   endif
-  let index = a:0 > 0 ? a:1 : -1  " location to use
-  let verb = a:0 > 1 ? a:2 : 0  " disable message by default
+  let search = a:0 > 0 ? a:1 : 0  " whether to search and scroll stack
+  let index = a:0 > 1 ? a:2 : -1  " selected target location
+  let verb = a:0 > 2 ? a:3 : 0  " disable message by default
   let skip = index(g:tags_skip_filetypes, &filetype)
   let bname = bufname()  " possibly not a file
   if skip != -1 || line('$') <= 1 || empty(&filetype) || bname =~# '^[![]'
@@ -286,9 +287,9 @@ function! window#update_stack(scroll, ...) abort  " set current buffer
   for bnr in tabpagebuflist()
     if !empty(name) | call setbufvar(bnr, 'tab_name', name) | endif
   endfor
-  call stack#update_stack('tab', a:scroll, index, verb)
+  call stack#update_stack('tab', search, index, verb)
   let g:tab_time = localtime()  " previous update time
-  silent! exe 'redrawstatus'
+  silent! exe 'redrawtabline'
 endfunction
 
 " Insert complete menu items and scroll complete or preview windows (whichever open).

@@ -28,10 +28,10 @@ function! s:get_index(head, ...) abort  " remove in future
   let [stack, idx] = s:get_stack(a:head)
   let nmax = a:0 > 1 ? a:2 < 0 ? len(stack) : a:2 : 0
   let name = stack#get_name(a:head, a:0 ? a:1 : '')
-  let part = nmax ? reverse(copy(stack))[:nmax - 1] : []
-  let jdx = empty(name) ? -1 : index(part, name)
-  let zdx = max([0, len(stack) - nmax])
-  let kdx = jdx < 0 ? -1 : zdx + len(part) - jdx - 1
+  let istack = nmax ? reverse(copy(stack))[:nmax - 1] : []
+  let nstack = max([0, len(stack) - nmax])  " remaining stack
+  let jdx = empty(name) ? -1 : index(istack, name)
+  let kdx = jdx < 0 ? -1 : len(istack) + nstack - jdx - 1
   return [stack, idx, name, kdx]
 endfunction
 
@@ -88,7 +88,7 @@ function! stack#clear_stack(head) abort
   endtry
 endfunction
 function! stack#update_stack(head, ...) abort
-  let scroll = a:0 > 0 && !type(a:1)
+  let scroll = a:0 > 0 && !empty(a:1)
   let index = a:0 > 1 ? a:2 : -1  " scroll index
   let level = a:0 > 2 ? a:3 : 0  " verbose mode
   let nmax = scroll ? -1 : 5
@@ -138,32 +138,31 @@ function! stack#pop_stack(head, ...) abort
   endif
 endfunction
 function! stack#push_stack(head, func, ...) abort
-  let scroll = a:0 > 0 && !type(a:1)
   let level = a:0 > 1 ? a:2 : 1
-  let [stack, idx] = s:get_stack(a:head)
-  if !scroll  " fzf-sink, user-input, or default e.g. push_stack(...[, ''])
-    let jdx = -1  " i.e. auto-detect
-    let item = a:0 ? a:1 : []
+  let iarg = a:0 > 0 ? a:1 : []
+  if type(iarg)  " fzf-sink, user-input, or default e.g. push_stack(...[, ''])
+    let index = -1
+    let args = iarg
   else  " next or previous e.g. stack#push_stack(..., [1|-1])
-    let jdx = idx + a:1  " arbitrary offset
-    let delta = a:1 > 0 ? 1 : a:1 < 0 ? -1 : 0  " error condition
+    let [stack, idx] = s:get_stack(a:head)
+    let index = idx + iarg  " arbitrary offset
+    let delta = iarg > 0 ? 1 : iarg < 0 ? -1 : 0  " error condition
     if idx + delta < 0 || idx + delta >= len(stack)
-      let direc = a:1 < 0 ? 'bottom' : 'top'
+      let direc = iarg < 0 ? 'bottom' : 'top'
       let msg = 'Error: At ' . direc . ' of ' . string(a:head) . ' stack'
       redraw | echohl WarningMsg | echom msg | echohl None | return 1
     endif
-    let jdx = min([max([jdx, 0]), len(stack) - 1])
-    let item = stack[jdx]
+    let index = min([max([index, 0]), len(stack) - 1])
+    let args = stack[index]  " function arguments
   endif
   if !empty(a:func)
-    let args = type(item) == type([]) ? item : [item]
     if !level  " preserve function message
-      let result = call(a:func, args)
+      let result = call(a:func, type(args) > 1 ? args : [args])
     else  " show stack message instead
-      silent let result = call(a:func, args)
+      silent let result = call(a:func, type(args) > 1 ? args : [args])
     endif
-    if result != 0 | return result | endif
+    if !empty(result) | return result | endif
   endif
   let [stack, idx] = s:get_stack(a:head)  " in case triggered
-  call stack#update_stack(a:head, scroll, jdx, level)
+  call stack#update_stack(a:head, !type(iarg), index, level)
 endfunction

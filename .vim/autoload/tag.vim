@@ -99,13 +99,12 @@ function! tag#update_stack(...) abort  " see also window#update_stack()
   let path = expand('%:p')
   if !filereadable(path) | return | endif
   let g:tag_name = [path, lnum, name]
-  let result = stack#push_stack('tag', '', '', -1)
+  let result = stack#update_stack('tag', 0)
   if !result | call stack#print_item('tag') | endif
   silent! exe 'redrawstatus'
 endfunction
 function! tag#next_stack(...) abort  " see also window#next_stack()
-  exe "normal! m'"
-  call s:clean_stack()
+  exe "normal! m'" | call s:clean_stack()
   let remove = a:0 > 1 ? a:2 : 0
   let icnt = a:0 > 0 ? a:1 : v:count1
   let itag = stack#get_item('tag')
@@ -123,9 +122,9 @@ function! tag#next_stack(...) abort  " see also window#next_stack()
     call call('s:goto_pos', ipos)  " possibly empty
   endif
   exe &l:foldopen =~# 'tag\|all' ? 'normal! zv' : ''
-  silent! exe 'redrawstatus'
   if remove | call stack#pop_stack('tag', itag) | endif
   if !result | call stack#print_item('tag') | endif
+  silent! exe 'redrawstatus'
 endfunction
 
 " Select from tags in the current stack

@@ -474,7 +474,7 @@ augroup END
 silent! au! recents_setup
 augroup tabs_setup
   au!
-  au BufEnter,BufLeave * call window#update_stack(0)  " next update
+  au BufEnter,BufLeave * call window#update_stack(1)  " next update
   au BufWinLeave * call stack#pop_stack('tab', expand('<afile>'))
   au CursorHold * if localtime() - get(g:, 'tab_time', 0) > 10 | call window#update_stack(0) | endif
 augroup END
