@@ -66,13 +66,13 @@ function! fold#get_markers() abort
   let [head, tail] = ['\%(^\|\s\)\zs', '\(\d*\)\s*$']
   let regex = '\(' . mark1 . '\|' . mark2 . '\)'  " open or close markers
   let regex = '\%(^\s*$\|' . head . regex . tail . '\)'  " empty line or markers
+  let regex = head . regex . tail " empty line or markers
   let [folds, naked, heads] = [[], {}, {}]  " fold opening lines
   keepjumps goto | while v:true
     let flags = line('.') == 1 && col('.') == 1 ? 'cW' : 'W'
     let [lnum, cnum] = searchpos(regex, flags, "!tags#get_inside(0, 'Comment')")
     if lnum == 0 || cnum == 0 | break | endif
-    let line = getline(lnum)
-    let parts = matchlist(line, regex, cnum - 1)
+    let parts = matchlist(getline(lnum), regex, cnum - 1)
     if empty(parts)
       let msg = 'Warning: Failed to setup mark folds'
       redraw | echohl WarningMsg | echom msg | echohl None | break
@@ -535,6 +535,8 @@ function! fold#update_folds(force, ...) abort
   let queued = get(b:, 'fastfold_queued', -1)  " add markers after fastfold
   let remark = queued < 0 && method0 ==# 'manual'
   let refold = queued > 0 && method0 =~# 'manual\|syntax\|expr'
+  let nofold = !&l:foldenable || empty(&l:filetype) || bufname() =~# '^!'
+  if nofold | return | endif
   " Optionally update folds
   if force || refold || remark  " re-apply or convert
     for [line1, line2, _] in fold#get_markers()
