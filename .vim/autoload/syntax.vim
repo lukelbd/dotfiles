@@ -209,17 +209,15 @@ function! syntax#update_groups() abort
     highlight BracelessIndent ctermfg=NONE ctermbg=NONE cterm=inverse
     syntax sync minlines=100 | exe exists('*SetCellHighlighting') ? 'call SetCellHighlighting()' : ''
   endif
-  syntax match commentBang /^\%1l#!.*$/ contains=@NoSpell
-  syntax match commentColon /:/ contained
-  syntax match commentMarker
-    \ /\%({{{\d\?\|}}}\d\?\)\s*$/
-    \ containedin=.*Comment.*
-  syntax match commentHeader
-    \ /\C\%([a-z.]\s\+\)\@<!\%(Warning\|WARNING\|Error\|ERROR\|Fixme\|FIXME\|Todo\|TODO\|Note\|NOTE\|XXX\|{{{\d\?\|}}}\d\?\)[sS]\?:\@=/
-    \ containedin=.*Comment.* contains=pytonTodo nextgroup=CommentColon
-  syntax match commentLink
+  syntax match Marker /\%({{{\d\?\|}}}\d\?\)\s*$/ containedin=.*Comment.*
+  syntax match Shebang /^\%1l#!.*$/ contains=@NoSpell
+  syntax match Hyperlink
     \ =\v<(((https?|ftp|gopher)://|(mailto|file|news):)[^' 	<>"]+|(www|web|w3)[a-z0-9_-]*\.[a-z0-9._-]+\.[^'  <>"]+)[a-zA-Z0-9/]=
     \ containedin=.*\(Comment\|String\).*
+  syntax match commentColon /:/ contained
+  syntax match commentHeader
+    \ /\C\%([a-z.]\s\+\)\@<!\%(Warning\|WARNING\|Error\|ERROR\|Fixme\|FIXME\|Todo\|TODO\|Note\|NOTE\|XXX\|{{{\d\?\|}}}\d\?\)[sS]\?:\@=/
+    \ containedin=.*Comment.* contains=pytonTodo nextgroup=commentColon
 endfunction
 
 " Highlight group with gui or cterm codes
@@ -269,7 +267,7 @@ function! syntax#update_highlights() abort
   call s:highlight_group('LineNR', '', has('gui_running') ? 'DarkGray' : 'Black', '')
   call s:highlight_group('CursorLine', has('gui_running') ? 'DarkGray' : 'Black', 0, '')
   call s:highlight_group('ColorColumn', has('gui_running') ? 'DarkGray' : 'Black', 0, '')
-  call s:highlight_group('ModeMsg', 0, 'LightGray', 'bold')
+  call s:highlight_group('Folded', '', 'LightGray', '')
   call s:highlight_group('Todo', '', 'Gray', '')
   call s:highlight_group('DiffAdd', 'Black', '', 'bold')
   call s:highlight_group('DiffChange', '', '', '')
@@ -293,8 +291,8 @@ function! syntax#update_highlights() abort
   for group in ['ALEErrorLine', 'ALEWarningLine', 'ALEInfoLine']  " see above
     call add(pairs, [group, 'Conceal'])
   endfor
-  for group in ['Folded'] + getcompletion('GitGutter', 'highlight')  " see above
-    call add(pairs, [group, 'ModeMsg'])
+  for group in ['ModeMsg', 'Marker'] + getcompletion('GitGutter', 'highlight')  " see above
+    call add(pairs, [group, 'Folded'])
   endfor
   for group in ['ALEError', 'ALEErrorSign', 'ALEStyleError', 'ALEStyleErrorSign']  " see above
     call add(pairs, [group, 'ErrorMsg'])
@@ -305,10 +303,10 @@ function! syntax#update_highlights() abort
   for group in ['ALEInfo', 'ALEInfoSign']  " see above
     call add(pairs, [group, 'InfoMsg'])
   endfor
-  for [tail, dest] in [['Marker', 'Todo'], ['Header', 'Todo'], ['Colon', 'Comment']]
-    call add(pairs, ['comment' . tail, dest])
+  for [tail, dest] in [['Shebang', 'Special'], ['Hyperlink', 'Underlined']]
+    call add(pairs, [tail, dest])
   endfor
-  for [tail, dest] in [['Bang', 'Special'], ['Link', 'Underlined']]
+  for [tail, dest] in [['Header', 'Todo'], ['Colon', 'Comment']]
     call add(pairs, ['comment' . tail, dest])
   endfor
   for tail in ['Map', 'NotFunc', 'FuncKey', 'Command']

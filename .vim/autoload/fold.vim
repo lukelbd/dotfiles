@@ -240,6 +240,7 @@ endfunction
 " changes in fold text. See https://github.com/airblade/vim-gitgutter/issues/655
 function! s:fold_text(line1, line2, level)
   let lines = string(a:line2 - a:line1 + 1)  " number of lines
+  let header = s:has_divider(a:line1)
   let maxlen = get(g:, 'linelength', 88)  " default maximum
   let delta = len(string(line('$'))) - len(lines)
   let flags = edit#_get_errors(a:line1, a:line2)  " quickfix items
@@ -253,12 +254,12 @@ function! s:fold_text(line1, line2, level)
   if &l:diff  " fill with maximum width
     let [stats, space] = [' -+', '·']
     let label = '+- ' . lines . ' identical '
-  elseif s:has_divider(a:line1)  " header divider
-    let [label, space] = [call(name, args), ' ']
-    let [stats, flags] = [flags, '']
+  elseif header  " fold is on header divider
+    let [stats, space, flags] = [flags, ' ', '']
+    let label = call(name, args)
   else  " global default label
-    let [label, space] = [call(name, args), ' ']
-    let stats = '(' . lines . ') [' . a:level . ']'
+    let [stats, space] = ['(' . lines . ') [' . a:level . ']', ' ']
+    let label = call(name, args)
   endif
   let [delim1, delim2] = s:format_delims(label)
   let indent = matchstr(label, '^\s*')
@@ -274,7 +275,7 @@ function! s:fold_text(line1, line2, level)
     let label = substitute(label, '\s*$', '', '')
     let label = empty(delim) ? label . ' ···' : label . '···' . delim
   endif
-  let space = repeat(space, width - strchars(label))
+  let space = header ? space : repeat(space, width - strchars(label))
   return [label, space, stats]
 endfunction
 
