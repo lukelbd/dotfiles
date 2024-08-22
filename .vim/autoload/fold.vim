@@ -66,7 +66,6 @@ function! fold#get_markers() abort
   let [head, tail] = ['\%(^\|\s\)\zs', '\(\d*\)\s*$']
   let regex = '\(' . mark1 . '\|' . mark2 . '\)'  " open or close markers
   let regex = '\%(^\s*$\|' . head . regex . tail . '\)'  " empty line or markers
-  let regex = head . regex . tail " empty line or markers
   let [folds, naked, heads] = [[], {}, {}]  " fold opening lines
   keepjumps goto | while v:true
     let flags = line('.') == 1 && col('.') == 1 ? 'cW' : 'W'
@@ -80,10 +79,11 @@ function! fold#get_markers() abort
     let [imark, ilevel] = parts[1:2]
     if imark =~# mark1  " open fold after closing previous and inner
       let level = empty(ilevel) ? max(keys(heads)) + 1 : str2nr(ilevel)
-      let lnum -= s:has_divider(lnum - 1) && s:has_divider(lnum + 1)
+      let bool = s:has_divider(lnum - 1) && s:has_divider(lnum + 1)
+      let [lnum, inum] = bool ? [lnum + 1, lnum - 2] : [lnum, lnum - 1]
       for nr in range(level, 10)
         if has_key(heads, string(nr))
-          call add(folds, [heads[nr], lnum - 1, nr])
+          call add(folds, [heads[nr], inum, nr])
           call remove(heads, nr) | call remove(naked, nr)
         endif
       endfor
@@ -222,13 +222,12 @@ function! fold#fold_label(line, ...) abort
   let marker = split(&l:foldmarker, ',')[0] . '\d*\s*$'
   let delta = '^\(@@.\{-}@@\).*$'  " git hunk difference
   let regex = '\(\S\@<=\s\+' . comment#get_regex(0) . '.*\)\?\s*$'
-  let lnum = a:line + s:has_divider(a:line)
-  let label = getline(lnum)
+  let label = getline(a:line)
   let label = substitute(label, marker, '', '')  " trailing markers
   let label = substitute(label, regex, '', 'g')  " trailing comments
   let label = fugitive ? substitute(label, delta, '\1', '') : label
   let chars = split(label, '\zs')  " remaining characters
-  let items = map(range(len(chars)), 'syntax#_concealed(lnum, v:val + 1, ''n'')')
+  let items = map(range(len(chars)), 'syntax#_concealed(a:line, v:val + 1, ''n'')')
   let chars = map(range(len(chars)), 'type(items[v:val]) ? items[v:val] : chars[v:val]')
   let label = join(chars, '')  " unconcealed characters
   let label = a:0 && a:1 ? substitute(label, '^\s*', '', 'g') : label
@@ -252,19 +251,21 @@ function! s:fold_text(line1, line2, level)
     let [name, args] = ['fold#fold_label', [a:line1]]
   endif
   if &l:diff  " fill with maximum width
-    let [level, space] = ['', '·']
+    let [stats, space] = [' -+', '·']
     let label = '+- ' . lines . ' identical '
-    let stats = ' -+'
+  elseif s:has_divider(a:line1)  " header divider
+    let [label, space] = [call(name, args), ' ']
+    let [stats, flags] = [flags, '']
   else  " global default label
     let [label, space] = [call(name, args), ' ']
     let stats = '(' . lines . ') [' . a:level . ']'
   endif
   let [delim1, delim2] = s:format_delims(label)
   let indent = matchstr(label, '^\s*')
-  let width = maxlen - strchars(stats) - 1
   let label = empty(delim2) ? label : label . '···' . delim2
-  let chars = strcharpart(label, strchars(indent))
-  let label = indent . flags . chars
+  let label = strcharpart(label, strchars(indent))
+  let label = indent . flags . label
+  let width = maxlen - strchars(stats) - 1
   if strchars(label) >= width  " truncate fold text
     let delta = max([strwidth(delim2) - 1, 0])
     let ichar = strcharpart(label, width - delta - 4, 1)
@@ -535,8 +536,10 @@ function! fold#update_folds(force, ...) abort
   let queued = get(b:, 'fastfold_queued', -1)  " add markers after fastfold
   let remark = queued < 0 && method0 ==# 'manual'
   let refold = queued > 0 && method0 =~# 'manual\|syntax\|expr'
-  let nofold = !&l:foldenable || empty(&l:filetype) || bufname() =~# '^!'
-  if nofold | return | endif
+  let info = get(getwininfo(win_getid()), 0, {})
+  let ignore = !&l:foldenable || empty(&l:filetype) || bufname() =~# '^!'
+  let nofold = !empty(win_gettype()) || get(info, 'terminal', 0) || get(info, 'quickfix', 0)
+  if ignore || nofold | return | endif  " see: https://stackoverflow.com/a/68004054/4970632
   " Optionally update folds
   if force || refold || remark  " re-apply or convert
     for [line1, line2, _] in fold#get_markers()
