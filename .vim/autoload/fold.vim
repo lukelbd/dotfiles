@@ -66,40 +66,36 @@ function! fold#get_markers() abort
   let [head, tail] = ['\%(^\|\s\)\zs', '\(\d*\)\s*$']
   let regex = '\(' . mark1 . '\|' . mark2 . '\)'  " open or close markers
   let regex = '\%(^\s*$\|' . head . regex . tail . '\)'  " empty line or markers
-  let naked = v:false  " previous fold
-  let folds = []
-  let heads = {}  " fold opening lines
-  keepjumps goto
-  while v:true
+  let [folds, naked, heads] = [[], {}, {}]  " fold opening lines
+  keepjumps goto | while v:true
     let flags = line('.') == 1 && col('.') == 1 ? 'cW' : 'W'
     let [lnum, cnum] = searchpos(regex, flags, "!tags#get_inside(0, 'Comment')")
     if lnum == 0 || cnum == 0 | break | endif
     let line = getline(lnum)
     let parts = matchlist(line, regex, cnum - 1)
     if empty(parts)
-      let msg = 'Warning: Failed to setup mark folds.'
+      let msg = 'Warning: Failed to setup mark folds'
       redraw | echohl WarningMsg | echom msg | echohl None | break
     endif
-    let [mark, level] = parts[1:2]
-    let header = s:has_divider(lnum - 1) && s:has_divider(lnum + 1)
-    let lnum -= header || naked && empty(mark)
-    if mark =~# mark2 || naked && empty(mark)  " close previously defined fold
-      let naked = v:false
-      let level = empty(level) ? max(keys(heads)) : str2nr(level)
-      if has_key(heads, string(level))
-        call add(folds, [heads[level], lnum, level])
-        call remove(heads, level)
-      endif
-    elseif mark =~# mark1  " open fold after closing previous and inner
-      let naked = empty(level)
-      let level = naked ? max(keys(heads)) + 1 : str2nr(level)
-      for ilevel in range(level, 10)
-        if has_key(heads, string(ilevel))
-          call add(folds, [heads[ilevel], lnum - 1, ilevel])
-          call remove(heads, ilevel)
+    let [imark, ilevel] = parts[1:2]
+    if imark =~# mark1  " open fold after closing previous and inner
+      let level = empty(ilevel) ? max(keys(heads)) + 1 : str2nr(ilevel)
+      let lnum -= s:has_divider(lnum - 1) && s:has_divider(lnum + 1)
+      for nr in range(level, 10)
+        if has_key(heads, string(nr))
+          call add(folds, [heads[nr], lnum - 1, nr])
+          call remove(heads, nr) | call remove(naked, nr)
         endif
       endfor
-      let heads[level] = lnum
+      let heads[level] = lnum | let naked[level] = empty(ilevel)
+    else  " close previously defined fold
+      let level = empty(ilevel) ? max(keys(heads)) : str2nr(ilevel)
+      let lnum -= empty(imark) && get(naked, level, 0)
+      let bool = !empty(imark) || get(naked, level, 0)
+      if bool && has_key(heads, string(level))
+        call add(folds, [heads[level], lnum, level])
+        call remove(heads, level) | call remove(naked, level)
+      endif
     endif
   endwhile
   for level in keys(heads)
