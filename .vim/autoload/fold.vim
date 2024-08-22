@@ -63,11 +63,13 @@ endfunction
 function! fold#get_markers() abort
   let winview = winsaveview()
   let [mark1, mark2] = split(&l:foldmarker, ',')
-  let [head, tail] = ['\%(^\|\s\)\zs', '\(\d*\)\s*$']  " end of line only
-  let regex = head . '\(' . mark1 . '\|' . mark2 . '\)' . tail
-  let folds = []  " fold queue
-  let heads = {}  " mark lines
-  keepjumps goto  " start search
+  let [head, tail] = ['\%(^\|\s\)\zs', '\(\d*\)\s*$']
+  let regex = '\(' . mark1 . '\|' . mark2 . '\)'  " open or close markers
+  let regex = '\%(^\s*$\|' . head . regex . tail . '\)'  " empty line or markers
+  let naked = v:false  " previous fold
+  let folds = []
+  let heads = {}  " fold opening lines
+  keepjumps goto
   while v:true
     let flags = line('.') == 1 && col('.') == 1 ? 'cW' : 'W'
     let [lnum, cnum] = searchpos(regex, flags, "!tags#get_inside(0, 'Comment')")
@@ -78,16 +80,19 @@ function! fold#get_markers() abort
       let msg = 'Warning: Failed to setup mark folds.'
       redraw | echohl WarningMsg | echom msg | echohl None | break
     endif
-    let lnum -= s:has_divider(lnum - 1) && s:has_divider(lnum + 1)
     let [mark, level] = parts[1:2]
-    if parts[1] =~# mark2  " close previously defined fold
+    let header = s:has_divider(lnum - 1) && s:has_divider(lnum + 1)
+    let lnum -= header || naked && empty(mark)
+    if mark =~# mark2 || naked && empty(mark)  " close previously defined fold
+      let naked = v:false
       let level = empty(level) ? max(keys(heads)) : str2nr(level)
       if has_key(heads, string(level))
         call add(folds, [heads[level], lnum, level])
         call remove(heads, level)
       endif
-    else  " open fold after deleting previous and closing inner
-      let level = empty(level) ? max(keys(heads)) + 1 : str2nr(level)
+    elseif mark =~# mark1  " open fold after closing previous and inner
+      let naked = empty(level)
+      let level = naked ? max(keys(heads)) + 1 : str2nr(level)
       for ilevel in range(level, 10)
         if has_key(heads, string(ilevel))
           call add(folds, [heads[ilevel], lnum - 1, ilevel])
@@ -524,7 +529,7 @@ endfunction
 " NOTE: Here simulate 'zx' by passing 1 and 'zX' by passing 2, except consistent with
 " 'zC' maps this increases the depth of closed folds under cursor by one at a time
 function! fold#update_folds(force, ...) abort
-  " Parse fold settings
+  " Initial stuff
   let markers = []  " manual markers
   let winview = winsaveview()
   let closed0 = foldlevel('.') ? foldclosed('.') : 0  " zero if no folds
@@ -534,13 +539,13 @@ function! fold#update_folds(force, ...) abort
   let queued = get(b:, 'fastfold_queued', -1)  " add markers after fastfold
   let remark = queued < 0 && method0 ==# 'manual'
   let refold = queued > 0 && method0 =~# 'manual\|syntax\|expr'
+  " Optionally update folds
   if force || refold || remark  " re-apply or convert
     for [line1, line2, _] in fold#get_markers()
-      let iclose = remark || foldclosed(line1) == line1
-      call add(markers, [line1, line2, iclose])
+      let closed = remark || foldclosed(line1) == line1
+      call add(markers, [line1, line2, closed])
     endfor
   endif
-  " Optionally update folds
   if force || refold  " re-apply or convert
     call fold#_recache(1)
     if a:force
@@ -550,9 +555,13 @@ function! fold#update_folds(force, ...) abort
     let b:fastfold_queued = 0
   endif
   if &l:foldmethod ==# 'manual'  " i.e. not skipped
-    for [line1, line2, iclose] in reverse(markers)
+    for [line1, line2, closed] in reverse(markers)
+      let level = foldlevel(line1)  " possibly zero
+      let lines = range(line1, line2)
+      let index = index(map(copy(lines), 'foldlevel(v:val)'), level - 1)
+      let line2 = index > 0 ? lines[index - 1] : line2  " possibly truncate
       exe line1 . ',' . line2 . 'fold'
-      exe iclose ? '' : line1 . 'foldopen'
+      exe closed ? '' : line1 . 'foldopen'
     endfor
     let b:fastfold_queued = 0
   endif
