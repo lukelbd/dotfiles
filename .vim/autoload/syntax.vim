@@ -210,13 +210,16 @@ function! syntax#update_groups() abort
     syntax sync minlines=100 | exe exists('*SetCellHighlighting') ? 'call SetCellHighlighting()' : ''
   endif
   syntax match commentBang /^\%1l#!.*$/ contains=@NoSpell
+  syntax match commentColon /:/ contained
+  syntax match commentMarker
+    \ /\%({{{\d\?\|}}}\d\?\)\s*$/
+    \ containedin=.*Comment.*
+  syntax match commentHeader
+    \ /\C\%([a-z.]\s\+\)\@<!\%(Warning\|WARNING\|Error\|ERROR\|Fixme\|FIXME\|Todo\|TODO\|Note\|NOTE\|XXX\|{{{\d\?\|}}}\d\?\)[sS]\?:\@=/
+    \ containedin=.*Comment.* contains=pytonTodo nextgroup=CommentColon
   syntax match commentLink
     \ =\v<(((https?|ftp|gopher)://|(mailto|file|news):)[^' 	<>"]+|(www|web|w3)[a-z0-9_-]*\.[a-z0-9._-]+\.[^'  <>"]+)[a-zA-Z0-9/]=
     \ containedin=.*\(Comment\|String\).*
-  syntax match commentColon /:/ contained
-  syntax match commentHeader
-    \ /\C\%([a-z.]\s\+\)\@<!\%(Warning\|WARNING\|Error\|ERROR\|Fixme\|FIXME\|Todo\|TODO\|Note\|NOTE\|XXX\)[sS]\?:\@=/
-    \ containedin=.*Comment.* contains=pytonTodo nextgroup=CommentColon
 endfunction
 
 " Highlight group with gui or cterm codes
@@ -302,7 +305,10 @@ function! syntax#update_highlights() abort
   for group in ['ALEInfo', 'ALEInfoSign']  " see above
     call add(pairs, [group, 'InfoMsg'])
   endfor
-  for [tail, dest] in [['Link', 'Underlined'], ['Header', 'Todo'], ['Colon', 'Comment'], ['Bang', 'Special']]
+  for [tail, dest] in [['Marker', 'Todo'], ['Header', 'Todo'], ['Colon', 'Comment']]
+    call add(pairs, ['comment' . tail, dest])
+  endfor
+  for [tail, dest] in [['Bang', 'Special'], ['Link', 'Underlined']]
     call add(pairs, ['comment' . tail, dest])
   endfor
   for tail in ['Map', 'NotFunc', 'FuncKey', 'Command']
