@@ -894,8 +894,10 @@ noremap } <Cmd>exe 'keepjumps normal! ' . v:count1 . '}'<CR>
 " Navigate horizontally ignoring concealed regions
 " NOTE: Here h/l skip concealed syntax regions and matchadd() matches (respecting
 " &concealcursor values) and m/M is the missing previous end-of-word mapping.
-noremap <expr> h (v:count ? '<Esc>' : '') . syntax#next_nonconceal(-v:count1)
-noremap <expr> l (v:count ? '<Esc>' : '') . syntax#next_nonconceal(v:count1)
+noremap <expr> h (v:count ? mode(1) =~? '^no' ? '<Esc>' . v:operator : '<Esc>' : '')
+  \ . syntax#next_nonconceal(-v:count1)
+noremap <expr> l (v:count ? mode(1) =~? '^no' ? '<Esc>' . v:operator : '<Esc>' : '')
+  \ . syntax#next_nonconceal(v:count1)
 noremap w <Cmd>call jump#next_word('w')<CR>
 noremap W <Cmd>call jump#next_word('W')<CR>
 noremap b <Cmd>call jump#next_word('b')<CR>
