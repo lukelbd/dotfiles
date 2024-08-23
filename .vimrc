@@ -2,35 +2,28 @@
 " A giant vim configuration that does all sorts of magical things. {{{1
 "-----------------------------------------------------------------------------"
 " Initial stuff {{{2
-" WARNING: Vim may suppress messages even without :silent invocation (e.g. BufEnter
-" fold updates, delayed :redraw). Always use :unsilent echom when debugging
-" NOTE: The refresh variable used in .vim/autoload/vim.vim to autoload recently
-" updated script and line length variable used in linting tools below.
-" NOTE: Use karabiner to convert ctrl-j/k/h/l into arrow keys. So anything
-" mapped to these control combinations below must also be assigned to arrow keys.
-" NOTE: Use iterm to ensure alt-arrow presses always report as ^[[1;3A/B/C/D instead
-" of ^[[1;9A/B/C/D (or disable profile..keys 'apps can change how keys are reported').
-" NOTE: Use iterm to convert impossible ctrl+key combos to function keys using hex
-" codes obtained from below links (also :help t_k1-9 and :help t_F1+9)
-" NOTE: Here cursor shape requires either ptmux passthrough codes (see 'vitality.vim')
-" or below terminal overrides. Previously used ':au FocusLost * stopinsert' workaround
-" F1/F2: 0x1b 0x4f 0x50/0x51 (Ctrl-, Ctrl-.) (5-digit codes failed)
-" F3/F4: 0x1b 0x4f 0x52/0x53 (Ctrl-[ Ctrl-])
-" S-F1/S-F2: 0x1b 0x5b 0x31 0x3b 0x32 0x50/0x51 (S-Ctrl-, S-Ctrl-.)
-" S-F3/S-F4: 0x1b 0x5b 0x31 0x3b 0x32 0x52/0x53 (S-Ctrl-[ S-Ctrl-])
-" F5/F6: 0x1b 0x5b 0x31 0x35/0x37 0x7e (Ctrl-; Ctrl-') (3-digit codes failed)
-" F7/F8: 0x1b 0x5b 0x31 0x38/0x39 0x7e (Ctrl-i Ctrl-m)
-" F9/F10: 0x1b 0x5b 0x32 0x30/0x31 0x7e (currently unused) (forum codes required)
-" F11/F12: 0x1b 0x5b 0x32 0x33/0x34 0x7e (currently unused)
+" NOTE: Cursor shape requires below keycodes (previously used vitality.vim passthrough
+" with 'au FocusLost * stopinsert'). See: https://stackoverflow.com/a/44473667/4970632 
+" NOTE: Use karabiner to convert ctrl-j/k/h/l into down/up/left/right. Then when
+" mapping ctrl-j/k/h/l always copy map onto arrow keys.
+" NOTE: Use iterm to ensure alt-arrow presses always report as \e[1;3A/B/C/D instead
+" of \e[1;9A/B/C/D (or disable profile..keys 'apps can change how keys are reported').
+" NOTE: Use iterm to convert impossible ctrl+key combos to function key escape
+" sequences obtained with 'sed -n l <F1>' or with hex codes from below links.
+" NOTE: Use nr2char(printf('%d', '0xN')) to convert iterm hex to characters, or
+" use printf('0x%02x', char2nr("\<C-x>")) to convert characters to iterm hex.
+" F1 F2 F3 F4: <C-,> <C-.> <C-[> <C-]> (\eOP \eOQ \eOR \eOS)
+" F5 F6 F7 F8: <C-;> <C-'> <C-i> <C-m> (\e[15~ \e[17~ \e[18~ \e[19~)
+" F9 F10 F11 F12: Unset Unset Unset Unset (\e[20~ \e[21~ \e[23~ \e[24~)
+" SF1 SF2 SF3 SF4: <S-C-,> <S-C-.> <S-C-[> <S-C-]> (\e[1;2P \e[1;2Q \e[1;2R \e[1;2S)
+" See: https://stackoverflow.com/a/12191699/4970632
 " See: https://github.com/c-bata/go-prompt/blob/82a9122/input.go#L94-L125
-" See: https://eevblog.com/forum/microcontrollers/mystery-of-vt100-keyboard-codes/
-" See: https://stackoverflow.com/a/44473667/4970632 (terminal cursor overrides)
 " vint: -ProhibitSetNoCompatible
 set nocompatible
 set encoding=utf-8
-let g:linelength = 88
-let g:mapleader = "\<Space>"
-let g:refresh = get(g:, 'refresh', localtime())
+let g:linelength = 88  " shared setting
+let g:mapleader = "\<Space>"  " mapping prefix
+let g:refresh = get(g:, 'refresh', localtime())  " see vim#config_refresh()
 let &t_vb = ''  " visual bell (disable completely)
 let &t_ti = "\e7\e[r\e[?47h"  " termcap mode (keep scrollback)
 let &t_te = "\e[?47l\e8"  " termcap end (keep scrollback)
