@@ -55,10 +55,10 @@ endfunction
 " NOTE: Previously tried using regions with 'vim-syntaxMarkerFold' but causes major
 " issues since either disables highlighting or messes up inner highlight items when
 " trying to use e.g. contains=ALL since several use naked 'contained' property.
-function! s:has_divider(...) abort
+function! s:get_divider(...) abort
   let regex = '\(' . comment#get_regex(0) . '\)\?'
-  let regex = '^' . regex . '\s*[-=]\{3,}' . regex . '\(\s\|$\)'
-  return getline(a:0 ? a:1 : '.') =~# regex
+  let regex = '^' . regex . '\s*[-=]\{3,}' . regex . '\ze\%(\s\|$\)'
+  return matchstr(getline(a:0 ? a:1 : '.'), regex)
 endfunction
 function! fold#get_markers() abort
   let winview = winsaveview()
@@ -79,7 +79,7 @@ function! fold#get_markers() abort
     let [imark, ilevel] = parts[1:2]
     if imark =~# mark1  " open fold after closing previous and inner
       let level = empty(ilevel) ? max(keys(heads)) + 1 : str2nr(ilevel)
-      let bool = s:has_divider(lnum - 1) && s:has_divider(lnum + 1)
+      let bool = !empty(s:get_divider(lnum - 1)) && !empty(s:get_divider(lnum + 1))
       let [lnum, inum] = bool ? [lnum + 1, lnum - 2] : [lnum, lnum - 1]
       for nr in range(level, 10)
         if has_key(heads, string(nr))
@@ -240,7 +240,7 @@ endfunction
 " changes in fold text. See https://github.com/airblade/vim-gitgutter/issues/655
 function! s:fold_text(line1, line2, level)
   let lines = string(a:line2 - a:line1 + 1)  " number of lines
-  let header = s:has_divider(a:line1)
+  let header = s:get_divider(a:line1)  " fold divider
   let maxlen = get(g:, 'linelength', 88)  " default maximum
   let delta = len(string(line('$'))) - len(lines)
   let flags = edit#_get_errors(a:line1, a:line2)  " quickfix items
@@ -252,30 +252,37 @@ function! s:fold_text(line1, line2, level)
     let [name, args] = ['fold#fold_label', [a:line1]]
   endif
   if &l:diff  " fill with maximum width
-    let [stats, space] = [' -+', '·']
+    let stats = ' -+'
     let label = '+- ' . lines . ' identical '
-  elseif header  " fold is on header divider
-    let [stats, space, flags] = [flags, ' ', '']
-    let label = call(name, args)
-  else  " global default label
-    let [stats, space] = ['(' . lines . ') [' . a:level . ']', ' ']
-    let label = call(name, args)
+    let width = maxlen - strchars(stats) - 1
+    let space = repeat('·', width - strchars(label))
+    return [label, space, stats]
+  elseif !empty(header)  " fold is on header divider
+    let indent = matchstr(header, '^\s*[^-=]\?')
+    let indent .= empty(trim(indent)) ? '' : ' '
+    let flags .= lines . ' lines '
+    let label = indent . flags . strcharpart(header, strchars(indent . flags))
+    let index = strchars(label) - (maxlen - 1)
+    let label = strcharpart(label, max([index, 0]))
+    return [label, ' ', '']
   endif
+  let [stats, space] = ['(' . lines . ') [' . a:level . ']', ' ']
+  let label = call(name, args)
   let [delim1, delim2] = s:format_delims(label)
   let indent = matchstr(label, '^\s*')
-  let label = empty(delim2) ? label : label . '···' . delim2
-  let label = strcharpart(label, strchars(indent))
-  let label = indent . flags . label
   let width = maxlen - strchars(stats) - 1
+  let label .= empty(delim2) ? '' : '···' . delim2
+  let label = indent . flags . strcharpart(label, strchars(indent))
   if strchars(label) >= width  " truncate fold text
     let delta = max([strwidth(delim2) - 1, 0])
     let ichar = strcharpart(label, width - delta - 4, 1)
     let delim = ichar ==# delim1 ? delim2 : ''
     let label = strcharpart(label, 0, width - delta - 5)
     let label = substitute(label, '\s*$', '', '')
-    let label = empty(delim) ? label . ' ···' : label . '···' . delim
+    let label .= empty(delim) ? ' ' : ''
+    let label .= '···' . delim
   endif
-  let space = header ? space : repeat(space, width - strchars(label))
+  let space = repeat(space, width - strchars(label))
   return [label, space, stats]
 endfunction
 
