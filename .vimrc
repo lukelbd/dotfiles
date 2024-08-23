@@ -528,8 +528,8 @@ for s:mode in ['n', 'v']
   exe s:mode . 'noremap z( ze'
   exe s:mode . 'noremap z) zs'
 endfor
-noremap <expr> G 'G' . (&l:foldopen =~# 'jump\\|all' ? 'zv' : '')
-noremap <expr> gg 'gg' . (&l:foldopen =~# 'jump\\|all' ? 'zv' : '')
+noremap <expr> G 'G' . (v:count && &l:foldopen =~# 'jump\\|all' ? 'zv' : '')
+noremap <expr> gg 'gg' . (v:count && &l:foldopen =~# 'jump\\|all' ? 'zv' : '')
 noremap <expr> gK 'H' . (&l:foldopen =~# 'jump\\|all' ? 'zv' : '')
 noremap <expr> gJ 'M' . (&l:foldopen =~# 'jump\\|all' ? 'zv' : '')
 noremap <expr> zK 'M' . (&l:foldopen =~# 'jump\\|all' ? 'zv' : '')
