@@ -61,22 +61,18 @@ function! s:get_divider(...) abort
   return matchstr(getline(a:0 ? a:1 : '.'), regex)
 endfunction
 function! fold#get_markers() abort
-  let winview = winsaveview()
+  let [folds, naked, heads, nmark] = [[], {}, {}, 0]
   let [mark1, mark2] = split(&l:foldmarker, ',')
-  let [head, tail] = ['\%(^\|\s\)\zs', '\(\d*\)\s*$']
+  let winview = winsaveview()
   let regex = '\(' . mark1 . '\|' . mark2 . '\)'  " open or close markers
-  let regex = '\%(^\s*$\|' . head . regex . tail . '\)'  " empty line or markers
-  let [folds, naked, heads] = [[], {}, {}]  " fold opening lines
-  keepjumps goto | while v:true
-    let flags = line('.') == 1 && col('.') == 1 ? 'cW' : 'W'
-    let [lnum, cnum] = searchpos(regex, flags, "!tags#get_inside(0, 'Comment')")
+  let regex = '\%(^\s*$\|\%(^\|\s\)\zs' . regex . '\(\d*\)\s*$\)'
+  keepjumps goto | while v:true  " iterate over markers
+    let flag = empty(nmark) ? 'cW' : 'W'
+    let [lnum, cnum] = searchpos(regex, flag, "!tags#get_inside(0, 'Comment')")
     if lnum == 0 || cnum == 0 | break | endif
     let parts = matchlist(getline(lnum), regex, cnum - 1)
-    if empty(parts)
-      let msg = 'Warning: Failed to setup mark folds'
-      redraw | echohl WarningMsg | echom msg | echohl None | break
-    endif
-    let [imark, ilevel] = parts[1:2]
+    if empty(parts) | break | endif
+    let [imark, ilevel, nmark] = [parts[1], parts[2], nmark + 1]
     if imark =~# mark1  " open fold after closing previous and inner
       let level = empty(ilevel) ? max(keys(heads)) + 1 : str2nr(ilevel)
       let bool = !empty(s:get_divider(lnum - 1)) && !empty(s:get_divider(lnum + 1))
