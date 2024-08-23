@@ -108,15 +108,16 @@ function! s:fold_docstring(lnum) abort
   return lnum > a:lnum ? ['>1'] + repeat([1], lnum - a:lnum - 1) + ['<1'] : []
 endfunction
 function! s:fold_constant(lnum) abort  " e.g. VARIABLE = [... or if condition:...
-  let heads = '^\(if\|for\|while\|with\|try\|def\|class\)\>.*:\s*\(#.*\)\?$'
-  let blocks = '^\(elif\|else\|except\|finally\)\>.*:\s*\(#.*\)\?$'
-  let [lnum, line, indent] = [a:lnum, getline(a:lnum), s:get_indent(a:lnum + 1)]
-  if line !~# '^\K\k*' || !indent | return [] | endif
-  while lnum < line('$') && (s:get_indent(lnum + 1) || getline(lnum + 1) =~# blocks)
-    let lnum += 1
-    if s:get_level(lnum) && getline(lnum) !~# '^\s*\(from\|import\)\>' | return [] | endif
+  let heads = '^\%(if\|for\|while\|with\|try\|def\|class\)\>.*:\s*\%(#.*\)\?$'
+  let blocks = '^\%(\%(elif\|else\|except\|finally\)\>.*:\)\?\s*\%(#.*\)\?$'
+  let [lnum, label] = [a:lnum + 1, getline(a:lnum)]
+  let [inum, ilabel] = [s:get_indent(lnum), getline(lnum)]
+  if label !~# '^\K\k*' || empty(inum) | return [] | endif
+  while lnum <= line('$') && (s:get_indent(lnum) || ilabel =~# blocks)
+    if s:get_level(lnum) && ilabel !~# '^\s*\(from\|import\)\>' | return [] | endif
+    let [lnum, ilabel] = [lnum + 1, getline(lnum + 1)]
   endwhile
-  if lnum > a:lnum && line !~# heads | let lnum += 1 | endif
+  let lnum -= lnum == a:lnum + 1 || label =~# heads
   return lnum > a:lnum ? ['>1'] + repeat([1], lnum - a:lnum - 1) + ['<1'] : []
 endfunction
 
