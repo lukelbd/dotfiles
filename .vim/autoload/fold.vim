@@ -369,6 +369,8 @@ function! fold#fold_source(...) abort
 endfunction
 
 " Select buffer folds rendered with foldtext()
+" NOTE: Comment scenario is to place markers on first line of code below comment
+" blocks, so search for head of comment blocks if possible (more informative).
 " NOTE: This was adapted from fzf-folds plugin. This includes folds inside closed
 " parent folds and uses custom fold-text function instead of foldtextresult().
 " See: https://github.com/roosta/fzf-folds.vim
@@ -387,10 +389,20 @@ endfunction
 function! fold#fzf_folds(...) abort
   let bang = a:0 ? a:1 : 0  " fullscreen
   let folds = fold#fold_source()
+  let mark0 = split(&l:foldmarker, ',')[0]
+  let regex0 = '\%(^\|\s\)\zs' . mark0 . '\(\d*\)\s*$'
+  let regex1 = '^' . comment#get_regex(0)
   let maxlen = max(map(copy(folds), 'len(string(abs(v:val[1] - v:val[0])))'))
   let [labels0, labels1] = [[], []]
   for [line1, line2, level] in folds
-    let [label, _, stats] = s:fold_text(line1, line2, level)
+    let [iline, itext] = [line1, getline(line1)]
+    if itext =~# regex0 && itext !~# regex1 && getline(iline - 1) =~# regex1
+      let [_, pos1, pos2] = comment#object_comment_a(iline - 1)
+      if pos2[1] > pos1[1] || pos2[2] == pos1[2] && pos2[2] > pos1[2]
+        let iline = pos1[1]
+      endif
+    endif
+    let [label, _, stats] = s:fold_text(iline, line2, level)
     let [icount, jcount] = s:fold_counts(label)
     let stats = substitute(stats, '[^0-9 ]', '', 'g')
     let [lines, level] = map(split(stats), 'str2nr(v:val)')
