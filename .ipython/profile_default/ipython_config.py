@@ -20,8 +20,9 @@ backends = {
     'itermplot': 'module://itermplot',
     'matplotlib_iterm2': 'module://matplotlib_iterm2.backend_iterm2',
 }
-shellapp.backend_keys.extend(backends)
 pylabtools.backends.update(backends)
+if hasattr(shellapp, 'backend_keys'):
+    shellapp.backend_keys.extend(backends)
 
 # Add default lines
 # WARNING: %autoreload complete (3) has issues as of ipython 8.14.0 (2023-08-27) so
