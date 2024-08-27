@@ -15,8 +15,8 @@
 # 'mamba install python-lsp-server' (pylsp). Latter permits definition jumping.
 # NOTE: Recent cf-xarray causes 'regex' import warning messages so use older version.
 # See: https://cf-xarray.readthedocs.io/en/latest/whats-new.html#v0-7-8-jan-31-2023so
-# NOTE: Recent xarray version has multi-index issues so use
-# an older version. See: https://github.com/pydata/xarray/issues/7695
+# NOTE: Recent xarray versions have issue where multi-index levels auto-added as
+# coordinates so use old version. See: https://github.com/pydata/xarray/issues/7695
 # NOTE: Should use rm -r ~/.julia/registries to fix install issues e.g. due to
 # downloading macOS julia package. See: https://stackoverflow.com/a/59300263/4970632
 # NOTE: After installing julia, its package manager will use the conda environment,
@@ -52,6 +52,7 @@ dependencies:
   - cftime
   - xarray<=2022.01.01
   - cf_xarray<0.7.8,>=0.7.5
+  - pint<0.23
   - pint-pandas
   - pint-xarray
   - matplotlib<3.6
@@ -91,6 +92,7 @@ dependencies:
     - vim-vint
     - cf_units
     - esgf-pyclient
+    - global_land_mask
     - pandoc-fignos
     - pandoc-eqnos
     - pandoc-tablenos
