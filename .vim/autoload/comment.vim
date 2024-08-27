@@ -98,8 +98,12 @@ endfunction
 
 " Comment text objects
 " NOTE: Native plugin sometimes includes non-comment vim double quotes
-function! s:object_comment(name) abort
+function! s:object_comment(name, ...) abort
   let inner = a:name[-1] ==# 'i'
+  let winview = winsaveview()
+  if a:0 && !empty(a:1)
+    call call('cursor', type(a:1) > 1 ? a:1 : [a:1, col([a:1, '$'])])
+  endif
   let [char, pos1, pos2] = call(a:name, [])
   let [lnum, cnum] = pos1[1:2]
   let [lmax, cmax] = pos2[1:2]
@@ -110,26 +114,25 @@ function! s:object_comment(name) abort
   let cmax = col([lnum, '$'])
   let cmax = min([cmax, lnum == pos2[1] ? pos2[2] + 1 : cmax])
   let text = getline(lnum)
-  let winview = winsaveview()
   while inum < cmax && !tags#get_inside(0, 'Comment')
     let cnum = inum | call cursor(lnum, cnum) | let inum += 1
   endwhile
-  call winrestview(winview)
   if inum < cmax
     let text = strpart(getline(lnum), 0, cnum - 1)
     let delta = len(matchstr(reverse(text), '^\s*'))
-    let pos1[2] = a:name[-1] ==# 'i' ? cnum : cnum - delta
+    let pos1[2] = inner ? cnum : cnum - delta
   endif
+  call winrestview(winview)
   return [char, pos1, pos2]
 endfunction
-function! comment#object_comment_i() abort
-  return s:object_comment('textobj#comment#select_i')
+function! comment#object_comment_i(...) abort
+  return call('s:object_comment', ['textobj#comment#select_i'] + a:000)
 endfunction
-function! comment#object_comment_a() abort
-  return s:object_comment('textobj#comment#select_a')
+function! comment#object_comment_a(...) abort
+  return call('s:object_comment', ['textobj#comment#select_a'] + a:000)
 endfunction
-function! comment#object_comment_big_a() abort
-  return s:object_comment('textobj#comment#select_big_a')
+function! comment#object_comment_big_a(...) abort
+  return call('s:object_comment', ['textobj#comment#select_big_a'] + a:000)
 endfunction
 
 " Comment navigation and toggling
