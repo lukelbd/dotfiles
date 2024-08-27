@@ -389,26 +389,27 @@ endfunction
 function! fold#fzf_folds(...) abort
   let bang = a:0 ? a:1 : 0  " fullscreen
   let folds = fold#fold_source()
+  let cache = get(b:, 'foldtext_cache', {})
   let mark0 = split(&l:foldmarker, ',')[0]
   let regex0 = '\%(^\|\s\)\zs' . mark0 . '\(\d*\)\s*$'
   let regex1 = '^' . comment#get_regex(0)
   let maxlen = max(map(copy(folds), 'len(string(abs(v:val[1] - v:val[0])))'))
   let [labels0, labels1] = [[], []]
   for [line1, line2, level] in folds
-    let [iline, itext] = [line1, getline(line1)]
+    let [iline, jline, itext] = [line1, line2, getline(line1)]
     if itext =~# regex0 && itext !~# regex1 && getline(iline - 1) =~# regex1
       let [_, pos1, pos2] = comment#object_comment_a(iline - 1)
       if pos2[1] > pos1[1] || pos2[2] == pos1[2] && pos2[2] > pos1[2]
-        let iline = pos1[1]
+        let iline = pos1[1]  " show comment header
       endif
     endif
-    let [label, _, stats] = s:fold_text(iline, line2, level)
+    let [label, _, stats] = s:fold_text(iline, jline, level)
     let [icount, jcount] = s:fold_counts(label)
     let stats = substitute(stats, '[^0-9 ]', '', 'g')
     let [lines, level] = map(split(stats), 'str2nr(v:val)')
     let space = repeat(' ', maxlen - strchars(lines) + 1)
     let stats = '[' . level . ']' . ' ' . '(' . lines . ')'
-    let label = substitute(label, '^\s*', '', '')
+    let label = substitute(label, '\(^\s*\|\s*$\)', '', 'g')
     let label = bufname() . ':' . line1 . ':' . stats . ' ' . label
     if icount || jcount  " ale.vim locations
       call add(labels1, [label, icount, jcount])
