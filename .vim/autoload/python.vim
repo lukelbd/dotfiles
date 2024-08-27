@@ -118,6 +118,8 @@ function! s:fold_constant(lnum) abort  " e.g. VARIABLE = [... or if condition:..
     if s:get_level(inum) && ilabel !~# '^\s*\(from\|import\)\>' | return [] | endif
     let [inum, ilabel] = [inum + 1, getline(inum + 1)]
   endwhile
+  let [inum, ilabel] = [lnum + 1, getline(lnum + 1)]
+  let lnum += !s:get_indent(inum) && ilabel !~# '^\s*$'
   return lnum > a:lnum + 1 ? ['>1'] + repeat([1], lnum - a:lnum - 1) + ['<1'] : []
 endfunction
 
