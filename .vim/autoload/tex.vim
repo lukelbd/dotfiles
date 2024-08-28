@@ -162,19 +162,23 @@ function! s:graphic_sink(items) abort
   endif
 endfunction
 function! s:graphic_source() abort
-  let cmd = 'grep -o ''^[^%]*'' ' . shellescape(@%) . " | awk -v RS='[^\\n]*{' '"
-    \ . 'inside && /}/ {path=$0; if(init) inside=0} {init=0} '
-    \ . 'inside && /(\n|^)}/ {inside=0} '
-    \ . 'path {sub(/}.*/, "}", path); print "{" path} '
-    \ . 'RT ~ /graphicspath/ {init=1; inside=1}'
-    \ . '/document}/ {exit} {path=""}' . "'"
-  let folder = expand('%:h')
+  let code = [
+    \ 'inside && /}/ {path=$0; if(init) inside=0} {init=0}',
+    \ 'inside && /(\n|^)}/ {inside=0}',
+    \ 'path {sub(/}.*/, "}", path); print "{" path}',
+    \ 'RT ~ /graphicspath/ {init=1; inside=1}',
+    \ '/document}/ {exit} {path=""}',
+    \ ]
+  let awk = has('macunix') ? 'gawk' : 'awk'
+  let cmd = "grep -o '^[^%]*' " . shellescape(@%) . ' | '
+  let cmd .= awk . " -v RS='[^\\n]*{' '" . join(code, ' ') . "'"
+  let base = expand('%:h')
   let inputs = join(systemlist(cmd), '')
   let inputs = split(strpart(inputs, 1, len(inputs) - 2), '}{')
   let [paths, warns] = [[], []]
   for path in inputs
     let abspath = expand(path)  " e.g. $HOME/research/...
-    let relpath = expand(folder . '/' . path)  " e.g. ./figures/...
+    let relpath = expand(base . '/' . path)  " e.g. ./figures/...
     if isdirectory(abspath)
       call add(paths, abspath)
     elseif isdirectory(relpath)
@@ -184,7 +188,7 @@ function! s:graphic_source() abort
     endif
   endfor
   let outputs = []
-  for path in add(paths, folder)
+  for path in add(paths, base)
     for ext in ['png', 'jpg', 'jpeg', 'pdf', 'eps']
       let files = globpath(path, '*.' . ext, v:true, v:true)
       call map(files, 'fnamemodify(v:val, ":p:h:t") . "/" . fnamemodify(v:val, ":t")')

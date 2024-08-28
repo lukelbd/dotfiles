@@ -210,11 +210,12 @@ case "${HOSTNAME%%.*}" in
     export PATH=/Library/TeX/texbin:$PATH  # latex
     export PATH=/opt/X11/bin:$PATH  # X11
     export PATH=/usr/local/bin:/opt/local/bin:/opt/local/sbin:$PATH  # homebrew
-    export PATH=/usr/local/opt/grep/libexec/gnubin:$PATH  # macports
-    export PATH=/usr/local/opt/gnu-tar/libexec/gnubin:$PATH
-    export PATH=/usr/local/opt/gnu-sed/libexec/gnubin:$PATH
+    export PATH=/usr/local/opt/coreutils/libexec/gnubin:$PATH  # gnu overrides
     export PATH=/usr/local/opt/findutils/libexec/gnubin:$PATH
-    export PATH=/usr/local/opt/coreutils/libexec/gnubin:$PATH
+    export PATH=/usr/local/opt/grep/libexec/gnubin:$PATH
+    export PATH=/usr/local/opt/gawk/libexec/gnubin:$PATH
+    export PATH=/usr/local/opt/gnu-sed/libexec/gnubin:$PATH
+    export PATH=/usr/local/opt/gnu-tar/libexec/gnubin:$PATH
     export PATH=/opt/pgi/osx86-64/2018/bin:$PATH  # pgi compilers
     export PATH=$HOME/builds/matlab-r2019a/bin:$PATH  # local builds
     export PATH=$HOME/builds/ncl-6.6.2/bin:$PATH
@@ -1470,7 +1471,7 @@ alias server="python -m http.server"
 alias jekyll="bundle exec jekyll serve $_jekyll_flags 2>/dev/null"  # ignore deprecations
 
 #-----------------------------------------------------------------------------
-# Data and file utilities {{{1
+# Data and graphic utilities {{{1
 #-----------------------------------------------------------------------------
 # Parsing and extraction {{{2
 # NOTE: This is used in model development
@@ -1487,7 +1488,9 @@ namelist() {  # list all namelist parameters
 # List graphics paths in file
 # NOTE: This is used in autoload tex.vim
 graphicspath() {
-  awk -v RS='[^\n]*{' '
+  local cmd
+  $_macos && cmd=gawk || cmd=awk
+  $cmd -v RS='[^\n]*{' '
     inside && /}/ {path=$0; if(init) inside=0} {init=0}
     inside && /(\n|^)}/ {inside=0}
     path {sub(/}.*/, "}", path); print "{" path}
@@ -1678,9 +1681,6 @@ ncvardetails() {
     done
 }
 
-#-----------------------------------------------------------------------------
-# PDF and image utilities {{{1
-#-----------------------------------------------------------------------------
 # PDF and image utilities {{{2
 # NOTE: Here pdftk preserves vector graphics and transparency
 # See: https://pypi.org/project/pdfminer/ (pdf2txt)
@@ -2006,33 +2006,18 @@ if [ "${FZF_SKIP:-0}" == 0 ]; then
 fi
 
 #-----------------------------------------------------------------------------
-# Conda configuration {{{1
+# Conda and shell configuration {{{1
 #-----------------------------------------------------------------------------
-# General utilities {{{2
-# NOTE: Must save brew path before setup (conflicts with conda; try 'brew doctor')
-# See: https://github.com/conda-forge/miniforge
-alias brew="PATH=\"$PATH\" brew"  # {{{
-if [ -d "$HOME/mambaforge" ]; then
-  _conda=$HOME/mambaforge
-elif [ -d "$HOME/miniforge" ]; then
-  _conda=$HOME/miniforge
-else
-  unset _conda
-fi  # }}}
-
-# Pip install static copy of specific branch
+# Package helper functions {{{2
 # See: https://stackoverflow.com/a/27134362/4970632
 # NOTE: Resulting install will not be editable. But could be useful for awaiting
 # PRs or new versions after submitting feature to community project.
-pip-branch() {
+checkout() {  # install specific branch
   [ $# -eq 2 ] && echo "Usage: pip-branch PACKAGE BRANCH" && return 1
   [ -d "$1" ] || { echo "Error: Package path '$1' not found."; return 1; }
   pip install --editable git+file://"$1"@"$2"
 }
-
-# List available packages
-# NOTE: This takes really long even with mamba
-mamba-avail() {
+packages() {
   local version versions
   [ $# -ne 1 ] && echo "Usage: avail PACKAGE" && return 1
   echo "Package:            $1"
@@ -2050,7 +2035,7 @@ mamba-avail() {
   echo "Available versions: $versions"
 }
 
-# Manage environments {{{2
+# Manage conda environments {{{2
 # Functions to backup and restore conda environments. This is useful when conda breaks
 # due to usage errors or issues with permissions after a crash and backblaze restore.
 # NOTE: This can also be used to sync across macbooks. Just clone 'dotfiles' there.
@@ -2084,18 +2069,24 @@ mamba-restore() {
   done
 }
 
-# Initiate conda {{{2
-# Optionally initiate conda (generate this code with 'mamba init')
-# WARNING: Making conda environments work with jupyter is complicated. Have
-# to remove stuff from ipykernel and then install them manually.
-# See: https://stackoverflow.com/a/54985829/4970632
-# See: https://stackoverflow.com/a/48591320/4970632
-# See: https://medium.com/@nrk25693/how-to-add-your-conda-environment-to-your-jupyter-notebook-in-just-4-steps-abeab8b8d084
-if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda|mamba ]]; then
+# Enable base environment {{{2
+# See: https://github.com/conda-forge/miniforge
+# WARNING: Homebrew conflicts with conda (try 'brew doctor') so save path in alias
+# WARNING: To make environments available in jupyter can use nb_conda_kernels package
+# (see above) or install kernels manually: https://stackoverflow.com/a/54985829/4970632
+if [ -d "$HOME/mambaforge" ]; then
+  _conda=$HOME/mambaforge
+elif [ -d "$HOME/miniforge" ]; then
+  _conda=$HOME/miniforge
+else
+  unset _conda
+fi
+if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda|mamba ]]; then  # {{{
   _setup_message 'Enabling conda'
   __conda_setup=$("$_conda/bin/conda" 'shell.bash' 'hook' 2>/dev/null)
+  alias brew="PATH=\"$PATH\" brew"  # avoid conda conflicts
   if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
+    eval "$__conda_setup"  # details: https://stackoverflow.com/a/48591320/4970632
   elif [ -f "$_conda/etc/profile.d/conda.sh" ]; then
     source "$_conda/etc/profile.d/conda.sh"
   else
@@ -2110,17 +2101,14 @@ if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda|mamb
   fi
   mamba activate base  # calls '__conda_activate activate' which runs the
   echo 'done'  # commands returned by '__conda_exe shell.posix activate'
-fi
+fi  # }}}
 
-#-----------------------------------------------------------------------------
-# Shell integration and session management {{{1
-#-----------------------------------------------------------------------------
 # Enable shell integration {{{2
 # Show inline figures with fixed 300dpi
 # Pane badges: https://iterm2.com/documentation-badges.html
 # Prompt markers: https://stackoverflow.com/a/38913948/4970632
-# Use `printf "\e]1337;SetBadgeFormat=%s\a" $(echo -n "\(path)" | base64)` to print
-# current directory when debugging: https://gitlab.com/gnachman/iterm2/-/issues/11073
+# NOTE: Use `printf "\e]1337;SetBadgeFormat=%s\a" $(echo -n "\(path)" | base64)`
+# to print cwd when debugging: https://gitlab.com/gnachman/iterm2/-/issues/11073
 if [ "${ITERM_SHELL_INTEGRATION_SKIP:-0}" == 0 ] \
   && [ -z "$ITERM_SHELL_INTEGRATION_INSTALLED" ] \
   && [ -r ~/.iterm2_shell_integration.bash ] \
@@ -2152,6 +2140,7 @@ fi
 
 # Title settings {{{2
 # Change directory based on session title
+# NOTE: This helps with restoring sessions after reboot
 _title_cwd() {
   local _ sub dir title
   title=$(_title_get)
@@ -2168,9 +2157,9 @@ _title_cwd() {
 }
 
 # Get session title from path
-_title_get() {
+# NOTE: This survives reboots without shuffling titles between windows
+_title_get() {  # shellcheck disable=SC2153
   local idx name
-  # shellcheck disable=SC2153
   idx=${ITERM_SESSION_ID%%t*} && idx=${idx#w}
   if [ -n "$TMUX" ]; then  # iterm integration
     name=$(tmux display-message -p '#W')
@@ -2183,6 +2172,7 @@ _title_get() {
 }
 
 # Set session title from user input or prompt
+# NOTE: Here use tmux titles or current directory names by default
 _title_set() {
   local idx name default
   idx=${ITERM_SESSION_ID%%t*} && idx=${idx#w}
