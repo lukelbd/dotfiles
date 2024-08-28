@@ -337,16 +337,15 @@ function! window#scroll_normal(scroll, ...) abort
   return mode() =~? '^[ir]' ? '' : cmd
 endfunction
 function! window#scroll_infer(scroll, ...) abort
-  let nopopup = a:0 ? a:1 : 0
-  let preview_ids = filter(
+  let nopum = a:0 ? a:1 : 0
+  let winids = filter(
     \ popup_list(),
     \ {_, win -> getbufvar(winbufnr(win), '&filetype') !=# 'ale-preview'}
   \ )
-  let popup_pos = pum_getpos()
-  if !nopopup && !empty(popup_pos)  " automatically returns empty if not present
+  if !nopum && pumvisible()  " automatically returns empty if not present
     return call('s:scroll_popup', [a:scroll])
-  elseif !empty(preview_ids)
-    return call('s:scroll_preview', [a:scroll] + preview_ids)
+  elseif !empty(winids)
+    return call('s:scroll_preview', [a:scroll] + winids)
   elseif type(a:scroll)  " standard scrolling methofd
     return call('window#scroll_normal', [a:scroll])
   else  " default fallback is arrow press

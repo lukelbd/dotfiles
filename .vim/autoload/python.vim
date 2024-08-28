@@ -109,16 +109,18 @@ function! s:fold_docstring(lnum) abort
 endfunction
 function! s:fold_constant(lnum) abort  " e.g. VARIABLE = [... or if condition:...
   let heads = '^\%(if\|for\|while\|with\|try\|def\|class\)\>.*:\s*\%(#.*\)\?$'
-  let blocks = '^\%(\%(elif\|else\|except\|finally\)\>.*:\)\?\s*\%(#.*\)\?$'
-  let [lnum, label] = [a:lnum + 1, getline(a:lnum)]
-  let [inum, ilabel] = [s:get_indent(lnum), getline(lnum)]
-  if label !~# '^\K\k*' || empty(inum) | return [] | endif
-  while lnum <= line('$') && (s:get_indent(lnum) || ilabel =~# blocks)
-    if s:get_level(lnum) && ilabel !~# '^\s*\(from\|import\)\>' | return [] | endif
-    let [lnum, ilabel] = [lnum + 1, getline(lnum + 1)]
+  let blocks = '^\%(\s*\|\%(elif\|else\|except\|finally\)\>.*:\s*\%(#.*\)\?\)$'
+  let [label, indent] = [getline(a:lnum), s:get_indent(a:lnum + 1)]
+  if label !~# '^\K\k*' || empty(indent) | return [] | endif
+  let [lnum, inum, ilabel] = [a:lnum, a:lnum + 1, getline(a:lnum + 1)]
+  while inum <= line('$') && (s:get_indent(inum) || ilabel =~# blocks)
+    let lnum = ilabel =~# '^\s*$' ? lnum : inum
+    if s:get_level(inum) && ilabel !~# '^\s*\(from\|import\)\>' | return [] | endif
+    let [inum, ilabel] = [inum + 1, getline(inum + 1)]
   endwhile
-  let lnum -= lnum == a:lnum + 1 || label =~# heads
-  return lnum > a:lnum ? ['>1'] + repeat([1], lnum - a:lnum - 1) + ['<1'] : []
+  let [inum, ilabel] = [lnum + 1, getline(lnum + 1)]
+  let lnum += !s:get_indent(inum) && ilabel !~# '^\s*$'
+  return lnum > a:lnum + 1 ? ['>1'] + repeat([1], lnum - a:lnum - 1) + ['<1'] : []
 endfunction
 
 " Return cached fold expression
