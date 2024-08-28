@@ -18,6 +18,13 @@ setlocal autoindent  " indentexpr isn't much help otherwise
 setlocal indentexpr=GetPythonIndent(v:lnum)
 setlocal indentkeys+=<:>,=elif,=except
 
+" Remove outdated settings
+" NOTE: Previously used evals but now use multiples of shiftwidth
+if type(get(g:, 'pyindent_continue', 0)) | unlet g:pyindent_continue | endif
+if type(get(g:, 'pyindent_open_paren', 0)) | unlet g:pyindent_open_paren | endif
+if type(get(g:, 'pyindent_nested_paren', 0)) | unlet g:pyindent_nested_paren | endif
+if type(get(g:, 'pyindent_close_paren', 0)) | unlet g:pyindent_close_paren | endif
+
 " Configure indent settings
 " Use [black](https://github.com/psf/black) convention unless overridden
 let g:pyindent_continue = get(g:, 'pyindent_continue', 1)
@@ -29,18 +36,18 @@ let g:pyindent_search_timeout = get(g:, 'pyindent_search_timeout', 150)
 
 " Helper functions
 " NOTE: Here use the non-existing 'stop' variable to break out of the loop
-function! s:dedented(lnum, indent)
+function! s:dedented(lnum, indent) abort
   let dedent = a:indent - shiftwidth()
   return indent(a:lnum) <= dedent
 endfunction
-function! s:searchpair(lnum, flags)
+function! s:searchpair(lnum, flags) abort
   let skip = "line('.') < a:lnum - 50  ? stop : tags#get_inside(0, 'Comment', 'String')"
   return searchpair('(\|{\|\[', '', ')\|}\|\]', a:flags, skip, 0, g:pyindent_search_timeout)
 endfunction
 
 " Return indentation
 " NOTE: This is adapated from jeetsukumaran/vim-python-indent-black
-function! GetPythonIndent(lnum)
+function! GetPythonIndent(lnum) abort
   " Indent continuation lines
   if getline(a:lnum - 1) =~# '\\$'
     if a:lnum > 1 && getline(a:lnum - 2) =~# '\\$'
@@ -96,18 +103,19 @@ function! GetPythonIndent(lnum)
   endif
 
   " Efficient search for comment start
-  let [min, max] = [1, col([pnum, '$']) - 1]
-  if tags#get_inside([pnum, max], 'Comment')
-    while min < max  " efficient search
-      let cnum = (min + max) / 2
-      if tags#get_inside([pnum, cnum], 'Comment')
-        let max = cnum
+  let cnum = col([pnum, '$'])
+  if tags#get_inside([pnum, cnum], 'Comment')
+    let [cnum, inum] = [1, cnum - 1]
+    while cnum < inum  " efficient search
+      let icol = (cnum + inum) / 2
+      if tags#get_inside([pnum, icol], 'Comment')
+        let inum = icol
       else
-        let min = cnum + 1
+        let cnum = icol + 1
       endif
     endwhile
   endif
-  if strpart(getline(pnum), 0, min - 1) =~# ':\s*$'
+  if strpart(getline(pnum), 0, cnum - 1) =~# ':\s*$'
     return pindent + shiftwidth()
   endif
   if getline(pnum) =~# '^\s*\(break\|continue\|raise\|return\|pass\)\>'
