@@ -56,7 +56,6 @@ dependencies:
   - pint-xarray
   - matplotlib<3.6
   - cartopy
-  - descartes
   - shapely
   - seaborn<0.13.0
   - metpy
