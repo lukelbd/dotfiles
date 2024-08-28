@@ -720,23 +720,23 @@ augroup jumps_setup
   au CursorHold,TextChanged,InsertLeave * if utils#none_pending() | call jump#push_jump() | endif
 augroup END
 command! -bar -bang -nargs=0 Jumps call jump#fzf_jumps(<bang>0)
-nnoremap g<Up> <Cmd>call jump#fzf_jumps()<CR>
-nnoremap g<Down> <Cmd>call jump#fzf_jumps()<CR>
-noremap <C-k> <Esc><Cmd>call jump#next_jump(-v:count1)<CR>
-noremap <C-j> <Esc><Cmd>call jump#next_jump(v:count1)<CR>
-noremap <Up> <Esc><Cmd>call jump#next_jump(-v:count1)<CR>
-noremap <Down> <Esc><Cmd>call jump#next_jump(v:count1)<CR>
+nnoremap g<Left> <Cmd>call jump#fzf_jumps()<CR>
+nnoremap g<Right> <Cmd>call jump#fzf_jumps()<CR>
+noremap <C-h> <Esc><Cmd>call jump#next_jump(-v:count1)<CR>
+noremap <C-l> <Esc><Cmd>call jump#next_jump(v:count1)<CR>
+noremap <Left> <Esc><Cmd>call jump#next_jump(-v:count1)<CR>
+noremap <Right> <Esc><Cmd>call jump#next_jump(v:count1)<CR>
 
 " Navigate buffer changelist with up/down arrows
 " NOTE: This accounts for iterm function-key maps and karabiner arrow-key maps
 " change entries removed. Here <F5>/<F6> are <Ctrl-/>/<Ctrl-\> in iterm
 command! -bar -bang -nargs=0 Changes call jump#fzf_changes(<bang>0)
-nnoremap g<Left> <Cmd>call jump#fzf_changes()<CR>
-nnoremap g<Right> <Cmd>call jump#fzf_changes()<CR>
-noremap <C-h> <Esc><Cmd>call jump#next_change(-v:count1)<CR>
-noremap <C-l> <Esc><Cmd>call jump#next_change(v:count1)<CR>
-noremap <Left> <Esc><Cmd>call jump#next_change(-v:count1)<CR>
-noremap <Right> <Esc><Cmd>call jump#next_change(v:count1)<CR>
+nnoremap g<Up> <Cmd>call jump#fzf_changes()<CR>
+nnoremap g<Down> <Cmd>call jump#fzf_changes()<CR>
+noremap <C-k> <Esc><Cmd>call jump#next_change(-v:count1)<CR>
+noremap <C-j> <Esc><Cmd>call jump#next_change(v:count1)<CR>
+noremap <Up> <Esc><Cmd>call jump#next_change(-v:count1)<CR>
+noremap <Down> <Esc><Cmd>call jump#next_change(v:count1)<CR>
 
 " Navigate across recent tag jumps
 " NOTE: Apply in vimrc to avoid overwriting. This works by overriding both fzf and
