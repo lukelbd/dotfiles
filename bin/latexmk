@@ -332,10 +332,13 @@ if $texdiff; then
   # NOTE: skim-displayline will be prepended with '%DIF > ' in difference file
   echoerr "Running latexdiff on ${filename##*/} minus ${prevname##*/}"
   [ -e "$diffname" ] && rm "$diffname"  # previous file name
-  tmpfile="$filestem.tmp"  # will be deleted by cleanup()
-  cp "$filename" "$tmpfile"
-  [ -n "$linenum" ] && sed -i "${linenum}s/$/  % skim-displayline/" "$tmpfile"
-  latexdiff --append-context2cmd=abstract "$prevname" "$tmpfile" > "$diffname"
+  sedcmd='s/\\textcolor{\w\+}//g;s/colorlinks=true/colorlinks=false/g'  # remove colors
+  [ -n "$linenum" ] && sedcmd="$sedcmd;${linenum}s/$/  % skim-displayline/"
+  prevfile="$filestem.tmp0"  # will be deleted by cleanup()
+  currfile="$filestem.tmp1"  # will be deleted by cleanup()
+  cat "$filename" | sed "$sedcmd" > "$currfile"
+  cat "$prevname" | sed "$sedcmd" > "$prevfile"
+  latexdiff --append-context2cmd=abstract "$prevfile" "$currfile" > "$diffname"
   [ -r $diffname ] || raise 'Difference file not produced.'
   linenum=$(grep -n -m 1 'skim-displayline$' "$diffname" | sed 's/\([0-9]*\).*/\1/')
   # shellcheck disable=SC2181
@@ -347,14 +350,18 @@ if $texdiff; then
   # Make the pdflatex calls necessary to generate tables of contents, bibligrapyy, etc.
   diffstem=${diffname%.tex}
   if ! $pdfonly; then
-    $latex "${flags_tex[@]}" "$diffstem" &>/dev/null
+    echoerr 'Generating diff aux file...'  # maybe just need to generate glossary!
+    run 0 "$latex" "${flags_tex[@]}" "$diffstem"
   fi
   if ! $auxonly; then
     if ! $nobbl && $bibliography; then
-      $latex "${flags_tex[@]}" "$diffstem" &>/dev/null
-      $bibtex "$diffstem" 1>&2  #&>/dev/null
+      echoerr 'Generating diff bibliography...'
+      run 0 "$latex" "${flags_tex[@]}" "$diffstem"
+      echoerr 'Incorporating diff bbl file...'
+      run 0 "$bibtex" "$diffstem"
     fi
-    $latex "${flags_pdf[@]}" "$diffstem" | errcat 1>&2
+    echoerr 'Generating diff PDF...'
+    run 1 "$latex" "${flags_pdf[@]}" "$diffstem"
     [ -r "$diffstem.pdf" ] || raise "Difference PDF not produced."
   fi
 fi
@@ -369,7 +376,7 @@ if $texdocx; then
   type pandoc &>/dev/null || raise "Cannot convert to docx because pandoc is not installed. Try brew install pandoc."
   # flags=(--citeproc --filter=pandoc-crossref)
   # flags=(-M cref=true --citeproc --filter=pandoc-crossref)
-  flags=(-M cref=true --filter pandoc-xnos --filter pandoc-crossref --citeproc)
+  flags=(-M cref=true --citeproc --filter pandoc-xnos --filter pandoc-crossref)
   if ! $nobbl && $bibliography; then
     if [[ " ${packages[*]} " =~ natbib ]]; then
       flags+=(--natbib)
