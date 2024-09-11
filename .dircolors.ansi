@@ -140,48 +140,23 @@ TERM xterm-color
 TERM xterm-debian
 TERM xterm-termite
 
-### General
-# Eight-bit output (1 on, 0 off)
-EIGHTBIT 1
-# Default
-NORMAL 00
-# Normal file
-FILE 00
-# Directory
-DIR 01;34
-# XX2, XX3, XX6, XX7
-OTHER_WRITABLE 34;47
-# Symbolic link
-LINK 35
-# Executable
-EXEC 01;35
-# Files that orphaned symlinks point to
-MISSING 41;37
-# Orphaned symlinks (blinking may not work)
-ORPHAN  41;37
-# Devices
-FIFO 37;44  # blue background
-SOCK 37;44
-DOOR 37;44
-BLK  37;44
-CHR  37;44
+### Default colors
+EIGHTBIT       1  # eight-bit output (1 on, 0 off)
+NORMAL         00  # default
+FILE           00  # file
+LINK           35  # valid symlinks
+DIR            01;34  # directory
+EXEC           01;35  # executables
+OTHER_WRITABLE 34;47  # permission XX2, XX3, XX6, XX7
+MISSING        41;37  # orphan symlink destinations
+ORPHAN         41;37  # orphan symlink pointers
+FIFO           37;44  # devices
+SOCK           37;44
+DOOR           37;44
+BLK            37;44
+CHR            37;44
 
-### Logs and configs
-.*rc        01;37  # bright white
-.log        01;37
-.info       01;37
-.out        01;37
-.yml        01;37
-.yaml       01;37
-.cfg        01;37
-.conf       01;37
-.config     01;37
-.nml        01;37
-.namelist   01;37
-.vimtags    01;37
-.vimsession 01;37
-
-### Compiled files
+### Compilations
 .cmd 01;35
 .exe 01;35
 .com 01;35
@@ -194,7 +169,32 @@ CHR  37;44
 .o   01;35
 .x   01;35
 
-### Coding
+### Configuration
+*rc            01;37
+*pep8          01;37
+*black         01;37
+*_profile      01;37
+*default       01;37
+*ignore        01;37
+.ansi          01;37
+.ini           01;37
+.log           01;37
+.info          01;37
+.out           01;37
+.yml           01;37
+.yaml          01;37
+.cfg           01;37
+.conf          01;37
+.config        01;37
+.nml           01;37
+.namelist      01;37
+.vimtags       01;37
+.vimsession    01;37
+.gitconfig     01;37
+.gitignore     01;37
+.gitattributes 01;37
+
+### Programming
 .jl     31
 .ncl    31
 .nco    31
@@ -255,7 +255,7 @@ CHR  37;44
 .aux    33
 
 ### Archives
-.7z   1;36  # bright cyan
+.7z   1;36
 .apk  1;36
 .arj  1;36
 .bin  1;36
