@@ -181,16 +181,18 @@ function! edit#join_lines(backward, ...) range abort
   else  " forward join
     let line2 += line2 > line1 ? v:count : v:count1
   endif
+  let pattern = @/  " restore previous pattern
   let regex = escape(comment#get_regex(), '@')
   let regex = '\S\zs\s\(' . regex . '\)'  " \zs comes before comment
   let args = [regex, 'cnW', line1, 0, "tags#get_inside(0, 'Comment')"]
+  silent exe a:0 && a:1 ? (line1 + 1) . ',' . line2 . 's@^\s\+@@e' : ''
   call cursor(line1, 1) | let [_, col1] = call('searchpos', args)
-  exe line1 . ',' . line2 . cmd . bang
+  silent exe line1 . ',' . line2 . cmd . bang
   call cursor(line1, 1) | let [_, col2] = call('searchpos', args)
-  exe !col1 && col2 ?  line1 . 's@' . regex . '@  \1@e' : ''
+  silent exe !col1 && col2 ?  line1 . 's@' . regex . '@  \1@e' : ''
   call cursor(line1, cnum)
   call repeat#set(':call edit#join_lines(' . a:backward . ")\<CR>", v:count)
-  redraw | echo (line2 - line1 + 1) . ' lines joined'
+  let @/ = pattern | redraw | echo (line2 - line1 + 1) . ' lines joined'
 endfunction
 " For <expr> map accepting motion
 function! edit#join_lines_expr(...) abort

@@ -139,7 +139,7 @@ function! shell#job_win(cmd, ...) abort
     if lognum == -1  " open a logfile window
       exe hght . 'split ' . logfile
     else  " jump to logfile window and clean its contents
-      exe lognum . 'wincmd w' | %delete
+      exe lognum . 'wincmd w' | %delete _
     endif
     let num = bufnr(logfile)
     call setbufvar(num, '&filetype', 'stdout')
