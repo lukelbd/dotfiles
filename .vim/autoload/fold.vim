@@ -511,30 +511,31 @@ endfunction
 " NOTE: Critical to insert the FileType autocommand that calls this before
 " FastFold VimEnter, so FastFold converts folds from the correct fold method.
 function! fold#update_method(...) abort
-  let [method, expr] = ['syntax', '']  " default values
-  let current = &l:foldmethod  " active method
-  let cached = get(w:, 'lastfdm', 'manual')
-  if &l:filetype ==# 'csv'  " initialize with 'manual'
-    let method = 'manual'
+  let [type, imethod] = [&l:filetype, get(w:, 'lastfdm', 'manual')]
+  let [expr0, method0] = [&l:foldexpr, &l:foldmethod]
+  let [expr1, method1] = ['', 'syntax']
+  if method0 ==# 'indent'  " preserve indent method0
+    let method1 = method0
+  elseif type ==# 'csv'  " initialize with 'manual'
+    let method1 = 'manual'
   elseif &l:diff  " difference mode enabled
-    silent! diffupdate | let method = 'diff'
-  elseif &l:filetype ==# 'markdown'
-    silent! doautocmd Mkd CursorHold | let expr = 'Foldexpr_markdown(v:lnum)'
-  elseif &l:filetype ==# 'python'
-    let expr = 'python#fold_expr(v:lnum)'
-  elseif &l:filetype ==# 'rst'
-    let expr = 'RstFold#GetRstFold()'
+    silent! diffupdate | let method1 = 'diff'
+  elseif type ==# 'markdown'
+    silent! doautocmd Mkd CursorHold | let expr1 = 'Foldexpr_markdown(v:lnum)'
+  elseif type ==# 'python'
+    let expr1 = 'python#fold_expr(v:lnum)'
+  elseif type ==# 'rst'
+    let expr1 = 'RstFold#GetRstFold()'
   endif
-  let method = !empty(expr) ? 'expr' : method
-  let recache = cached ==# 'manual' || method !=# cached
-  let &l:foldtext = 'fold#fold_text()'
-  if !empty(expr) && &l:foldexpr !=# expr
+  let recache = imethod ==# 'manual' || method1 !=# imethod
+  let method1 = empty(expr1) ? method1 : 'expr'
+  if !empty(expr1) && expr0 !=# expr1
     call SimpylFold#Recache()
-    let &l:foldmethod = 'expr' | let &l:foldexpr = expr
-  elseif current ==# 'manual' && recache
-  \ || current !=# 'manual' && current !=# method
-    let &l:foldmethod = method
-  endif
+    let &l:foldmethod = 'expr' | let &l:foldexpr = expr1
+  elseif method0 ==# 'manual' && recache
+  \ || method0 !=# 'manual' && method1 !=# method0
+    let &l:foldmethod = method1
+  endif | let &l:foldtext = 'fold#fold_text()'
 endfunction
 
 " Update the fold definitions and open-close status

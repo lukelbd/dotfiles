@@ -264,9 +264,9 @@ endfunction
 function! syntax#update_highlights() abort
   let pairs = []  " highlight links
   call s:highlight_group('Normal', '', '', '')
-  call s:highlight_group('LineNR', '', has('gui_running') ? 'DarkGray' : 'Black', '')
-  call s:highlight_group('CursorLine', has('gui_running') ? 'DarkGray' : 'Black', 0, '')
-  call s:highlight_group('ColorColumn', has('gui_running') ? 'DarkGray' : 'Black', 0, '')
+  call s:highlight_group('LineNR', '', has('gui_running') ? 'Gray' : 'Black', '')
+  call s:highlight_group('CursorLine', has('gui_running') ? 'Gray' : 'Black', 0, '')
+  call s:highlight_group('ColorColumn', has('gui_running') ? 'Gray' : 'Black', 0, '')
   call s:highlight_group('Folded', '', 'LightGray', '')
   call s:highlight_group('Todo', '', 'Gray', '')
   call s:highlight_group('DiffAdd', 'Black', '', 'bold')
