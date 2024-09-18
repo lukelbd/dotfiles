@@ -48,6 +48,8 @@ function! grep#complete_search(lead, line, cursor)
 endfunction
 function! grep#call_grep(cmd, global, level) abort
   let paths = parse#get_paths(1, a:global, a:level)
+  let opts = a:global ? copy(paths) : parse#get_paths(1, 1, a:level)
+  let opts = sort(opts, {i1, i2 -> fnamemodify(i1, ':t') > fnamemodify(i2, ':t')})
   let head = a:cmd ==# 'lines' ? 'Search' : toupper(a:cmd[0]) . a:cmd[1:]
   let name = a:level > 2 ? 'directory' : a:level > 1 ? 'project' : a:level ? 'folder' : 'buffer'
   let name = len(paths) > 1 ? a:level > 2 ? 'directories' : name . 's' : name
@@ -56,7 +58,10 @@ function! grep#call_grep(cmd, global, level) abort
   elseif a:cmd ==# 'lines'
     let label = 'current buffer'
   else  " specific paths
-    let label = name . ' ' . join(paths, ' ')
+    let idxs = filter(map(copy(paths), 'index(opts, v:val)'), 'v:val >= 0')
+    let idxs = empty(idxs) ? [] : len(idxs) == 1 ? idxs : [min(idxs), max(idxs)]
+    let iloc = empty(idxs) ? '' : join(map(idxs, 'v:val + 1'), '-') . '/' . len(opts)
+    let label = name . ' ' . iloc . ' ' . join(map(paths, 'string(v:val)'), ' ')
   endi
   let prompt = head . ' ' . label
   let regex = utils#input_default(prompt, @/, 'grep#complete_search')

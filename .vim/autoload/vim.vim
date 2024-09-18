@@ -10,7 +10,7 @@
 " apply the updates because all ':filetype' command does is trigger script sourcing.
 let s:config_ignore = [
   \ '/.fzf/', '/plugged/', '/\(micro\|mini\|mamba\)\(forge\|conda\|mamba\)\d\?/',
-  \ '/\.\?vimsession*', '/\.\?vim/autoload/vim.vim', '/\.\?vim/after/common.vim',
+  \ '/.*\.vimsession', '/\.\?vim/autoload/vim.vim', '/\.\?vim/after/common.vim',
 \ ]  " common.vim sourced by filetype detect, others managed externally
 function! vim#config_refresh(bang, ...) abort
   let winview = winsaveview()
@@ -55,7 +55,7 @@ endfunction
 function! vim#complete_sessions(lead, line, cursor) abort
   let regex = glob2regpat(a:lead)
   let regex = regex[0:len(regex) - 2]
-  let opts = glob('.vimsession*', 0, 1)
+  let opts = glob('.*vimsession', 0, 1)
   let opts = filter(opts, 'v:val =~# regex')
   return opts
 endfunction
@@ -63,7 +63,7 @@ function! vim#init_session(...)
   let input = a:0 ? a:1 : ''
   let current = v:this_session
   if !empty(input) && !filereadable(a:1) && fnamemodify(a:1, ':t') !~# '^\.vimsession'
-    let session = fnamemodify(a:1, ':h') . '/.vimsession-' . fnamemodify(a:1, ':t')
+    let session = fnamemodify(a:1, ':h') . '/.' . fnamemodify(a:1, ':t') . '.vimsession'
   else  " manual current or default session name
     let session = !empty(input) ? a:1 : !empty(current) ? current : '.vimsession'
   endif
@@ -74,7 +74,7 @@ function! vim#init_session(...)
   else  " never overwrite existing session files
     echoerr 'Error: Cannot source session file (current session is active).' | return 0
   endif
-  let title = substitute(fnamemodify(session, ':t'), '^\.vimsession[-_]*\(.*\)$', '\1', '')
+  let title = substitute(fnamemodify(session, ':t'), '^\.\(.\+\).vimsession$', '\1', '')
   if !empty(current) && fnamemodify(session, ':p') != fnamemodify(current, ':p')
     echom 'Removing old session file ' . fnamemodify(current, ':t')
     call delete(current)

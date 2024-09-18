@@ -25,9 +25,10 @@ trash*/
 
 # Vim files
 tags
-.vimtags*
-.vimsession*
 .netrwhist
+.vimtags
+.vimsession
+.*.vimsession
 .*.sw[a-z]
 
 # Python stuff

@@ -689,26 +689,22 @@ vim() {
   [[ " $* " =~ (--version|--help|-h) ]] && return
 }
 session() {
-  local arg path flags root alt  # flags and session file
+  local arg args name path root iroot  # flags and session file
   for arg in "$@"; do
     if [[ "$arg" =~ ^-.* ]]; then
-      flags+=("$arg")
-    elif [ -z "$path" ]; then
-      path="$arg"
+      args+=("$arg")
+    elif [ -z "$name" ]; then
+      name=$arg
     else
-      echo 'Error: Too many input args.'
-      return 1
+      echo 'Error: Too many input arguments.' && return 1
     fi
   done
-  [ -z "$path" ] && path=.vimsession
-  [ -r ".vimsession-$path" ] && path=.vimsession-$path
-  [ -r ".vimsession_$path" ] && path=.vimsession_$path
+  [ -r ".vimsession-$name" ] && mv ".vimsession-${name}" ".${name}.vimsession"
+  [ -z "$name" ] && path=.vimsession || path=.${name}.vimsession
   [ -r "$path" ] || { echo "Error: Session file '$path' not found."; return 1; }
-  root=$(abspath "$path")  # absolute path with slashes
-  root=${root%/*}  # root directory to detect
-  alt=${root/$HOME/\~}  # alternative root with tilde
-  sed -i "\\:^lcd \\($root\\|$alt\\)\$:d" "$path"  # remove outdated lcd calls
-  vim -S "$path" "${flags[@]}"  # call above function
+  root=$(abspath "$path") root=${root%/*} iroot=${root/$HOME/\~}  # root directory
+  sed -i "\\:^lcd \\($root\\|$iroot\\)\$:d" "$path"  # outdated lcd calls
+  vim -S "$path" "${args[@]}"  # call above function
 }
 
 #-----------------------------------------------------------------------------
@@ -967,7 +963,7 @@ ports() {
 _address_port() {
   local address port host
   [ -z "$1" ] && host=${HOSTNAME%%.*} || host="$1"
-  [ $# -gt 1 ] && echo 'Error: Too many input args.' && return 1
+  [ $# -gt 1 ] && echo 'Error: Too many input arguments.' && return 1
   case $host in
     vortex*|velouria*|maelstrom*|uriah*)
       address=localhost
