@@ -1,6 +1,8 @@
 # General packages to install.
 # Use this on new servers with mamba env update -f environment.yml
 # Use pip for cf_units since mamba cf_units outdated python requirements
+# NOTE: Pint > 0.22 raises 'cannot import name deprecated from typing_extensions'
+# and > 0.19 has issues wrapping dataframe (handled in climopy refactor branch).
 # NOTE: To avoid duplicate installations of extensions skip 'jupyter contrib install' See:
 # https://github.com/Jupyter-contrib/jupyter_nbextensions_configurator/issues/25#issuecomment-287730514
 # NOTE: Need to install latex-envs from master branch until May 2022 PR released. See:
@@ -52,7 +54,7 @@ dependencies:
   - cftime
   - xarray<=2022.01.01
   - cf_xarray<0.7.8,>=0.7.5
-  - pint<0.23
+  - pint
   - pint-pandas
   - pint-xarray
   - matplotlib<3.6
