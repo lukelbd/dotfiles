@@ -1688,10 +1688,11 @@ let g:SimpylFold_docstring_preview = 0  " disable foldtext() override
 " call s:plug('neoclide/jsonc.vim')  " vscode-style expanded json syntax, but overkill
 " call s:plug('AndrewRadev/inline_edit.vim')  " inline syntax highlighting
 " call s:plug('vim-python/python-syntax')  " nicer python syntax (copied instead)
-" call s:plug('chrisbra/csv.vim')  " csv syntax highlighting
+" call s:plug('chrisbra/csv.vim')  " csv syntax highlighting (vim now better)
+call s:plug('mechatroner/rainbow_csv')  " column highlighting
 call s:plug('vim-scripts/applescript.vim')  " applescript syntax support
 call s:plug('andymass/vim-matlab')  " recently updated vim-matlab fork from matchup author
-call s:plug('preservim/vim-markdown')  " see .vim/after/syntax.vim for kludge fix
+call s:plug('preservim/vim-markdown')  " see .vim/after/common.vim for kludge fix
 call s:plug('Rykka/riv.vim')  " restructured text, syntax folds
 call s:plug('tmux-plugins/vim-tmux')  " tmux syntax highlighting
 call s:plug('anntzer/vim-cython')  " cython syntax highlighting
@@ -1973,13 +1974,22 @@ if s:has_plug('vim-easy-align')  " {{{
 endif  " }}}
 
 " Comment toggle settings
-" NOTE: This disable several maps but keeps many others. Remove unmap commands
-" after restarting existing vim sessions.
-if s:has_plug('tcomment_vim')  " {{{
-  augroup comment_setup
+" NOTE: This disables several tcomment vim maps but keeps many others. Remove
+" unmap commands after restarting existing vim sessions.
+if s:has_plug('rainbow_csv')  " {{{
+  augroup csv_setup
     au!
-    au FileType csv,text call window#setup_values()
+    au FileType csv,csv_* call window#setup_csv()
   augroup END
+  let g:rcsv_colorpairs = [
+    \ ['NONE', 'NONE'], ['Red', 'Red'], ['Blue', 'Blue'], ['Green', 'Green'],
+    \ ['Magenta', 'Magenta'], ['Cyan', 'Cyan'], ['Yellow', 'Yellow'], ['Gray', 'Gray'],
+    \ ['DarkRed', 'DarkRed'], ['DarkBlue', 'DarkBlue'], ['DarkGreen', 'DarkGreen'],
+    \ ['DarkMagenta', 'DarkMagenta'], ['DarkCyan', 'DarkCyan'],
+    \ ['DarkYellow', 'DarkYellow'], ['DarkGray', 'DarkGray']
+  \ ]
+endif  " }}}
+if s:has_plug('tcomment_vim')  " {{{
   for s:key1 in ['>', '<'] | for s:key2 in ['b', 'c', '>', '<>']
     silent! exe 'unmap g' . s:key1 . s:key2
   endfor | endfor
@@ -2497,9 +2507,6 @@ endif  " }}}
 
 " Git plugin settings {{{2
 " Conflict highlight settings (warning: change below to 'BufEnter?')
-" Shortcuts mirror zf/zF/zd/zD used for manual fold deletion and creation
-" TODO: Figure out how to get highlighting closer to marks without clearing background.
-" May need to define custom :syn matches that are not regions. Ask stack exchange.
 " NOTE: Need to remove syntax regions here because they are added on per-filetype
 " basis and they wipe out syntax highlighting between the conflict markers.
 " See: https://vi.stackexchange.com/q/31623/8084
@@ -2815,19 +2822,31 @@ endif  " }}}
 
 " Syntax utilities {{{2
 " Apply defaults and add runtime popup mappings
-" NOTE: Here common.vim fails to apply mark fold overrides if called right away,
-" perhaps race condition with syntax fold definitions. Use feedkeys() instead
 " NOTE: Here syntax autocommands triggered by 'set syntax=', always after scripts
 " loaded by $VIMRUNTIME/syntax/synload.vim 'au Syntax * call s:SynSet()' (this works
 " by unletting b:current_syntax variable then finding the syntax and after scripts).
-" NOTE: Here fix 'riv' bug where changing g:riv_python_rst_hl after startup has no
-" effect. Grepped vim runtime and plugged, riv is literally only place where 'syntax'
+" NOTE: Critical that below comes after other Syntax * autocommands to come first, but
+" 'rainbow_csv' does not check for re-loading. So defer to VimEnter at which point file
+" has been sourced
+" and fix 'riv' bug where changing g:riv_python_rst_hl after startup has no effect
+" (grepped vim runtime and plugged, riv is literally only place where 'syntax'
 " file employs 'loaded' variables with finish block (typically only used for plugins).
-augroup syntax_setup
-  au!
-  au Syntax * unlet! b:af_py_loaded | unlet! b:af_rst_loaded
-  au Syntax * unlet! b:common_syntax | exe 'runtime after/common.vim'
-augroup END
+function! s:syntax_setup()
+  augroup syntax_setup
+    au!
+    au Syntax * unlet! b:af_py_loaded b:af_rst_loaded b:common_syntax | runtime after/common.vim
+  augroup END
+endfunction
+function! s:syntax_init()
+  augroup syntax_init
+    au!
+    au VimEnter * call mark#init_marks() | call s:syntax_setup() | doautocmd syntax_setup Syntax
+  augroup END
+endfunction
+nnoremap <Leader>e <Cmd>Syntax<CR>
+nnoremap <Leader>6 <Cmd>Syntax 100<CR>
+nnoremap <Leader>7 <Cmd>Syntax!<CR>
+nnoremap <Leader>8 <Cmd>Colorize<CR>
 command! -bar -nargs=* ShowGroups call syntax#show_stack(<f-args>)
 command! -bar -nargs=0 ShowNames exe 'help highlight-groups' | exe 'normal! zt'
 command! -bar -nargs=0 ShowBases exe 'help group-name' | exe 'normal! zt'
@@ -2844,16 +2863,8 @@ nnoremap <Leader>5 <Cmd>ShowColors<CR>
 " Repair syntax highlighting
 " NOTE: :Colorize is from hex-colorizer plugin. Expensive so disable at start
 " NOTE: Here :set background triggers colorscheme autocmd so must avoid infinite loop
-augroup mark_setup
-  au!
-  au VimEnter * call mark#init_marks()
-augroup END
 command! -bar -bang -count=0 Syntax
   \ call syntax#sync_lines(<range> == 2 ? abs(<line2> - <line1>) : <count>, <bang>0)
-nnoremap <Leader>e <Cmd>Syntax<CR>
-nnoremap <Leader>6 <Cmd>Syntax 100<CR>
-nnoremap <Leader>7 <Cmd>Syntax!<CR>
-nnoremap <Leader>8 <Cmd>Colorize<CR>
 
 " Scroll color schemes and toggle colorize
 " NOTE: Here :Colorize is from colorizer.vim and :Colors from fzf.vim. Note coloring
@@ -2878,5 +2889,5 @@ augroup jump_setup
 augroup END
 silent! exe 'runtime autoload/repeat.vim'
 if !v:vim_did_enter | nohlsearch | endif
-call syntax#update_highlights() | redraw!
+if !v:vim_did_enter | call s:syntax_init() | endif
 nnoremap <Leader><Leader> <Cmd>echo system('curl https://icanhazdadjoke.com/')<CR>

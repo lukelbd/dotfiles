@@ -28,11 +28,12 @@ nnoremap <buffer> >> <Cmd>call edit#indent_lines(0, v:count1)<CR>
 nnoremap <buffer> << <Cmd>call edit#indent_lines(1, v:count1)<CR>
 
 " Update folds and syntax
-" NOTE: Here overwrite native foldtext function so that vim-markdown autocommands
-" re-apply it along with other settings. Critical to prevent e.g. javascript.vim
-" from overwriting fold settings: https://github.com/tpope/vim-markdown/pull/173
-" and note this requires g:vim_markdown_override_foldtext = 1 in .vimrc (default).
-if exists('b:common_syntax') || !exists('b:current_syntax')
+" NOTE: Here remove various filetype-related mappings that can cause cursor hang for
+" single-key mapings in vimrc (put after common_syntax to avoid unnecessary calls)
+" NOTE: This implements default highlight colors and overrides syntax and matchadd()
+" groups from e.g. vim-markdown and rainbow_csv plugins. Critical to call after all
+" other Syntax * autocommands so generate and call group on VimEnter (see vimrc).
+if exists('b:common_syntax') || !exists('b:current_syntax') && !exists('b:rbcsv')
   finish  " remove b:common_syntax on Syntax * autocommand
 endif
 let b:common_syntax = 1

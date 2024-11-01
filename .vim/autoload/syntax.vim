@@ -217,15 +217,15 @@ function! syntax#update_groups() abort
   syntax match commentColon /:/ contained
   syntax match commentHeader
     \ /\C\%([a-z.]\s\+\)\@<!\%(Warning\|WARNING\|Error\|ERROR\|Fixme\|FIXME\|Todo\|TODO\|Note\|NOTE\|XXX\|{{{\d\?\|}}}\d\?\)[sS]\?:\@=/
-    \ containedin=.*Comment.* contains=pytonTodo nextgroup=commentColon
+    \ containedin=.*Comment.* contains=pythonTodo nextgroup=commentColon
 endfunction
 
 " Highlight group with gui or cterm codes
 " NOTE: Cannot use e.g. aliases 'bg' or 'fg' in terminal since often unset, and cannot
 " use transparent 'NONE' in gui vim since undefined, so swap them here.
 function! s:highlight_group(group, back, front, ...) abort
-  let defaults = {'Black': '#000000', 'White': '#ffffff', 'Gray': '#444444'}
-  call extend(defaults, {'DarkGray': '#222222', 'LightGray': '#666666'})
+  let defaults = {'Black': '#000000', 'DarkGray': '#222222', 'Gray': '#444444'}
+  call extend(defaults, {'LightGray': '#666666', 'White': '#888888'})
   let name = has('gui_running') ? 'gui' : 'cterm'
   let text = a:0 && type(a:1) ? empty(a:1) ? 'None' : a:1 : ''
   let args = empty(text) ? [] : [name . '=' . text]
@@ -262,13 +262,12 @@ endfunction
 " based on colorscheme. Leverage that instead of reproducing here. Also need special
 " workaround to apply bold gui syntax. See https://stackoverflow.com/a/73783079/4970632
 function! syntax#update_highlights() abort
-  let pairs = []  " highlight links
+  let pairs = [['ColorColumn', 'CursorLine']]  " highlight links
   call s:highlight_group('Normal', '', '', '')
-  call s:highlight_group('LineNR', '', has('gui_running') ? 'Gray' : 'Black', '')
-  call s:highlight_group('CursorLine', has('gui_running') ? 'Gray' : 'Black', 0, '')
-  call s:highlight_group('ColorColumn', has('gui_running') ? 'Gray' : 'Black', 0, '')
-  call s:highlight_group('Folded', '', 'LightGray', '')
-  call s:highlight_group('Todo', '', 'Gray', '')
+  call s:highlight_group('CursorLine', has('gui_running') ? 'DarkGray' : 'Black', 0, '')
+  call s:highlight_group('Comment', '', has('gui_running') ? 'Gray' : 'Black', '')
+  call s:highlight_group('Todo', '', has('gui_running') ? 'LightGray' : 'Gray', '')
+  call s:highlight_group('Folded', '', has('gui_running') ? 'White' : 'LightGray', '')
   call s:highlight_group('DiffAdd', 'Black', '', 'bold')
   call s:highlight_group('DiffChange', '', '', '')
   call s:highlight_group('DiffDelete', 'Black', 'Black', '')
@@ -280,13 +279,11 @@ function! syntax#update_highlights() abort
   call s:highlight_group('StrikeThrough', 0, 0, 'strikethrough')
   call s:highlight_group('StatusLineTerm', 'LightYellow', 'Black', '')
   call s:highlight_group('StatusLineTermNC', '', 'LightYellow', '')
-  call s:highlight_group('CSVColumnEven', '', 'LightRed', '')
-  call s:highlight_group('CSVColumnOdd', '', 'Red', '')
   for group in ['Conceal', 'Pmenu', 'Terminal']
     call add(pairs, [group, 'Normal'])
   endfor
-  for group in ['Comment', 'SignColumn', 'FoldColumn', 'CursorLineNR', 'CursorLineFold', 'NonText', 'SpecialKey']
-    call add(pairs, [group, 'LineNR'])
+  for group in ['LineNR', 'SignColumn', 'FoldColumn', 'CursorLineNR', 'CursorLineFold', 'NonText', 'SpecialKey']
+    call add(pairs, [group, 'Comment'])
   endfor
   for group in ['ALEErrorLine', 'ALEWarningLine', 'ALEInfoLine']  " see above
     call add(pairs, [group, 'Conceal'])

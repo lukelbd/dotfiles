@@ -398,24 +398,27 @@ function! window#setup_panel(...) abort
   endfor
 endfunction
 
-" Setup csv data windows
-" NOTE: See :help CSV and https://github.com/chrisbra/csv.vim
-function! window#setup_values() abort
-  if !exists(':CSVInit') | return | endif
-  let winview = winsaveview()
+" Setup csv and table windows
+" NOTE: See https://github.com/mechatroner/rainbow_csv for details
+function! window#setup_csv() abort
+  let winview = winsaveview() | keepjumps goto
+  let delim = expand('%:e') ==# 'csv' ? ',' : ' '  " field delimiter
   let char = matchstr(getline(1), '^[#%"]')
   let char = empty(char) ? '#' : char
-  keepjumps goto  " start from top
-  let head1 = search('^\s*\a', 'W')
-  let head2 = head1 ? search('^\s*[.+-]\?\d', 'W') : head1
-  let g:csv_delim = expand('%:e') ==# 'txt' ? ' ' : ','
-  let b:csv_headerline = head2 ? head2 - 1 : head1  " header above numeric
-  let &l:commentstring = char . '%s'
-  keepjumps goto  " start from top
-  let info = search('^\s*[^' . char . ']', 'nW') - 1
-  let expr = info > 1 && !foldlevel(1) ? 1 . ',' . info . 'fold' : ''
-  exe 'CSVInit' | setlocal foldenable
-  call feedkeys("\<Cmd>" . expr . "\<CR>", 'n')
+  let nr = search('^\s*[^' . char . ']', 'nW') - 1
+  let cmd = nr > 1 && !foldlevel(1) ? 1 . ',' . nr . 'fold' : ''
+  let head0 = search('^\s*\a', 'W')  " initial header check
+  let head1 = head0 ? search('^\s*[.+-]\?\d', 'W') : head0
+  let b:csv_headerline = head1 ? head1 - 1 : head0
+  let [g:csv_delimiter, g:csv_delim] = [delim, delim]  " native vim syntax and csv.vim
+  let [&l:commentstring, g:rainbow_comment_prefix] = [char . '%s', char]  " native and rainbow_csv.vim
+  setlocal foldenable syntax=csv
+  if exists('*rainbow_csv#handle_new_file')
+    call rainbow_csv#handle_new_file()
+  elseif exists('*csv#Init')
+    call csv#Init()
+  endif
+  call feedkeys("\<Cmd>" . cmd .  "\<CR>", 'n')
   call winrestview(winview)
 endfunction
 
