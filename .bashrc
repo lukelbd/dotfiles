@@ -1138,7 +1138,6 @@ _scp_bulk() {
   # always track which files are deleted and manually update both dirs... or use git.
   flags=(-vhi -rlpt --update --progress)  # default flags
   $_macos && remote=0 || remote=1  # whether on remote
-  echo "Args: ${*}"
   while [ $# -gt 0 ]; do
     if [[ "$1" =~ ^\- ]]; then
       flags+=("$1")  # flag arguments must be specified with equals
@@ -2170,10 +2169,11 @@ _title_get() {  # shellcheck disable=SC2153
 # Set session title from user input or prompt
 # NOTE: Here use tmux titles or current directory names by default
 _title_set() {
-  local idx name default
+  local idx name host default
   idx=${ITERM_SESSION_ID%%t*} && idx=${idx#w}
+  host=$(hostname) host=${host%%.*} host=${host%@*}
   if [ -n "$TMUX" ]; then
-    default=$(tmux display-message -p '#W')
+    default=${host}-$(tmux display-message -p '#W')
   elif $_macos && [ -n "$ITERM_SESSION_ID" ]; then
     default="window ${idx:-0}"
   elif $_macos; then
