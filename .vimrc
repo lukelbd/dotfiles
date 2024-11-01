@@ -178,7 +178,7 @@ let s:info_filetypes = [
   \ 'bib', 'log', 'qf'
 \ ]  " for wrapping and copy toggle
 let s:data_filetypes = [
-  \ 'csv', 'dosini', 'json', 'jsonc', 'text'
+  \ 'csv', 'csv_whitespace', 'dosini', 'json', 'jsonc', 'text'
 \ ]  " for just copy toggle
 let s:lang_filetypes = [
   \ 'html', 'liquid', 'markdown', 'rst', 'tex'
@@ -1980,7 +1980,12 @@ if s:has_plug('rainbow_csv')  " {{{
   augroup csv_setup
     au!
     au FileType csv,csv_* call window#setup_csv()
+      \ | call add(s:data_filetypes, &l:filetype)
+      \ | call add(s:copy_filetypes, &l:filetype)
+      \ | call add(g:fastfold_skip_filetypes , &l:filetype)
   augroup END
+  let g:disable_rainbow_hover = 0  " column information
+  let g:disable_rainbow_csv_autodetect = 1  " set manually instead
   let g:rcsv_colorpairs = [
     \ ['NONE', 'NONE'], ['Red', 'Red'], ['Blue', 'Blue'], ['Green', 'Green'],
     \ ['Magenta', 'Magenta'], ['Cyan', 'Cyan'], ['Yellow', 'Yellow'], ['Gray', 'Gray'],

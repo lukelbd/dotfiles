@@ -399,10 +399,12 @@ function! window#setup_panel(...) abort
 endfunction
 
 " Setup csv and table windows
-" NOTE: See https://github.com/mechatroner/rainbow_csv for details
+" NOTE: This handles syntax highlighting, including comments and field detection, for
+" native plugin and external plugins. See: https://github.com/mechatroner/rainbow_csv
 function! window#setup_csv() abort
   let winview = winsaveview() | keepjumps goto
-  let delim = expand('%:e') ==# 'csv' ? ',' : ' '  " field delimiter
+  let delimiter = expand('%:e') ==# 'csv' ? ',' : ' '  " field delimiter
+  let policy = delimiter ==# ',' ? 'quoted' : 'whitespace'  " see rainbow_csv/autoload
   let char = matchstr(getline(1), '^[#%"]')
   let char = empty(char) ? '#' : char
   let nr = search('^\s*[^' . char . ']', 'nW') - 1
@@ -410,14 +412,14 @@ function! window#setup_csv() abort
   let head0 = search('^\s*\a', 'W')  " initial header check
   let head1 = head0 ? search('^\s*[.+-]\?\d', 'W') : head0
   let b:csv_headerline = head1 ? head1 - 1 : head0
-  let [g:csv_delimiter, g:csv_delim] = [delim, delim]  " native vim syntax and csv.vim
-  let [&l:commentstring, g:rainbow_comment_prefix] = [char . '%s', char]  " native and rainbow_csv.vim
-  setlocal foldenable syntax=csv
-  if exists('*rainbow_csv#handle_new_file')
-    call rainbow_csv#handle_new_file()
+  let [g:csv_delimiter, g:csv_delim] = [delimiter, delimiter]  " native vim and csv.vim
+  let [&l:commentstring, g:rainbow_comment_prefix] = [char . '%s', char]  " native vim and rainbow_csv.vim
+  if exists('*rainbow_csv#set_rainbow_filetype')
+    call rainbow_csv#set_rainbow_filetype(delimiter, policy, char)
   elseif exists('*csv#Init')
     call csv#Init()
   endif
+  let &l:foldenable = 1  " enable manual folds
   call feedkeys("\<Cmd>" . cmd .  "\<CR>", 'n')
   call winrestview(winview)
 endfunction

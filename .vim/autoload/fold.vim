@@ -516,10 +516,10 @@ function! fold#update_method(...) abort
   let [expr1, method1] = ['', 'syntax']
   if method0 ==# 'indent'  " preserve indent method0
     let method1 = method0
-  elseif type ==# 'csv'  " initialize with 'manual'
-    let method1 = 'manual'
   elseif &l:diff  " difference mode enabled
     silent! diffupdate | let method1 = 'diff'
+  elseif type =~# '^text$\|^r\?csv\(_\w\+\)\?$'
+    let method1 = 'manual'  " initialize with 'manual'
   elseif type ==# 'markdown'
     silent! doautocmd Mkd CursorHold | let expr1 = 'Foldexpr_markdown(v:lnum)'
   elseif type ==# 'python'
@@ -534,6 +534,7 @@ function! fold#update_method(...) abort
     let &l:foldmethod = 'expr' | let &l:foldexpr = expr1
   elseif method0 ==# 'manual' && recache
   \ || method0 !=# 'manual' && method1 !=# method0
+  \ || method0 !=# 'manual' && method1 ==# 'manual'
     let &l:foldmethod = method1
   endif | let &l:foldtext = 'fold#fold_text()'
 endfunction
