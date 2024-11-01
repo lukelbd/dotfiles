@@ -257,9 +257,9 @@ function! s:fold_text(line1, line2, level)
     let indent = matchstr(header, '^\s*[^-=]\?')
     let indent .= empty(trim(indent)) ? '' : ' '
     let flags .= lines . ' lines '
-    let label = indent . flags . strcharpart(header, strchars(indent . flags))
-    let index = strchars(label) - (maxlen - 1)
-    let label = strcharpart(label, max([index, 0]))
+    let index = strchars(header . indent . flags) - (maxlen - 1)
+    let header = strcharpart(header, max([index, 0]))
+    let label = indent . flags . header
     return [label, ' ', '']
   endif
   let [stats, space] = ['(' . lines . ') [' . a:level . ']', ' ']
