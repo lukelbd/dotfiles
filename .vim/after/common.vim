@@ -2,7 +2,7 @@
 " Override filetype and syntax settings
 " See: https://stackoverflow.com/a/4301809/4970632
 "-----------------------------------------------------------------------------"
-" Update general settings
+" Update settings and highlighting
 " NOTE: Peekaboo mappings are local so have to override here. Also in future should
 " consider setting b:surround_indent for filetypes but for now have this for safety.
 " NOTE: This overrides native vim filetype-specific double-bracket maps (e.g. :map [[
@@ -17,9 +17,9 @@ let &l:joinspaces = 0
 let &l:linebreak = 1
 let &l:textwidth = g:linelength
 let &l:wrapmargin = 0
-let s:bracket1 = get(maparg('[', '', 0, 1), 'buffer', 0)
-let s:bracket2 = get(maparg(']', '', 0, 1), 'buffer', 0)
-if !s:bracket1 && !s:bracket2  " no buffer-local single bracket maps
+call syntax#update_defaults()
+call syntax#update_highlights()
+if !get(maparg('[', '', 0, 1), 'buffer', 0) && !get(maparg(']', '', 0, 1), 'buffer', 0)
   map <buffer> [[ <Plug>TagsBackwardTop
   map <buffer> ]] <Plug>TagsForwardTop
 endif
@@ -39,7 +39,6 @@ endif
 let b:common_syntax = 1
 call syntax#update_groups()
 call syntax#update_matches()
-call syntax#update_highlights()
 for s:suffix in ['g', 's', 'S', '%']  " instead use <C-g> to insert literals
   exe 'silent! iunmap <C-g>' . s:suffix
   exe 'silent! iunmap <buffer><C-g>' . s:suffix

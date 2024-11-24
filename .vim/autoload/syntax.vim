@@ -133,12 +133,10 @@ function! syntax#show_stack(...) abort
   endfor
   if !empty(names)
     echohl Title | echom '--- Syntax names ---' | echohl None
-    for label in labels | echom label | endfor
-    exe 'syntax list ' . join(names, ' ')
+    for lab in labels | echom lab | endfor | exe 'syntax list ' . join(names, ' ')
   else  " no syntax
-    echohl WarningMsg
-    echom 'Warning: No syntax under cursor.'
-    echohl None
+    let msg = 'Warning: No syntax names under cursor.'
+    echohl WarningMsg | echom msg | echohl None
   endif
 endfunction
 
@@ -178,9 +176,10 @@ function! syntax#update_matches() abort
     call matchadd('Conceal', regex, 0, -1, {'conceal': ''})
   endif
   if &filetype ==# 'markdown'  " strikethrough: https://www.reddit.com/r/vim/comments/g631im/any_way_to_enable_true_markdown_strikethrough/
-    call matchadd('StrikeThrough', '<s>\zs\_.\{-}\ze</s>')
+    call s:highlight_group('StrikeThrough', 0, 0, 'strikethrough')
     call matchadd('Conceal', '<s>\ze\_.\{-}</s>', 10, -1, {'conceal': ''})
     call matchadd('Conceal', '<s>\_.\{-}\zs</s>', 10, -1, {'conceal': ''})
+    call matchadd('StrikeThrough', '<s>\zs\_.\{-}\ze</s>')
   endif
 endfunction
 
@@ -253,14 +252,34 @@ function! s:highlight_group(group, back, front, ...) abort
   exe 'noautocmd highlight ' . a:group . ' ' . join(args, ' ')
 endfunction
 
+" Update default cterm highlight groups
+" NOTE: Plugins vim-tabline and vim-statusline use custom auto-calculated colors
+" based on colorscheme. Leverage them instead of reproducing here.
+" NOTE: Here :set background triggers colorscheme autocmd so 'noautocmd' is
+" required to avoid infinite loop.
+function! syntax#update_defaults() abort
+  if has('gui_running') | return | endif
+  if get(g:, 'colors_name', 'default') !=? 'default' | return | endif
+  exe 'noautocmd set background=dark'
+  call s:highlight_group('MatchParen', 'Blue', '')
+  call s:highlight_group('Sneak', 'DarkMagenta', '')
+  call s:highlight_group('Search', 'Magenta', '')
+  call s:highlight_group('PmenuSel', 'Magenta', '', '')
+  call s:highlight_group('PmenuSbar', 'DarkGray', '', '')
+  call s:highlight_group('Type', '', 'DarkGreen')
+  call s:highlight_group('Constant', '', 'Red')
+  call s:highlight_group('Special', '', 'DarkRed')
+  call s:highlight_group('PreProc', '', 'DarkCyan')
+  call s:highlight_group('Indentifier', '', 'Cyan', 'bold')
+endfunction
+
 " Update syntax highlight groups
 " NOTE: This enforces core grayscale-style defaults, with dark comments against
 " darker background and sign and number columns that blend into the main window.
 " NOTE: ALE highlights point to nothing when scrolling color schemes, but are still
 " used for sign definitions, so manually enable here (note getcompletion() will fail)
-" NOTE: Plugins vim-tabline and vim-statusline use custom auto-calculated colors
-" based on colorscheme. Leverage that instead of reproducing here. Also need special
-" workaround to apply bold gui syntax. See https://stackoverflow.com/a/73783079/4970632
+" NOTE: Here need special workaround to apply bold gui syntax for folded text.
+" See: https://stackoverflow.com/a/73783079/4970632
 function! syntax#update_highlights() abort
   let pairs = [['ColorColumn', 'CursorLine']]  " highlight links
   call s:highlight_group('Normal', '', '', '')
@@ -276,7 +295,6 @@ function! syntax#update_highlights() abort
   call s:highlight_group('ErrorMsg', 'DarkRed', 'White', '')
   call s:highlight_group('WarningMsg', 'LightRed', 'Black', '')
   call s:highlight_group('InfoMsg', 'LightYellow', 'Black', '')
-  call s:highlight_group('StrikeThrough', 0, 0, 'strikethrough')
   call s:highlight_group('StatusLineTerm', 'LightYellow', 'Black', '')
   call s:highlight_group('StatusLineTermNC', '', 'LightYellow', '')
   for group in ['Conceal', 'Pmenu', 'Terminal']

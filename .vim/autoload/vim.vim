@@ -38,8 +38,9 @@ function! vim#config_refresh(bang, ...) abort
     exe foldlevel(fold[0]) ? fold[0] . 'foldopen' : ''
   endfor
   call winrestview(winview)
-  redraw | echom 'Loaded: ' . join(paths, ', ') . '.'
-  let g:refresh = localtime()
+  redraw | let g:refresh = localtime()
+  let msg = 'Loaded: ' . join(paths, ', ') . '.'
+  call feedkeys("\<Cmd>echom " . string(msg) . "\<CR>", 'n')
 endfunction
 
 " Create session file or load existing one

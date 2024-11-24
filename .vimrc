@@ -2,6 +2,8 @@
 " A giant vim configuration that does all sorts of magical things. {{{1
 "-----------------------------------------------------------------------------"
 " Initial stuff {{{2
+" NOTE: General idea is <F1> and <F2> i.e. <Ctrl-,> and <Ctrl-.> should be tab-like
+" for command mode cycling. See also bashrc fzf key-binding configuration.
 " NOTE: Cursor shape requires below keycodes (previously used vitality.vim passthrough
 " with 'au FocusLost * stopinsert'). See: https://stackoverflow.com/a/44473667/4970632 
 " NOTE: Use karabiner to convert ctrl-j/k/h/l into down/up/left/right. Then when
@@ -2775,83 +2777,30 @@ endif  " }}}
 "-----------------------------------------------------------------------------"
 " Syntax settings {{{1
 "-----------------------------------------------------------------------------"
-" Highlighting and colors {{{2
-" Apply and list schemes from flazz/vim-colorschemes
-" NOTE: This has to come after color schemes are loaded.
-" https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
-let g:colors_best = [
-  \ 'adventurous',
-  \ 'badwolf',
-  \ 'fahrenheit',
-  \ 'falcoln',
-  \ 'gruvbox',
-  \ 'manuscript',
-  \ 'molokai',
-  \ 'oceanicnext',
-  \ 'sierra',
-  \ 'sourcerer',
-  \ 'slatedark',
-  \ 'spacegray',
-  \ 'tender',
-  \ 'ubaryd',
-  \ 'vimbrant',
-  \ 'manuscript',
-\ ]
-if has('gui_running') && empty(get(g:, 'colors_name', ''))
-  noautocmd colorscheme manuscript
-endif
-if !exists('g:colors_default')
-  let g:colors_default = get(g:, 'colors_name', 'default')
-endif
-
-" General default colors
+" Highlight colors {{{2
 " Use main colors instead of light and dark colors instead of main
-" NOTE: The bulk operations are in autoload/syntax.vim
-augroup scheme_setup
-  au!
-  exe 'au ColorScheme ' . g:colors_default . ' so ~/.vimrc'
-augroup END
-if !has('gui_running') && get(g:, 'colors_name', 'default') ==? 'default'  " {{{
-  noautocmd set background=dark  " standardize colors
-  highlight MatchParen ctermbg=Blue ctermfg=NONE
-  highlight Sneak ctermbg=DarkMagenta ctermfg=NONE
-  highlight Search ctermbg=Magenta ctermfg=NONE
-  highlight PmenuSel ctermbg=Magenta ctermfg=NONE cterm=NONE
-  highlight PmenuSbar ctermbg=DarkGray ctermfg=NONE cterm=NONE
-  highlight Type ctermbg=NONE ctermfg=DarkGreen
-  highlight Constant ctermbg=NONE ctermfg=Red
-  highlight Special ctermbg=NONE ctermfg=DarkRed
-  highlight PreProc ctermbg=NONE ctermfg=DarkCyan
-  highlight Indentifier ctermbg=NONE ctermfg=Cyan cterm=Bold
-endif  " }}}
+" NOTE: Here :Colorize is from colorizer.vim and :Colors from fzf.vim. Note coloring
+" hex strings can cause massive slowdowns so disable by default.
+" NOTE: Here try flazz/vim-colorschemes schemes: badwolf, fahrenheit, falcoln, gruvbox,
+" manuscript, molokai, oceanicnext, sierra, sourcerer, slatedark, spacegray, tender,
+" ubaryd, vimbrant, manuscript, adventurous. Note this has to come after schemes loaded:
+" https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
+command! -bar -nargs=? -complete=color Scheme call syntax#next_scheme(<f-args>)
+command! -bar -count=1 Sprev call syntax#next_scheme(-<count>)
+command! -bar -count=1 Snext call syntax#next_scheme(<count>)
+call utils#repeat_map('n', 'g{', 'Sprev', ':<C-u>Sprev<CR>')
+call utils#repeat_map('n', 'g}', 'Snext', ':<C-u>Snext<CR>')
+nnoremap <Leader>8 <Cmd>Colorize<CR>
+nnoremap <Leader>9 <Cmd>Colors<CR>
+nnoremap <Leader>0 <Cmd>exe 'Scheme ' . g:colors_default<CR>
+if !exists('g:colors_default')
+  let s:default = has('gui_running') ? 'manuscript' : 'default'
+  let g:colors_default = get(g:, 'colors_name', default)
+endif
 
 " Syntax utilities {{{2
-" Apply defaults and add runtime popup mappings
-" NOTE: Here syntax autocommands triggered by 'set syntax=', always after scripts
-" loaded by $VIMRUNTIME/syntax/synload.vim 'au Syntax * call s:SynSet()' (this works
-" by unletting b:current_syntax variable then finding the syntax and after scripts).
-" NOTE: Critical that below comes after other Syntax * autocommands to come first, but
-" 'rainbow_csv' does not check for re-loading. So defer to VimEnter at which point file
-" has been sourced
-" and fix 'riv' bug where changing g:riv_python_rst_hl after startup has no effect
-" (grepped vim runtime and plugged, riv is literally only place where 'syntax'
-" file employs 'loaded' variables with finish block (typically only used for plugins).
-function! s:syntax_setup()
-  augroup syntax_setup
-    au!
-    au Syntax * unlet! b:af_py_loaded b:af_rst_loaded b:common_syntax | runtime after/common.vim
-  augroup END
-endfunction
-function! s:syntax_init()
-  augroup syntax_init
-    au!
-    au VimEnter * call mark#init_marks() | call s:syntax_setup() | doautocmd syntax_setup Syntax
-  augroup END
-endfunction
-nnoremap <Leader>e <Cmd>Syntax<CR>
-nnoremap <Leader>6 <Cmd>Syntax 100<CR>
-nnoremap <Leader>7 <Cmd>Syntax!<CR>
-nnoremap <Leader>8 <Cmd>Colorize<CR>
+" NOTE: Use ShowGroups to debug syntax and hihlights under cursor, ShowPlugin/ShowSyntax
+" to debug syntax issues, and ShowNames/ShowBases to debug highlight issues.
 command! -bar -nargs=* ShowGroups call syntax#show_stack(<f-args>)
 command! -bar -nargs=0 ShowNames exe 'help highlight-groups' | exe 'normal! zt'
 command! -bar -nargs=0 ShowBases exe 'help group-name' | exe 'normal! zt'
@@ -2865,23 +2814,30 @@ nnoremap <Leader>3 <Cmd>ShowNames<CR>
 nnoremap <Leader>4 <Cmd>ShowBases<CR>
 nnoremap <Leader>5 <Cmd>ShowColors<CR>
 
-" Repair syntax highlighting
-" NOTE: :Colorize is from hex-colorizer plugin. Expensive so disable at start
-" NOTE: Here :set background triggers colorscheme autocmd so must avoid infinite loop
+" Highlight groups {{{2
+" Apply defaults and add runtime popup mappings
+" NOTE: Here syntax autocommands triggered by 'set syntax=', always after scripts
+" loaded by $VIMRUNTIME/syntax/synload.vim 'au Syntax * call s:SynSet()' (this works
+" by unletting b:current_syntax variable then finding the syntax and after scripts).
+" NOTE: Critical to put below after plugin-related Syntax autocommands (and ensure
+" 'plugin/rainbow_csv.vim' is sourced first since it does not include 'finish' block)
+" and fix 'riv' bug where changing g:riv_python_rst_hl after startup has no effect
+" (grepped vim runtime and plugged, riv is literally only place where 'syntax'
+" file employs 'loaded' variables with finish block (typically only used for plugins).
+silent! exe 'runtime plugin/rainbow_csv.vim'
+augroup syntax_setup
+  au!
+  au ColorScheme * unlet! b:common_syntax | doautocmd syntax_setup Syntax
+  au Syntax,VimEnter * unlet! b:af_py_loaded b:af_rst_loaded
+  au Syntax,VimEnter * call mark#init_marks() | runtime after/common.vim
+augroup END
 command! -bar -bang -count=0 Syntax
   \ call syntax#sync_lines(<range> == 2 ? abs(<line2> - <line1>) : <count>, <bang>0)
+nnoremap <Leader>e <Cmd>Syntax<CR>
+nnoremap <Leader>6 <Cmd>Syntax 100<CR>
+nnoremap <Leader>7 <Cmd>Syntax!<CR>
 
-" Scroll color schemes and toggle colorize
-" NOTE: Here :Colorize is from colorizer.vim and :Colors from fzf.vim. Note coloring
-" hex strings can cause massive slowdowns so disable by default.
-command! -bar -nargs=? -complete=color Scheme call syntax#next_scheme(<f-args>)
-command! -bar -count=1 Sprev call syntax#next_scheme(-<count>)
-command! -bar -count=1 Snext call syntax#next_scheme(<count>)
-call utils#repeat_map('n', 'g{', 'Sprev', ':<C-u>Sprev<CR>')
-call utils#repeat_map('n', 'g}', 'Snext', ':<C-u>Snext<CR>')
-nnoremap <Leader>9 <Cmd>Colors<CR>
-nnoremap <Leader>0 <Cmd>exe 'Scheme ' . g:colors_default<CR>
-
+" Remaining tasks {{{2
 " Clear jumps for new tabs and to ignore stuff from vimrc and plugin files.
 " TODO: Fix issue where gitgutter interrupts vim-succinct getchar()
 " silent! exe 'au! gitgutter CursorHoldI'
@@ -2894,5 +2850,5 @@ augroup jump_setup
 augroup END
 silent! exe 'runtime autoload/repeat.vim'
 if !v:vim_did_enter | nohlsearch | endif
-if !v:vim_did_enter | call s:syntax_init() | endif
+if !v:vim_did_enter && has('gui_running') | noautocmd colorscheme manuscript | endif
 nnoremap <Leader><Leader> <Cmd>echo system('curl https://icanhazdadjoke.com/')<CR>

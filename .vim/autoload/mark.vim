@@ -104,6 +104,7 @@ endfunction
 " Add marks and sign column highlighting
 " NOTE: This also runs on vim startup using marks saved to viminfo
 function! mark#init_marks() abort
+  if !v:vim_did_enter | return | endif
   let highlights = get(g:, 'mark_highlights', {})
   for imark in getmarklist()
     let ipos = imark['pos']  " buffer position

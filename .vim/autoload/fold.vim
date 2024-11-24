@@ -514,17 +514,19 @@ function! fold#update_method(...) abort
   let [type, imethod] = [&l:filetype, get(w:, 'lastfdm', 'manual')]
   let [expr0, method0] = [&l:foldexpr, &l:foldmethod]
   let [expr1, method1] = ['', 'syntax']
-  if method0 ==# 'indent'  " preserve indent method0
-    let method1 = method0
-  elseif &l:diff  " difference mode enabled
+  if &l:diff  " difference mode enabled
     silent! diffupdate | let method1 = 'diff'
-  elseif type =~# '^text$\|^r\?csv\(_\w\+\)\?$'
-    let method1 = 'manual'  " initialize with 'manual'
-  elseif type ==# 'markdown'
+  elseif method0 ==# 'indent'  " preserve indent method0
+    let method1 = method0
+  elseif type =~# '^text$\|^taglist$\|^r\?csv\(_\w\+\)\?$'  " initialize 'manual'
+    let method1 = 'manual'
+  elseif type ==# 'markdown'  " preservim/vim-markdown
     silent! doautocmd Mkd CursorHold | let expr1 = 'Foldexpr_markdown(v:lnum)'
-  elseif type ==# 'python'
+  elseif type ==# 'python'  " autoload/python.vim
     let expr1 = 'python#fold_expr(v:lnum)'
-  elseif type ==# 'rst'
+  elseif type ==# 'yaml'  " plugged/pedrohdz/vim-yaml-folds
+    let expr1 = 'YamlFolds()'
+  elseif type ==# 'rst'  " vim91/autoload/RstFold.vim
     let expr1 = 'RstFold#GetRstFold()'
   endif
   let recache = imethod ==# 'manual' || method1 !=# imethod
