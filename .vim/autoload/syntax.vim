@@ -112,7 +112,7 @@ function! syntax#next_scheme(...) abort
   silent! exe 'colorscheme ' . name
   silent call syntax#update_groups()  " override vim comments
   silent call syntax#update_matches()  " override vim comments
-  silent call syntax#update_highlights()  " override highlight colors
+  silent call syntax#update_links()  " override highlight colors
   silent! doautocmd BufEnter
   let g:colors_name = name  " in case differs
   redraw | echom 'Colorscheme: ' . name
@@ -161,26 +161,134 @@ function! syntax#sync_lines(count, ...) abort
   exe cmd | redraw | echom msg
 endfunction
 
-" Update on-the-fly matchadd() matches.
-" NOTE: Unlike typical syntax highlighting these are window-local and do not
-" require explicit names (assigned automatic ids). They are managed separately
-" from :highlight and :syntax commands with getmatches() and setmatches()
-" NOTE: Critical to make 'priority' (third argument, default 10) same as :hlsearch
-" priority (0) or matches are weird. Note :syntax match fails since concealed backslash
-" overwrites any existing matches. See: https://vi.stackexchange.com/q/5696/8084
-function! syntax#update_matches() abort
-  let matches = filter(getmatches(), "v:val.group ==# 'Conceal'")
-  if !empty(matches) | return | endif
-  if &filetype ==# 'tex'  " backslashes (skips e.g. \cmd1\cmd2 but helpful anyway)
-    let regex = '\(%.*\|\\[a-zA-Z@]\+\|\\\)\@<!\zs\\\([a-zA-Z@]\+\)\@='
-    call matchadd('Conceal', regex, 0, -1, {'conceal': ''})
+" Highlight group with gui or cterm codes
+" NOTE: This enforces core grayscale-style defaults, with dark comments against
+" darker background and sign and number columns that blend into the main window.
+" NOTE: Cannot use e.g. aliases 'bg' or 'fg' in terminal since often unset, and cannot
+" use transparent 'NONE' in gui vim since undefined, so swap them here.
+function! s:update_highlight(group, back, front, ...) abort
+  let defaults = {'Black': '#000000', 'DarkGray': '#222222', 'Gray': '#444444'}
+  call extend(defaults, {'LightGray': '#666666', 'White': '#888888'})
+  let name = has('gui_running') ? 'gui' : 'cterm'
+  let text = a:0 && type(a:1) ? empty(a:1) ? 'None' : a:1 : ''
+  let args = empty(text) ? [] : [name . '=' . text]
+  if type(a:back)
+    if empty(a:back)  " background
+      let code = has('gui_running') ? 'bg' : 'NONE'
+    elseif has('gui_running')  " hex color
+      let code = get(g:, 'statusline_' . a:back, get(defaults, a:back, a:back))
+    else  " color name
+      let code = a:back
+    endif
+    call add(args, name . 'bg=' . code)
   endif
-  if &filetype ==# 'markdown'  " strikethrough: https://www.reddit.com/r/vim/comments/g631im/any_way_to_enable_true_markdown_strikethrough/
-    call s:highlight_group('StrikeThrough', 0, 0, 'strikethrough')
-    call matchadd('Conceal', '<s>\ze\_.\{-}</s>', 10, -1, {'conceal': ''})
-    call matchadd('Conceal', '<s>\_.\{-}\zs</s>', 10, -1, {'conceal': ''})
-    call matchadd('StrikeThrough', '<s>\zs\_.\{-}\ze</s>')
+  if type(a:front)  " foreground
+    if empty(a:front)
+      let code = has('gui_running') ? 'fg' : 'NONE'
+    elseif has('gui_running')  " hex color
+      let code = get(g:, 'statusline_' . a:front, get(defaults, a:front, a:front))
+    else  " color name
+      let code = a:front
+    endif
+    call add(args, name . 'fg=' . code)
   endif
+  exe 'noautocmd highlight ' . a:group . ' ' . join(args, ' ')
+  exe 'noautocmd highlight ' . a:group . ' ' . join(args, ' ')
+endfunction
+
+" Update default cterm highlight groups
+" NOTE: Here :set background triggers colorscheme autocmd so 'noautocmd' is
+" required to avoid infinite loop.
+" NOTE: Here need special workaround to apply bold gui syntax for folded text.
+" See: https://stackoverflow.com/a/73783079/4970632
+function! syntax#update_highlights() abort
+  let name0 = has('gui_running') ? 'macvim' : 'default'
+  let name = get(g:, 'colors_default', name0)
+  let name1 = get(g:, 'colors_name', name0)
+  if name1 ==? name && has('gui_running')  " user highlighting
+    call s:update_highlight('Normal', 'MacTextBackgroundColor', 'MacTextColor', '')
+  elseif name1 ==? name && !has('gui_running')
+    exe 'noautocmd set background=dark'
+    call s:update_highlight('Normal', '', '', '')
+    call s:update_highlight('MatchParen', 'Blue', '')
+    call s:update_highlight('Sneak', 'DarkMagenta', '')
+    call s:update_highlight('Search', 'Magenta', '')
+    call s:update_highlight('PmenuSel', 'Magenta', '', '')
+    call s:update_highlight('PmenuSbar', 'DarkGray', '', '')
+    call s:update_highlight('Type', '', 'DarkGreen')
+    call s:update_highlight('Constant', '', 'Red')
+    call s:update_highlight('Special', '', 'DarkRed')
+    call s:update_highlight('PreProc', '', 'DarkCyan')
+    call s:update_highlight('Indentifier', '', 'Cyan', 'bold')
+  endif
+  let group = hlget('Folded')[0]  " enforce bold folded gui text
+  let group['gui'] = extend(get(group, 'gui', {}), {'bold': v:true})
+  call hlset([group])  " apply bold folded gui text
+  if has('gui_running')
+    call s:update_highlight('CursorLine', 'DarkGray', 0, '')
+    call s:update_highlight('Comment', '', 'Gray', '')
+    call s:update_highlight('Todo', '', 'LightGray', '')
+    call s:update_highlight('Folded', '', 'White', '')
+  else
+    call s:update_highlight('CursorLine', 'Black', 0, '')
+    call s:update_highlight('Comment', '', 'Black', '')
+    call s:update_highlight('Todo', '', 'Gray', '')
+    call s:update_highlight('Folded', '', 'LightGray', '')
+  endif
+  if v:true  " shared highlighting
+    call s:update_highlight('DiffAdd', 'Black', '', 'bold')
+    call s:update_highlight('DiffChange', '', '', '')
+    call s:update_highlight('DiffDelete', 'Black', 'Black', '')
+    call s:update_highlight('DiffText', 'Black', '', 'bold')
+    call s:update_highlight('Search', 'DarkYellow', 0, '')
+    call s:update_highlight('ErrorMsg', 'DarkRed', 'White', '')
+    call s:update_highlight('WarningMsg', 'LightRed', 'Black', '')
+    call s:update_highlight('InfoMsg', 'LightYellow', 'Black', '')
+    call s:update_highlight('StatusLineTerm', 'LightYellow', 'Black', '')
+    call s:update_highlight('StatusLineTermNC', '', 'LightYellow', '')
+  endif
+endfunction
+
+" Update syntax highlight group links
+" NOTE: ALE highlights point to nothing when scrolling color schemes, but are still
+" used for sign definitions, so manually enable here (note getcompletion() will fail)
+" NOTE: Plugins vim-tabline and vim-statusline use custom auto-calculated colors
+" based on colorscheme. Leverage them instead of reproducing here.
+function! syntax#update_links() abort
+  let pairs = [['ColorColumn', 'CursorLine']]  " highlight links
+  for group in ['Conceal', 'Pmenu', 'Terminal']
+    call add(pairs, [group, 'Normal'])
+  endfor
+  for group in ['LineNR', 'SignColumn', 'FoldColumn', 'CursorLineNR', 'CursorLineFold', 'NonText', 'SpecialKey']
+    call add(pairs, [group, 'Comment'])
+  endfor
+  for group in ['ALEErrorLine', 'ALEWarningLine', 'ALEInfoLine']  " see above
+    call add(pairs, [group, 'Conceal'])
+  endfor
+  for group in ['ModeMsg', 'Marker'] + getcompletion('GitGutter', 'highlight')  " see above
+    call add(pairs, [group, 'Folded'])
+  endfor
+  for group in ['ALEError', 'ALEErrorSign', 'ALEStyleError', 'ALEStyleErrorSign']  " see above
+    call add(pairs, [group, 'ErrorMsg'])
+  endfor
+  for group in ['ALEWarning', 'ALEWarningSign', 'ALEStyleWarning', 'ALEStyleWarningSign']  " see above
+    call add(pairs, [group, 'WarningMsg'])
+  endfor
+  for group in ['ALEInfo', 'ALEInfoSign']  " see above
+    call add(pairs, [group, 'InfoMsg'])
+  endfor
+  for [tail, dest] in [['Shebang', 'Special'], ['Hyperlink', 'Underlined']]
+    call add(pairs, [tail, dest])
+  endfor
+  for [tail, dest] in [['Header', 'Todo'], ['Colon', 'Comment']]
+    call add(pairs, ['comment' . tail, dest])
+  endfor
+  for tail in ['Map', 'NotFunc', 'FuncKey', 'Command']
+    call add(pairs, ['vim' . tail, 'Statement'])
+  endfor
+  for [group1, group2] in pairs
+    exe 'highlight! link ' . group1 . ' ' . group2
+  endfor
 endfunction
 
 " Update syntax match groups. Could move to after/syntax but annoying
@@ -219,121 +327,24 @@ function! syntax#update_groups() abort
     \ containedin=.*Comment.* contains=pythonTodo nextgroup=commentColon
 endfunction
 
-" Highlight group with gui or cterm codes
-" NOTE: Cannot use e.g. aliases 'bg' or 'fg' in terminal since often unset, and cannot
-" use transparent 'NONE' in gui vim since undefined, so swap them here.
-function! s:highlight_group(group, back, front, ...) abort
-  let defaults = {'Black': '#000000', 'DarkGray': '#222222', 'Gray': '#444444'}
-  call extend(defaults, {'LightGray': '#666666', 'White': '#888888'})
-  let name = has('gui_running') ? 'gui' : 'cterm'
-  let text = a:0 && type(a:1) ? empty(a:1) ? 'None' : a:1 : ''
-  let args = empty(text) ? [] : [name . '=' . text]
-  if type(a:back)
-    if empty(a:back)  " background
-      let code = has('gui_running') ? 'bg' : 'NONE'
-    elseif has('gui_running')  " hex color
-      let code = get(g:, 'statusline_' . a:back, get(defaults, a:back, a:back))
-    else  " color name
-      let code = a:back
-    endif
-    call add(args, name . 'bg=' . code)
+" Update on-the-fly matchadd() matches.
+" NOTE: Unlike typical syntax highlighting these are window-local and do not
+" require explicit names (assigned automatic ids). They are managed separately
+" from :highlight and :syntax commands with getmatches() and setmatches()
+" NOTE: Critical to make 'priority' (third argument, default 10) same as :hlsearch
+" priority (0) or matches are weird. Note :syntax match fails since concealed backslash
+" overwrites any existing matches. See: https://vi.stackexchange.com/q/5696/8084
+function! syntax#update_matches() abort
+  let matches = filter(getmatches(), "v:val.group ==# 'Conceal'")
+  if !empty(matches) | return | endif
+  if &filetype ==# 'tex'  " backslashes (skips e.g. \cmd1\cmd2 but helpful anyway)
+    let regex = '\(%.*\|\\[a-zA-Z@]\+\|\\\)\@<!\zs\\\([a-zA-Z@]\+\)\@='
+    call matchadd('Conceal', regex, 0, -1, {'conceal': ''})
   endif
-  if type(a:front)  " foreground
-    if empty(a:front)
-      let code = has('gui_running') ? 'fg' : 'NONE'
-    elseif has('gui_running')  " hex color
-      let code = get(g:, 'statusline_' . a:front, get(defaults, a:front, a:front))
-    else  " color name
-      let code = a:front
-    endif
-    call add(args, name . 'fg=' . code)
-  endif
-  exe 'noautocmd highlight ' . a:group . ' ' . join(args, ' ')
-  exe 'noautocmd highlight ' . a:group . ' ' . join(args, ' ')
-endfunction
-
-" Update default cterm highlight groups
-" NOTE: Plugins vim-tabline and vim-statusline use custom auto-calculated colors
-" based on colorscheme. Leverage them instead of reproducing here.
-" NOTE: Here :set background triggers colorscheme autocmd so 'noautocmd' is
-" required to avoid infinite loop.
-function! syntax#update_defaults() abort
-  if has('gui_running') | return | endif
-  if get(g:, 'colors_name', 'default') !=? 'default' | return | endif
-  exe 'noautocmd set background=dark'
-  call s:highlight_group('MatchParen', 'Blue', '')
-  call s:highlight_group('Sneak', 'DarkMagenta', '')
-  call s:highlight_group('Search', 'Magenta', '')
-  call s:highlight_group('PmenuSel', 'Magenta', '', '')
-  call s:highlight_group('PmenuSbar', 'DarkGray', '', '')
-  call s:highlight_group('Type', '', 'DarkGreen')
-  call s:highlight_group('Constant', '', 'Red')
-  call s:highlight_group('Special', '', 'DarkRed')
-  call s:highlight_group('PreProc', '', 'DarkCyan')
-  call s:highlight_group('Indentifier', '', 'Cyan', 'bold')
-endfunction
-
-" Update syntax highlight groups
-" NOTE: This enforces core grayscale-style defaults, with dark comments against
-" darker background and sign and number columns that blend into the main window.
-" NOTE: ALE highlights point to nothing when scrolling color schemes, but are still
-" used for sign definitions, so manually enable here (note getcompletion() will fail)
-" NOTE: Here need special workaround to apply bold gui syntax for folded text.
-" See: https://stackoverflow.com/a/73783079/4970632
-function! syntax#update_highlights() abort
-  let pairs = [['ColorColumn', 'CursorLine']]  " highlight links
-  call s:highlight_group('Normal', '', '', '')
-  call s:highlight_group('CursorLine', has('gui_running') ? 'DarkGray' : 'Black', 0, '')
-  call s:highlight_group('Comment', '', has('gui_running') ? 'Gray' : 'Black', '')
-  call s:highlight_group('Todo', '', has('gui_running') ? 'LightGray' : 'Gray', '')
-  call s:highlight_group('Folded', '', has('gui_running') ? 'White' : 'LightGray', '')
-  call s:highlight_group('DiffAdd', 'Black', '', 'bold')
-  call s:highlight_group('DiffChange', '', '', '')
-  call s:highlight_group('DiffDelete', 'Black', 'Black', '')
-  call s:highlight_group('DiffText', 'Black', '', 'bold')
-  call s:highlight_group('Search', 'DarkYellow', 0, '')
-  call s:highlight_group('ErrorMsg', 'DarkRed', 'White', '')
-  call s:highlight_group('WarningMsg', 'LightRed', 'Black', '')
-  call s:highlight_group('InfoMsg', 'LightYellow', 'Black', '')
-  call s:highlight_group('StatusLineTerm', 'LightYellow', 'Black', '')
-  call s:highlight_group('StatusLineTermNC', '', 'LightYellow', '')
-  for group in ['Conceal', 'Pmenu', 'Terminal']
-    call add(pairs, [group, 'Normal'])
-  endfor
-  for group in ['LineNR', 'SignColumn', 'FoldColumn', 'CursorLineNR', 'CursorLineFold', 'NonText', 'SpecialKey']
-    call add(pairs, [group, 'Comment'])
-  endfor
-  for group in ['ALEErrorLine', 'ALEWarningLine', 'ALEInfoLine']  " see above
-    call add(pairs, [group, 'Conceal'])
-  endfor
-  for group in ['ModeMsg', 'Marker'] + getcompletion('GitGutter', 'highlight')  " see above
-    call add(pairs, [group, 'Folded'])
-  endfor
-  for group in ['ALEError', 'ALEErrorSign', 'ALEStyleError', 'ALEStyleErrorSign']  " see above
-    call add(pairs, [group, 'ErrorMsg'])
-  endfor
-  for group in ['ALEWarning', 'ALEWarningSign', 'ALEStyleWarning', 'ALEStyleWarningSign']  " see above
-    call add(pairs, [group, 'WarningMsg'])
-  endfor
-  for group in ['ALEInfo', 'ALEInfoSign']  " see above
-    call add(pairs, [group, 'InfoMsg'])
-  endfor
-  for [tail, dest] in [['Shebang', 'Special'], ['Hyperlink', 'Underlined']]
-    call add(pairs, [tail, dest])
-  endfor
-  for [tail, dest] in [['Header', 'Todo'], ['Colon', 'Comment']]
-    call add(pairs, ['comment' . tail, dest])
-  endfor
-  for tail in ['Map', 'NotFunc', 'FuncKey', 'Command']
-    call add(pairs, ['vim' . tail, 'Statement'])
-  endfor
-  for [group1, group2] in pairs
-    exe 'highlight! link ' . group1 . ' ' . group2
-  endfor
-  if has('gui_running')  " keeps getting overridden so use this
-    let hl = hlget('Folded')[0]
-    let hl['gui'] = extend(get(hl, 'gui', {}), {'bold': v:true})
-    let hl['gui'] = extend(get(hl, 'gui', {}), {'bold': v:true})
-    call hlset([hl])
+  if &filetype ==# 'markdown'  " strikethrough: https://www.reddit.com/r/vim/comments/g631im/any_way_to_enable_true_markdown_strikethrough/
+    call s:update_highlight('StrikeThrough', 0, 0, 'strikethrough')
+    call matchadd('Conceal', '<s>\ze\_.\{-}</s>', 10, -1, {'conceal': ''})
+    call matchadd('Conceal', '<s>\_.\{-}\zs</s>', 10, -1, {'conceal': ''})
+    call matchadd('StrikeThrough', '<s>\zs\_.\{-}\ze</s>')
   endif
 endfunction

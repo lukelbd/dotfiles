@@ -2785,6 +2785,12 @@ endif  " }}}
 " manuscript, molokai, oceanicnext, sierra, sourcerer, slatedark, spacegray, tender,
 " ubaryd, vimbrant, manuscript, adventurous. Note this has to come after schemes loaded:
 " https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
+let g:colors_default = has('gui_running') ? 'manuscript' : 'default'
+augroup scheme_setup
+  au!
+  exe 'au ColorScheme ' . g:colors_default . ' highlight normal guibg=MacTextBackgroundColor guifg=MacTextColor'
+  au ColorScheme * doautocmd syntax_setup Syntax
+augroup END
 command! -bar -nargs=? -complete=color Scheme call syntax#next_scheme(<f-args>)
 command! -bar -count=1 Sprev call syntax#next_scheme(-<count>)
 command! -bar -count=1 Snext call syntax#next_scheme(<count>)
@@ -2793,10 +2799,6 @@ call utils#repeat_map('n', 'g}', 'Snext', ':<C-u>Snext<CR>')
 nnoremap <Leader>8 <Cmd>Colorize<CR>
 nnoremap <Leader>9 <Cmd>Colors<CR>
 nnoremap <Leader>0 <Cmd>exe 'Scheme ' . g:colors_default<CR>
-if !exists('g:colors_default')
-  let s:default = has('gui_running') ? 'manuscript' : 'default'
-  let g:colors_default = get(g:, 'colors_name', default)
-endif
 
 " Syntax utilities {{{2
 " NOTE: Use ShowGroups to debug syntax and hihlights under cursor, ShowPlugin/ShowSyntax
@@ -2828,6 +2830,7 @@ silent! exe 'runtime plugin/rainbow_csv.vim'
 augroup syntax_setup
   au!
   au ColorScheme * unlet! b:common_syntax | doautocmd syntax_setup Syntax
+  exe 'au ColorScheme ' . g:colors_default
   au Syntax,VimEnter * unlet! b:af_py_loaded b:af_rst_loaded
   au Syntax,VimEnter * call mark#init_marks() | runtime after/common.vim
 augroup END
@@ -2850,5 +2853,5 @@ augroup jump_setup
 augroup END
 silent! exe 'runtime autoload/repeat.vim'
 if !v:vim_did_enter | nohlsearch | endif
-if !v:vim_did_enter && has('gui_running') | noautocmd colorscheme manuscript | endif
+if !v:vim_did_enter && has('gui_running') | exe 'colorscheme ' . g:colors_default | endif
 nnoremap <Leader><Leader> <Cmd>echo system('curl https://icanhazdadjoke.com/')<CR>

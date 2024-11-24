@@ -17,8 +17,8 @@ let &l:joinspaces = 0
 let &l:linebreak = 1
 let &l:textwidth = g:linelength
 let &l:wrapmargin = 0
-call syntax#update_defaults()
 call syntax#update_highlights()
+call syntax#update_links()
 if !get(maparg('[', '', 0, 1), 'buffer', 0) && !get(maparg(']', '', 0, 1), 'buffer', 0)
   map <buffer> [[ <Plug>TagsBackwardTop
   map <buffer> ]] <Plug>TagsForwardTop
