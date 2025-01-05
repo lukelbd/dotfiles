@@ -1,6 +1,50 @@
 "-----------------------------------------------------------------------------"
 " Utilities for vim folds
 "-----------------------------------------------------------------------------"
+" Handle fold text cache and cache indices
+" WARNING: TextYankPost fold recache trigger fails for blackhole register
+" NOTE: Caching important for syntax#get_concealed() and for python s:is_decorator()
+" (also had issues with flag generation but should be quick if we avoid triggering
+" gitgutter updates). Tried to index cache by line number, then adjust indices by
+" detecting newlines in TextYankPost and newline additions/deletions on InsertCharPre,
+" but too complex. Now index cache using fold count from top of file, adjust indices
+" when line count changes, and rearrange cache entries when entire fold is deleted.
+function! fold#_reindex(...) abort
+  let cnt = get(b:, 'foldtext_count', line('$'))
+  let b:foldtext_count = line('$')
+  if !exists('b:foldtext_keys') || cnt != line('$')
+    let b:foldtext_keys = {}  " fold text lines to cache keys
+    for [line1, line2, level] in sort(fold#fold_source(), {i1, i2 -> i1[0] - i2[0]})
+      let b:foldtext_keys[line1] = [len(b:foldtext_keys), line2 - line1 + 1]
+    endfor
+  endif
+endfunction
+function! fold#_recache(...) abort  " from TextYankPost
+  let [lnum, inum] = [line('.'), line('.')]  " line number
+  let key = get(v:event, 'operator', '')
+  let char = get(v:event, 'regtype', 'v')
+  if key !~# '^[cd]$' || char !=? 'v' | return | endif
+  let cnt = len(get(v:event, 'regcontents', ''))  " equialent to getreg(reg, 1, 1)
+  let cnt -= char ==# 'v'  " includes partial line if characterwise
+  while inum < lnum + cnt
+    if has_key(b:foldtext_keys, string(inum))
+      let [ikey, icnt] = b:foldtext_keys[inum]
+      let inum += icnt - 1
+      if inum >= lnum + cnt | break | endif  " partial deletion
+      for ikey in range(ikey + 1, len(b:foldtext_keys))  " adjust cache indices
+        if has_key(b:foldtext_cache, string(ikey))  " adjust cache index
+          let b:foldtext_cache[ikey - 1] = b:foldtext_cache[ikey]
+        elseif has_key(b:foldtext_cache, string(ikey - 1))  " remove cache index
+          call remove(b:foldtext_cache, ikey - 1)
+        endif
+      endfor
+      call remove(b:foldtext_cache, string(len(b:foldtext_cache) - 1))
+      call remove(b:foldtext_keys, string(lnum))
+    endif
+    let inum += 1
+  endwhile  " then await TextChanged which triggers reindex
+endfunction
+
 " Return bounds and level for any closed fold or open fold of requested level
 " NOTE: No native way to get bounds if fold is open so use normal-mode motions, and no
 " way to detect bounds within closed folds so return lower-level bounds if necessary.
@@ -283,27 +327,15 @@ function! s:fold_text(line1, line2, level)
 endfunction
 
 " Generate cached and truncated fold text
-" NOTE: Have to call this manually if insert keys are mapped. See edit#insert_delims 
-" WARNING: Caching important for syntax#get_concealed() and for python s:is_decorator()
-" (also had issues with flag generation but should be quick if we avoid triggering
-" gitgutter updates). Tried to update cache on InsertCharPre when v:char ==# '\r' and
-" on TextYankPost using v:event.operator and v:event.regtype but too complex
-function! fold#_reindex(...) abort
-  let cnt = get(b:, 'foldtext_count', line('$'))
-  let b:foldtext_count = line('$')
-  if !exists('b:foldtext_cache')
-    let b:foldtext_cache = {}  " create fold text cache mapping
-  endif
-  if !exists('b:foldtext_keys') || cnt != line('$')
-    let b:foldtext_keys = {}  " fold text lines to cache keys
-    for [line1, line2, level] in sort(fold#fold_source(), {i1, i2 -> i1[0] - i2[0]})
-      let b:foldtext_keys[line1] = string(len(b:foldtext_keys))
-    endfor
-  endif
-endfunction
+" NOTE: Here cache fold text with a cache index of the fold count from the top of the
+" file. The cache index is updated when the line count has changed, detected whenever
+" fold text called and on TextChanged,TextChangedI. See fold#_reindex()
 function! fold#fold_text(...) abort
   call fold#_reindex()  " update line number -> cache key mapping
   let winview = winsaveview()  " translate byte column index to character index
+  if !exists('b:foldtext_cache')
+    let b:foldtext_cache = {}  " create fold text cache mapping
+  endif
   if a:0 && a:1  " debugging mode
     exe winview.lnum | let [line1, line2, level] = fold#get_fold()
     call winrestview(winview)
@@ -311,8 +343,8 @@ function! fold#fold_text(...) abort
     let [line1, line2] = [v:foldstart, v:foldend]
     let level = len(v:folddashes)
   endif
-  let key = get(b:foldtext_keys, string(line1), string(line1))
-  let label = get(b:foldtext_cache, key, '')
+  let key = get(b:foldtext_keys, string(line1), [line1])[0]
+  let label = get(b:foldtext_cache, string(key), '')
   if empty(label) || !type(label)
     let [label, space, lines] = s:fold_text(line1, line2, level)
     let label = label . space . lines
@@ -322,30 +354,37 @@ function! fold#fold_text(...) abort
   return strcharpart(label, leftidx)
 endfunction
 
-" Helper functions for returning all folds
-" NOTE: Necessary to temporarily open outer folds before toggling inner folds. No way
-" to target them with :fold commands or distinguish adjacent children with same level
+" Helper functions for fzf folds and caching operations
+" NOTE: Here fold#fold_source() generates list of all folds using fold#get_fold()
+" algorithm on open folds and temporarily opening closed folds where necessary.
+function! s:fold_counts(fold) abort
+  let flags = ['!', '\*', '\^', '+', '\~', '-']
+  let regex = join(map(flags, '''\%('' . v:val . ''\(\d\+\)\)\?'''), '')
+  let nrs = map(matchlist(a:fold, '^\s*{' . regex . '}')[1:6], 'str2nr(v:val)')
+  return empty(nrs) ? [0, 0] : [nrs[0] + nrs[1] + nrs[2], nrs[3] + nrs[4] + nrs[5]]
+endfunction
+function! s:fold_sink(fold) abort
+  if empty(a:fold) | return | endif
+  let [path, lnum; rest] = split(a:fold, ':')
+  exe 'normal! m''' | call cursor(lnum, 0)
+  exe 'normal! zvzzze'
+endfunction
 function! fold#fold_source(...) abort
   let [lmin, lmax, level] = a:0 ? a:000 : [1, line('$'), 1]
-  let [lnum, closed] = [lmin, []]
+  let [lnum, closed, folds] = [lmin, [], []]
   while lnum <= lmax
     let inum = foldclosed(lnum)
-    if inum > 0  " record closed fold within range
-      call add(closed, inum)
-      let lnum = foldclosedend(lnum)
-    endif
+    if inum > 0 | call add(closed, inum) | let lnum = foldclosedend(lnum) | endif
     let lnum += 1
   endwhile
   for lnum in closed | exe lnum . 'foldopen' | endfor
-  let folds = []  " guaranteed to match level below
   for [line1, line2, level] in fold#get_folds(lmin, lmax, level)
     call add(folds, [line1, line2, level])
     if foldclosed(line1) > 0  " inner folds
       call extend(folds, fold#fold_source(line1, line2, level + 1))
     endif
   endfor
-  for lnum in reverse(closed) | exe lnum . 'foldclose' | endfor
-  return folds
+  for lnum in reverse(closed) | exe lnum . 'foldclose' | endfor | return folds
 endfunction
 
 " Select buffer folds rendered with foldtext()
@@ -354,18 +393,6 @@ endfunction
 " NOTE: This was adapted from fzf-folds plugin. This includes folds inside closed
 " parent folds and uses custom fold-text function instead of foldtextresult().
 " See: https://github.com/roosta/fzf-folds.vim
-function! s:fold_sink(fold) abort
-  if empty(a:fold) | return | endif
-  let [path, lnum; rest] = split(a:fold, ':')
-  exe 'normal! m''' | call cursor(lnum, 0)
-  exe 'normal! zvzzze'
-endfunction
-function! s:fold_counts(fold) abort
-  let flags = ['!', '\*', '\^', '+', '\~', '-']
-  let regex = join(map(flags, '''\%('' . v:val . ''\(\d\+\)\)\?'''), '')
-  let nrs = map(matchlist(a:fold, '^\s*{' . regex . '}')[1:6], 'str2nr(v:val)')
-  return empty(nrs) ? [0, 0] : [nrs[0] + nrs[1] + nrs[2], nrs[3] + nrs[4] + nrs[5]]
-endfunction
 function! fold#fzf_folds(...) abort
   let bang = a:0 ? a:1 : 0  " fullscreen
   let folds = fold#fold_source()
@@ -663,61 +690,65 @@ function! s:toggle_message(toggle, nr) abort
   call feedkeys(keys . feed, 'n')
 endfunction
 function! s:toggle_inner(line1, line2, level, ...)
-  let [fold1, fold2] = [foldclosed(a:line1), foldclosedend(a:line2)]
-  let [line1, line2] = [fold1 > 0 ? fold1 : a:line1, fold2 > 0 ? fold2 : a:line2]
   let [closed, hidden] = [[], []]
-  for lnum in range(line1, line2)
+  let [lmin, lmax] = [foldclosed(a:line1), foldclosedend(a:line2)]
+  let [lmin, lmax] = [lmin > 0 ? lmin : a:line1, lmax > 0 ? lmax : a:line2]
+  for lnum in range(lmin, lmax)
     let ilevel = foldlevel(lnum)
     if !ilevel | continue | endif
-    let iline = foldclosed(lnum)
+    let inum = foldclosed(lnum)
     if ilevel > a:level
       call add(hidden, [ilevel, lnum])
-    elseif iline == lnum || lnum == line1 && iline > 0
-      call add(closed, iline)
+    elseif inum == lnum || lnum == lmin && inum > 0
+      call add(closed, inum)
     endif
   endfor
   for lnum in closed | exe lnum . 'foldopen' | endfor
   let toggle = a:0 ? a:1 : 1 - s:toggle_state(a:line1, a:line2, a:level + 1)
-  let [recurse, toggled] = [a:0 > 0 ? a:2 : 0, []]
+  let [recurse, folds] = [a:0 > 0 ? a:2 : 0, []]
   for [_, lnum] in toggle ? reverse(sort(hidden)) : sort(hidden)
     let inum = foldclosed(lnum) | let ilevel = foldlevel(inum > 0 ? inum : lnum)
     if ilevel == a:level + 1 || recurse && ilevel > a:level + 1
       if toggle && inum <= 0
         exe lnum . 'foldclose'
-        call add(toggled, [foldclosed(lnum), foldclosedend(lnum), ilevel])
+        call add(folds, [foldclosed(lnum), foldclosedend(lnum), ilevel])
       elseif !toggle && inum > 0
-        call add(toggled, [inum, foldclosedend(lnum), ilevel])
+        call add(folds, [inum, foldclosedend(lnum), ilevel])
         exe lnum . 'foldopen'
       endif
     endif
   endfor
   for lnum in reverse(closed) | exe lnum . 'foldclose' | endfor
-  return [toggle, toggled]
+  return [toggle, folds]
 endfunction
 
 " Open or close current children under cursor
 " NOTE: This is required because recursive :foldclose! also closes parent
 " and :[range]foldclose does not close children. Have to go one-by-one.
-function! fold#toggle_children(top, ...) abort range
-  let [lmin, lmax] = sort([a:firstline, a:lastline], 'n')
-  call fold#update_folds(0)
+function! fold#_toggle_children(line1, line2, ...) abort range
   let counts = [0, 0]
-  let level = foldlevel('.')
-  let folds = a:top ? fold#get_parents(lmin, lmax) : fold#get_folds(lmin, lmax, level)
-  if !a:top  " inner-most inner folds
-    let [fmin, fmax] = [min(map(copy(folds), 'v:val[0]')), max(map(copy(folds), 'v:val[1]'))]
-    let [fmin, fmax] = fmin && fmax ? [fmin, fmax] : [lmin, lmax]
-    let levels = map(range(fmin, fmax), 'foldlevel(v:val)')
-    let folds = min(levels) == max(levels) ? fold#get_folds(lmin, lmax, level - 1) : folds
+  call fold#update_folds(0)
+  if a:0 && a:1  " immediate children of top-level folds
+    let folds = fold#get_parents(a:line1, a:line2)
+  else  " inner-most children of current folds
+    let level = foldlevel('.')
+    let folds = fold#get_folds(a:line1, a:line2, level)
+    let [lmin, lmax] = [min(map(copy(folds), 'v:val[0]')), max(map(copy(folds), 'v:val[1]'))]
+    let [lmin, lmax] = lmin && lmax ? [lmin, lmax] : [a:line1, a:line2]
+    let levels = map(range(lmin, lmax), 'foldlevel(v:val)')
+    let folds = min(levels) == max(levels) ? fold#get_folds(a:line1, a:line2, level - 1) : folds
   endif
   for [line1, line2, level] in folds
     if line2 <= line1 | continue | endif
-    let args = [line1, line2, level] + copy(a:000)
-    let [toggle, folds] = call('s:toggle_inner', args)
+    let [toggle, folds] = call('s:toggle_inner', [line1, line2, level] + a:000[1:])
     let counts[toggle] += len(folds)  " if zero then continue
   endfor
   let toggle = counts[0] && counts[1] ? 2 : counts[1] ? 1 : 0
   call s:toggle_message(toggle, counts[0] + counts[1])
+endfunction
+" For optional range arguments
+function! fold#toggle_children(...) range abort
+  return call('fold#_toggle_children', [a:firstline, a:lastline] + a:000)
 endfunction
 " For <expr> map accepting motion
 function! fold#toggle_children_expr(...) abort
@@ -728,27 +759,26 @@ endfunction
 " NOTE: If called on already-toggled 'current' folds the explicit 'foldclose/foldopen'
 " toggles the parent. So e.g. 'zCzC' first closes python methods then the class.
 function! fold#_toggle_parents(line1, line2, ...) abort
-  call fold#update_folds(0)
+  let counts = [0, 0]
   let winview = winsaveview()
-  let nrs = [0, 0]
+  call fold#update_folds(0)
   for [line1, line2, level] in fold#get_parents(a:line1, a:line2)
     if line2 <= line1 | continue | endif
     let toggle = a:0 ? a:1 : 1 - s:toggle_state(line1, line1)
     let line1 = max([a:line1, line1])  " truncate range
     let line2 = min([a:line2, line2])  " truncate range
-    let args = [line1, line2, level, toggle, 1]
-    let result = call('s:toggle_inner', args)
+    let [_, folds] = call('s:toggle_inner', [line1, line2, level, toggle, 1])
+    let counts[toggle] += 1 + len(folds)
     exe line1 . (toggle ? 'foldclose' : 'foldopen')
-    let nrs[toggle] += 1 + len(result[1])
   endfor
   call winrestview(winview)
   let cnt = a:0 > 1 ? a:2 : v:count1
   if cnt > 1
-    let inrs = fold#_toggle_parents(a:line1, a:line2, toggle, cnt - 1)
-    let nrs[0] += inrs[0] | let nrs[1] += inrs[1]
+    let cnts = fold#_toggle_parents(a:line1, a:line2, toggle, cnt - 1)
+    let counts[0] += cnts[0] | let counts[1] += cnts[1]
   endif
-  let toggle = nrs[0] && nrs[1] ? 2 : nrs[1] ? 1 : 0
-  call s:toggle_message(toggle, nrs[0] + nrs[1])
+  let toggle = counts[0] && counts[1] ? 2 : counts[1] ? 1 : 0
+  call s:toggle_message(toggle, counts[0] + counts[1])
 endfunction
 " For optional range arguments
 function! fold#toggle_parents(...) range abort
@@ -760,14 +790,15 @@ function! fold#toggle_parents_expr(...) abort
 endfunction
 
 " Open or close inner folds within range (i.e. maximum fold level)
+" WARNING: Critical to get state before updating in case fold under cursor auto-closes
 " NOTE: This permits using e.g. 'zck' and 'zok' even when outside fold and without
 " fear of accideif ntally closing huge block e.g. class or document under cursor.
 function! fold#_toggle_folds(line1, line2, ...) abort
-  call fold#update_folds(0)
   let winview = winsaveview()
+  let state = s:toggle_state(a:line1, a:line2)
+  call fold#update_folds(0)
   let levels = map(range(a:line1, a:line2), 'foldlevel(v:val)')
   let folds = fold#get_folds(a:line1, a:line2, max(levels))
-  let state = s:toggle_state(a:line1, a:line2)
   let toggle = a:0 > 0 && a:1 >= 0 ? a:1 : 1 - state
   let cnt = a:0 > 1 ? a:2 : v:count1
   for [line1, line2; rest] in folds

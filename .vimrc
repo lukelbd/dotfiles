@@ -632,7 +632,11 @@ cnoremap <silent> <expr> / window#close_wild('/')
 " NOTE: Here fold#update_folds() re-enforces special expr fold settings for markdown
 " and python files then applies default toggle status that differs from buffer-wide
 " &foldlevel for fortran python and tex files (e.g. always open \begin{document}).
-exe 'silent! au! foldtext_setup'
+augroup foldtext_setup
+  au!
+  au TextYankPost * call fold#_recache()
+  au TextChanged,TextChangedI * call fold#_reindex()
+augroup END
 command! -bar -bang -count -nargs=? UpdateFolds call fold#update_folds(<bang>0, <count>)
 nnoremap zv <Cmd>call fold#update_folds(0)<CR>zv
 vnoremap zv <Esc><Cmd>call fold#update_folds(0)<CR><Cmd>'<,'>foldopen!<CR>
@@ -2127,7 +2131,7 @@ if s:has_plug('FastFold')  " {{{
     augroup fold_setup
       au!
       au FileType,BufEnter * call fold#update_method()
-      au TextChanged,TextChangedI * call fold#_reindex() | let b:fastfold_queued = 1
+      au TextChanged,TextChangedI * let b:fastfold_queued = 1
     augroup END
   endfunction
   function! s:fold_update() abort
@@ -2592,12 +2596,12 @@ endif  " }}}
 " Git gutter settings
 " NOTE: Use custom command for toggling on/off. Older vim versions always show
 " signcolumn if signs present, so GitGutterDisable will remove signcolumn.
-" NOTE: Previously used text change autocomamnds to manually-refresh gitgutter since
-" plugin only defines CursorHold but under-the-hood the invoked function actually
-" *does* only fire when text is different. So leave default configuration alone.
 " NOTE: Staging maps below were inspired by tcomment maps 'gc', 'gcc', 'etc.', and
 " navigation maps ]g, ]G (navigate to hunks, or navigate and stage hunks) were inspired
 " by spell maps ]s, ]S (navigate to spell error, or navigate and fix error).
+" NOTE: Previously used TextChange autocomamnds to manually-refresh gitgutter since
+" plugin only defines CursorHold, but under-the-hood, the invoked function actually
+" does only fire when text differs. So stick with the default configuration.
 if s:has_plug('vim-gitgutter')  " {{{
   command! -bar -bang -nargs=? GitGutterToggle
     \ call switch#gitgutter(<args>)
