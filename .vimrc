@@ -632,6 +632,7 @@ cnoremap <silent> <expr> / window#close_wild('/')
 " NOTE: Here fold#update_folds() re-enforces special expr fold settings for markdown
 " and python files then applies default toggle status that differs from buffer-wide
 " &foldlevel for fortran python and tex files (e.g. always open \begin{document}).
+exe 'silent! au! foldtext_setup'
 command! -bar -bang -count -nargs=? UpdateFolds call fold#update_folds(<bang>0, <count>)
 nnoremap zv <Cmd>call fold#update_folds(0)<CR>zv
 vnoremap zv <Esc><Cmd>call fold#update_folds(0)<CR><Cmd>'<,'>foldopen!<CR>

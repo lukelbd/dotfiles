@@ -289,20 +289,15 @@ endfunction
 " gitgutter updates). Tried to update cache on InsertCharPre when v:char ==# '\r' and
 " on TextYankPost using v:event.operator and v:event.regtype but too complex
 function! fold#_reindex(...) abort
-  let key = get(b:, 'foldtext_max', line('$'))
-  let b:foldtext_max = line('$')
+  let cnt = get(b:, 'foldtext_count', line('$'))
+  let b:foldtext_count = line('$')
   if !exists('b:foldtext_cache')
     let b:foldtext_cache = {}  " create fold text cache mapping
   endif
-  if key != line('$') || !exists('b:foldtext_keys')
-    let b:foldtext_keys = {}
-    let level0 = 0
-    for lnum in range(1, line('$'))
-      let level1 = foldlevel(lnum)
-      if level1 > level0  " index by fold count from start of file
-        let b:foldtext_keys[lnum] = string(len(b:foldtext_keys))
-      endif
-      let level0 = level1
+  if !exists('b:foldtext_keys') || cnt != line('$')
+    let b:foldtext_keys = {}  " fold text lines to cache keys
+    for [line1, line2, level] in sort(fold#fold_source(), {i1, i2 -> i1[0] - i2[0]})
+      let b:foldtext_keys[line1] = string(len(b:foldtext_keys))
     endfor
   endif
 endfunction
@@ -330,33 +325,26 @@ endfunction
 " Helper functions for returning all folds
 " NOTE: Necessary to temporarily open outer folds before toggling inner folds. No way
 " to target them with :fold commands or distinguish adjacent children with same level
-function! s:fold_source(line1, line2, level, ...) abort
-  let [outer, inner] = [[], []]
-  for lnum in range(a:line1, a:line2)
-    let ilevel = foldlevel(lnum)
-    if !ilevel | continue | endif
-    let iline = foldclosed(lnum)
-    if ilevel > a:level
-      call add(inner, [ilevel, lnum])
-    elseif iline > 0 && index(outer, [ilevel, iline]) == -1
-      call add(outer, [ilevel, iline])
-    endif
-  endfor | return [sort(outer), sort(inner)]
-endfunction
 function! fold#fold_source(...) abort
   let [lmin, lmax, level] = a:0 ? a:000 : [1, line('$'), 1]
-  let [outer, inner] = s:fold_source(lmin, lmax, level)
-  let [folds, ifolds] = [[], fold#get_folds(lmin, lmax, level)]
-  for [_, lnum] in outer | exe lnum . 'foldopen' | endfor
-  for [line1, line2, level] in ifolds  " guaranteed to match level
-    let ifold = [line1, line2, level]
-    call add(folds, ifold)
-    if !empty(filter(copy(inner), 'v:val[1] >= line1 && v:val[1] <= line2'))
-      let ifolds = fold#fold_source(line1, line2, level + 1)
-      call extend(folds, ifolds)
+  let [lnum, closed] = [lmin, []]
+  while lnum <= lmax
+    let inum = foldclosed(lnum)
+    if inum > 0  " record closed fold within range
+      call add(closed, inum)
+      let lnum = foldclosedend(lnum)
+    endif
+    let lnum += 1
+  endwhile
+  for lnum in closed | exe lnum . 'foldopen' | endfor
+  let folds = []  " guaranteed to match level below
+  for [line1, line2, level] in fold#get_folds(lmin, lmax, level)
+    call add(folds, [line1, line2, level])
+    if foldclosed(line1) > 0  " inner folds
+      call extend(folds, fold#fold_source(line1, line2, level + 1))
     endif
   endfor
-  for [_, lnum] in reverse(outer) | exe lnum . 'foldclose' | endfor
+  for lnum in reverse(closed) | exe lnum . 'foldclose' | endfor
   return folds
 endfunction
 
@@ -561,7 +549,8 @@ function! fold#update_folds(force, ...) abort
     endfor
   endif
   if force || refold  " re-apply or convert
-    call fold#_reindex(1)
+    unlet! b:foldtext_cache
+    unlet! b:foldtext_keys
     if a:force
       call SimpylFold#Recache()
     endif
@@ -676,11 +665,21 @@ endfunction
 function! s:toggle_inner(line1, line2, level, ...)
   let [fold1, fold2] = [foldclosed(a:line1), foldclosedend(a:line2)]
   let [line1, line2] = [fold1 > 0 ? fold1 : a:line1, fold2 > 0 ? fold2 : a:line2]
-  let [outer, inner] = s:fold_source(line1, line2, a:level)
-  for [_, lnum] in outer | exe lnum . 'foldopen' | endfor
+  let [closed, hidden] = [[], []]
+  for lnum in range(line1, line2)
+    let ilevel = foldlevel(lnum)
+    if !ilevel | continue | endif
+    let iline = foldclosed(lnum)
+    if ilevel > a:level
+      call add(hidden, [ilevel, lnum])
+    elseif iline == lnum || lnum == line1 && iline > 0
+      call add(closed, iline)
+    endif
+  endfor
+  for lnum in closed | exe lnum . 'foldopen' | endfor
   let toggle = a:0 ? a:1 : 1 - s:toggle_state(a:line1, a:line2, a:level + 1)
   let [recurse, toggled] = [a:0 > 0 ? a:2 : 0, []]
-  for [_, lnum] in toggle ? reverse(inner) : inner
+  for [_, lnum] in toggle ? reverse(sort(hidden)) : sort(hidden)
     let inum = foldclosed(lnum) | let ilevel = foldlevel(inum > 0 ? inum : lnum)
     if ilevel == a:level + 1 || recurse && ilevel > a:level + 1
       if toggle && inum <= 0
@@ -692,7 +691,7 @@ function! s:toggle_inner(line1, line2, level, ...)
       endif
     endif
   endfor
-  for [_, lnum] in reverse(outer) | exe lnum . 'foldclose' | endfor
+  for lnum in reverse(closed) | exe lnum . 'foldclose' | endfor
   return [toggle, toggled]
 endfunction
 
