@@ -368,20 +368,16 @@ function! s:fold_sink(fold) abort
 endfunction
 function! fold#fold_source(...) abort
   let [lmin, lmax, level] = a:0 ? a:000 : [1, line('$'), 1]
-  let [lnum, closed, folds] = [lmin, [], []]
-  while lnum <= lmax
-    let inum = foldclosed(lnum)
-    if inum > 0 | call add(closed, inum) | let lnum = foldclosedend(lnum) | endif
-    let lnum += 1
-  endwhile
-  for lnum in closed | exe lnum . 'foldopen' | endfor
+  let [folds, closed] = [[], []]
   for [line1, line2, level] in fold#get_folds(lmin, lmax, level)
     call add(folds, [line1, line2, level])
-    if foldclosed(line1) > 0  " inner folds
-      call extend(folds, fold#fold_source(line1, line2, level + 1))
+    if foldclosed(line1) > 0  " temporarily open folds
+      call add(closed, line1) | exe line1 . 'foldopen'
     endif
+    call extend(folds, fold#fold_source(line1, line2, level + 1))
   endfor
-  for lnum in reverse(closed) | exe lnum . 'foldclose' | endfor | return folds
+  for lnum in reverse(closed) | exe lnum . 'foldclose' | endfor
+  return folds
 endfunction
 
 " Select buffer folds rendered with foldtext()
