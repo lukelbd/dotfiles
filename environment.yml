@@ -48,6 +48,7 @@ dependencies:
   - scipy
   - sparse
   - dask
+  - bottleneck
   - pandas
   - openpyxl
   - netcdf4

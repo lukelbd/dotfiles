@@ -345,9 +345,11 @@ echo 'done'
 # For less/man/etc. colors see: https://unix.stackexchange.com/a/329092/112647
 _setup_message 'Utility setup'
 [ -r "$HOME/.dircolors.ansi" ] && eval "$(dircolors ~/.dircolors.ansi)"
-alias cd='cd -P'                    # don't want this on my mac temporarily
+alias lss='ls --color=always -AFd $(pwd) && ls --color=always -AF'
+alias lll='ls --color=always -AFhld $(pwd) && ls --color=always -AFhl | tail -n +2'
 alias ls='ls --color=always -AF'    # ls with dirs differentiate from files
 alias ll='ls --color=always -AFhl'  # ls with details and file sizes
+alias cd='cd -P'                    # do not want this on mac
 alias dirs='dirs -p | tac | xargs'  # show dir stack matching prompt order
 alias curl='curl -O'                # always download associated file
 alias ctags='ctags -o -'            # print tags to stdout by default
@@ -365,7 +367,6 @@ if hash tput 2>/dev/null; then
   export LESS_TERMCAP_me=$'\e[0m'         # reset bold/blink
   export LESS_TERMCAP_se=$'\e[0m'         # reset reverse video
   export LESS_TERMCAP_ue=$'\e[0m'         # reset underline
-  export GROFF_NO_SGR=1                   # for konsole and gnome-terminal
 fi
 
 # List various options. The -X show bindings bound to shell commands (i.e. not builtin
@@ -443,9 +444,9 @@ _paths() {
 # See: https://superuser.com/a/352387/506762
 # NOTE: This relies on workflow where ~/scratch folders are symlinks pointing
 # to data storage hard disks. Otherwise need to hardcode server-specific folders.
-alias du='du -h'
-alias d0='du -h -d 1'  # single directory, see also r0 a0
-alias df='df -h'
+alias df='df -h'  # current disk usage
+alias du='du -h'  # current folder and subfolders
+alias d0='du -h -d 1'  # current folder only (see also 'r0' 'a0')
 sl() { find "$@" -maxdepth 1 -exec command du -hs {} \; 2>/dev/null | sort -sh; }
 sf() { sl "$@" -type f; }
 sd() { sl "$@" -type d; }
@@ -1497,6 +1498,12 @@ graphicspath() {
 # Extract compressed files
 # NOTE: Shell actually passes *already expanded* glob pattern when you call it as
 # argument to a function; so, need to cat all input arguments with @ into list
+compress() {
+  for file in "$@"; do  # see: https://askubuntu.com/a/243753/712604
+    [[ "$file" =~ .pdf$ ]] || { echo "Error: Skipping non-pdf $file..."; continue; }
+    ps2pdf "$file" "${file%.pdf}-compressed.pdf"
+  done
+}
 extract() {
   for name in "$@"; do
     if [ -f "$name" ]; then
@@ -1788,7 +1795,7 @@ pdf2png() {
       && echo "Warning: Skipping ${file##*/} (must be .pdf)" && continue
     echo "Converting ${file##*/}..."
     convert -flatten \
-      -units PixelsPerInch -density 1200 -background white "$file" "${file%.pdf}.png"
+      -units PixelsPerInch -density 1000 -background white "$file" "${file%.pdf}.png"
   done
 }
 svg2png() {
@@ -1809,10 +1816,10 @@ echo 'done'
 # FZF fuzzy file completion tool {{{1
 #-----------------------------------------------------------------------------
 # Configure bindings and flags {{{2
-# NOTE: Only apply universal 'ignore' file to default command used by vim fzf file
-# searching utility. Exclude common external packages for e.g. :Files.
 # NOTE: General idea is <F1> and <F2> i.e. <Ctrl-,> and <Ctrl-.> should be tab-like
 # for command mode cycling. See top of .vimrc for details.
+# NOTE: Here only apply universal 'ignore' file to default command used by vim fzf file
+# searching utility. Exclude common external packages for e.g. :Files.
 # NOTE: Install with 'git clone https://github.com/lukelbd/fzf.git .fzf && pushd .fzf
 # && git switch config-edits'. Includes minor vim plugin fixes.
 # NOTE: Install with 'git clone https://github.com/lukelbd/fzf-marks.git .fzf-marks
@@ -2140,7 +2147,7 @@ _title_cwd() {
   local _ sub dir title
   title=$(_title_get)
   $_macos && [ -n "$title" ] || return 1
-  for sub in '' research shared school software; do
+  for sub in '' research shared software projects icloud; do
     [ -d "$HOME/$sub" ] || continue
     while read -r -d '' _ dir; do  # 'seconds.fraction' 'path'
       cd "$dir" && break
