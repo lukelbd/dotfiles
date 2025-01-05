@@ -9,7 +9,7 @@
 " detecting newlines in TextYankPost and newline additions/deletions on InsertCharPre,
 " but too complex. Now index cache using fold count from top of file, adjust indices
 " when line count changes, and rearrange cache entries when entire fold is deleted.
-function! fold#_reindex(...) abort
+function! fold#_reindex(...) abort  " TextChanged,TextChangedI
   let cnt = get(b:, 'foldtext_count', line('$'))
   let b:foldtext_count = line('$')
   if !exists('b:foldtext_keys') || cnt != line('$')
@@ -19,26 +19,23 @@ function! fold#_reindex(...) abort
     endfor
   endif
 endfunction
-function! fold#_recache(...) abort  " from TextYankPost
-  let [lnum, inum] = [line('.'), line('.')]  " line number
+function! fold#_recache(...) abort  " TextYankPost
+  let [lnum, inum] = [line('.'), line('.')]
   let key = get(v:event, 'operator', '')
   let char = get(v:event, 'regtype', 'v')
   if key !~# '^[cd]$' || char !=? 'v' | return | endif
-  let cnt = len(get(v:event, 'regcontents', ''))  " equialent to getreg(reg, 1, 1)
-  let cnt -= char ==# 'v'  " includes partial line if characterwise
+  let cnt = len(get(v:event, 'regcontents', '')) - (char ==# 'v')
   while inum < lnum + cnt
     if has_key(b:foldtext_keys, string(inum))
       let [ikey, icnt] = b:foldtext_keys[inum]
-      let inum += icnt - 1
-      if inum >= lnum + cnt | break | endif  " partial deletion
+      let inum += icnt - 1 | if inum >= lnum + cnt | break | endif
       for ikey in range(ikey + 1, len(b:foldtext_keys))  " adjust cache indices
-        if has_key(b:foldtext_cache, string(ikey))  " adjust cache index
-          let b:foldtext_cache[ikey - 1] = b:foldtext_cache[ikey]
-        elseif has_key(b:foldtext_cache, string(ikey - 1))  " remove cache index
-          call remove(b:foldtext_cache, ikey - 1)
+        if has_key(b:foldtext_cache, string(ikey))
+          let b:foldtext_cache[ikey - 1] = b:foldtext_cache[ikey]  " adjust cache index
+        elseif has_key(b:foldtext_cache, string(ikey - 1))
+          call remove(b:foldtext_cache, ikey - 1)  " remove cache index
         endif
       endfor
-      call remove(b:foldtext_cache, string(len(b:foldtext_cache) - 1))
       call remove(b:foldtext_keys, string(lnum))
     endif
     let inum += 1
