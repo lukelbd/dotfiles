@@ -54,8 +54,8 @@ function! s:call_fugitive(bnum, lnum, cmd, ...) abort
   let winview = winsaveview()
   let input = join(a:000, '')
   let name = split(input, '', 1)[0]
-  let editor = index(s:cmd_editor, name) != -1
-  let panel = editor || a:bnum != bufnr() || a:cmd =~# '\<v\?split\>'
+  let panel = index(s:cmd_editor, name) != -1 && input !~# '--message'
+  let panel = panel || a:bnum != bufnr() || a:cmd =~# '\<v\?split\>'
   if a:cmd =~# '^echoerr'
     let msg = substitute(a:cmd, '^echoerr', 'echom', '')
     redraw | echohl ErrorMsg | exe msg | echohl None
