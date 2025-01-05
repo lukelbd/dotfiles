@@ -124,8 +124,8 @@ function! s:fold_constant(lnum) abort  " e.g. VARIABLE = [... or if condition:..
 endfunction
 
 " Return cached fold expression
-" NOTE: This works by modifying SimpylFold generated cache. To speed up fold text
-" also use separate fold#fold_text() cache and populate with decorator offsets.
+" NOTE: This works by modifying SimpylFold cache (generated on TextChanged,InsertLeave).
+" Note also use separate fold text cache to retain decorator offsets
 function! python#fold_expr(lnum) abort
   let recache = !exists('b:SimpylFold_cache')
   call SimpylFold#FoldExpr(a:lnum)  " auto recache
@@ -136,11 +136,10 @@ function! python#fold_cache() abort
   let b:foldtext_delta = {}
   let [lnum, cache] = [1, b:SimpylFold_cache]
   while lnum <= line('$')
-    let index = string(lnum)
     let level = s:get_level(lnum)
     let exprs = s:fold_decorator(lnum)
     if !empty(exprs)  " line offset
-      let b:foldtext_delta[index] = len(exprs) - 1
+      let b:foldtext_delta[lnum] = len(exprs) - 1
     endif
     let exprs = level == 0 && empty(exprs) ? s:fold_docstring(lnum) : exprs
     let exprs = level == 0 && empty(exprs) ? s:fold_constant(lnum) : exprs
@@ -160,34 +159,29 @@ function! python#fold_text(lnum, ...) abort
   if !exists('b:foldtext_delta')
     let b:foldtext_delta = {}
   endif
-  let nline = 100  " maxumimum lines to search
-  let index = string(a:lnum)
-  let delta = get(b:foldtext_delta, index, -1)
-  if delta < 0
+  let delta = get(b:foldtext_delta, string(a:lnum), -1)
+  let keys = get(b:, 'foldtext_keys', {})
+  if delta < 0  " detect fold text offset
     let delta = len(s:fold_decorator(a:lnum))
     let delta = max([delta - 1, 0])
-    let b:foldtext_delta[index] = delta
+    let b:foldtext_delta[a:lnum] = delta
   endif
-  let regex = '["'']\{3}'  " docstring expression
-  let lnum = a:lnum + delta
-  let label = fold#fold_label(lnum, 0)
+  let [lnum, line1, line2] = [a:lnum + delta, a:lnum + delta + 1, a:lnum + delta + 100]
   let width = get(g:, 'linelength', 88) - 10  " minimum width
-  let [iline, jline] = [lnum + 1, lnum + nline]
-  if label =~# '^try:\s*$'  " append lines
-    let label .= ' ' . fold#fold_label(iline, 1)  " remove indent
-  endif
-  if label =~# regex . '\s*$'  " append lines
-    for lnum in range(iline, min([jline, a:0 ? a:1 : jline]))
+  let label = fold#fold_label(lnum, 0)  " initial fold text
+  let label .= label =~# '^try:\s*$' ? ' ' . fold#fold_label(line1, 1) : ''
+  if label =~# '["'']\{3}\s*$'  " append lines
+    for lnum in range(line1, min([line2, a:0 ? a:1 : line2]))
       let itext = fold#fold_label(lnum, 1)
-      let istop = itext =~# regex  " docstring close
+      let istop = itext =~# '["'']\{3}'  " docstring close
       let itext = itext =~# '[-=]\{3,}' ? '' : itext
-      let space = !istop && lnum > iline ? ' ' : '' 
+      let space = !istop && lnum > line1 ? ' ' : ''
       let label .= space . itext
       if istop || len(label) > width | break | endif
     endfor
   endif
   let l:subs = []  " see: https://vi.stackexchange.com/a/16491/8084
-  let result = substitute(label, regex, '\=add(l:subs, submatch(0))', 'gn')
+  let result = substitute(label, '["'']\{3}', '\=add(l:subs, submatch(0))', 'gn')
   let label .= len(l:subs) % 2 ? '···' . substitute(l:subs[0], '^[frub]*', '', 'g') : ''
   return label  " closed docstring
 endfunction

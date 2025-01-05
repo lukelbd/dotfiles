@@ -632,13 +632,6 @@ cnoremap <silent> <expr> / window#close_wild('/')
 " NOTE: Here fold#update_folds() re-enforces special expr fold settings for markdown
 " and python files then applies default toggle status that differs from buffer-wide
 " &foldlevel for fortran python and tex files (e.g. always open \begin{document}).
-augroup foldtext_setup
-  au!
-  au TextChanged * call fold#_recache()
-  au TextYankPost * call fold#_recache_normal()
-  au InsertCharPre * call fold#_recache_insert()
-  au FocusGained,CursorHold,CursorHoldI * call fold#_recache(1)
-augroup END
 command! -bar -bang -count -nargs=? UpdateFolds call fold#update_folds(<bang>0, <count>)
 nnoremap zv <Cmd>call fold#update_folds(0)<CR>zv
 vnoremap zv <Esc><Cmd>call fold#update_folds(0)<CR><Cmd>'<,'>foldopen!<CR>
@@ -2131,14 +2124,14 @@ if s:has_plug('FastFold')  " {{{
     augroup fold_setup
       au!
       au FileType,BufEnter * call fold#update_method()
-      au TextChanged,TextChangedI * unlet! b:foldtext_cache | let b:fastfold_queued = 1
+      au TextChanged,TextChangedI * call fold#_reindex() | let b:fastfold_queued = 1
     augroup END
   endfunction
   function! s:fold_update() abort
     augroup fold_update
       au!
       au BufEnter * call fold#update_folds(0)
-      au FileType * unlet! b:fastfold_queued | unlet! b:foldtext_cache | call fold#update_folds(0, 1)
+      au FileType * unlet! b:fastfold_queued | call fold#update_folds(0, 1)
     augroup END
   endfunction
   function! s:fold_init(...) abort

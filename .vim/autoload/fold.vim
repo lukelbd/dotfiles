@@ -218,13 +218,13 @@ function! fold#fold_label(line, ...) abort
   let marker = split(&l:foldmarker, ',')[0] . '\d*\s*$'
   let delta = '^\(@@.\{-}@@\).*$'  " git hunk difference
   let regex = '\(\S\@<=\s\+' . comment#get_regex(0) . '.*\)\?\s*$'
-  let label = getline(a:line)
+  let [label, cols] = [getline(a:line), syntax#_matches(a:line)]
   let label = substitute(label, marker, '', '')  " trailing markers
   let label = substitute(label, regex, '', 'g')  " trailing comments
   let label = fugitive ? substitute(label, delta, '\1', '') : label
-  let chars = split(label, '\zs')  " remaining characters
-  let items = map(range(len(chars)), 'syntax#_concealed(a:line, v:val + 1, ''n'')')
-  let chars = map(range(len(chars)), 'type(items[v:val]) ? items[v:val] : chars[v:val]')
+  let [idxs, chars] = [range(strchars(label)), split(label, '\zs')]
+  let items = map(copy(idxs), 'syntax#get_concealed(a:line, v:val + 1, cols, ''n'')')
+  let chars = map(copy(idxs), 'type(items[v:val]) ? items[v:val] : items[v:val] ? '''' : chars[v:val]')
   let label = join(chars, '')  " unconcealed characters
   let label = a:0 && a:1 ? substitute(label, '^\s*', '', 'g') : label
   let extra = fugitive || a:0 && a:1 ? '' : s:format_inner(label, a:line + 1)
@@ -284,39 +284,31 @@ endfunction
 
 " Generate cached and truncated fold text
 " NOTE: Have to call this manually if insert keys are mapped. See edit#insert_delims 
-" WARNING: Caching important for syntax#_concealed() and for python s:is_decorator()
+" WARNING: Caching important for syntax#get_concealed() and for python s:is_decorator()
 " (also had issues with flag generation but should be quick if we avoid triggering
-" gitgutter updates). Update cache indices on InsertCharPre when v:char ==# '\r' and
-" on TextYankPost using v:event.operator and v:event.regtype
-" but too complex, instead and TextChanged is not quite as common as TextChangedI.
-function! fold#_recache(...) abort
-  let queued = get(b:, 'foldtext_queued', 1)
-  unlet! b:foldtext_queued
-  if a:0 ? a:1 : queued  " trigger foldtext() generation
-    unlet! b:foldtext_cache
-    unlet! b:foldtext_delta
+" gitgutter updates). Tried to update cache on InsertCharPre when v:char ==# '\r' and
+" on TextYankPost using v:event.operator and v:event.regtype but too complex
+function! fold#_reindex(...) abort
+  let key = get(b:, 'foldtext_max', line('$'))
+  let b:foldtext_max = line('$')
+  if !exists('b:foldtext_cache')
+    let b:foldtext_cache = {}  " create fold text cache mapping
   endif
-endfunction
-function! fold#_recache_insert(...) abort  " from InsertCharPre
-  let col1 = col('.') == 1 && line('.') > 1
-  let col2 = col('.') == col('$') && line('.') < line('$')
-  let char = a:0 ? a:1 : v:char  " see edit#insert_delims()
-  let bool = char ==# "\<CR>" || col1 && char ==# "\<BS>" || col2 && char ==# "\<Delete>"
-  call fold#_recache(bool)
-endfunction
-function! fold#_recache_normal(...) abort  " from TextYankPost
-  let key = get(v:event, 'operator', '')
-  if key !~# '^[cd]$' | return | endif
-  let char = get(v:event, 'regtype', 'v')
-  let text = getreg(get(v:event, 'regname', ''))
-  let bool = char ==# 'V' || text =~# "\n"
-  let b:foldtext_queued = bool  " then await TextChanged
+  if key != line('$') || !exists('b:foldtext_keys')
+    let b:foldtext_keys = {}
+    let level0 = 0
+    for lnum in range(1, line('$'))
+      let level1 = foldlevel(lnum)
+      if level1 > level0  " index by fold count from start of file
+        let b:foldtext_keys[lnum] = string(len(b:foldtext_keys))
+      endif
+      let level0 = level1
+    endfor
+  endif
 endfunction
 function! fold#fold_text(...) abort
+  call fold#_reindex()  " update line number -> cache key mapping
   let winview = winsaveview()  " translate byte column index to character index
-  if !exists('b:foldtext_cache')
-    let b:foldtext_cache = {}
-  endif
   if a:0 && a:1  " debugging mode
     exe winview.lnum | let [line1, line2, level] = fold#get_fold()
     call winrestview(winview)
@@ -324,12 +316,12 @@ function! fold#fold_text(...) abort
     let [line1, line2] = [v:foldstart, v:foldend]
     let level = len(v:folddashes)
   endif
-  let index = string(line1)
-  let label = get(b:foldtext_cache, index, '')
+  let key = get(b:foldtext_keys, string(line1), string(line1))
+  let label = get(b:foldtext_cache, key, '')
   if empty(label) || !type(label)
     let [label, space, lines] = s:fold_text(line1, line2, level)
     let label = label . space . lines
-    let b:foldtext_cache[index] = label
+    let b:foldtext_cache[key] = label
   endif
   let leftidx = charidx(getline(winview.lnum), winview.leftcol)
   return strcharpart(label, leftidx)
@@ -569,7 +561,7 @@ function! fold#update_folds(force, ...) abort
     endfor
   endif
   if force || refold  " re-apply or convert
-    call fold#_recache(1)
+    call fold#_reindex(1)
     if a:force
       call SimpylFold#Recache()
     endif
@@ -799,5 +791,5 @@ function! fold#toggle_folds(...) range abort
 endfunction
 " For <expr> map accepting motion
 function! fold#toggle_folds_expr(...) abort
-  return utils#motion_func('fold#toggle_folds', a:000)
+  return utils#motion_func('fold#toggle_folds', a:000, 1)
 endfunction

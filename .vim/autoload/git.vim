@@ -129,9 +129,8 @@ function! s:call_git(msg, line1, count, range, bang, mods, cmd, ...) range abort
     redraw | echohl WarningMsg | echom error | echohl None
   elseif verbose
     redraw | echo 'Git ' . a:cmd
-  else
   endif
-  call fold#_recache(1)
+  unlet! b:foldtext_cache
 endfunction
 
 " Call git commit with or without editor
@@ -307,7 +306,7 @@ function! git#_exe_hunks(line1, line2, ...) abort
     call add(ranges, join(range, '-'))
   endfor
   call winrestview(winview)
-  call fold#_recache(1)
+  unlet! b:foldtext_cache
   if !empty(ranges)  " show information
     let msg = cmd . ' hunk(s): ' . join(ranges, ', ')
     call s:show_hunks(locs, len(hunks), msg, 1)

@@ -7,10 +7,9 @@
 " method is only used to make tex and markdown characters invisible, so no need to
 " compare replacement characters or check groups -- simply skip those columns.
 function! syntax#get_concealed(...) abort
-  let lnum = a:0 > 0 ? a:1 : line('.')
   let cnum = a:0 > 1 ? a:2 : col('.')
-  let cols = a:0 > 2 ? a:3 : syntax#_matches(lnum)
-  let item = syntax#_concealed(lnum, cnum)
+  let cols = a:0 > 2 ? a:3 : call('syntax#_matches', a:000[:0])
+  let item = call('syntax#_concealed', a:000[:1] + a:000[3:])  " see fold#fold_label
   return type(item) ? item : index(cols, cnum) != -1
 endfunction
 function! syntax#_concealed(...) abort
