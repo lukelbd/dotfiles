@@ -1825,8 +1825,9 @@ silent! delcommand SplitjoinSplit
 " Plugin settings {{{1
 "-----------------------------------------------------------------------------"
 " Matches and delimiters {{{2
+" NOTE: Here linewise matchup excludes single-line matches and single-char delims
 " NOTE: Here vim-tags searching integrates with indexed-search and vim-succinct
-" surround delimiters integrate with matchup '%' keys.
+" surround delimiters integrate with matchup '%' keys (e.g. 'va%', 'yi%').
 if s:has_plug('vim-indexed-search')  " {{{
   let g:indexed_search_center = 0  " disable centered match jumping
   let g:indexed_search_colors = 0  " disable colors for speed
@@ -1842,10 +1843,11 @@ if s:has_plug('vim-matchup')  " {{{
   vmap <expr> <2-LeftMouse> foldclosed('.') > 0 ? 'zvvaz' : '<Esc><Plug>(matchup-double-click)'
   let g:matchup_delim_nomids = 1  " skip e.g. 'else' during % jumps and text objects
   let g:matchup_delim_noskips = 1  " skip e.g. 'if' 'endif' in comments
-  let g:matchup_matchparen_enabled = 1  " enable matchupt matching on startup
+  let g:matchup_matchparen_enabled = 1  " enable matchup with built-in delimiters
   let g:matchup_motion_keepjumps = 1  " preserve jumps when navigating
   let g:matchup_surround_enabled = 1  " enable 'ds%' 'cs%' mappings
   let g:matchup_transmute_enabled = 0  " issues with tex, use vim-succinct instead
+  let g:matchup_text_obj_enabled = 1  " enable matchup text objects
   let g:matchup_text_obj_linewise_operators = ['y', 'd', 'c', 'v', 'V', "\<C-v>"]
 endif  " }}}
 
@@ -2781,8 +2783,8 @@ endif  " }}}
 let g:colors_default = has('gui_running') ? 'manuscript' : 'default'
 augroup scheme_setup
   au!
-  exe 'au ColorScheme ' . g:colors_default . ' highlight normal guibg=MacTextBackgroundColor guifg=MacTextColor'
-  au ColorScheme * doautocmd syntax_setup Syntax
+  exe 'au ColorScheme ' . g:colors_default
+    \ . ' highlight normal guibg=MacTextBackgroundColor guifg=MacTextColor'
 augroup END
 command! -bar -nargs=? -complete=color Scheme call syntax#next_scheme(<f-args>)
 command! -bar -count=1 Sprev call syntax#next_scheme(-<count>)
@@ -2822,10 +2824,8 @@ nnoremap <Leader>5 <Cmd>ShowColors<CR>
 silent! exe 'runtime plugin/rainbow_csv.vim'
 augroup syntax_setup
   au!
-  au ColorScheme * unlet! b:common_syntax | doautocmd syntax_setup Syntax
-  exe 'au ColorScheme ' . g:colors_default
-  au Syntax,VimEnter * unlet! b:af_py_loaded b:af_rst_loaded
-  au Syntax,VimEnter * call mark#init_marks() | runtime after/common.vim
+  au Syntax,ColorScheme,VimEnter * unlet! b:af_py_loaded b:af_rst_loaded b:common_syntax
+    \ | call mark#init_marks() | runtime after/common.vim
 augroup END
 command! -bar -bang -count=0 Syntax
   \ call syntax#sync_lines(<range> == 2 ? abs(<line2> - <line1>) : <count>, <bang>0)
@@ -2846,5 +2846,5 @@ augroup jump_setup
 augroup END
 silent! exe 'runtime autoload/repeat.vim'
 if !v:vim_did_enter | nohlsearch | endif
-if !v:vim_did_enter && has('gui_running') | exe 'colorscheme ' . g:colors_default | endif
+if !v:vim_did_enter && has('gui_running') | silent exe 'colorscheme ' . g:colors_default | endif
 nnoremap <Leader><Leader> <Cmd>echo system('curl https://icanhazdadjoke.com/')<CR>
