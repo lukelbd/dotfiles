@@ -257,6 +257,14 @@ endfunction
 " location to top of stack on CursorHold but always scroll with explicit commands.
 " NOTE: This only triggers after spending time on window instead of e.g. browsing
 " across tabs with maps, similar to jumplist. Then can access jumps in each window.
+function! window#complete_stack(lead, line, cursor)
+  let regex = glob2regpat(a:lead)
+  let regex = regex[0:len(regex) - 2]
+  let opts = copy(get(g:, 'tab_stack', []))
+  let opts = map(opts, 'RelativePath(v:val)')
+  let opts = filter(opts, 'v:val =~# regex')
+  return opts
+endfunction
 function! window#next_stack(count, ...) abort
   let remove = a:0 ? a:1 : 0
   let [idx, _] = stack#get_loc('tab')

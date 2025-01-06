@@ -27,10 +27,16 @@ endfunction
 function! s:get_index(head, ...) abort  " remove in future
   let [stack, idx] = s:get_stack(a:head)
   let nmax = a:0 > 1 ? a:2 < 0 ? len(stack) : a:2 : 0
-  let name = stack#get_name(a:head, a:0 ? a:1 : '')
+  let name = stack#get_name(a:head, a:0 ? a:1 : '')  " e.g. g:tag_name
   let istack = nmax ? reverse(copy(stack))[:nmax - 1] : []
   let nstack = max([0, len(stack) - nmax])  " remaining stack
-  let jdx = empty(name) ? -1 : index(istack, name)
+  if empty(name)  " invalid input name
+    let jdx = -1
+  elseif !empty(istack) && type(istack[0]) > type(name)  " e.g. tag name
+    let jdx = indexof(istack, 'v:val[-1] ==# name')
+  else  " matching list
+    let jdx = index(istack, name)
+  endif
   let kdx = jdx < 0 ? -1 : len(istack) + nstack - jdx - 1
   return [stack, idx, name, kdx]
 endfunction
@@ -115,12 +121,14 @@ endfunction
 " buffer. Functions should return non-zero on failure (either manually or through
 " vim error triggered on function with abort-label, which returns -1 by default).
 function! stack#pop_stack(head, ...) abort
+  let [cnt, nmax] = [0, 100]
   let name = a:0 > 0 ? a:1 : stack#get_name(a:head)
   let level = a:0 > 1 ? a:2 : 0  " verbose level
-  let isnum = type(name) == 1 && name =~# '^\d\+$'
-  let isfile = type(name) == 1 && filereadable(resolve(name))
-  let name = isnum ? str2nr(name) : isfile ? fnamemodify(name, ':p') : name
-  let [cnt, nmax] = [0, 100]
+  if type(name) == 1 && name =~# '^\d\+$'
+    let name = str2nr(name)  " i.e. buffer number passed to command
+  elseif type(name) == 1 && filereadable(resolve(expand(name)))
+    let name = fnamemodify(resolve(expand(name)), ':p')  " e.g. ~/path/to/file
+  endif
   while cnt < nmax
     let [stack, idx, name, kdx] = s:get_index(a:head, name, -1)
     if kdx == -1 | break | endif  " remove current item, generally

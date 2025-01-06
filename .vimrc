@@ -413,7 +413,7 @@ command! -bar -nargs=? -complete=shellcmd Man
 command! -bar -nargs=0 ClearMan call stack#clear_stack('man')
 command! -bar -nargs=0 ListHelp call stack#print_stack('help')
 command! -bar -nargs=0 ListMan call stack#print_stack('man')
-command! -bar -nargs=? PopMan call stack#pop_stack('man', <q-args>, 1)
+command! -bar -nargs=? -complete=customlist,shell#man_complete PopMan call stack#pop_stack('man', <q-args>, 1)
 nnoremap <Leader>n <Cmd>call stack#push_stack('help', 'shell#help_page')<CR>
 nnoremap <Leader>m <Cmd>call stack#push_stack('man', 'shell#man_page')<CR>
 nnoremap <Leader>N <Cmd>call shell#fzf_help()<CR>
@@ -475,7 +475,7 @@ augroup tabs_setup
 augroup END
 command! -bar -nargs=0 ClearTabs call stack#clear_stack('tab') | call window#update_stack(0)
 command! -bar -nargs=0 ListTabs call stack#print_stack('tab')
-command! -bar -nargs=? PopTabs call stack#pop_stack('tab', <q-args>, 1)
+command! -bar -nargs=? -complete=customlist,window#complete_stack PopTabs call stack#pop_stack('tab', <q-args>, 1)
 nnoremap <C-Space> <Cmd>call window#update_stack(0, -1, 2)<CR>
 nnoremap <S-F3> <Cmd>call window#next_stack(-v:count1, 1)<CR>
 nnoremap <S-F4> <Cmd>call window#next_stack(v:count1, 1)<CR>
@@ -748,7 +748,7 @@ command! -bar -bang -nargs=0 UpdateProject exe <bang>0 ? 'unlet! b:tags_update_t
   \ | exe 'UpdateFolds!' | exe 'UpdateTags!' | exe 'GutentagsUpdate!'
 command! -bar -nargs=0 ClearTags call stack#clear_stack('tag')
 command! -bar -nargs=0 ListTags call stack#print_stack('tag')
-command! -bar -nargs=? PopTags call stack#pop_stack('tag', <q-args>, 1)
+command! -bar -nargs=? -complete=customlist,tag#complete_stack PopTags call stack#pop_stack('tag', <q-args>, 1)
 nnoremap <C-S-Space> <Cmd>call tag#update_stack()<CR>
 noremap <S-F1> <Esc>m'<Cmd>call tag#next_stack(-v:count1, 1)<CR>
 noremap <S-F2> <Esc>m'<Cmd>call tag#next_stack(v:count1, 1)<CR>
@@ -2250,11 +2250,11 @@ endif  " }}}
 " native syntax foldmethod. Also tried tagfunc=lsp#tagfunc but now use LspDefinition
 if s:has_plug('vim-lsp')  " {{{
   let g:_foldopen = 'call feedkeys(&foldopen =~# ''quickfix\|all'' ? "zv" : "", "n")'
+  command! -bar -nargs=? Doc call stack#push_stack('doc', 'python#doc_page', <f-args>)
   command! -bar -nargs=? LspToggle call switch#lsp(<args>)
   command! -bar -nargs=? ClearDoc call stack#clear_stack('doc')
   command! -bar -nargs=? ListDoc call stack#print_stack('doc')
-  command! -bar -nargs=? PopDoc call stack#pop_stack('doc', <q-args>, 1)
-  command! -bar -nargs=? Doc call stack#push_stack('doc', 'python#doc_page', <f-args>)
+  command! -bar -nargs=? -complete=customlist,python#doc_complete PopDoc call stack#pop_stack('doc', <q-args>, 1)
   noremap [r <Cmd>LspPreviousReference<CR>
   noremap ]r <Cmd>LspNextReference<CR>
   nnoremap gr <Cmd>LspReferences<CR>
@@ -2650,8 +2650,7 @@ if s:has_plug('vim-obsession')  " {{{
     au!
     au VimEnter * exe !empty(v:this_session) ? 'Obsession ' . v:this_session : ''
   augroup END
-  command! -nargs=* -complete=customlist,vim#complete_sessions
-    \ Session call vim#init_session(<q-args>)
+  command! -nargs=* -complete=customlist,vim#complete_sessions Session call vim#init_session(<q-args>)
   nnoremap <Leader>$ <Cmd>Session<CR>
 endif  " }}}
 if s:has_plug('vim-eunuch') || s:has_plug('vim-vinegar')  " {{{
@@ -2660,10 +2659,8 @@ if s:has_plug('vim-eunuch') || s:has_plug('vim-vinegar')  " {{{
     au!
     au FileType netrw call shell#setup_netrw()
   augroup END
-  command! -bang -nargs=* -complete=customlist,file#local_files
-    \ Rename call file#rename(<q-args>, '<bang>')
-  command! -bang -nargs=* -complete=customlist,file#local_paths
-    \ Move call file#rename(<q-args>, '<bang>')
+  command! -bang -nargs=* -complete=customlist,file#local_files Rename call file#rename(<q-args>, '<bang>')
+  command! -bang -nargs=* -complete=customlist,file#local_paths Move call file#rename(<q-args>, '<bang>')
   nnoremap <Tab>\ <Cmd>call shell#show_netrw('topleft vsplit', 1)<CR>
   nnoremap <Tab>= <Cmd>call shell#show_netrw('topleft vsplit', 0)<CR>
   nnoremap <Tab>- <Cmd>call shell#show_netrw('botright split', 1)<CR>
