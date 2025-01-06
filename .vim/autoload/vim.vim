@@ -31,7 +31,7 @@ function! vim#config_refresh(bang, ...) abort
       call add(paths, ipath)
     endif
   endfor
-  let folds = filter(fold#fold_source(), 'foldclosed(v:val[0]) < 0')
+  let folds = filter(fold#get_folds(-1), 'foldclosed(v:val[0]) < 0')
   call map(paths, "fnamemodify(v:val, ':~')[2:]")
   doautocmd VimEnter | filetype detect
   for fold in folds

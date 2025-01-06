@@ -270,7 +270,7 @@ endfunction
 " NOTE: Auto disable whenever set nohlsearch is restore
 function! s:get_changes() abort
   let lnums = []
-  for [line1, line2, _] in fold#fold_source()
+  for [line1, line2, _] in fold#get_folds(-1)
     let flags = git#_get_hunks(line1, line2, 1)
     let flags .= edit#_get_errors(line1, line2)
     if !empty(flags) | call add(lnums, line1) | endif
@@ -297,7 +297,7 @@ endfunction
 " NOTE: Auto disable whenever set nohlsearch is restore
 function! s:get_matches() abort
   let lnums = []
-  for [line1, line2, _] in fold#fold_source()
+  for [line1, line2, _] in fold#get_folds(-1)
     exe line1 | if search(@/, 'nW', line2) | call add(lnums, line1) | endif
   endfor | return lnums
 endfunction

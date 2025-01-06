@@ -635,8 +635,8 @@ cnoremap <silent> <expr> / window#close_wild('/')
 augroup foldtext_setup
   au!
   au OptionSet conceallevel if &l:filetype ==# 'tex' | unlet! b:foldtext_cache | endif
-  au TextYankPost * call fold#_remove_cache()
-  au TextChanged,TextChangedI * call fold#_update_cache()
+  au TextYankPost * call fold#_update_cache()
+  au TextChanged,TextChangedI * call fold#update_cache()
 augroup END
 command! -bar -bang -count -nargs=? UpdateFolds call fold#update_folds(<bang>0, <count>)
 nnoremap zv <Cmd>call fold#update_folds(0)<CR>zv
