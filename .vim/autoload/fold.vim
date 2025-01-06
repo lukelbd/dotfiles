@@ -442,6 +442,7 @@ function! fold#remove_cache(...) abort  " TextYankPost
   let char = get(v:event, 'regtype', 'v')
   let cnt = len(get(v:event, 'regcontents', '')) - (char ==# 'v')
   let key = get(v:event, 'operator', '')
+  if !exists('b:foldtext_cache') | return | endif
   if key !~# '^[cd]$' || char !=? 'v' | return | endif
   for inum in range(lnum, lnum + cnt - 1)
     if has_key(b:foldtext_cache, string(inum))
