@@ -41,7 +41,7 @@ function! python#dict_to_kw(invert, ...) range abort
   let locs = a:0 && a:1 ==# 'n' ? '[]' : '<>'
   let locs = ["'" . locs[0], "'" . locs[1]]
   let [col1, col2] = map(copy(locs), 'col(v:val)')
-  let [idx1, idx2] = [col1 - 1, col([line(col2), '$']) - 1]  " kludge (see above)
+  let [idx1, idx2] = [col1 - 1, col([line(locs[1]), '$']) - 1]  " kludge (see above)
   let [line1, line2] = [a:firstline, a:lastline]  " sorted by utils operator_func
   let [lines, winview] = [[], winsaveview()]
   for lnum in range(line1, line2)
