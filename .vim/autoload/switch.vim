@@ -257,10 +257,9 @@ function! switch#reveal(...) abort
     exe 'augroup reveal_' . bufnr() | exe 'au!'
     exe 'au BufEnter <buffer> let &g:foldopen = b:reveal_folds'
     exe 'au BufLeave <buffer> let &g:foldopen = b:reveal_cache[0]'
-    exe 'au CursorHold <buffer> call s:reveal_restore() | au! reveal_' . bufnr()
     exe 'augroup END'
   elseif !toggle  " remove augroup
-    exe 'silent! doautocmd reveal_' . bufnr() . ' CursorHold'
+    call s:reveal_restore() | silent! exe 'au! reveal_' . bufnr()
     unlet! b:reveal_cache
   endif
   call s:echo_state('Reveal mode', toggle, suppress)
