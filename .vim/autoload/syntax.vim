@@ -13,6 +13,7 @@ function! syntax#get_concealed(...) abort
   return type(item) ? item : index(cols, cnum) != -1
 endfunction
 function! syntax#_concealed(...) abort
+  if &l:conceallevel < 2 | return 0 | endif
   let lnum = a:0 > 0 ? a:1 : line('.')
   let cnum = a:0 > 1 ? a:2 : col('.')
   let value = a:0 > 2 ? a:3 : mode()
@@ -25,6 +26,7 @@ function! syntax#_concealed(...) abort
   return nr > 0 ? str : 0
 endfunction
 function! syntax#_matches(...) abort
+  if &l:conceallevel < 2 | return [] | endif
   let regexes = filter(getmatches(), "v:val.group ==# 'Conceal'")
   let regexes = uniq(map(regexes, 'v:val.pattern'))
   let string = getline(a:0 ? a:1 : '.')
