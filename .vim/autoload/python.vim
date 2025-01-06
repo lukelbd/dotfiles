@@ -33,30 +33,106 @@ function! s:get_level(lnum) abort
   return !empty(expr) ? type(expr) ? len(expr) > 1 ? expr[1] : expr[0] : expr : 0
 endfunction
 
+" Parse python module abbreviations
+" TODO: Use below regexes to generate suggestion lists based on file text. Should
+" iterate over file lines then suggest any <import>.method matches found for all
+" imports names. Could also combine <variable>.method with every possible prefix.
+function! python#doc_alias(item) abort
+  if &l:filetype !=# 'python' | return a:item | endif
+  let winview = winsaveview()
+  let parts = split(a:item, '\.', 1)
+  let module = parts[0]
+  let regex = '\(\k\|\.\)\+'
+  if search('import\s\+' . regex . '\s\+as\s\+' . module, 'w')
+    let name = matchlist(getline('.'), 'import\s\+\(' . regex . '\)\s\+as')[1]
+    if !empty(name) | let module = name | endif
+  endif
+  if search('from\s\+' . regex . '\s\+import\s\+(\?\(' . regex . '\(,\s*\n*\s*\)\?\)*' . module)
+    let package = matchlist(getline('.'), 'from\s\+\(' . regex . '\)\s\+import')[1]
+    if !empty(package) | let module = package . '.' . module | endif
+  endif
+  let parts[0] = module
+  call winrestview(winview)
+  return join(parts, '.')
+endfunction
+
+" Return possible documentation options
+" NOTE: This includes e.g. function name under cursor as method following b:doc_name
+" or appending to package or header detected from top of file.
+function! python#doc_names(...) abort
+  let line = getline('.')  " current line
+  let current = get(b:, 'doc_name', '')  " see shell.vim
+  if a:0 || empty(current) && &l:filetype !=# 'python'
+    let item = a:0 ? a:1 : ''
+  else  " not in pydoc page or python file
+    let head = matchstr(line[:col('.') - 1], '\h\(\w\|\.\)*$')
+    let tail = matchstr(line[col('.'):], '^\w*')
+    let item = head . tail
+  endif
+  let item = empty(item) ? get(s:, 'doc_prev', '') : item
+  let item = python#doc_alias(item)
+  let header = matchstr(getline(1), '\s\+\zs\h\(\w\|\.\)*\ze:$')
+  let package = matchstr(getline(1), '\s\+\zs\h\w*\ze\(\.\h\w*\)*:$')
+  let opts = [current . '.' . item]  " e.g. xr.DataArray.method
+  if !empty(header) | call add(opts, header . '.' . item) | endif  " e.g. pandas.read_csv
+  if !empty(package) | call add(opts, package . '.' . item) | endif
+  call add(opts, item) | return uniq(opts)  " fallback to full name
+endfunction
+
+" Browse documentation with man-style pydoc pages
+" NOTE: This is still useful over Lsp e.g. for generalized help page browsing. And
+" everything is standardized to man-format so has consistency with man utilities.
+function! python#doc_page(...) abort
+  let opts = python#doc_names()  " item under cursor
+  if !a:0  " user input page
+    let page = utils#input_default('Doc page', opts[-1], 'python#doc_pages')
+  else  " navigation page
+    let page = empty(a:1) ? opts[-1] : a:1
+  endif
+  if empty(page) | return 1 | endif
+  let page = python#doc_alias(page)
+  let opts = python#doc_names(page)
+  let result = []  " default result
+  if !bufexists(page)   " WARNING: only matches exact string
+    for iopt in opts
+      let result = systemlist('pydoc ' . shellescape(iopt))
+      let result = map(result, {idx, val -> substitute(val, '^\( \{4}\)* |  ', '\1', 'ge')})
+      if len(result) >= 5 | let page = iopt | break | endif
+    endfor
+    if len(result) < 5
+      let msg = 'Error: Doc page not found: '  " add options (avoid push_stack silent)
+      let msg .= join(map(opts, {idx, val -> string(val)}), ', ')
+      redraw | echohl ErrorMsg | unsilent echom msg | echohl None | return 1
+    endif
+  endif
+  let exists = bufexists(page)
+  let s:doc_prev = page  " previously browsed
+  let [bnr, pnr] = [bufnr(), bufnr(page)]  " WARNING: only matches start of string
+  if !empty(get(b:, 'doc_name', ''))  " existing path shell.vim
+    silent exe exists ? pnr . 'buffer' : 'enew | file ' . page
+  else
+    silent exe exists ? 'tabedit | ' . pnr . 'buffer' : 'tabedit ' . page
+  endif
+  if !exists | call append(0, result) | goto | endif | let b:doc_name = page
+  setlocal nobuflisted bufhidden=hide buftype=nofile filetype=man
+endfunction
+function! python#doc_pages(...) abort
+  let cmd = 'pip list --no-color --no-input --no-python-version-warning'
+  let pages = systemlist(cmd)
+  let pages = map(pages[2:], 'substitute(v:val, ''\s\+.*$'', '''', ''g'')')
+  return filter(pages, '!empty(v:val)')
+endfunction
+function! python#fzf_doc() abort
+  let options = {
+    \ 'source': python#doc_pages(),
+    \ 'options': '--tiebreak length,index --prompt="doc> "',
+    \ 'sink': function('stack#push_stack', ['doc', 'python#doc_page'])
+  \ } | call fzf#run(fzf#wrap(options))
+endfunction
+
 " Return SimpylFold expressions for decorators, docstrings, constants
 " WARNING: Only call this when SimpylFold updates to improve performance. Might
 " break if SimpylFold renames internal cache variable (monitor).
-function! s:fold_decorator(lnum) abort
-  if getline(a:lnum) !~# '^\s*@\k\+' | return [] | endif
-  let [lnum, level, indent] = [a:lnum, s:get_level(a:lnum), s:get_indent(a:lnum)]
-  while lnum < line('$') && !s:get_isdef(lnum + 1)
-    let lnum += 1
-    if s:get_level(lnum) != level || s:get_indent(lnum) < indent | return [] | endif
-  endwhile
-  let level = s:get_level(lnum + 1)  " definition level
-  return ['>' . level] + repeat([level], lnum - a:lnum + 1)
-endfunction
-function! s:fold_docstring(lnum) abort
-  let regex = '[frub]*["'']\{3}'  " fold e.g.. _docstring_snippet = '''...
-  let [_, _, pos] = matchstrpos(getline(a:lnum), '^\K\k*\s*=\s*' . regex)
-  if pos == -1 | return [] | endif
-  let lnum = a:lnum
-  while lnum < line('$') && getline(lnum)[pos:] !~# regex  " fold entire docstring
-    let [pos, lnum] = [0, lnum + 1]
-    if s:get_level(lnum) | return [] | endif
-  endwhile
-  return lnum > a:lnum ? ['>1'] + repeat([1], lnum - a:lnum - 1) + ['<1'] : []
-endfunction
 function! s:fold_constant(lnum) abort  " e.g. VARIABLE = [... or if condition:...
   let heads = '^\%(if\|for\|while\|with\|try\|def\|class\)\>.*:\s*\%(#.*\)\?$'
   let blocks = '^\%(\s*\|\%(elif\|else\|except\|finally\)\>.*:\s*\%(#.*\)\?\)$'
@@ -71,6 +147,27 @@ function! s:fold_constant(lnum) abort  " e.g. VARIABLE = [... or if condition:..
   let [inum, ilabel] = [lnum + 1, getline(lnum + 1)]
   let lnum += !s:get_indent(inum) && ilabel !~# '^\s*$'
   return lnum > a:lnum + 1 ? ['>1'] + repeat([1], lnum - a:lnum - 1) + ['<1'] : []
+endfunction
+function! s:fold_decorator(lnum) abort
+  if getline(a:lnum) !~# '^\s*@\k\+' | return [] | endif
+  let [lnum, level, indent] = [a:lnum, s:get_level(a:lnum), s:get_indent(a:lnum)]
+  while lnum < line('$') && !s:get_isdef(lnum + 1)
+    let lnum += 1
+    if s:get_level(lnum) != level || s:get_indent(lnum) < indent | return [] | endif
+  endwhile
+  let level = s:get_level(lnum + 1)  " definition level
+  return ['>' . level] + repeat([level], lnum - a:lnum + 1)
+endfunction
+function! s:fold_docstring(lnum) abort
+  let regex = '[frub]*["'']\{3}'  " fold e.g.. _docstring_snippet = '''...
+  let [_, _, pos] = matchstrpos(getline(a:lnum), '^\K\k*\s*=\s*' . regex)
+  if pos == -1 | return [] | endif
+  let lnum = a:lnum  " vint: -ProhibitUsingUndeclaredVariable
+  while lnum < line('$') && getline(lnum)[pos:] !~# regex  " fold entire docstring
+    let [pos, lnum] = [0, lnum + 1]
+    if s:get_level(lnum) | return [] | endif
+  endwhile
+  return lnum > a:lnum ? ['>1'] + repeat([1], lnum - a:lnum - 1) + ['<1'] : []
 endfunction
 
 " Return cached fold expression
@@ -134,103 +231,6 @@ function! python#fold_text(lnum, ...) abort
   let result = substitute(label, '["'']\{3}', '\=add(l:subs, submatch(0))', 'gn')
   let label .= len(l:subs) % 2 ? '···' . substitute(l:subs[0], '^[frub]*', '', 'g') : ''
   return label  " closed docstring
-endfunction
-
-" Parse python module abbreviations
-" TODO: Use below regexes to generate suggestion lists based on file text. Should
-" iterate over file lines then suggest any <import>.method matches found for all
-" imports names. Could also combine <variable>.method with every possible prefix.
-function! python#doc_translate(item) abort
-  if &l:filetype !=# 'python' | return a:item | endif
-  let winview = winsaveview()
-  let parts = split(a:item, '\.', 1)
-  let module = parts[0]
-  let regex = '\(\k\|\.\)\+'
-  if search('import\s\+' . regex . '\s\+as\s\+' . module, 'w')
-    let name = matchlist(getline('.'), 'import\s\+\(' . regex . '\)\s\+as')[1]
-    if !empty(name) | let module = name | endif
-  endif
-  if search('from\s\+' . regex . '\s\+import\s\+(\?\(' . regex . '\(,\s*\n*\s*\)\?\)*' . module)
-    let package = matchlist(getline('.'), 'from\s\+\(' . regex . '\)\s\+import')[1]
-    if !empty(package) | let module = package . '.' . module | endif
-  endif
-  let parts[0] = module
-  call winrestview(winview)
-  return join(parts, '.')
-endfunction
-
-" Return possible documentation options
-" NOTE: This includes e.g. function name under cursor as method following b:doc_name
-" or appending to package or header detected from top of file.
-function! python#doc_search(...) abort
-  let line = getline('.')  " current line
-  let current = get(b:, 'doc_name', '')  " see shell.vim
-  if a:0 || empty(current) && &l:filetype !=# 'python'
-    let item = a:0 ? a:1 : ''
-  else  " not in pydoc page or python file
-    let head = matchstr(line[:col('.') - 1], '\h\(\w\|\.\)*$')
-    let tail = matchstr(line[col('.'):], '^\w*')
-    let item = head . tail
-  endif
-  let item = empty(item) ? get(s:, 'doc_prev', '') : item
-  let item = python#doc_translate(item)
-  let header = matchstr(getline(1), '\s\+\zs\h\(\w\|\.\)*\ze:$')
-  let package = matchstr(getline(1), '\s\+\zs\h\w*\ze\(\.\h\w*\)*:$')
-  let opts = [current . '.' . item]  " e.g. xr.DataArray.method
-  if !empty(header) | call add(opts, header . '.' . item) | endif  " e.g. pandas.read_csv
-  if !empty(package) | call add(opts, package . '.' . item) | endif
-  call add(opts, item) | return uniq(opts)  " fallback to full name
-endfunction
-
-" Browse documentation with man-style pydoc pages
-" NOTE: This is still useful over Lsp e.g. for generalized help page browsing. And
-" everything is standardized to man-format so has consistency with man utilities.
-function! python#doc_page(...) abort
-  let opts = python#doc_search()  " item under cursor
-  if !a:0  " user input page
-    let page = utils#input_default('Doc page', opts[-1], 'python#_fzf_doc')
-  else  " navigation page
-    let page = empty(a:1) ? opts[-1] : a:1
-  endif
-  if empty(page) | return 1 | endif
-  let page = python#doc_translate(page)
-  let opts = python#doc_search(page)
-  let result = []  " default result
-  if !bufexists(page)   " WARNING: only matches exact string
-    for iopt in opts
-      let result = systemlist('pydoc ' . shellescape(iopt))
-      let result = map(result, {idx, val -> substitute(val, '^\( \{4}\)* |  ', '\1', 'ge')})
-      if len(result) >= 5 | let page = iopt | break | endif
-    endfor
-    if len(result) < 5
-      let msg = 'Error: Doc page not found: '  " add options (avoid push_stack silent)
-      let msg .= join(map(opts, {idx, val -> string(val)}), ', ')
-      redraw | echohl ErrorMsg | unsilent echom msg | echohl None | return 1
-    endif
-  endif
-  let exists = bufexists(page)
-  let s:doc_prev = page  " previously browsed
-  let [bnr, pnr] = [bufnr(), bufnr(page)]  " WARNING: only matches start of string
-  if !empty(get(b:, 'doc_name', ''))  " existing path shell.vim
-    silent exe exists ? pnr . 'buffer' : 'enew | file ' . page
-  else
-    silent exe exists ? 'tabedit | ' . pnr . 'buffer' : 'tabedit ' . page
-  endif
-  if !exists | call append(0, result) | goto | endif | let b:doc_name = page
-  setlocal nobuflisted bufhidden=hide buftype=nofile filetype=man
-endfunction
-function! python#_fzf_doc(...) abort
-  let cmd = 'pip list --no-color --no-input --no-python-version-warning'
-  let pages = systemlist(cmd)
-  let pages = map(pages[2:], 'substitute(v:val, ''\s\+.*$'', '''', ''g'')')
-  return filter(pages, '!empty(v:val)')
-endfunction
-function! python#fzf_doc() abort
-  let options = {
-    \ 'source': python#_fzf_doc(),
-    \ 'options': '--tiebreak length,index --prompt="doc> "',
-    \ 'sink': function('stack#push_stack', ['doc', 'python#doc_page'])
-  \ } | call fzf#run(fzf#wrap(options))
 endfunction
 
 " Get properties for docstring under cursor
