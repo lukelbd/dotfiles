@@ -114,7 +114,7 @@ function! python#doc_page(...) abort
     silent exe exists ? 'tabedit | ' . pnr . 'buffer' : 'tabedit ' . page
   endif
   if !exists | call append(0, result) | goto | endif | let b:doc_name = page
-  setlocal nobuflisted bufhidden=hide buftype=nofile filetype=man
+  setlocal norelativenumber nonumber nobuflisted bufhidden=hide buftype=nofile filetype=man
 endfunction
 function! python#doc_pages(...) abort
   let cmd = 'pip list --no-color --no-input --no-python-version-warning'

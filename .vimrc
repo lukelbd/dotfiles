@@ -457,8 +457,8 @@ augroup panel_setup
   au FileType gitcommit call git#setup_commit()
   au FileType fugitiveblame call git#setup_blame() | call git#setup_deltas()
   au FileType git,diff,fugitive call git#setup_deltas()
-  for s:type in s:panel_filetypes | let s:arg = s:type ==# 'gitcommit'
-    exe 'au FileType ' . s:type . ' call window#setup_panel(' . s:arg . ')'
+  for s:name in s:panel_filetypes | let s:arg = s:name ==# 'gitcommit'
+    exe 'au FileType ' . s:name . ' call window#setup_panel(' . s:arg . ')'
   endfor
 augroup END
 
