@@ -438,17 +438,17 @@ endfunction
 " additions or deletions on InsertCharPre, but now simply detect whether number of
 " lines has changed on TextChanged,TextChangedI and offset cache indices by difference.
 function! fold#_update_cache(...) abort  " TextYankPost
-  let key = get(v:event, 'operator', '')
-  let char = get(v:event, 'regtype', 'v')
-  if key !~# '^[cd]$' || char !=? 'v' | return | endif
-  let cnt = len(get(v:event, 'regcontents', '')) - (char ==# 'v')
   let lnum = line('.')
+  let char = get(v:event, 'regtype', 'v')
+  let cnt = len(get(v:event, 'regcontents', '')) - (char ==# 'v')
+  let key = get(v:event, 'operator', '')
+  if key !~# '^[cd]$' || char !=? 'v' | return | endif
   for inum in range(lnum, lnum + cnt - 1)
     if has_key(b:foldtext_cache, string(inum))
       let folds = fold#get_folds(inum, inum)
       if !empty(folds)  " check whether fold deleted
         let [line1, line2, level] = folds[0]
-        if line2 > lnum + cnt | continue | endif  " only partially deleted
+        if line2 >= lnum + cnt | continue | endif  " only partially deleted
         call remove(b:foldtext_cache, string(inum))
       endif
     endif
