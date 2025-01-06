@@ -429,11 +429,31 @@ function! s:object_fold(outer, ...) abort
 endfunction
 
 " Handle foldtext cache indices
+" NOTE: Here fold#get_folds() on cached fold line will return parent bounds if parent
+" fold is closed, but should still work / should not trigger 'continue' block, since
+" TextYankPost i.e. normal-mode deletions necessarily encompass entire closed folds.
 " WARNING: Caching important for syntax#get_concealed() and for python s:is_decorator()
 " (also had issues with flag generation but should be quick if we avoid triggering
 " gitgutter updates). Previously tried to count newlines in TextYankPost and newline
 " additions or deletions on InsertCharPre, but now simply detect whether number of
 " lines has changed on TextChanged,TextChangedI and offset cache indices by difference.
+function! fold#_update_cache(...) abort  " TextYankPost
+  let key = get(v:event, 'operator', '')
+  let char = get(v:event, 'regtype', 'v')
+  if key !~# '^[cd]$' || char !=? 'v' | return | endif
+  let cnt = len(get(v:event, 'regcontents', '')) - (char ==# 'v')
+  let lnum = line('.')
+  for inum in range(lnum, lnum + cnt - 1)
+    if has_key(b:foldtext_cache, string(inum))
+      let folds = fold#get_folds(inum, inum)
+      if !empty(folds)  " check whether fold deleted
+        let [line1, line2, level] = folds[0]
+        if line2 > lnum + cnt | continue | endif  " only partially deleted
+        call remove(b:foldtext_cache, string(inum))
+      endif
+    endif
+  endfor
+endfunction
 function! fold#update_cache(...) abort  " TextChanged,TextChangedI
   let [lmin, lmax] = [line('.'), line('$')]
   let lnum = get(b:, 'foldtext_count', line('$'))
@@ -449,23 +469,6 @@ function! fold#update_cache(...) abort  " TextChanged,TextChangedI
       call remove(b:foldtext_cache, string(lnum))
     endif
   endfor
-endfunction
-function! fold#_update_cache(...) abort  " TextYankPost
-  let [lnum, inum] = [line('.'), line('.')]
-  let [key, char] = [get(v:event, 'operator', ''), get(v:event, 'regtype', 'v')]
-  if key !~# '^[cd]$' || char !=? 'v' | return | endif
-  let cnt = len(get(v:event, 'regcontents', '')) - (char ==# 'v')
-  while inum < lnum + cnt
-    if has_key(b:foldtext_cache, string(inum))
-      let folds = fold#get_folds(inum, inum)
-      if !empty(folds)  " check whether fold deleted
-        let [line1, line2, level] = folds[0]
-        if line2 > lnum + cnt | break | endif  " only partially deleted
-        call remove(b:foldtext_cache, string(inum))
-        let inum = line2
-      endif
-    endif | let inum += 1
-  endwhile
 endfunction
 
 " Update buffer-local fold level
