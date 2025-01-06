@@ -437,7 +437,7 @@ endfunction
 " gitgutter updates). Previously tried to count newlines in TextYankPost and newline
 " additions or deletions on InsertCharPre, but now simply detect whether number of
 " lines has changed on TextChanged,TextChangedI and offset cache indices by difference.
-function! fold#_update_cache(...) abort  " TextYankPost
+function! fold#remove_cache(...) abort  " TextYankPost
   let lnum = line('.')
   let char = get(v:event, 'regtype', 'v')
   let cnt = len(get(v:event, 'regcontents', '')) - (char ==# 'v')
