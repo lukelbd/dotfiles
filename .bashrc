@@ -345,8 +345,8 @@ echo 'done'
 # For less/man/etc. colors see: https://unix.stackexchange.com/a/329092/112647
 _setup_message 'Utility setup'
 [ -r "$HOME/.dircolors.ansi" ] && eval "$(dircolors ~/.dircolors.ansi)"
-alias lss='ls --color=always -AFd $(pwd) && ls --color=always -AF'
-alias lll='ls --color=always -AFhld $(pwd) && ls --color=always -AFhl | tail -n +2'
+alias lss='ls --color=always -AF && ls --color=always -AFd $(pwd)'
+alias lll='ls --color=always -AFhl | tail -n +2 && ls --color=always -AFhld $(pwd)'
 alias ls='ls --color=always -AF'    # ls with dirs differentiate from files
 alias ll='ls --color=always -AFhl'  # ls with details and file sizes
 alias cd='cd -P'                    # do not want this on mac
