@@ -269,54 +269,54 @@ endfunction
 " Toggle folds with gitgutter hunks
 " NOTE: Auto disable whenever set nohlsearch is restore
 function! s:get_changes() abort
-  let lnums = []
-  for [line1, line2, _] in fold#get_folds(-1)
+  let lines = []
+  for [line1, line2, _] in fold#get_folds(-2)
     let flags = git#_get_hunks(line1, line2, 1)
     let flags .= edit#_get_errors(line1, line2)
-    if !empty(flags) | call add(lnums, line1) | endif
-  endfor | return lnums
+    if !empty(flags) | call add(lines, line1) | endif
+  endfor | return lines
 endfunction
 function! switch#changes(...) abort
   let winview = winsaveview()
-  let lnums = s:get_changes()
-  let state = empty(filter(copy(lnums), 'foldclosed(v:val) > 0'))
+  let lines = s:get_changes()
+  let state = empty(filter(copy(lines), 'foldclosed(v:val) > 0'))
   let toggle = a:0 > 0 ? a:1 : 1 - state
   let suppress = a:0 > 1 ? a:2 : 0
   if toggle  " :global previous search
     call fold#update_folds(0, 2)
-    for lnum in lnums | exe lnum . 'foldopen' | endfor
+    for lnum in lines | exe lnum . 'foldopen' | endfor
     call winrestview(winview) | exe 'normal! zzze'
   else  " keep hlsearch enabled
     call winrestview(winview)
     call fold#update_folds(0, 1)
   endif
-  call s:echo_state(len(lnums) . ' folds', toggle, suppress)
+  call s:echo_state(len(lines) . ' folds', toggle, suppress)
 endfunction
 
 " Toggle folds with search matches
 " NOTE: Auto disable whenever set nohlsearch is restore
 function! s:get_matches() abort
-  let lnums = []
-  for [line1, line2, _] in fold#get_folds(-1)
-    exe line1 | if search(@/, 'nW', line2) | call add(lnums, line1) | endif
-  endfor | return lnums
+  let lines = []
+  for [line1, line2, _] in fold#get_folds(-2)
+    exe line1 | if search(@/, 'nW', line2) | call add(lines, line1) | endif
+  endfor | return lines
 endfunction
 function! switch#matches(...) abort
   let winview = winsaveview()
-  let lnums = s:get_matches()
-  let state = empty(filter(copy(lnums), 'foldclosed(v:val) > 0'))
+  let lines = s:get_matches()
+  let state = empty(filter(copy(lines), 'foldclosed(v:val) > 0'))
   let toggle = a:0 > 0 ? a:1 : 1 - state
   let suppress = a:0 > 1 ? a:2 : 0
   if toggle  " :global previous search
     call fold#update_folds(0, 2)
-    for lnum in lnums | exe lnum . 'foldopen' | endfor
+    for lnum in lines | exe lnum . 'foldopen' | endfor
     call winrestview(winview) | exe 'normal! zzze'
   else  " keep hlsearch enabled
     call winrestview(winview)
     call fold#update_folds(0, 1)
   endif
   call feedkeys("\<Cmd>set hlsearch\<CR>", 'n')
-  call s:echo_state(len(lnums) . ' folds', toggle, suppress)
+  call s:echo_state(len(lines) . ' folds', toggle, suppress)
 endfunction
 
 " Toggle spell check on and off
