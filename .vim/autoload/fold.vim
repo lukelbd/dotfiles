@@ -1,45 +1,41 @@
 "-----------------------------------------------------------------------------"
 " Utilities for vim folds
 "-----------------------------------------------------------------------------"
-" Handle fold text cache and cache indices
-" WARNING: TextYankPost fold recache trigger fails for blackhole register
-" NOTE: Caching important for syntax#get_concealed() and for python s:is_decorator()
+" Handle foldtext cache indices
+" WARNING: Caching important for syntax#get_concealed() and for python s:is_decorator()
 " (also had issues with flag generation but should be quick if we avoid triggering
-" gitgutter updates). Tried to index cache by line number, then adjust indices by
-" detecting newlines in TextYankPost and newline additions/deletions on InsertCharPre,
-" but too complex. Now index cache using fold count from top of file, adjust indices
-" when line count changes, and rearrange cache entries when entire fold is deleted.
-function! fold#_reindex(...) abort  " TextChanged,TextChangedI
+" gitgutter updates). Previously tried to count newlines in TextYankPost and newline
+" additions or deletions on InsertCharPre, but now simply detect whether number of
+" lines has changed on TextChanged,TextChangedI and offset cache indices by difference.
+function! fold#_update_cache(...) abort  " TextChanged,TextChangedI
   let cnt = get(b:, 'foldtext_count', line('$'))
   let b:foldtext_count = line('$')
-  if !exists('b:foldtext_keys') || cnt != line('$')
-    let b:foldtext_keys = {}  " fold text lines to cache keys
-    for [line1, line2, level] in sort(fold#fold_source(), {i1, i2 -> i1[0] - i2[0]})
-      let b:foldtext_keys[line1] = [len(b:foldtext_keys), line2 - line1 + 1]
-    endfor
-  endif
+  let delta = line('$') - cnt  " line count offset
+  if empty(delta) | return | endif
+  for lnum in range(line('.'), line('$'))
+    if has_key(b:foldtext_cache, string(lnum))
+      let b:foldtext_cache[lnum + delta] = b:foldtext_cache[lnum]
+      call remove(b:foldtext_cache, string(lnum))
+    endif
+  endfor
 endfunction
-function! fold#_recache(...) abort  " TextYankPost
+function! fold#_remove_cache(...) abort  " TextYankPost
   let [lnum, inum] = [line('.'), line('.')]
   let key = get(v:event, 'operator', '')
   let char = get(v:event, 'regtype', 'v')
   if key !~# '^[cd]$' || char !=? 'v' | return | endif
   let cnt = len(get(v:event, 'regcontents', '')) - (char ==# 'v')
   while inum < lnum + cnt
-    if has_key(b:foldtext_keys, string(inum))
-      let [ikey, icnt] = b:foldtext_keys[inum]
-      let inum += icnt - 1 | if inum >= lnum + cnt | break | endif
-      for ikey in range(ikey + 1, len(b:foldtext_keys))  " adjust cache indices
-        if has_key(b:foldtext_cache, string(ikey))
-          let b:foldtext_cache[ikey - 1] = b:foldtext_cache[ikey]  " adjust cache index
-        elseif has_key(b:foldtext_cache, string(ikey - 1))
-          call remove(b:foldtext_cache, ikey - 1)  " remove cache index
-        endif
-      endfor
-      call remove(b:foldtext_keys, string(lnum))
-    endif
-    let inum += 1
-  endwhile  " then await TextChanged which triggers reindex
+    if has_key(b:foldtext_cache, string(inum))
+      let folds = fold#get_folds(inum, inum)
+      if !empty(folds)  " check whether fold deleted
+        let [line1, line2, level] = folds[0]
+        if line2 > lnum + cnt | break | endif  " only partially deleted
+        call remove(b:foldtext_cache, string(inum))
+        let inum = line2
+      endif
+    endif | let inum += 1
+  endwhile
 endfunction
 
 " Return bounds and level for any closed fold or open fold of requested level
@@ -324,11 +320,10 @@ function! s:fold_text(line1, line2, level)
 endfunction
 
 " Generate cached and truncated fold text
-" NOTE: Here cache fold text with a cache index of the fold count from the top of the
-" file. The cache index is updated when the line count has changed, detected whenever
-" fold text called and on TextChanged,TextChangedI. See fold#_reindex()
+" NOTE: Here cache fold text according to fold line number, then update cache indices
+" when line count has changed after TextChanged,TextChangedI and remove cache entries
+" when entire fold has been deleted after TextYankPost (avoids overwriting issues).
 function! fold#fold_text(...) abort
-  call fold#_reindex()  " update line number -> cache key mapping
   let winview = winsaveview()  " translate byte column index to character index
   if !exists('b:foldtext_cache')
     let b:foldtext_cache = {}  " create fold text cache mapping
@@ -340,12 +335,11 @@ function! fold#fold_text(...) abort
     let [line1, line2] = [v:foldstart, v:foldend]
     let level = len(v:folddashes)
   endif
-  let key = get(b:foldtext_keys, string(line1), [line1])[0]
-  let label = get(b:foldtext_cache, string(key), '')
+  let label = get(b:foldtext_cache, string(line1), '')
   if empty(label) || !type(label)
     let [label, space, lines] = s:fold_text(line1, line2, level)
     let label = label . space . lines
-    let b:foldtext_cache[key] = label
+    let b:foldtext_cache[line1] = label
   endif
   let leftidx = charidx(getline(winview.lnum), winview.leftcol)
   return strcharpart(label, leftidx)
@@ -354,17 +348,17 @@ endfunction
 " Helper functions for fzf folds and caching operations
 " NOTE: Here fold#fold_source() generates list of all folds using fold#get_fold()
 " algorithm on open folds and temporarily opening closed folds where necessary.
-function! s:fold_counts(fold) abort
-  let flags = ['!', '\*', '\^', '+', '\~', '-']
-  let regex = join(map(flags, '''\%('' . v:val . ''\(\d\+\)\)\?'''), '')
-  let nrs = map(matchlist(a:fold, '^\s*{' . regex . '}')[1:6], 'str2nr(v:val)')
-  return empty(nrs) ? [0, 0] : [nrs[0] + nrs[1] + nrs[2], nrs[3] + nrs[4] + nrs[5]]
-endfunction
 function! s:fold_sink(fold) abort
   if empty(a:fold) | return | endif
   let [path, lnum; rest] = split(a:fold, ':')
   exe 'normal! m''' | call cursor(lnum, 0)
   exe 'normal! zvzzze'
+endfunction
+function! s:fold_stats(fold) abort
+  let flags = ['!', '\*', '\^', '+', '\~', '-']
+  let regex = join(map(flags, '''\%('' . v:val . ''\(\d\+\)\)\?'''), '')
+  let nrs = map(matchlist(a:fold, '^\s*{' . regex . '}')[1:6], 'str2nr(v:val)')
+  return empty(nrs) ? [0, 0] : [nrs[0] + nrs[1] + nrs[2], nrs[3] + nrs[4] + nrs[5]]
 endfunction
 function! fold#fold_source(...) abort
   let [lmin, lmax, level] = a:0 ? a:000 : [1, line('$'), 1]
@@ -404,15 +398,15 @@ function! fold#fzf_folds(...) abort
       endif
     endif
     let [label, _, stats] = s:fold_text(iline, jline, level)
-    let [icount, jcount] = s:fold_counts(label)
+    let [istat, jstat] = s:fold_stats(label)
     let stats = substitute(stats, '[^0-9 ]', '', 'g')
     let [lines, level] = map(split(stats), 'str2nr(v:val)')
     let space = repeat(' ', maxlen - strchars(lines) + 1)
     let stats = '[' . level . ']' . ' ' . '(' . lines . ')'
     let label = substitute(label, '\(^\s*\|\s*$\)', '', 'g')
     let label = bufname() . ':' . line1 . ':' . stats . ' ' . label
-    if icount || jcount  " ale.vim locations
-      call add(labels1, [label, icount, jcount])
+    if istat || jstat  " ale.vim locations
+      call add(labels1, [label, istat, jstat])
     else  " standard label
       call add(labels0, [label, level, lines])
     endif
@@ -569,13 +563,12 @@ function! fold#update_folds(force, ...) abort
     endfor
   endif
   if force || refold  " re-apply or convert
-    unlet! b:foldtext_cache
-    unlet! b:foldtext_keys
     if a:force
       call SimpylFold#Recache()
     endif
     exe 'FastFoldUpdate'
     let b:fastfold_queued = 0
+    unlet! b:foldtext_cache
   endif
   if &l:foldmethod ==# 'manual'  " i.e. not skipped
     for [line1, line2, closed] in reverse(markers)

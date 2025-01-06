@@ -634,8 +634,9 @@ cnoremap <silent> <expr> / window#close_wild('/')
 " &foldlevel for fortran python and tex files (e.g. always open \begin{document}).
 augroup foldtext_setup
   au!
-  au TextYankPost * call fold#_recache()
-  au TextChanged,TextChangedI * call fold#_reindex()
+  au OptionSet conceallevel if &l:filetype ==# 'tex' | unlet! b:foldtext_cache | endif
+  au TextYankPost * call fold#_remove_cache()
+  au TextChanged,TextChangedI * call fold#_update_cache()
 augroup END
 command! -bar -bang -count -nargs=? UpdateFolds call fold#update_folds(<bang>0, <count>)
 nnoremap zv <Cmd>call fold#update_folds(0)<CR>zv
