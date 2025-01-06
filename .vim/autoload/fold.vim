@@ -12,7 +12,8 @@ function! fold#_update_cache(...) abort  " TextChanged,TextChangedI
   let b:foldtext_count = line('$')
   let delta = line('$') - cnt  " line count offset
   if empty(delta) | return | endif
-  for lnum in range(line('.'), line('$'))
+  let nums = range(line('.'), line('$'))
+  for lnum in delta > 0 ? reverse(nums) : nums  " avoid overwriting keys
     if has_key(b:foldtext_cache, string(lnum))
       let b:foldtext_cache[lnum + delta] = b:foldtext_cache[lnum]
       call remove(b:foldtext_cache, string(lnum))
