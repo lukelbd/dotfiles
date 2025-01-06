@@ -106,7 +106,6 @@ endfunction
 " the first regex and when that regex is not preceded by the second regex. Useful
 " e.g. for python classes or tex environments occupying entire document and to
 " enforce universal standard default of foldlevel=0 without hiding everything.
-" Return fold under cursor above a given level
 scriptencoding utf-8  " {{{
 let s:fold_matches = [
   \ ['python', '^class\>', '', 1],
@@ -173,8 +172,10 @@ function! s:get_range(func, ...) abort
       let [line1, line2, level] = result | call add(folds, result)
       if nmax > 0 && len(folds) >= nmax | break | endif
     endif
-    if level > 0 && nmax < 0  " recursive search
-      if foldclosed(line1) > 0 | call add(closed, line1) | exe line1 . 'foldopen' | endif
+    if foldclosed(line1) > 0 && nmax < -1  " temporarily open folds
+      call add(closed, line1) | exe line1 . 'foldopen'
+    endif
+    if level > 0 && nmax < 0 && foldclosed(line1) <= 0  " search inner folds
       call extend(folds, s:get_range(a:func, line1, line2, level + 1, nmax))
     endif
     if lmax < lmin  " search backward
@@ -316,7 +317,7 @@ endfunction
 " NOTE: Here fold#get_folds(-1) generates list of all folds using fold#get_fold()
 " algorithm on open folds and temporarily opening closed folds where necessary.
 function! s:fold_source()
-  let folds = fold#get_folds(-1)  " recursive search
+  let folds = fold#get_folds(-2)  " recursive search
   let mark0 = split(&l:foldmarker, ',')[0]
   let regex0 = '\%(^\|\s\)\zs' . mark0 . '\(\d*\)\s*$'
   let regex1 = '^' . comment#get_regex(0)
@@ -537,6 +538,7 @@ endfunction
 " 'zC' maps this increases the depth of closed folds under cursor by one at a time
 function! fold#update_folds(force, ...) abort
   " Initial stuff
+  let folds = []  " previously open folds
   let markers = []  " manual markers
   let winview = winsaveview()
   let closed0 = foldlevel('.') ? foldclosed('.') : 0  " zero if no folds
@@ -558,8 +560,9 @@ function! fold#update_folds(force, ...) abort
     endfor
   endif
   if force || refold  " re-apply or convert
-    if a:force
+    if a:force  " manual invocation
       call SimpylFold#Recache()
+      let folds = filter(map(fold#get_folds(-1), 'v:val[0]'), 'foldclosed(v:val) < 0')
     endif
     exe 'FastFoldUpdate'
     let b:fastfold_queued = 0
@@ -598,6 +601,7 @@ function! fold#update_folds(force, ...) abort
     let keys .= reset == 2 && reveal ? closes : reset == 1 && status < 0 ? 'zc' : ''
   endif
   exe winview.lnum | exe empty(keys) ? '' : 'silent! normal! ' . keys
+  for lnum in folds | exe foldlevel(lnum) ? lnum . 'foldopen' : '' | endfor
   call winrestview(winview)
 endfunction
 
