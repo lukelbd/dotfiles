@@ -335,8 +335,8 @@ command! -bar -bang -nargs=* History call file#fzf_history(<q-args>, <bang>0)
 command! -bar -bang -nargs=0 Recents call file#fzf_recent(<bang>0)
 nnoremap <Leader>q <Cmd>ShowBufs<CR>
 nnoremap <Leader>Q <Cmd>WipeBufs<CR>
-nnoremap g, <Cmd>call file#fzf_history('')<CR>
-nnoremap g< <Cmd>call file#fzf_recent()<CR>
+nnoremap g[ <Cmd>call file#fzf_history('')<CR>
+nnoremap g{ <Cmd>call file#fzf_recent()<CR>
 
 " General file related utilities {{{2
 " NOTE: Here toggle between local or global current directory
@@ -477,10 +477,10 @@ command! -bar -nargs=0 ClearTabs call stack#clear_stack('tab') | call window#upd
 command! -bar -nargs=0 ListTabs call stack#print_stack('tab')
 command! -bar -nargs=? PopTabs call stack#pop_stack('tab', <q-args>, 1)
 nnoremap <C-Space> <Cmd>call window#update_stack(0, -1, 2)<CR>
-nnoremap <S-F1> <Cmd>call window#next_stack(-v:count1, 1)<CR>
-nnoremap <S-F2> <Cmd>call window#next_stack(v:count1, 1)<CR>
-nnoremap <F1> <Cmd>call window#next_stack(-v:count1)<CR>
-nnoremap <F2> <Cmd>call window#next_stack(v:count1)<CR>
+nnoremap <S-F3> <Cmd>call window#next_stack(-v:count1, 1)<CR>
+nnoremap <S-F4> <Cmd>call window#next_stack(v:count1, 1)<CR>
+nnoremap <F3> <Cmd>call window#next_stack(-v:count1)<CR>
+nnoremap <F4> <Cmd>call window#next_stack(v:count1)<CR>
 
 " Tab selection and management
 " WARNING: FZF cannot create terminals when called inside expr mappings.
@@ -488,14 +488,16 @@ nnoremap <F2> <Cmd>call window#next_stack(v:count1)<CR>
 " NOTE: Here :History includes v:oldfiles and open buffers
 for s:key in range(1, 10) | exe 'silent! unmap <Tab>' . s:key | endfor
 for s:key in ['.', ',', '>', '<'] | exe 'silent! xunmap z' . s:key | endfor
-nnoremap g. <Cmd>exe v:count ? 'call window#goto_tab(v:count)' : 'call window#fzf_goto()'<CR>
-nnoremap g> <Cmd>exe v:count ? 'call window#move_tab(v:count)' : 'call window#fzf_move()'<CR>
+nnoremap g] <Cmd>exe v:count ? 'call window#goto_tab(v:count)' : 'call window#fzf_goto()'<CR>
+nnoremap g} <Cmd>exe v:count ? 'call window#move_tab(v:count)' : 'call window#fzf_move()'<CR>
 nnoremap g<Space> <Cmd>Windows<CR>
 nnoremap z<Space> <Cmd>Buffers<CR>
 
 " Tab and window jumping
-nnoremap <Tab>, <Cmd>exe max([tabpagenr() - v:count1, 1]) . 'tabnext'<CR>
-nnoremap <Tab>. <Cmd>exe min([tabpagenr() + v:count1, tabpagenr('$')]) . 'tabnext'<CR>
+nnoremap <Tab>[ <Cmd>exe max([tabpagenr() - v:count1, 1]) . 'tabnext'<CR>
+nnoremap <Tab>] <Cmd>exe min([tabpagenr() + v:count1, tabpagenr('$')]) . 'tabnext'<CR>
+nnoremap <Tab>{ <Cmd>call window#move_tab(tabpagenr() + v:count1)<CR>
+nnoremap <Tab>} <Cmd>call window#move_tab(tabpagenr() - v:count1)<CR>
 nnoremap <Tab>' <Cmd>silent! tabnext #<CR><Cmd>call file#echo_path('tab')<CR>
 nnoremap <Tab>; <Cmd>silent! wincmd p<CR><Cmd>call file#echo_path('window')<CR>
 nnoremap <Tab>j <Cmd>silent! wincmd j<CR>
@@ -513,12 +515,10 @@ nnoremap <Tab>9 <Cmd>call window#change_height(-3 * v:count1)<CR>
 nnoremap <Tab>0 <Cmd>call window#change_height(3 * v:count1)<CR>
 nnoremap <Tab>( <Cmd>call window#change_height(-6 * v:count1)<CR>
 nnoremap <Tab>) <Cmd>call window#change_height(6 * v:count1)<CR>
-nnoremap <Tab>[ <Cmd>call window#change_width(-5 * v:count1)<CR>
-nnoremap <Tab>] <Cmd>call window#change_width(5 * v:count1)<CR>
-nnoremap <Tab>{ <Cmd>call window#change_width(-10 * v:count1)<CR>
-nnoremap <Tab>} <Cmd>call window#change_width(10 * v:count1)<CR>
-nnoremap <Tab>> <Cmd>call window#move_tab(tabpagenr() + v:count1)<CR>
-nnoremap <Tab>< <Cmd>call window#move_tab(tabpagenr() - v:count1)<CR>
+nnoremap <Tab>, <Cmd>call window#change_width(-5 * v:count1)<CR>
+nnoremap <Tab>. <Cmd>call window#change_width(5 * v:count1)<CR>
+nnoremap <Tab>< <Cmd>call window#change_width(-10 * v:count1)<CR>
+nnoremap <Tab>> <Cmd>call window#change_width(10 * v:count1)<CR>
 
 " General motions and scrolling {{{2
 " NOTE: Use parentheses since g0/g$ are navigation and z0/z9 used for color schemes
@@ -558,12 +558,6 @@ cnoremap <expr> <S-Right> repeat('<Del>', len(getcmdline()) - getcmdpos() + 1)
 " NOTE: Karabiner remaps Ctrl-h/j/k/l keys to arrow key presses so here apply
 " maps to both in case working from terminal without these maps. Also note iTerm
 " maps mod-delete and mod-backspace keys to shift arrows which do normal mode scrolls.
-for s:mode in ['n', 'v', 'i']
-  exe s:mode . 'noremap <expr> <C-u> window#scroll_infer(-0.33)'
-  exe s:mode . 'noremap <expr> <C-d> window#scroll_infer(0.33)'
-  exe s:mode . 'noremap <expr> <C-b> window#scroll_infer(-0.66)'
-  exe s:mode . 'noremap <expr> <C-f> window#scroll_infer(0.66)'
-endfor
 for s:mode in ['n', 'v', 'i'] | if has('gui_running')
   silent! exe s:mode . 'unmap <ScrollWheelLeft>'
   silent! exe s:mode . 'unmap <ScrollWheelRight>'
@@ -571,6 +565,12 @@ else  " fix order
   exe s:mode . 'noremap <ScrollWheelLeft> <ScrollWheelRight>'
   exe s:mode . 'noremap <ScrollWheelRight> <ScrollWheelLeft>'
 endif | endfor
+for s:mode in ['n', 'v', 'i']
+  exe s:mode . 'noremap <expr> <C-u> window#scroll_infer(-0.33)'
+  exe s:mode . 'noremap <expr> <C-d> window#scroll_infer(0.33)'
+  exe s:mode . 'noremap <expr> <C-b> window#scroll_infer(-0.66)'
+  exe s:mode . 'noremap <expr> <C-f> window#scroll_infer(0.66)'
+endfor
 inoremap <expr> <F3> window#scroll_infer(-0.5, 1)
 inoremap <expr> <F4> window#scroll_infer(0.5, 1)
 inoremap <expr> <Up> window#scroll_infer(-1)
@@ -588,10 +588,10 @@ augroup popup_setup
 augroup END
 inoremap <silent> <expr> <C-q> window#close_popup('<Cmd>pclose<CR>')
 inoremap <silent> <expr> <C-w> window#close_popup('<Cmd>pclose<CR>')
-inoremap <silent> <expr> <Tab> window#close_popup('<C-]><Tab>', 2, 1)
 inoremap <silent> <expr> <S-Tab> window#close_popup(edit#insert_delete(0), 0, 1)
-inoremap <silent> <expr> <F2> window#close_popup(ddc#map#manual_complete(), 2, 1)
+inoremap <silent> <expr> <Tab> window#close_popup('<C-]><Tab>', 2, 1)
 inoremap <silent> <expr> <F1> window#close_popup(edit#insert_delete(0), 0, 1)
+inoremap <silent> <expr> <F2> window#close_popup(ddc#map#manual_complete(), 2, 1)
 inoremap <silent> <expr> <Delete> window#close_popup(edit#insert_delete(1), 1)
 inoremap <silent> <expr> <C-g><CR> window#close_popup('<CR>')
 inoremap <silent> <expr> <C-g><Space> window#close_popup('<Space>')
@@ -610,10 +610,10 @@ augroup complete_setup
   au!
   au CmdlineEnter,CmdlineLeave * let b:complete_state = 0
 augroup END
-cnoremap <silent> <expr> <Tab> window#close_wild("\<Tab>", 1)
 cnoremap <silent> <expr> <S-Tab> window#close_wild("\<S-Tab>", 1)
-cnoremap <silent> <expr> <F2> window#close_wild("\<Tab>", 1)
+cnoremap <silent> <expr> <Tab> window#close_wild("\<Tab>", 1)
 cnoremap <silent> <expr> <F1> window#close_wild("\<S-Tab>", 1)
+cnoremap <silent> <expr> <F2> window#close_wild("\<Tab>", 1)
 cnoremap <silent> <expr> <C-k> window#close_wild("\<C-p>")
 cnoremap <silent> <expr> <C-j> window#close_wild("\<C-n>")
 cnoremap <silent> <expr> <Up> window#close_wild("\<C-p>")
@@ -750,10 +750,10 @@ command! -bar -nargs=0 ClearTags call stack#clear_stack('tag')
 command! -bar -nargs=0 ListTags call stack#print_stack('tag')
 command! -bar -nargs=? PopTags call stack#pop_stack('tag', <q-args>, 1)
 nnoremap <C-S-Space> <Cmd>call tag#update_stack()<CR>
-noremap <S-F3> <Esc>m'<Cmd>call tag#next_stack(-v:count1, 1)<CR>
-noremap <S-F4> <Esc>m'<Cmd>call tag#next_stack(v:count1, 1)<CR>
-noremap <F3> <Esc>m'<Cmd>call tag#next_stack(-v:count1)<CR>
-noremap <F4> <Esc>m'<Cmd>call tag#next_stack(v:count1)<CR>
+noremap <S-F1> <Esc>m'<Cmd>call tag#next_stack(-v:count1, 1)<CR>
+noremap <S-F2> <Esc>m'<Cmd>call tag#next_stack(v:count1, 1)<CR>
+noremap <F1> <Esc>m'<Cmd>call tag#next_stack(-v:count1)<CR>
+noremap <F2> <Esc>m'<Cmd>call tag#next_stack(v:count1)<CR>
 
 " Jump to marks and declare alphabetic marks using counts (navigate with ]` and [`)
 " NOTE: Marks does not handle file switching and :Jumps has an fzf error so override.
@@ -946,12 +946,12 @@ call utils#repeat_map('v', 'z=', 'VEqualDouble', '<Cmd>call comment#append_line(
 for s:key in ';:/?''"' | silent! exe 'unmap gc' . s:key | endfor
 let s:author = '"Author: Luke Davis (lukelbd@gmail.com)"'
 let s:edited = '"Edited: " . strftime("%Y-%m-%d")'
-call utils#repeat_map('n', 'z.;', 'HeadLine', '<Cmd>call comment#header_line("-", 77, 0)<CR>')
-call utils#repeat_map('n', 'z./', 'HeadAuth', '<Cmd>call comment#append_note(' . s:author . ')<CR>')
-call utils#repeat_map('n', 'z.?', 'HeadEdit', '<Cmd>call comment#append_note(' . s:edited . ')<CR>')
-call utils#repeat_map('n', 'z.:', '', '<Cmd>call comment#header_line("-", 77, 1)<CR>')
-call utils#repeat_map('n', "z.'", '', '<Cmd>call comment#header_inchar()<CR>')
-call utils#repeat_map('n', 'z."', '', '<Cmd>call comment#header_inline(5)<CR>')
+call utils#repeat_map('n', 'g.;', 'HeadLine', '<Cmd>call comment#header_line("-", 77, 0)<CR>')
+call utils#repeat_map('n', 'g./', 'HeadAuth', '<Cmd>call comment#append_note(' . s:author . ')<CR>')
+call utils#repeat_map('n', 'g.?', 'HeadEdit', '<Cmd>call comment#append_note(' . s:edited . ')<CR>')
+call utils#repeat_map('n', 'g.:', '', '<Cmd>call comment#header_line("-", 77, 1)<CR>')
+call utils#repeat_map('n', "g.'", '', '<Cmd>call comment#header_inchar()<CR>')
+call utils#repeat_map('n', 'g."', '', '<Cmd>call comment#header_inline(5)<CR>')
 
 " Navigate docstrings comments and methods
 " Capital uses only non-variable-assignment or zero-indent headers
@@ -1126,10 +1126,10 @@ cnoremap <expr> <C-v> switch#caps()
 inoremap <expr> <C-v> switch#caps()
 nnoremap <Leader>c <Cmd>call switch#copy(1)<CR>
 nnoremap <Leader>C <Cmd>doautocmd copy_setup FileType<CR>
-nnoremap g[ <Cmd>call switch#reveal(0)<CR>
-nnoremap g] <Cmd>call switch#reveal(1)<CR>
-vnoremap g[ <Cmd>call switch#reveal(0)<CR>
-vnoremap g] <Cmd>call switch#reveal(1)<CR>
+nnoremap z, <Cmd>call switch#reveal(0)<CR>
+nnoremap z. <Cmd>call switch#reveal(1)<CR>
+vnoremap z, <Cmd>call switch#reveal(0)<CR>
+vnoremap z. <Cmd>call switch#reveal(1)<CR>
 
 " Stop cursor from moving after undo or leaving insert mode
 " NOTE: Otherwise repeated i<Esc>i<Esc> will drift cursor to left. Also
@@ -1964,7 +1964,7 @@ if s:has_plug('vim-easy-align')  " {{{
     au!
     au BufEnter * let g:easy_align_delimiters['c']['pattern'] = '\s' . comment#get_regex()
   augroup END
-  map z, <Plug>(EasyAlign)
+  map g, <Plug>(EasyAlign)
   let g:easy_align_delimiters = {
     \ ';': {'pattern': ';\+'},
     \ ')': {'pattern': ')', 'stick_to_left': 1, 'left_margin': 0},
@@ -1999,22 +1999,22 @@ if s:has_plug('rainbow_csv')  " {{{
 endif  " }}}
 if s:has_plug('tcomment_vim')  " {{{
   for s:key1 in ['>', '<'] | for s:key2 in ['b', 'c', '>', '<>']
-    silent! exe 'unmap g' . s:key1 . s:key2
+    silent! exe 'unmap z' . s:key1 . s:key2
   endfor | endfor
   for s:key1 in add(range(1, 9), '') | for s:key2 in ['', 'b', 'c']
-    if !empty(s:key1 . s:key2) | silent! exe 'unmap g.' . s:key1 . s:key2 | endif
+    if !empty(s:key1 . s:key2) | silent! exe 'unmap z.' . s:key1 . s:key2 | endif
   endfor | endfor
-  nnoremap z.. <Cmd>call comment#toggle_comment()<CR>
-  nnoremap z>> <Cmd>call comment#toggle_comment(1)<CR>
-  nnoremap z<< <Cmd>call comment#toggle_comment(0)<CR>
+  nnoremap g.. <Cmd>call comment#toggle_comment()<CR>
+  nnoremap g>> <Cmd>call comment#toggle_comment(1)<CR>
+  nnoremap g<< <Cmd>call comment#toggle_comment(0)<CR>
   inoremap <C-g>c <Space><C-\><C-o>v:TCommentInline mode=#<CR><Delete>
   inoremap <C-g>C <Space><C-\><C-o>:TCommentBlock mode=#<CR><Delete>
-  let g:tcomment_opleader1 = 'z.'  " default is 'gc'
+  let g:tcomment_opleader1 = 'g.'  " default is 'gc'
   let g:tcomment_mapleader1 = ''  " disables <C-_> insert mode maps
   let g:tcomment_mapleader2 = ''  " disables <Leader><Space> normal mode maps
   let g:tcomment_textobject_inlinecomment = ''  " default of 'ic' disables text object
-  let g:tcomment_mapleader_uncomment_anyway = 'z<'
-  let g:tcomment_mapleader_comment_anyway = 'z>'
+  let g:tcomment_mapleader_uncomment_anyway = 'g<'
+  let g:tcomment_mapleader_comment_anyway = 'g>'
 endif  " }}}
 
 " Tags and folds {{{2
@@ -2795,8 +2795,8 @@ augroup END
 command! -bar -nargs=? -complete=color Scheme call syntax#next_scheme(<f-args>)
 command! -bar -count=1 Sprev call syntax#next_scheme(-<count>)
 command! -bar -count=1 Snext call syntax#next_scheme(<count>)
-call utils#repeat_map('n', 'g{', 'Sprev', ':<C-u>Sprev<CR>')
-call utils#repeat_map('n', 'g}', 'Snext', ':<C-u>Snext<CR>')
+call utils#repeat_map('n', 'z<', 'Sprev', ':<C-u>Sprev<CR>')
+call utils#repeat_map('n', 'z>', 'Snext', ':<C-u>Snext<CR>')
 nnoremap <Leader>8 <Cmd>Colorize<CR>
 nnoremap <Leader>9 <Cmd>Colors<CR>
 nnoremap <Leader>0 <Cmd>exe 'Scheme ' . g:colors_default<CR>
