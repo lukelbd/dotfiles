@@ -457,16 +457,15 @@ function! fold#remove_cache(...) abort  " TextYankPost
 endfunction
 function! fold#update_cache(...) abort  " TextChanged,TextChangedI
   let [lmin, lmax] = [line('.'), line('$')]
-  let lnum = get(b:, 'foldtext_count', line('$'))
-  let delta = lmax - lnum  " line count offset
-  if empty(delta) | return | endif
-  let b:foldtext_count = lmax
+  let cnt = get(b:, 'foldtext_count', line('$'))
+  let b:foldtext_count = lmax  " WARNING: critical to update
+  if cnt == lmax | return | endif
   if !exists('b:foldtext_cache')
     let b:foldtext_cache = {}
   endif
-  for lnum in delta > 0 ? reverse(range(lmin, lmax)) : range(lmin, lmax)
+  for lnum in lmax > cnt ? reverse(range(lmin, lmax)) : range(lmin, lmax)
     if has_key(b:foldtext_cache, string(lnum))
-      let b:foldtext_cache[lnum + delta] = b:foldtext_cache[lnum]
+      let b:foldtext_cache[lnum + lmax - cnt] = b:foldtext_cache[lnum]
       call remove(b:foldtext_cache, string(lnum))
     endif
   endfor
@@ -564,13 +563,12 @@ function! fold#update_folds(force, ...) abort
     endfor
   endif
   if force || refold  " re-apply or convert
+    unlet! b:foldtext_cache
     if a:force  " manual invocation
       call SimpylFold#Recache()
       let folds = filter(map(fold#get_folds(-1), 'v:val[0]'), 'foldclosed(v:val) < 0')
     endif
-    exe 'FastFoldUpdate'
-    let b:fastfold_queued = 0
-    unlet! b:foldtext_cache
+    exe 'FastFoldUpdate' | let b:fastfold_queued = 0
   endif
   if &l:foldmethod ==# 'manual'  " i.e. not skipped
     for [line1, line2, closed] in reverse(markers)
