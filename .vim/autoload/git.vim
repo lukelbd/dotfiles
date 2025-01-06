@@ -130,7 +130,6 @@ function! s:call_git(msg, line1, count, range, bang, mods, cmd, ...) range abort
   elseif verbose
     redraw | echo 'Git ' . a:cmd
   endif
-  let b:fastfold_queued = 1
 endfunction
 
 " Call git commit with or without editor
@@ -306,7 +305,6 @@ function! git#_exe_hunks(line1, line2, ...) abort
     call add(ranges, join(range, '-'))
   endfor
   call winrestview(winview)
-  let b:fastfold_queued = 1
   if !empty(ranges)  " show information
     let msg = cmd . ' hunk(s): ' . join(ranges, ', ')
     call s:show_hunks(locs, len(hunks), msg, 1)

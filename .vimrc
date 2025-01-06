@@ -2560,6 +2560,7 @@ endif  " }}}
 if s:has_plug('vim-fugitive')  " {{{
   augroup fugitive_setup
     au!
+    au User FugitiveChanged let b:fastfold_queued = 1
     au BufWinEnter * call git#setup_commands()
   augroup END
   nnoremap gl <Cmd>BCommits<CR>
@@ -2604,10 +2605,13 @@ endif  " }}}
 " plugin only defines CursorHold, but under-the-hood, the invoked function actually
 " does only fire when text differs. So stick with the default configuration.
 if s:has_plug('vim-gitgutter')  " {{{
-  command! -bar -bang -nargs=? GitGutterToggle
-    \ call switch#gitgutter(<args>)
-  command! -bar -bang -range Hunks
-    \ call git#_get_hunks(<range> ? <line1> : 1, <range> ? <line2> : line('$'), <bang>0)
+  augroup gitgutter_update
+    au!
+    au User GitGutter let b:fastfold_queued = 1
+    au User GitGutterStage let b:fastfold_queued = 1
+  augroup END
+  command! -bar -bang -nargs=? GitGutterToggle call switch#gitgutter(<args>)
+  command! -bar -bang -range Hunks call git#_get_hunks(<range> ? <line1> : 1, <range> ? <line2> : line('$'), <bang>0)
   let s:opts = {'line': 'cursor+1', 'moved': 'any', 'minwidth': g:linelength}
   let g:gitgutter_async = 1  " ensure enabled
   let g:gitgutter_map_keys = 0  " disable defaults
@@ -2615,7 +2619,6 @@ if s:has_plug('vim-gitgutter')  " {{{
   let g:gitgutter_preview_win_floating = 1  " toggle preview window
   let g:gitgutter_floating_window_options = s:opts  " defaults plus minwidth
   let g:gitgutter_use_location_list = 0  " use for errors instead
-  exe 'silent! unmap zgg'
   call utils#repeat_map('', '[G', 'HunkBackward', '<Cmd>call git#next_hunk(-v:count1, 1)<CR>')
   call utils#repeat_map('', ']G', 'HunkForward', '<Cmd>call git#next_hunk(v:count1, 1)<CR>')
   nmap zH <Cmd>Hunks<CR>
