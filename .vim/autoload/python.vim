@@ -58,9 +58,8 @@ function! python#dict_to_kw(invert, ...) range abort
       let line = line[:idx2]  " must come last
     endif
     if !empty(matchstr(line, ':')) && !empty(matchstr(line, '='))
-      echohl WarningMsg
-      echom 'Warning: Text is both dictionary-like and kwarg-like.'
-      echohl None
+      let msg = 'Warning: Text is both dictionary-like and kwarg-like.'
+      redraw | echohl WarningMsg | echom msg | echohl None
     endif
     if a:invert  " dictionary to kwargs
       let line = substitute(line, '\<\ze\w\+\s*=', "'", 'g')  " add leading quote first
@@ -247,14 +246,13 @@ endfunction
 " Run input motion using jupyter session (issue warning if no connection)
 " TODO: Add generalization for running chunks of arbitrary filetypes?
 function! python#run_motion() range abort
-  update | redraw
+  update
   if python#has_jupyter()
-    echom 'Running lines ' . a:firstline . ' to ' . a:lastline . '.'
+    redraw | echom 'Running lines ' . a:firstline . ' to ' . a:lastline . '.'
     exe a:firstline . ',' . a:lastline . 'JupyterSendRange'
   else
-    echohl WarningMsg
-    echom 'Jupyter session not found. Cannot send selection.'
-    echohl None
+    let msg = 'Jupyter session not found. Cannot send selection.'
+    redraw | echohl WarningMsg | echom msg | echohl None
   endif
 endfunction
 " For <expr> map accepting motion
