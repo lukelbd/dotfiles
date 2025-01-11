@@ -543,11 +543,12 @@ function! fold#update_folds(force, ...) abort
   let winview = winsaveview()
   let closed0 = foldlevel('.') ? foldclosed('.') : 0  " zero if no folds
   let level0 = foldlevel(closed0 > 0 ? closed0 : '.')  " fold close level
-  let method0 = &l:foldmethod  " previous method
+  let method0 = &l:foldmethod  " initial method
   let force = a:force || method0 =~# 'syntax\|expr'
   let queued = get(b:, 'fastfold_queued', -1)  " add markers after fastfold
   let remark = queued < 0 && method0 ==# 'manual'
   let refold = queued > 0 && method0 =~# 'manual\|syntax\|expr'
+  let reset = a:0 ? a:1 : -1  " whether to reset fold level
   let info = get(getwininfo(win_getid()), 0, {})
   let ignore = !&l:foldenable || empty(&l:filetype) || bufname() =~# '^!'
   let nofold = !empty(win_gettype()) || get(info, 'terminal', 0) || get(info, 'quickfix', 0)
@@ -561,8 +562,10 @@ function! fold#update_folds(force, ...) abort
   endif
   if force || refold  " re-apply or convert
     unlet! b:foldtext_cache
-    if a:force  " manual invocation
+    if a:force
       call SimpylFold#Recache()
+    endif
+    if reset < 0
       let folds = filter(map(fold#get_folds(-1), 'v:val[0]'), 'foldclosed(v:val) < 0')
     endif
     exe 'FastFoldUpdate' | let b:fastfold_queued = 0
@@ -583,7 +586,6 @@ function! fold#update_folds(force, ...) abort
   let closed1 = level0 ? foldclosed(winview.lnum) : 0
   let method1 = &l:foldmethod
   let keys = ''  " normal mode keys
-  let reset = a:0 ? a:1 : -1  " reset state
   let level1 = &l:filetype ==# 'json' ? 2 : !empty(get(b:, 'fugitive_type', '')) ? 1 : 0
   let level1 = !level1 && method1 ==# 'manual' ? search('{{{1\s*$', 'wn') > 0 : level1
   let level1 = !level1 && method1 ==# 'marker' ? search('{{{2\s*$', 'wn') > 0 : level1
