@@ -298,19 +298,19 @@ endfunction
 " search starts on closed fold and match is on first line. Use cursor() instead
 function! s:get_matches() abort
   let folds = []
-  for [line1, line2, level] in sort(fold#get_folds(-2))
-    call cursor(line1, 1) | if search(@/, 'cnW', line2) | call add(folds, [level, line1]) | endif
+  for [line1, line2, _] in fold#get_folds(-2)
+    call cursor(line1, 1) | if search(@/, 'cnW', line2) | call add(folds, line1) | endif
   endfor | return folds
 endfunction
 function! switch#matches(...) abort
   let winview = winsaveview()
   let folds = s:get_matches()
-  let state = empty(filter(copy(folds), 'foldclosed(v:val[1]) > 0'))
+  let state = empty(filter(copy(folds), 'foldclosed(v:val) > 0'))
   let toggle = a:0 > 0 ? a:1 : 1 - state
   let suppress = a:0 > 1 ? a:2 : 0
   if toggle  " :global previous search
     call fold#update_folds(0, 2)
-    for [_, lnum] in sort(folds) | exe lnum . 'foldopen' | endfor
+    for lnum in sort(folds) | exe lnum . 'foldopen' | endfor
     call winrestview(winview) | exe 'normal! zzze'
   else  " keep hlsearch enabled
     call winrestview(winview)
