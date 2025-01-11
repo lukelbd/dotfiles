@@ -157,34 +157,31 @@ endfunction
 " NOTE: This ignores folds defined in s:fold_matches, e.g. python classes and
 " tex documents. Used to open-close inner fold blocks without triggering huge blocks
 function! s:get_range(func, ...) abort
-  let [folds, closed] = [[], []]
-  let [lmin, lmax] = a:0 > 1 ? a:000[:1] : [1, line('$')]
-  let lmin = lmin <= 0 ? 1 : lmin > line('$') ? line('$') : lmin
-  let lmax = lmax <= 0 ? 1 : lmax > line('$') ? line('$') : lmax
-  let nlev = a:0 > 2 ? a:3 : &l:foldlevelstart + 1  " default to all valid folds
+  let [folds, closed, winview] = [[], [], winsaveview()]
+  let lmin = max([min([a:0 > 1 ? a:1 : 1, line('$')]), 1])
+  let lmax = max([min([a:0 > 1 ? a:2 : line('$'), line('$')]), 1])
+  let ilev = a:0 > 2 ? a:3 : &l:foldlevelstart + 1  " default to all valid folds
   let nmax = a:0 > 3 ? a:4 : a:0 == 1 ? a:1 : 0  " user-input maximum count
-  let winview = winsaveview()
-  let lnum = winview.lnum
+  exe lmin | let lnum = lmin
   while lmax < lmin ? lnum >= lmax : lnum <= lmax
-    let [line1, line2, level] = [lnum, lnum, 0]
-    exe lnum | let result = call(a:func, [nlev])
-    if !empty(result)  " update result
+    exe lnum | let result = call(a:func, [ilev])
+    if empty(result)  " default values
+      let [line1, line2, level] = [lnum, lnum, 0]
+    else  " append folds
       let [line1, line2, level] = result | call add(folds, result)
-      if nmax > 0 && len(folds) >= nmax | break | endif
+    endif
+    if nmax > 0 && len(folds) >= nmax  " return folds
+      break
     endif
     if foldclosed(line1) > 0 && nmax < -1  " temporarily open folds
-      call add(closed, line1) | exe line1 . 'foldopen'
+      call add(closed, [level, line1]) | exe line1 . 'foldopen'
     endif
     if level > 0 && nmax < 0 && foldclosed(line1) <= 0  " search inner folds
       call extend(folds, s:get_range(a:func, line1, line2, level + 1, nmax))
     endif
-    if lmax < lmin  " search backward
-      let lnum = line1 - 1
-    else  " search forward
-      let lnum = line2 + 1
-    endif
+    let lnum = lmax < lmin ? line1 - 1 : line2 + 1
   endwhile
-  for lnum in reverse(closed) | exe lnum . 'foldclose' | endfor
+  for [_, lnum] in reverse(closed) | exe lnum . 'foldclose' | endfor
   call winrestview(winview) | return folds
 endfunction
 function! fold#get_folds(...) abort
