@@ -496,8 +496,8 @@ nnoremap z<Space> <Cmd>Buffers<CR>
 " Tab and window jumping
 nnoremap <Tab>[ <Cmd>exe max([tabpagenr() - v:count1, 1]) . 'tabnext'<CR>
 nnoremap <Tab>] <Cmd>exe min([tabpagenr() + v:count1, tabpagenr('$')]) . 'tabnext'<CR>
-nnoremap <Tab>{ <Cmd>call window#move_tab(tabpagenr() + v:count1)<CR>
-nnoremap <Tab>} <Cmd>call window#move_tab(tabpagenr() - v:count1)<CR>
+nnoremap <Tab>{ <Cmd>call window#move_tab(tabpagenr() - v:count1)<CR>
+nnoremap <Tab>} <Cmd>call window#move_tab(tabpagenr() + v:count1)<CR>
 nnoremap <Tab>' <Cmd>silent! tabnext #<CR><Cmd>call file#echo_path('tab')<CR>
 nnoremap <Tab>; <Cmd>silent! wincmd p<CR><Cmd>call file#echo_path('window')<CR>
 nnoremap <Tab>j <Cmd>silent! wincmd j<CR>
@@ -641,8 +641,8 @@ augroup END
 command! -bar -bang -count -nargs=? UpdateFolds call fold#update_folds(<bang>0, <count>)
 nnoremap zv <Cmd>call fold#update_folds(0)<CR>zv
 vnoremap zv <Esc><Cmd>call fold#update_folds(0)<CR><Cmd>'<,'>foldopen!<CR>
-nnoremap zV <Cmd>UpdateFolds!<CR><Cmd>echo 'Updated folds'<CR>zv
-vnoremap zV <Cmd>UpdateFolds!<CR><Cmd>echo 'Updated folds'<CR>zv
+nnoremap zV <Cmd>call fold#update_folds(1)<CR><Cmd>echo 'Updated folds'<CR>zv
+vnoremap zV <Esc><Cmd>call fold#update_folds(1)<CR><Cmd>'<,'>foldopen!<CR>
 nnoremap zx <Cmd>call fold#update_folds(0, 0)<CR>
 vnoremap zx <Cmd>call fold#update_folds(0, 0)<CR>
 nnoremap zX <Cmd>for _ in range(v:count1) \| call fold#update_folds(0, 2) \| endfor<CR>
@@ -943,7 +943,7 @@ call utils#repeat_map('v', 'z=', 'VEqualDouble', '<Cmd>call comment#append_line(
 
 " Insert various comment blocks
 " NOTE: This disables repitition of title insertions
-for s:key in ';:/?''"' | silent! exe 'unmap gc' . s:key | endfor
+for s:key in '.;:/?''"' | silent! exe 'unmap z.' . s:key | endfor
 let s:author = '"Author: Luke Davis (lukelbd@gmail.com)"'
 let s:edited = '"Edited: " . strftime("%Y-%m-%d")'
 call utils#repeat_map('n', 'g.;', 'HeadLine', '<Cmd>call comment#header_line("-", 77, 0)<CR>')
@@ -1126,10 +1126,10 @@ cnoremap <expr> <C-v> switch#caps()
 inoremap <expr> <C-v> switch#caps()
 nnoremap <Leader>c <Cmd>call switch#copy(1)<CR>
 nnoremap <Leader>C <Cmd>doautocmd copy_setup FileType<CR>
-nnoremap z, <Cmd>call switch#reveal(0)<CR>
-nnoremap z. <Cmd>call switch#reveal(1)<CR>
-vnoremap z, <Cmd>call switch#reveal(0)<CR>
-vnoremap z. <Cmd>call switch#reveal(1)<CR>
+nnoremap z. <Cmd>call switch#reveal(0)<CR>
+nnoremap z, <Cmd>call switch#reveal(1)<CR>
+vnoremap z. <Cmd>call switch#reveal(0)<CR>
+vnoremap z, <Cmd>call switch#reveal(1)<CR>
 
 " Stop cursor from moving after undo or leaving insert mode
 " NOTE: Otherwise repeated i<Esc>i<Esc> will drift cursor to left. Also
