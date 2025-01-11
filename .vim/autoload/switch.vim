@@ -266,7 +266,7 @@ function! switch#reveal(...) abort
 endfunction
 
 " Toggle folds with gitgutter hunks
-" NOTE: Auto disable whenever set nohlsearch is restore
+" NOTE: Automatically disable whenever set nohlsearch is restore
 function! s:get_changes() abort
   let lines = []
   for [line1, line2, _] in fold#get_folds(-2)
@@ -293,29 +293,31 @@ function! switch#changes(...) abort
 endfunction
 
 " Toggle folds with search matches
-" NOTE: Auto disable whenever set nohlsearch is restore
+" NOTE: Automatically disable whenever set nohlsearch is restore
+" WARNING: Vim bug seems to cause exe line1 | call search() to randomly fail when
+" search starts on closed fold and match is on first line. Use cursor() instead
 function! s:get_matches() abort
-  let lines = []
-  for [line1, line2, _] in fold#get_folds(-2)
-    exe line1 | if search(@/, 'nW', line2) | call add(lines, line1) | endif
-  endfor | return lines
+  let folds = []
+  for [line1, line2, level] in sort(fold#get_folds(-2))
+    call cursor(line1, 1) | if search(@/, 'cnW', line2) | call add(folds, [level, line1]) | endif
+  endfor | return folds
 endfunction
 function! switch#matches(...) abort
   let winview = winsaveview()
-  let lines = s:get_matches()
-  let state = empty(filter(copy(lines), 'foldclosed(v:val) > 0'))
+  let folds = s:get_matches()
+  let state = empty(filter(copy(folds), 'foldclosed(v:val[1]) > 0'))
   let toggle = a:0 > 0 ? a:1 : 1 - state
   let suppress = a:0 > 1 ? a:2 : 0
   if toggle  " :global previous search
     call fold#update_folds(0, 2)
-    for lnum in lines | exe lnum . 'foldopen' | endfor
+    for [_, lnum] in sort(folds) | exe lnum . 'foldopen' | endfor
     call winrestview(winview) | exe 'normal! zzze'
   else  " keep hlsearch enabled
     call winrestview(winview)
     call fold#update_folds(0, 1)
   endif
   call feedkeys("\<Cmd>set hlsearch\<CR>", 'n')
-  call s:echo_state(len(lines) . ' folds', toggle, suppress)
+  call s:echo_state(len(folds) . ' folds', toggle, suppress)
 endfunction
 
 " Toggle spell check on and off
