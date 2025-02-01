@@ -361,6 +361,7 @@ command! -bang -nargs=* -complete=file Open
   \ call file#fzf_paths(<bang>0, 0, 0, 'Drop', <f-args>)
 nnoremap <C-e> <Cmd>call file#fzf_paths(0, 0, 0, 'Split')<CR>
 nnoremap <C-r> <Cmd>call file#fzf_paths(0, 0, 0, 'Vsplit')<CR>
+nnoremap <C-t> <Cmd>call file#fzf_paths(0, 0, 1, 'Vsplit')<CR>
 nnoremap <C-y> <Cmd>call file#fzf_paths(0, 0, 1, 'Files')<CR>
 nnoremap <F7> <Cmd>call file#fzf_paths(0, 0, 0, 'Drop')<CR>
 nnoremap <C-o> <Cmd>call file#fzf_paths(0, 0, 1, 'Drop')<CR>
@@ -376,6 +377,7 @@ nnoremap <Tab>p <Cmd>call file#fzf_input('Files', parse#get_root())<CR>
 nnoremap <Tab>y <Cmd>call file#fzf_input('Files', expand('%:p:h'))<CR>
 nnoremap <Tab>e <Cmd>call file#fzf_input('Split', expand('%:p:h'))<CR>
 nnoremap <Tab>r <Cmd>call file#fzf_input('Vsplit', expand('%:p:h'))<CR>
+nnoremap <Tab>t <Cmd>call file#fzf_input('Vsplit', parse#get_root())<CR>
 
 " Mapping and command windows {{{2
 " This uses iterm mapping of <F6> to <C-;> and works in all modes
@@ -763,9 +765,9 @@ noremap <F2> <Esc>m'<Cmd>call tag#next_stack(v:count1)<CR>
 command! -bar -bang -nargs=0 Marks call mark#fzf_marks(<bang>0)
 command! -bar -nargs=* SetMarks call mark#set_marks(<f-args>)
 command! -bar -nargs=* DelMarks call mark#del_marks(<f-args>)
-nnoremap z_ <Cmd>call mark#set_marks(parse#get_register('m'))<CR>
+nnoremap <Leader>_ <Cmd>call mark#set_marks(parse#get_register('m'))<CR>
 nnoremap <expr> g_ v:count ? '`' . parse#get_register('`') : '<Cmd>call mark#fzf_marks()<CR>'
-nnoremap <Leader>_ <Cmd>call mark#del_marks(get(g:, 'mark_name', 'A'))<CR>
+nnoremap z_ <Cmd>call mark#del_marks(get(g:, 'mark_name', 'A'))<CR>
 nnoremap <Leader>- <Cmd>call mark#del_marks()<CR>
 noremap <C-n> <Esc><Cmd>call mark#next_mark(-v:count1)<CR>
 noremap <F8> <Esc><Cmd>call mark#next_mark(v:count1)<CR>
@@ -1126,10 +1128,10 @@ cnoremap <expr> <C-v> switch#caps()
 inoremap <expr> <C-v> switch#caps()
 nnoremap <Leader>c <Cmd>call switch#copy(1)<CR>
 nnoremap <Leader>C <Cmd>doautocmd copy_setup FileType<CR>
-nnoremap z. <Cmd>call switch#reveal(0)<CR>
-nnoremap z, <Cmd>call switch#reveal(1)<CR>
-vnoremap z. <Cmd>call switch#reveal(0)<CR>
-vnoremap z, <Cmd>call switch#reveal(1)<CR>
+nnoremap z. <Cmd>call switch#reveal(1)<CR>
+nnoremap z, <Cmd>call switch#reveal(0)<CR>
+vnoremap z. <Cmd>call switch#reveal(1)<CR>
+vnoremap z, <Cmd>call switch#reveal(0)<CR>
 
 " Stop cursor from moving after undo or leaving insert mode
 " NOTE: Otherwise repeated i<Esc>i<Esc> will drift cursor to left. Also
@@ -1183,12 +1185,16 @@ nnoremap g~ /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
 " NOTE: Here 'zu' is analogous to 'zb' used for boolean toggle
 for s:key in ['u', 'U'] | silent! exe 'unmap g' . s:key | endfor
 for s:key in ['u', 'U'] | silent! exe 'unmap z' . repeat(s:key, 2) | endfor
-call utils#repeat_map('n', 'zu', 'CaseToggle', 'my~h`y<Cmd>delmark y<CR>')
-call utils#repeat_map('n', 'zU', 'CaseTitle', 'myguiw~h`y<Cmd>delmark y<CR>')
+call utils#repeat_map('n', 'guU', 'CaseTitle1', 'myguiw~h`y<Cmd>delmark y<CR>')
+call utils#repeat_map('n', 'gUu', 'CaseTitle2', 'myguiW~h`y<Cmd>delmark y<CR>')
+call utils#repeat_map('n', 'g\|', 'CaseToggle1', 'my~h`y<Cmd>delmark y<CR>')
+call utils#repeat_map('n', 'z\|', 'CaseToggle2', 'my~h`y<Cmd>delmark y<CR>')
 nnoremap guu guiw
 nnoremap gUU gUiw
-vnoremap zu g~
-vnoremap zU gu<Esc>`<~h
+vnoremap guU gu<Esc>`<~h
+vnoremap gUu gu<Esc>`<~h
+vnoremap g\| g~
+vnoremap z\| g~
 
 " Setup spell checking and update binary file
 " See: https://vi.stackexchange.com/a/5052/8084
@@ -2049,7 +2055,7 @@ if s:has_plug('vim-tags')  " {{{
     \ | echo call('tags#table_kinds', s:arg) . "\n" . call('tags#table_tags', s:arg)
   nnoremap <Leader>t <Cmd>ShowTable<CR>
   nnoremap <Leader>T <Cmd>ShowTable!<CR>
-  nnoremap <C-t> <Cmd>call tag#fzf_stack()<CR>
+  nnoremap g\ <Cmd>call tag#fzf_stack()<CR>
   nnoremap gy <Cmd>call tags#select_tag(0)<CR>
   nnoremap gY <Cmd>call tags#select_tag(2)<CR>
   nnoremap zy <Cmd>call tags#select_tag(1)<CR>
@@ -2262,14 +2268,12 @@ if s:has_plug('vim-lsp')  " {{{
   nnoremap gR <Cmd>LspRename<CR>
   nnoremap zr <Cmd>LspDocumentSymbol<CR>
   nnoremap zR <Cmd>LspDocumentSymbolSearch<CR>
-  nnoremap gd <Cmd>LspHover --ui=float<CR>
-  nnoremap gD <Cmd>LspSignatureHelp<CR>
-  nnoremap zd <Cmd>LspPeekDefinition<CR>
-  nnoremap zD <Cmd>LspPeekDeclaration<CR>
-  vnoremap gd <Cmd>LspHover --ui=float<CR>
-  vnoremap gD <Cmd>LspSignatureHelp<CR>
-  vnoremap zd <Cmd>LspPeekDefinition<CR>
-  vnoremap zD <Cmd>LspPeekDeclaration<CR>
+  nnoremap gd <Cmd>LspPeekDefinition<CR>
+  nnoremap zd <Cmd>LspHover --ui=float<CR>
+  nnoremap zD <Cmd>LspSignatureHelp<CR>
+  vnoremap gd <Cmd>LspPeekDefinition<CR>
+  vnoremap zd <Cmd>LspHover --ui=float<CR>
+  vnoremap zD <Cmd>LspSignatureHelp<CR>
   nnoremap g<CR> <Cmd>call lsp#ui#vim#definition(0, g:_foldopen . ' \| tab')<CR>
   nnoremap z<CR> gd<Cmd>exe g:_foldopen<CR><Cmd>noh<CR>
   nnoremap <Leader>a <Cmd>LspInstallServer<CR>
@@ -2769,7 +2773,8 @@ if s:has_plug('undotree')  " {{{
     noremap <buffer> <nowait> u <C-u>
     noremap <buffer> <nowait> d <C-d>
   endfunc
-  nnoremap g\ <Cmd>UndotreeToggle<CR><Cmd>call Undotree_Augroup()<CR>
+  nnoremap zu <Cmd>UndotreeToggle<CR><Cmd>call Undotree_Augroup()<CR>
+  nnoremap zU <Cmd>UndotreeShow<CR><Cmd>call Undotree_Augroup()<CR>
   let g:undotree_DiffAutoOpen = 0
   let g:undotree_RelativeTimestamp = 0
   let g:undotree_SetFocusWhenToggle = 1

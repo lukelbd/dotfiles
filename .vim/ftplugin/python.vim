@@ -23,7 +23,8 @@ noremap <buffer> <Plug>ExecuteFile1 <Cmd>call python#jupyter_setup()<CR>
 noremap <buffer> <Plug>ExecuteFile2 <Cmd>JupyterDisconnect<CR>
 
 " Insert docstring or translate dicts (see autoload/python.vim)
-noremap <buffer> g\| <Cmd>call python#insert_docstring()<CR>
+silent! unmap <buffer> g\|
+noremap <buffer> gD <Cmd>call python#insert_docstring()<CR>
 noremap <buffer> g(( <Cmd>call python#kwargs_to_dict(1)<CR>
 noremap <buffer> g)) <Cmd>call python#kwargs_to_dict(0)<CR>
 noremap <expr> <buffer> g( python#kwargs_to_dict_expr(1)
