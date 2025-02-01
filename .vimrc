@@ -2222,6 +2222,7 @@ if s:has_plug('vim-lsp-settings')  " {{{
   let g:lsp_ale_auto_enable_linter = v:false  " default is true
   let g:lsp_diagnostics_enabled = 0  " use ale instead
   let g:lsp_diagnostics_highlights_insert_mode_enabled = 0  " annoying
+  let g:lsp_diagnostics_signs_priority = 20  " if used in future
   let g:lsp_document_code_action_signs_enabled = 0  " disable annoying signs
   let g:lsp_document_highlight_delay = 3000  " increased delay time
   let g:lsp_document_highlight_enabled = 0  " monitor, still really sucks
@@ -2450,12 +2451,13 @@ if s:has_plug('ale')  " {{{
   let g:ale_lint_on_text_changed = 'normal'
   let g:ale_list_window_size = 8
   let g:ale_open_list = 0  " open manually
+  let g:ale_set_loclist = 1  " keep default
+  let g:ale_set_quickfix = 0  " require manual population
   let g:ale_sign_column_always = 0
+  let g:ale_sign_priority = 30  " default sign priority
   let g:ale_sign_error = 'E>'
   let g:ale_sign_warning = 'W>'
   let g:ale_sign_info = 'I>'
-  let g:ale_set_loclist = 1  " keep default
-  let g:ale_set_quickfix = 0  " require manual population
   let g:ale_python_flake8_options =  '--max-line-length=' . g:linelength . ' --ignore=' . s:flake8_ignore
   let g:ale_set_balloons = 0  " no ballons
   let g:ale_sh_bashate_options = '-i E003 --max-line-length=' . g:linelength
@@ -2619,6 +2621,7 @@ if s:has_plug('vim-gitgutter')  " {{{
   let g:gitgutter_preview_win_floating = 1  " toggle preview window
   let g:gitgutter_floating_window_options = s:opts  " defaults plus minwidth
   let g:gitgutter_use_location_list = 0  " use for errors instead
+  let g:gitgutter_sign_priority = 10  " default sign priority
   call utils#repeat_map('', '[G', 'HunkBackward', '<Cmd>call git#next_hunk(-v:count1, 1)<CR>')
   call utils#repeat_map('', ']G', 'HunkForward', '<Cmd>call git#next_hunk(v:count1, 1)<CR>')
   nmap zH <Cmd>Hunks<CR>

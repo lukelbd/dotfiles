@@ -140,7 +140,7 @@ function! mark#set_marks(mrk, ...) abort
   if s:sign_marks
     let sid = s:sign_id | let s:sign_id += 1
     call add(highlights[a:mrk], sid)
-    call sign_place(sid, '', name, pos[0], {'lnum': pos[1]})  " empty group critical
+    call sign_place(sid, '', name, pos[0], {'lnum': pos[1], 'priority': 50})
   else
     let regex = '.*\%''' . a:mrk . '.*'
     let hlid = matchadd(name, regex, 0)

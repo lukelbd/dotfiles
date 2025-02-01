@@ -75,7 +75,9 @@ function! s:get_label(arg) abort
     let tabnr = get(win_id2tabwin(winid), 0, 0)
     let tabnr = tabnr > 0 ? tabnr : '*'
     let label = RelativePath(a:arg, 1) . ' (' . tabnr . ')'
-  else  " default label
+  elseif a:arg =~# '^[A-Z]$'  " mark label
+    let label = a:arg
+  else  " generic label
     let label = string(a:arg)
   endif | return label
 endfunction
