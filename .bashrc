@@ -98,21 +98,33 @@
 # Ensure the prompt is applied only once so modules can modify it
 # See: https://unix.stackexchange.com/a/124408/112647
 # See: https://unix.stackexchange.com/a/420362/112647
-_prompt_head() {  # print parentheses around git branch similar to conda environments
-  local opt env base branch
-  branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
-  base=${CONDA_PREFIX_1:-$CONDA_PREFIX}  # both empty after conda deactivate
-  [ -n "$base" ] && [ "$CONDA_PREFIX" == "$base" ] && env=base || env=${CONDA_PREFIX##*/}
-  for opt in "$env" "$branch"; do [ -n "$opt" ] && printf "(%s) " "$opt"; done
+_prompt_env() {
+  local env
+  env=${CONDA_PREFIX_1:-$CONDA_PREFIX}  # both empty after conda deactivate
+  [ -n "$env" ] && [ "$CONDA_PREFIX" == "$env" ] && env=base || env=${CONDA_PREFIX##*/}
+  printf '%s' "${env:+"($env) "}"
 }
-_prompt_tail() {  # prompt string "<push dir N>:...:<push dir 1>:<work dir> <user>$"
+_prompt_git() {
+  local git flags
+  flags=(--abbrev-ref)
+  git=$(git rev-parse "${flags[@]}" HEAD 2>/dev/null)
+  printf '%s' "${git:+"($git) "}"
+}
+_prompt_host() {
+  local host
+  host=${HOSTNAME:-$(hostname)} && host=${host%%.*}
+  [[ "$host" =~ ^UEA ]] && host=cyclone  # university managed macbook
+  printf '%s' "$host"
+}
+_prompt_dirs() {
   local paths
   IFS=$'\n' read -d '' -r -a paths < <(command dirs -p | tac)
-  IFS=: eval 'echo "${paths[*]##*/}"'
+  paths=$(IFS=:; echo "${paths[*]##*/}")  # pushd popd directory stack
+  printf '%s' "$paths"
 }
 [[ $- != *i* ]] && return  # not interactive (scp/rscync fail without this line)
-[[ "$PS1" =~ _prompt_head ]] && [[ "$PS1" =~ _prompt_tail ]] \
-  || PS1='$(_prompt_head)\[\033[1;37m\]\h[\j]:$(_prompt_tail)\$ \[\033[0m\]'
+[[ "$PS1" =~ _prompt ]] \
+  && PS1='$(_prompt_env)$(_prompt_git)\[\033[1;37m\]$(_prompt_host)[\j]:$(_prompt_dirs) \[\033[0m\]'
 
 # Apply general shell settings
 # Remove aliases and history expand, setup bindings and other options
@@ -202,20 +214,20 @@ _load_modules() {
   for module in "$@"; do [[ " ${_loaded_modules[*]} " =~ " $module " ]] || module load "$module"; done
 }
 case "${HOSTNAME%%.*}" in
-  vortex*|velouria*|maelstrom*|uriah*)  # macbook
-    _macos=true
+  cyclone*|vortex*|velouria*|UEA*)  # macbook
+    [ -d /opt/homebrew ] && _brew=/opt/homebrew || _brew=/usr/local
+    _macos=true _port=/opt/local
     unset MANPATH  # reset man path
-    alias locate='/usr/bin/locate'  # coreutils version fails
     export PATH=/usr/bin:/bin:/usr/sbin:/sbin  # defaults
     export PATH=/Library/TeX/texbin:$PATH  # latex
-    export PATH=/opt/X11/bin:$PATH  # X11
-    export PATH=/usr/local/bin:/opt/local/bin:/opt/local/sbin:$PATH  # homebrew
-    export PATH=/usr/local/opt/coreutils/libexec/gnubin:$PATH  # gnu overrides
-    export PATH=/usr/local/opt/findutils/libexec/gnubin:$PATH
-    export PATH=/usr/local/opt/grep/libexec/gnubin:$PATH
-    export PATH=/usr/local/opt/gawk/libexec/gnubin:$PATH
-    export PATH=/usr/local/opt/gnu-sed/libexec/gnubin:$PATH
-    export PATH=/usr/local/opt/gnu-tar/libexec/gnubin:$PATH
+    export PATH=/opt/X11/bin:$PATH  # X11 utilities
+    export PATH=$_brew/bin:$_port/bin:$_port/sbin:$PATH  # homebrew macports
+    export PATH=$_brew/opt/coreutils/libexec/gnubin:$PATH  # gnu overrides
+    export PATH=$_brew/opt/findutils/libexec/gnubin:$PATH
+    export PATH=$_brew/opt/grep/libexec/gnubin:$PATH
+    export PATH=$_brew/opt/gawk/libexec/gnubin:$PATH
+    export PATH=$_brew/opt/gnu-sed/libexec/gnubin:$PATH
+    export PATH=$_brew/opt/gnu-tar/libexec/gnubin:$PATH
     export PATH=/opt/pgi/osx86-64/2018/bin:$PATH  # pgi compilers
     export PATH=$HOME/builds/matlab-r2019a/bin:$PATH  # local builds
     export PATH=$HOME/builds/ncl-6.6.2/bin:$PATH
@@ -223,11 +235,12 @@ case "${HOSTNAME%%.*}" in
     export PATH=/Applications/Skim.app/Contents/SharedSupport:$PATH
     export PATH=/Applications/Calibre.app/Contents/MacOS:$PATH
     export NCARG_ROOT=$HOME/builds/ncl-6.6.2  # or macports: /opt/local/lib/libgcc
-    alias ncl='DYLD_LIBRARY_PATH=/usr/local/lib/gcc/7/ ncl'  # brew libraries
-    alias c++='/usr/local/bin/c++-11'  # point to verion (see above)
-    alias cpp='/usr/local/bin/cpp-11'  # point to verion (see above)
-    alias gcc='/usr/local/bin/gcc-11'  # point to verion (see above)
-    alias gfortran='/usr/local/bin/gfortran-11'  # alias already present but why not
+    alias ncl="DYLD_LIBRARY_PATH=$_brew/lib/gcc/7/ ncl"  # brew libraries
+    alias c++="$_brew/bin/c++-11"  # point to verion (see above)
+    alias cpp="$_brew/bin/cpp-11"  # point to verion (see above)
+    alias gcc="$_brew/bin/gcc-11"  # point to verion (see above)
+    alias gfortran="$_brew/bin/gfortran-11"  # alias already present but why not
+    alias locate=/usr/bin/locate  # coreutils version fails
     export LM_LICENSE_FILE=/opt/pgi/license.dat-COMMUNITY-18.10
     export PKG_CONFIG_PATH=/opt/local/bin/pkg-config
     export HDF5_USE_FILE_LOCKING=FALSE  # required for cdo (see above)
@@ -968,7 +981,7 @@ _address_port() {
   [ -z "$1" ] && host=${HOSTNAME%%.*} || host="$1"
   [ $# -gt 1 ] && echo 'Error: Too many input arguments.' && return 1
   case $host in
-    vortex*|velouria*|maelstrom*|uriah*)
+    cyclone*|vortex*|velouria*|UEA*)
       address=localhost
       port=2000
       ;;
