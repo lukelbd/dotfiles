@@ -885,17 +885,11 @@ merge() {
 # Directory differences time differences
 # Here 'ds' is git status-style difference and 'dd' is custom directory difference
 # that compares modification times if both present or shows which files are missing.
-ds() {  # git status-style directory differences
-  [ $# -ne 2 ] && echo "Usage: ds DIR1 DIR2" && return 1
-  echo "Directory: $1"
-  echo "Directory: $2"
-  command diff -rq -x '.vimsession' "$1" "$2"
-}
-dd() {
-  [ $# -ne 2 ] && echo "Usage: dt DIR1 DIR2" && return 1
-  local dir dir1 dir2 cat1 cat2 cat3 cat4 cat5 file files flags
+_diff() {
+  [ $# -ne 3 ] && echo "Usage: dd[|1|2] DIR1 DIR2" && return 1
+  local arg dir dir1 dir2 cat1 cat2 cat3 cat4 cat5 file files flags
   flags=($(ignores 1))
-  dir1=${1%/} dir2=${2%/}
+  arg=${1--1} dir1=${2%/} dir2=${3%/}
   for dir in "$dir1" "$dir2"; do
     echo "Directory: $dir"
     ! [ -d "$dir" ] && echo "Error: $dir is not an existing directory." && return 1
@@ -905,23 +899,31 @@ dd() {
     file=${file/$dir1\//}
     file=${file/$dir2\//}
     if ! [ -e "$dir1/$file" ]; then
-      cat2+="File $dir2/$file is not in $dir1."$'\n'
+      [[ "$arg" =~ 0|1 ]] && cat1+="File '$dir1/$file' is missing."$'\n'
     elif ! [ -e "$dir2/$file" ]; then
-      cat1+="File $dir1/$file is not in $dir2."$'\n'
-    else
-      if [ "$dir1/$file" -nt "$dir2/$file" ]; then
-        cat3+="File $dir1/$file is newer."$'\n'
-      elif [ "$dir1/$file" -ot "$dir2/$file" ]; then
-        cat4+="File $dir2/$file is newer."$'\n'
-      else
-        cat5+="Files $dir1/$file in $dir2/$file have same age."$'\n'
-      fi
+      [[ "$arg" =~ 0|2 ]] && cat2+="File '$dir2/$file' is missing."$'\n'
+    elif [ "$dir1/$file" -nt "$dir2/$file" ]; then
+      [[ "$arg" =~ 0|1 ]] && cat3+="File '$dir1/$file' is newer."$'\n'
+    elif [ "$dir1/$file" -ot "$dir2/$file" ]; then
+      [[ "$arg" =~ 0|2 ]] && cat4+="File '$dir2/$file' is newer."$'\n'
+    else  # print identical files
+      [[ "$arg" =~ 3 ]] && cat5+="File '$dir1/$file' identical to '$dir2/$file'."$'\n'
     fi
   done < <(echo "$files" | sort)
   for cat in "$cat1" "$cat2" "$cat3" "$cat4" "$cat5"; do
     printf "%s" "$cat"
   done
 }
+ds() {  # git status-style directory differences
+  [ $# -ne 2 ] && echo "Usage: ds DIR1 DIR2" && return 1
+  printf "%s" "Directory: $1\nDirectory: $2\n"
+  command diff -rq -x '.vimsession' "$1" "$2"
+}
+dd() { _diff '' "$@"; }
+dd0() { _diff 0 "$@"; }
+dd1() { _diff 1 "$@"; }
+dd2() { _diff 2 "$@"; }
+dd3() { _diff 3 "$@"; }
 
 #-----------------------------------------------------------------------------
 # Remote session utilities {{{1
