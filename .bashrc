@@ -123,7 +123,7 @@ _prompt_dirs() {
   printf '%s' "$paths"
 }
 [[ $- != *i* ]] && return  # not interactive (scp/rscync fail without this line)
-[[ "$PS1" != *_prompt* ]] \
+[[ "$PS1" != *_prompt_host* ]] \
   && PS1='$(_prompt_env)$(_prompt_git)\[\033[1;37m\]$(_prompt_host)[\j]:$(_prompt_dirs) \[\033[0m\]'
 
 # Apply general shell settings
