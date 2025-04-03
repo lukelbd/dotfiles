@@ -286,14 +286,15 @@ function! window#update_stack(...) abort  " set current buffer
   let index = a:0 > 1 ? a:2 : -1  " selected target location
   let verb = a:0 > 2 ? a:3 : 0  " disable message by default
   let skip = index(g:tags_skip_filetypes, &filetype)
-  let bname = bufname()  " possibly not a file
-  if skip != -1 || line('$') <= 1 || empty(&filetype) || bname =~# '^[![]'
+  let name = bufname()  " possibly not a file
+  if line('$') <= 1 || empty(&filetype) || skip >= 0 || name =~# '^[![]'
     if len(tabpagebuflist()) > 1 | return | endif
   endif
-  let exist = filereadable(bname) || isdirectory(bname)
-  let name = exist && !empty(bname) ? fnamemodify(bname, ':p') : bname
+  if !empty(name) && skip < 0 && name !~# '^[![]'
+    let name = fnamemodify(name, ':p')
+  endif
   for bnr in tabpagebuflist()
-    if !empty(name) | call setbufvar(bnr, 'tab_name', name) | endif
+    call setbufvar(bnr, 'tab_name', name)
   endfor
   call stack#update_stack('tab', search, index, verb)
   let g:tab_time = localtime()  " previous update time
