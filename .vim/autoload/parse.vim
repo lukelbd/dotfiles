@@ -226,7 +226,7 @@ function! s:get_label(name) abort
   elseif a:name =~# '[+*]'
     let label = 'clipboard'
   elseif a:name =~# '\d'  " use character to pick number register
-    let label = getreg(a:name)
+    let label = strtrans(getreg(a:name))
   elseif v:count
     let label = v:count ? 'count ' . v:count : ''
   endif
