@@ -1185,16 +1185,12 @@ nnoremap g~ /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
 " NOTE: Here 'zu' is analogous to 'zb' used for boolean toggle
 for s:key in ['u', 'U'] | silent! exe 'unmap g' . s:key | endfor
 for s:key in ['u', 'U'] | silent! exe 'unmap z' . repeat(s:key, 2) | endfor
-call utils#repeat_map('n', 'guU', 'CaseTitle1', 'myguiw~h`y<Cmd>delmark y<CR>')
-call utils#repeat_map('n', 'gUu', 'CaseTitle2', 'myguiW~h`y<Cmd>delmark y<CR>')
-call utils#repeat_map('n', 'g\|', 'CaseToggle1', 'my~h`y<Cmd>delmark y<CR>')
-call utils#repeat_map('n', 'z\|', 'CaseToggle2', 'my~h`y<Cmd>delmark y<CR>')
+call utils#repeat_map('n', 'guU', 'TitleCase1', 'myguiw~h`y<Cmd>delmark y<CR>')
+call utils#repeat_map('n', 'gUu', 'TitleCase2', 'myguiw~h`y<Cmd>delmark y<CR>')
 nnoremap guu guiw
 nnoremap gUU gUiw
 vnoremap guU gu<Esc>`<~h
 vnoremap gUu gu<Esc>`<~h
-vnoremap g\| g~
-vnoremap z\| g~
 
 " Setup spell checking and update binary file
 " See: https://vi.stackexchange.com/a/5052/8084
@@ -1823,6 +1819,8 @@ let g:scrollwrapped_nomap = 1  " instead have advanced window#scroll_infer maps
 let g:scrollwrapped_wrap_filetypes = s:info_filetypes + ['tex', 'text']
 exe 'nnoremap + <C-a>' | exe 'nnoremap - <C-x>'
 exe 'vnoremap + <C-a>' | exe 'vnoremap - <C-x>'
+nnoremap g\| <Cmd>call toggle#toggle(1, 0, 1)<CR>
+nnoremap z\| <Cmd>call toggle#toggle(1, 0, 1)<CR>
 nnoremap <Leader>w <Cmd>WrapToggle<CR>
 vnoremap <Leader>w <Cmd>WrapToggle<CR>
 
