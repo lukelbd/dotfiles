@@ -335,8 +335,8 @@ command! -bar -bang -nargs=* History call file#fzf_history(<q-args>, <bang>0)
 command! -bar -bang -nargs=0 Recents call file#fzf_recent(<bang>0)
 nnoremap <Leader>q <Cmd>ShowBufs<CR>
 nnoremap <Leader>Q <Cmd>WipeBufs<CR>
-nnoremap g[ <Cmd>call file#fzf_history('')<CR>
-nnoremap g{ <Cmd>call file#fzf_recent()<CR>
+nnoremap g{ <Cmd>call file#fzf_history('')<CR>
+nnoremap g} <Cmd>call file#fzf_recent()<CR>
 
 " General file related utilities {{{2
 " NOTE: Here toggle between local or global current directory
@@ -490,8 +490,8 @@ nnoremap <F4> <Cmd>call window#next_stack(v:count1)<CR>
 " NOTE: Here :History includes v:oldfiles and open buffers
 for s:key in range(1, 10) | exe 'silent! unmap <Tab>' . s:key | endfor
 for s:key in ['.', ',', '>', '<'] | exe 'silent! xunmap z' . s:key | endfor
+nnoremap g[ <Cmd>exe v:count ? 'call window#move_tab(v:count)' : 'call window#fzf_move()'<CR>
 nnoremap g] <Cmd>exe v:count ? 'call window#goto_tab(v:count)' : 'call window#fzf_goto()'<CR>
-nnoremap g} <Cmd>exe v:count ? 'call window#move_tab(v:count)' : 'call window#fzf_move()'<CR>
 nnoremap g<Space> <Cmd>Windows<CR>
 nnoremap z<Space> <Cmd>Buffers<CR>
 
@@ -2060,7 +2060,9 @@ if s:has_plug('vim-tags')  " {{{
   nnoremap zY <Cmd>UpdateBuffer<CR><Cmd>redraw<CR><Cmd>echo 'Updated buffer tags'<CR>
   let s:major = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
   let s:minor = {'fortran': 'ekltvEL', 'python': 'xviI', 'vim': 'vnC', 'tex': 'gioetBCN'}
+  let g:tags_keep_stack = 0  " default is zero
   let g:tags_keep_jumps = 1  " default is zero
+  let g:tags_keep_folds = 1  " default is zero
   let g:tags_bselect_map = 'gy'  " default is <Leader><Leader>
   let g:tags_select_map = 'gY'  " default is <Leader><Tab>
   let g:tags_cursor_map = '<CR>'  " default is <Leader><CR>
@@ -2115,6 +2117,8 @@ if s:has_plug('vim-gutentags')  " {{{
 endif  " }}}
 
 " Vim syntax folding and fastfold settings
+" WARNING: FastFold g:fastfold_force behavior changed in recent update. Now toggles
+" methods. See: https://github.com/Konfekt/FastFold/blame/fff6d05/plugin/fastfold.vim#L30
 " WARNING: Converting syntax and expr folds to manual is very slow, so FastFold plugin
 " applies autocommands that reset manual folds on FileType and BufRead or BufWinEnter
 " after VimEnter has completed. Must define foldmethod-updating and fastfold-upating
@@ -2175,9 +2179,10 @@ if s:has_plug('FastFold')  " {{{
   let g:vimsyn_folding = 'aflpP'
   let g:xml_syntax_folding = 1
   let g:zsh_fold_enable = 1
-  let g:fastfold_minlines = 0
-  let g:fastfold_force = 0  " enable only for syntax and expr folds
+  let g:fastfold_foldmethods = ['syntax', 'expr']  " not sure if overwritten by plugin
+  let g:fastfold_force = 1  " see: https://github.com/Konfekt/FastFold/blame/fff6d05/plugin/fastfold.vim#L30
   let g:fastfold_fdmhook = 0  " disable foldmethod OptionSet hook
+  let g:fastfold_minlines = 0  " enable for all syntax and expr files
   let g:fastfold_savehook = 0  " disable default BufWritePost hook
   let g:fastfold_skip_filetypes = s:panel_filetypes
   let g:fastfold_fold_command_suffixes =  []
