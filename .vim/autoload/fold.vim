@@ -583,23 +583,23 @@ function! fold#update_folds(force, ...) abort
   endif
   " Optionally apply foldlevel
   let level1 = &l:foldlevel
-  let closed1 = level0 ? foldclosed(winview.lnum) : 0
   let method1 = &l:foldmethod
-  let keys = ''  " normal mode keys
+  let closed1 = level0 ? foldclosed(winview.lnum) : 0
   let level1 = &l:filetype ==# 'json' ? 2 : !empty(get(b:, 'fugitive_type', '')) ? 1 : 0
   let level1 = !level1 && method1 ==# 'manual' ? search('{{{1\s*$', 'wn') > 0 : level1
   let level1 = !level1 && method1 ==# 'marker' ? search('{{{2\s*$', 'wn') > 0 : level1
-  if reset >= 0 || method0 !=# method1
-    let &l:foldlevel = level1  " update fold level
+  let initial = reset > 2 || method0 !=# method1
+  let refresh = closed0 == 0 && closed1 !=# winview.lnum
+  let reveal = initial || refresh || level0 - level1 > 2
+  let keys = reveal ? 'zv' : ''  " default reveal setting
+  if reset > 0 || method0 !=# method1
+    let &l:foldlevel = level1  " close higher level folds
     for lnum in fold#get_matches() | exe lnum . 'foldopen' | endfor
-    let initial = reset > 2 || method0 !=# method1
-    let refresh = closed0 == 0 && closed1 !=# winview.lnum
-    let reveal = initial || refresh || level0 - level1 > 2
-    let status = closed0 < 0 && closed1 > 0 ? -1 : closed0 > 0 && closed1 < 0 ? 1 : 0
+    let delta = closed0 < 0 && closed1 > 0 ? -1 : closed0 > 0 && closed1 < 0 ? 1 : 0
     let closes = repeat('zc', foldlevel(winview.lnum) - level0)
     let closes .= closed0 < 0 || refresh ? 'zc' : 'zczc'
-    let keys = reset == 0 || reveal ? 'zv' : reset == 1 && status > 0 ? 'zv' : ''
-    let keys .= reset == 2 && reveal ? closes : reset == 1 && status < 0 ? 'zc' : ''
+    let keys = reset == 0 || reveal ? 'zv' : reset == 1 && delta > 0 ? 'zv' : ''
+    let keys .= reset == 2 && reveal ? closes : reset == 1 && delta < 0 ? 'zc' : ''
   endif
   exe winview.lnum | exe empty(keys) ? '' : 'silent! normal! ' . keys
   for lnum in folds | exe foldlevel(lnum) ? lnum . 'foldopen' : '' | endfor
