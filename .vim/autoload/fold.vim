@@ -592,7 +592,7 @@ function! fold#update_folds(force, ...) abort
   let refresh = closed0 == 0 && closed1 !=# winview.lnum
   let reveal = initial || refresh || level0 - level1 > 2
   let keys = reveal ? 'zv' : ''  " default reveal setting
-  if reset > 0 || method0 !=# method1
+  if reset >= 0 || method0 !=# method1
     let &l:foldlevel = level1  " close higher level folds
     for lnum in fold#get_matches() | exe lnum . 'foldopen' | endfor
     let delta = closed0 < 0 && closed1 > 0 ? -1 : closed0 > 0 && closed1 < 0 ? 1 : 0
