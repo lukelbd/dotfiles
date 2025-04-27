@@ -2101,8 +2101,8 @@ else
 fi
 if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda|mamba ]]; then  # {{{
   _setup_message 'Enabling conda'
-  __conda_setup=$("$_conda/bin/conda" 'shell.bash' 'hook' 2>/dev/null)
   alias brew="PATH=\"$PATH\" brew"  # avoid conda conflicts
+  __conda_setup=$("$_conda/bin/conda" 'shell.bash' 'hook' 2>/dev/null)
   if [ $? -eq 0 ]; then
     eval "$__conda_setup"  # details: https://stackoverflow.com/a/48591320/4970632
   elif [ -f "$_conda/etc/profile.d/conda.sh" ]; then
@@ -2110,12 +2110,16 @@ if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda|mamb
   else
     export PATH="$_conda/bin:$PATH"
   fi
-  unset __conda_setup
-  if [ -f "$_conda/etc/profile.d/mamba.sh" ]; then
-    source "$_conda/etc/profile.d/mamba.sh"
+  export MAMBA_EXE="$HOME/mambaforge/bin/mamba"
+  export MAMBA_ROOT_PREFIX="$HOME/mambaforge"
+  __mamba_setup=$("$MAMBA_EXE" shell hook --shell bash --root-prefix "$MAMBA_ROOT_PREFIX" 2> /dev/null)
+  if [ $? -eq 0 ]; then
+    eval "$__mamba_setup"
+  else
+    alias mamba="$MAMBA_EXE"  # fallback on help from mamba activate
   fi
   if ! [[ "$PATH" =~ condabin ]]; then
-    export PATH=$_conda/condabin:$PATH
+    export PATH="$_conda/condabin:$PATH"
   fi
   mamba activate base  # calls '__conda_activate activate' which runs the
   echo 'done'  # commands returned by '__conda_exe shell.posix activate'
@@ -2249,3 +2253,16 @@ $_macos && [ -z "$OLDPWD" ] && [ "$PWD" == "$HOME" ] \
   && command curl https://icanhazdadjoke.com/ 2>/dev/null && echo
 alias forecast="command curl wttr.in"
 _bashrc_loaded=true
+
+# >>> mamba initialize >>>
+# !! Contents within this block are managed by 'mamba shell init' !!
+export MAMBA_EXE='/home/ldavis/mambaforge/bin/mamba';
+export MAMBA_ROOT_PREFIX='/home/ldavis/mambaforge';
+__mamba_setup="$("$MAMBA_EXE" shell hook --shell bash --root-prefix "$MAMBA_ROOT_PREFIX" 2> /dev/null)"
+if [ $? -eq 0 ]; then
+    eval "$__mamba_setup"
+else
+    alias mamba="$MAMBA_EXE"  # Fallback on help from mamba activate
+fi
+unset __mamba_setup
+# <<< mamba initialize <<<
