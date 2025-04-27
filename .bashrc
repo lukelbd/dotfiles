@@ -475,13 +475,14 @@ scratch() {
 
 # Internal utilities {{{2
 # See: https://unix.stackexchange.com/a/369220/112647
-# See: https://stackoverflow.com/a/24005600/4970632
+# See: https://stackoverflow.com/a/38828653/4970632 (regex works on tmux)
+# See: https://stackoverflow.com/a/24005600/4970632 (regex fails on tmux)
 # NOTE: Here 'align' supports ansi escape characters. Also tried only column -t
 # and fold -n but no built-in utility for both wrapping and column alignment.
 bc() { echo "$*" | tr 'x' '*' | command bc -l | awk '{printf "%f", $0}'; }  # 'x' --> '*'
 min() { awk 'n=="" {n=$1+0} $1<0+n {n=$1} END {print n}' "$@"; }
 max() { awk 'n=="" {n=$1+0} $1>0+n {n=$1} END {print n}' "$@"; }
-raw() { sed -E 's/\x1b\[[^@-~]*[@-~]//g' "$@"; }  # \x1b\[[0-9;]*m? for ansi
+raw() { sed -E 's/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g' "$@"; }
 align() {
   local cnt cnts fmt idx jdx num nums raws strs size width total
   IFS=$'\n' read -r -d '' -a strs
