@@ -2139,14 +2139,14 @@ if s:has_plug('FastFold')  " {{{
   function! s:fold_setup() abort
     augroup fold_setup
       au!
-      au FileType,BufEnter * call fold#update_method()
+      au FileType,BufWinEnter,TabEnter * call fold#update_method()
       au TextChanged,TextChangedI * let b:fastfold_queued = 1
     augroup END
   endfunction
   function! s:fold_update() abort
     augroup fold_update
       au!
-      au BufEnter * call fold#update_folds(0)
+      au BufWinEnter,TabEnter * call fold#update_folds(0)
       au FileType * unlet! b:fastfold_queued | call fold#update_folds(0, 1)
     augroup END
   endfunction
