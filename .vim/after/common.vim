@@ -2,7 +2,7 @@
 " Override filetype and syntax settings
 " See: https://stackoverflow.com/a/4301809/4970632
 "-----------------------------------------------------------------------------"
-" Update general settings
+" Update settings and highlighting
 " NOTE: Peekaboo mappings are local so have to override here. Also in future should
 " consider setting b:surround_indent for filetypes but for now have this for safety.
 " NOTE: This overrides native vim filetype-specific double-bracket maps (e.g. :map [[
@@ -17,9 +17,9 @@ let &l:joinspaces = 0
 let &l:linebreak = 1
 let &l:textwidth = g:linelength
 let &l:wrapmargin = 0
-let s:bracket1 = get(maparg('[', '', 0, 1), 'buffer', 0)
-let s:bracket2 = get(maparg(']', '', 0, 1), 'buffer', 0)
-if !s:bracket1 && !s:bracket2  " no buffer-local single bracket maps
+call syntax#update_highlights()
+call syntax#update_links()
+if !get(maparg('[', '', 0, 1), 'buffer', 0) && !get(maparg(']', '', 0, 1), 'buffer', 0)
   map <buffer> [[ <Plug>TagsBackwardTop
   map <buffer> ]] <Plug>TagsForwardTop
 endif
@@ -28,17 +28,17 @@ nnoremap <buffer> >> <Cmd>call edit#indent_lines(0, v:count1)<CR>
 nnoremap <buffer> << <Cmd>call edit#indent_lines(1, v:count1)<CR>
 
 " Update folds and syntax
-" NOTE: Here overwrite native foldtext function so that vim-markdown autocommands
-" re-apply it along with other settings. Critical to prevent e.g. javascript.vim
-" from overwriting fold settings: https://github.com/tpope/vim-markdown/pull/173
-" and note this requires g:vim_markdown_override_foldtext = 1 in .vimrc (default).
-if exists('b:common_syntax') || !exists('b:current_syntax')
+" NOTE: Here remove various filetype-related mappings that can cause cursor hang for
+" single-key mapings in vimrc (put after common_syntax to avoid unnecessary calls)
+" NOTE: This implements default highlight colors and overrides syntax and matchadd()
+" groups from e.g. vim-markdown and rainbow_csv plugins. Critical to call after all
+" other Syntax * autocommands so generate and call group on VimEnter (see vimrc).
+if exists('b:common_syntax') || !exists('b:current_syntax') && !exists('b:rbcsv')
   finish  " remove b:common_syntax on Syntax * autocommand
 endif
 let b:common_syntax = 1
 call syntax#update_groups()
 call syntax#update_matches()
-call syntax#update_highlights()
 for s:suffix in ['g', 's', 'S', '%']  " instead use <C-g> to insert literals
   exe 'silent! iunmap <C-g>' . s:suffix
   exe 'silent! iunmap <buffer><C-g>' . s:suffix

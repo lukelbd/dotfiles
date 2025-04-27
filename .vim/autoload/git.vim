@@ -54,8 +54,8 @@ function! s:call_fugitive(bnum, lnum, cmd, ...) abort
   let winview = winsaveview()
   let input = join(a:000, '')
   let name = split(input, '', 1)[0]
-  let editor = index(s:cmd_editor, name) != -1
-  let panel = editor || a:bnum != bufnr() || a:cmd =~# '\<v\?split\>'
+  let panel = name ==# 'commit' && input !~# '--message'
+  let panel = panel || a:bnum != bufnr() || a:cmd =~# '\<v\?split\>'
   if a:cmd =~# '^echoerr'
     let msg = substitute(a:cmd, '^echoerr', 'echom', '')
     redraw | echohl ErrorMsg | exe msg | echohl None
@@ -129,9 +129,7 @@ function! s:call_git(msg, line1, count, range, bang, mods, cmd, ...) range abort
     redraw | echohl WarningMsg | echom error | echohl None
   elseif verbose
     redraw | echo 'Git ' . a:cmd
-  else
   endif
-  call fold#_recache(1)
 endfunction
 
 " Call git commit with or without editor
@@ -307,7 +305,6 @@ function! git#_exe_hunks(line1, line2, ...) abort
     call add(ranges, join(range, '-'))
   endfor
   call winrestview(winview)
-  call fold#_recache(1)
   if !empty(ranges)  " show information
     let msg = cmd . ' hunk(s): ' . join(ranges, ', ')
     call s:show_hunks(locs, len(hunks), msg, 1)

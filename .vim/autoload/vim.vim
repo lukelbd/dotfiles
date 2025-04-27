@@ -31,15 +31,14 @@ function! vim#config_refresh(bang, ...) abort
       call add(paths, ipath)
     endif
   endfor
-  let folds = filter(fold#fold_source(), 'foldclosed(v:val[0]) < 0')
+  let folds = filter(map(fold#get_folds(-1), 'v:val[0]'), 'foldclosed(v:val) < 0')
   call map(paths, "fnamemodify(v:val, ':~')[2:]")
   doautocmd VimEnter | filetype detect
-  for fold in folds
-    exe foldlevel(fold[0]) ? fold[0] . 'foldopen' : ''
-  endfor
+  for lnum in folds | exe foldlevel(lnum) ? lnum . 'foldopen' : '' | endfor
   call winrestview(winview)
-  redraw | echom 'Loaded: ' . join(paths, ', ') . '.'
-  let g:refresh = localtime()
+  redraw | let g:refresh = localtime()
+  let msg = 'Loaded: ' . join(paths, ', ') . '.'
+  call feedkeys("\<Cmd>echom " . string(msg) . "\<CR>", 'n')
 endfunction
 
 " Create session file or load existing one

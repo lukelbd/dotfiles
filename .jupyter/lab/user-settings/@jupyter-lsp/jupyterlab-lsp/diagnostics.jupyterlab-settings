@@ -1,0 +1,18 @@
+{
+    "defaultSeverity": "Warning",
+    "gutter": false,
+    "debounceDelay": 3000,
+    "ignoreCodes": [
+        "E303",
+        "E501",
+        "F401",
+        "E261",
+        "W503",
+        "E402",
+        "E731",
+        "E741"
+    ],
+    "ignoreMessagesPatterns": [],
+    "ignoreSeverities": [],
+    "disable": false
+}

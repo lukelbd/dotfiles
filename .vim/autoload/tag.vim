@@ -74,23 +74,24 @@ function! s:goto_stack(item, count, ...) abort  " see also mark.vim
   return [name, icnt]
 endfunction
 
-" Iterate over tags (see also mark#next_mark)
-" NOTE: Here pass '-1' verbosity to disable both function messages and stack message.
+" Helper functions for tag stack
 " NOTE: Tag jumps with <Enter> or fzf selection may float selections above <top> entry,
 " so here remove any <top> entries not already on the top before iterating stack.
-" NOTE: This implicitly adds 'current' location to top of stack before navigation,
-" and additionally jumps to the tag stack 'from' position when navigating backwards.
-function! s:clean_stack() abort
-  let items = []  " outdated pseudo-tags
-  let [_, size] = stack#get_loc('tag')
+function! tag#complete_stack(lead, line, cursor) abort
+  let regex = glob2regpat(a:lead)
+  let regex = regex[0:len(regex) - 2]
+  let opts = copy(get(g:, 'tag_stack', []))
+  let opts = filter(opts, '!empty(v:val) && v:val[-1] =~# regex')
+  return map(opts, 'v:val[-1]')
+endfunction
+function! tag#clean_stack() abort
+  call stack#pop_stack('tag', '<top>')
+  let [size, items] = [stack#get_loc('tag')[1], []]
   for idx in size > 1 ? range(size - 2) : []  " skip final tag
     let item = stack#get_item('tag', idx)
-    let name = get(item, 2, '')
-    if name ==# '<top>' | call add(items, item) | endif
+    if get(item, 2, '') ==# '<top>' | call add(items, item) | endif
   endfor
-  for item in items  " remove top tags
-    call stack#pop_stack('tag', item)
-  endfor
+  for item in items | call stack#pop_stack('tag', item) | endfor
 endfunction
 function! tag#update_stack(...) abort  " see also window#update_stack()
   let itag = tags#get_tag(a:0 ? a:1 : line('.'))
@@ -103,8 +104,13 @@ function! tag#update_stack(...) abort  " see also window#update_stack()
   if !result | call stack#print_item('tag') | endif
   silent! exe 'redrawstatus'
 endfunction
+
+" Iterate over tags (see also mark#next_mark)
+" NOTE: Here pass '-1' verbosity to disable both function messages and stack message.
+" NOTE: This implicitly adds 'current' location to top of stack before navigation, and
+" additionally jumps to the tag stack 'from' position when navigating backwards.
 function! tag#next_stack(...) abort  " see also window#next_stack()
-  exe "normal! m'" | call s:clean_stack()
+  exe "normal! m'" | call tag#clean_stack()
   let remove = a:0 > 1 ? a:2 : 0
   let icnt = a:0 > 0 ? a:1 : v:count1
   let itag = stack#get_item('tag')

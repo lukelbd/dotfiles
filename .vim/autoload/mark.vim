@@ -104,6 +104,7 @@ endfunction
 " Add marks and sign column highlighting
 " NOTE: This also runs on vim startup using marks saved to viminfo
 function! mark#init_marks() abort
+  if !v:vim_did_enter | return | endif
   let highlights = get(g:, 'mark_highlights', {})
   for imark in getmarklist()
     let ipos = imark['pos']  " buffer position
@@ -139,7 +140,7 @@ function! mark#set_marks(mrk, ...) abort
   if s:sign_marks
     let sid = s:sign_id | let s:sign_id += 1
     call add(highlights[a:mrk], sid)
-    call sign_place(sid, '', name, pos[0], {'lnum': pos[1]})  " empty group critical
+    call sign_place(sid, '', name, pos[0], {'lnum': pos[1], 'priority': 50})
   else
     let regex = '.*\%''' . a:mrk . '.*'
     let hlid = matchadd(name, regex, 0)

@@ -532,6 +532,14 @@
         {
             "command": "notebook:paste-cell-below",
             "keys": [
+                "V"
+            ],
+            "selector": ".jp-Notebook.jp-mod-commandMode:not(.jp-mod-readWrite) :focus",
+            "disabled": true
+        },
+        {
+            "command": "notebook:paste-cell-below",
+            "keys": [
                 "P"
             ],
             "selector": ".jp-Notebook.jp-mod-commandMode:not(.jp-mod-readWrite) :focus"
@@ -583,9 +591,25 @@
         {
             "command": "notebook:change-cell-to-code",
             "keys": [
+                "Y"
+            ],
+            "selector": ".jp-Notebook.jp-mod-commandMode:not(.jp-mod-readWrite) :focus",
+            "disabled": true
+        },
+        {
+            "command": "notebook:change-cell-to-code",
+            "keys": [
                 "0"
             ],
             "selector": ".jp-Notebook.jp-mod-commandMode:not(.jp-mod-readWrite) :focus"
+        },
+        {
+            "command": "notebook:change-cell-to-markdown",
+            "keys": [
+                "M"
+            ],
+            "selector": ".jp-Notebook.jp-mod-commandMode:not(.jp-mod-readWrite) :focus",
+            "disabled": true
         },
         {
             "command": "notebook:change-cell-to-markdown",
@@ -633,14 +657,6 @@
             "command": "notebook:merge-cells",
             "keys": [
                 "Shift M"
-            ],
-            "selector": ".jp-Notebook.jp-mod-commandMode:not(.jp-mod-readWrite) :focus",
-            "disabled": true
-        },
-        {
-            "command": "notebook:merge-cells",
-            "keys": [
-                "M"
             ],
             "selector": ".jp-Notebook.jp-mod-commandMode:not(.jp-mod-readWrite) :focus"
         },
@@ -734,6 +750,27 @@
             "selector": ".jp-Notebook.jp-mod-commandMode:not(.jp-mod-readWrite) :focus"
         },
         {
+            "command": "documentsearch:highlightNext",
+            "keys": [
+                "N"
+            ],
+            "selector": ".jp-Notebook.jp-mod-commandMode:not(.jp-mod-readWrite) :focus"
+        },
+        {
+            "command": "documentsearch:highlightPrevious",
+            "keys": [
+                "Shift N"
+            ],
+            "selector": ".jp-Notebook.jp-mod-commandMode:not(.jp-mod-readWrite) :focus"
+        },
+        {
+            "command": "documentsearch:toggleSearchInSelection",
+            "keys": [
+                "M"
+            ],
+            "selector": ".jp-Notebook.jp-mod-commandMode:not(.jp-mod-readWrite) :focus"
+        },
+        {
             "command": "docmanager:save",
             "keys": [
                 "S"
@@ -743,19 +780,12 @@
         {
             "command": "docmanager:rename",
             "keys": [
-                "\\"
+                "Shift R"
             ],
             "selector": ".jp-Notebook.jp-mod-commandMode:not(.jp-mod-readWrite) :focus"
         },
         {
             "command": "docmanager:reload",
-            "keys": [
-                "Accel E"
-            ],
-            "selector": "body"
-        },
-        {
-            "command": "docmanager:rename",
             "keys": [
                 "Accel R"
             ],

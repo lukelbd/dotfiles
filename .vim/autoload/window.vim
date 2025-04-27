@@ -257,6 +257,14 @@ endfunction
 " location to top of stack on CursorHold but always scroll with explicit commands.
 " NOTE: This only triggers after spending time on window instead of e.g. browsing
 " across tabs with maps, similar to jumplist. Then can access jumps in each window.
+function! window#complete_stack(lead, line, cursor)
+  let regex = glob2regpat(a:lead)
+  let regex = regex[0:len(regex) - 2]
+  let opts = copy(get(g:, 'tab_stack', []))
+  let opts = map(opts, 'RelativePath(v:val)')
+  let opts = filter(opts, 'v:val =~# regex')
+  return opts
+endfunction
 function! window#next_stack(count, ...) abort
   let remove = a:0 ? a:1 : 0
   let [idx, _] = stack#get_loc('tab')
@@ -278,14 +286,15 @@ function! window#update_stack(...) abort  " set current buffer
   let index = a:0 > 1 ? a:2 : -1  " selected target location
   let verb = a:0 > 2 ? a:3 : 0  " disable message by default
   let skip = index(g:tags_skip_filetypes, &filetype)
-  let bname = bufname()  " possibly not a file
-  if skip != -1 || line('$') <= 1 || empty(&filetype) || bname =~# '^[![]'
+  let name = bufname()  " possibly not a file
+  if line('$') <= 1 || empty(&filetype) || skip >= 0 || name =~# '^[![]'
     if len(tabpagebuflist()) > 1 | return | endif
   endif
-  let exist = filereadable(bname) || isdirectory(bname)
-  let name = exist && !empty(bname) ? fnamemodify(bname, ':p') : bname
+  if !empty(name) && skip < 0 && name !~# '^[![]'
+    let name = fnamemodify(name, ':p')
+  endif
   for bnr in tabpagebuflist()
-    if !empty(name) | call setbufvar(bnr, 'tab_name', name) | endif
+    call setbufvar(bnr, 'tab_name', name)
   endfor
   call stack#update_stack('tab', search, index, verb)
   let g:tab_time = localtime()  " previous update time
@@ -398,24 +407,29 @@ function! window#setup_panel(...) abort
   endfor
 endfunction
 
-" Setup csv data windows
-" NOTE: See :help CSV and https://github.com/chrisbra/csv.vim
-function! window#setup_values() abort
-  if !exists(':CSVInit') | return | endif
-  let winview = winsaveview()
+" Setup csv and table windows
+" NOTE: This handles syntax highlighting, including comments and field detection, for
+" native plugin and external plugins. See: https://github.com/mechatroner/rainbow_csv
+function! window#setup_csv() abort
+  let winview = winsaveview() | keepjumps goto
+  let delimiter = expand('%:e') ==# 'csv' ? ',' : ' '  " field delimiter
+  let policy = delimiter ==# ',' ? 'quoted' : 'whitespace'  " see rainbow_csv/autoload
   let char = matchstr(getline(1), '^[#%"]')
   let char = empty(char) ? '#' : char
-  keepjumps goto  " start from top
-  let head1 = search('^\s*\a', 'W')
-  let head2 = head1 ? search('^\s*[.+-]\?\d', 'W') : head1
-  let g:csv_delim = expand('%:e') ==# 'txt' ? ' ' : ','
-  let b:csv_headerline = head2 ? head2 - 1 : head1  " header above numeric
-  let &l:commentstring = char . '%s'
-  keepjumps goto  " start from top
-  let info = search('^\s*[^' . char . ']', 'nW') - 1
-  let expr = info > 1 && !foldlevel(1) ? 1 . ',' . info . 'fold' : ''
-  exe 'CSVInit' | setlocal foldenable
-  call feedkeys("\<Cmd>" . expr . "\<CR>", 'n')
+  let nr = search('^\s*[^' . char . ']', 'nW') - 1
+  let cmd = nr > 1 && !foldlevel(1) ? 1 . ',' . nr . 'fold' : ''
+  let head0 = search('^\s*\a', 'W')  " initial header check
+  let head1 = head0 ? search('^\s*[.+-]\?\d', 'W') : head0
+  let b:csv_headerline = head1 ? head1 - 1 : head0
+  let [g:csv_delimiter, g:csv_delim] = [delimiter, delimiter]  " native vim and csv.vim
+  let [&l:commentstring, g:rainbow_comment_prefix] = [char . '%s', char]  " native vim and rainbow_csv.vim
+  if exists('*rainbow_csv#set_rainbow_filetype')
+    call rainbow_csv#set_rainbow_filetype(delimiter, policy, char)
+  elseif exists('*csv#Init')
+    call csv#Init()
+  endif
+  let &l:foldenable = 1  " enable manual folds
+  call feedkeys("\<Cmd>" . cmd .  "\<CR>", 'n')
   call winrestview(winview)
 endfunction
 

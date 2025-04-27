@@ -98,21 +98,33 @@
 # Ensure the prompt is applied only once so modules can modify it
 # See: https://unix.stackexchange.com/a/124408/112647
 # See: https://unix.stackexchange.com/a/420362/112647
-_prompt_head() {  # print parentheses around git branch similar to conda environments
-  local opt env base branch
-  branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
-  base=${CONDA_PREFIX_1:-$CONDA_PREFIX}  # both empty after conda deactivate
-  [ -n "$base" ] && [ "$CONDA_PREFIX" == "$base" ] && env=base || env=${CONDA_PREFIX##*/}
-  for opt in "$env" "$branch"; do [ -n "$opt" ] && printf "(%s) " "$opt"; done
+_prompt_env() {
+  local env
+  env=${CONDA_PREFIX_1:-$CONDA_PREFIX}  # both empty after conda deactivate
+  [ -n "$env" ] && [ "$CONDA_PREFIX" == "$env" ] && env=base || env=${CONDA_PREFIX##*/}
+  printf '%s' "${env:+"($env) "}"
 }
-_prompt_tail() {  # prompt string "<push dir N>:...:<push dir 1>:<work dir> <user>$"
+_prompt_git() {
+  local git flags
+  flags=(--abbrev-ref)
+  git=$(git rev-parse "${flags[@]}" HEAD 2>/dev/null)
+  printf '%s' "${git:+"($git) "}"
+}
+_prompt_host() {
+  local host
+  host=${HOSTNAME:-$(hostname)} && host=${host%%.*}
+  [[ "$host" =~ ^UEA ]] && host=cyclone  # university managed macbook
+  printf '%s' "$host"
+}
+_prompt_dirs() {
   local paths
   IFS=$'\n' read -d '' -r -a paths < <(command dirs -p | tac)
-  IFS=: eval 'echo "${paths[*]##*/}"'
+  paths=$(IFS=:; echo "${paths[*]##*/}")  # pushd popd directory stack
+  printf '%s' "$paths"
 }
 [[ $- != *i* ]] && return  # not interactive (scp/rscync fail without this line)
-[[ "$PS1" =~ _prompt_head ]] && [[ "$PS1" =~ _prompt_tail ]] \
-  || PS1='$(_prompt_head)\[\033[1;37m\]\h[\j]:$(_prompt_tail)\$ \[\033[0m\]'
+[[ "$PS1" != *_prompt_dirs*'\$'* ]] \
+  && PS1='$(_prompt_env)$(_prompt_git)\[\033[1;37m\]$(_prompt_host)[\j]:$(_prompt_dirs)\$ \[\033[0m\]'
 
 # Apply general shell settings
 # Remove aliases and history expand, setup bindings and other options
@@ -202,20 +214,20 @@ _load_modules() {
   for module in "$@"; do [[ " ${_loaded_modules[*]} " =~ " $module " ]] || module load "$module"; done
 }
 case "${HOSTNAME%%.*}" in
-  vortex*|velouria*|maelstrom*|uriah*)  # macbook
-    _macos=true
+  cyclone*|vortex*|velouria*|UEA*)  # macbook
+    [ -d /opt/homebrew ] && _brew=/opt/homebrew || _brew=/usr/local
+    _macos=true _port=/opt/local
     unset MANPATH  # reset man path
-    alias locate='/usr/bin/locate'  # coreutils version fails
     export PATH=/usr/bin:/bin:/usr/sbin:/sbin  # defaults
     export PATH=/Library/TeX/texbin:$PATH  # latex
-    export PATH=/opt/X11/bin:$PATH  # X11
-    export PATH=/usr/local/bin:/opt/local/bin:/opt/local/sbin:$PATH  # homebrew
-    export PATH=/usr/local/opt/coreutils/libexec/gnubin:$PATH  # gnu overrides
-    export PATH=/usr/local/opt/findutils/libexec/gnubin:$PATH
-    export PATH=/usr/local/opt/grep/libexec/gnubin:$PATH
-    export PATH=/usr/local/opt/gawk/libexec/gnubin:$PATH
-    export PATH=/usr/local/opt/gnu-sed/libexec/gnubin:$PATH
-    export PATH=/usr/local/opt/gnu-tar/libexec/gnubin:$PATH
+    export PATH=/opt/X11/bin:$PATH  # X11 utilities
+    export PATH=$_brew/bin:$_port/bin:$_port/sbin:$PATH  # homebrew macports
+    export PATH=$_brew/opt/coreutils/libexec/gnubin:$PATH  # gnu overrides
+    export PATH=$_brew/opt/findutils/libexec/gnubin:$PATH
+    export PATH=$_brew/opt/grep/libexec/gnubin:$PATH
+    export PATH=$_brew/opt/gawk/libexec/gnubin:$PATH
+    export PATH=$_brew/opt/gnu-sed/libexec/gnubin:$PATH
+    export PATH=$_brew/opt/gnu-tar/libexec/gnubin:$PATH
     export PATH=/opt/pgi/osx86-64/2018/bin:$PATH  # pgi compilers
     export PATH=$HOME/builds/matlab-r2019a/bin:$PATH  # local builds
     export PATH=$HOME/builds/ncl-6.6.2/bin:$PATH
@@ -223,11 +235,12 @@ case "${HOSTNAME%%.*}" in
     export PATH=/Applications/Skim.app/Contents/SharedSupport:$PATH
     export PATH=/Applications/Calibre.app/Contents/MacOS:$PATH
     export NCARG_ROOT=$HOME/builds/ncl-6.6.2  # or macports: /opt/local/lib/libgcc
-    alias ncl='DYLD_LIBRARY_PATH=/usr/local/lib/gcc/7/ ncl'  # brew libraries
-    alias c++='/usr/local/bin/c++-11'  # point to verion (see above)
-    alias cpp='/usr/local/bin/cpp-11'  # point to verion (see above)
-    alias gcc='/usr/local/bin/gcc-11'  # point to verion (see above)
-    alias gfortran='/usr/local/bin/gfortran-11'  # alias already present but why not
+    alias ncl="DYLD_LIBRARY_PATH=$_brew/lib/gcc/7/ ncl"  # brew libraries
+    alias c++="$_brew/bin/c++-11"  # point to verion (see above)
+    alias cpp="$_brew/bin/cpp-11"  # point to verion (see above)
+    alias gcc="$_brew/bin/gcc-11"  # point to verion (see above)
+    alias gfortran="$_brew/bin/gfortran-11"  # alias already present but why not
+    alias locate=/usr/bin/locate  # coreutils version fails
     export LM_LICENSE_FILE=/opt/pgi/license.dat-COMMUNITY-18.10
     export PKG_CONFIG_PATH=/opt/local/bin/pkg-config
     export HDF5_USE_FILE_LOCKING=FALSE  # required for cdo (see above)
@@ -345,9 +358,11 @@ echo 'done'
 # For less/man/etc. colors see: https://unix.stackexchange.com/a/329092/112647
 _setup_message 'Utility setup'
 [ -r "$HOME/.dircolors.ansi" ] && eval "$(dircolors ~/.dircolors.ansi)"
-alias cd='cd -P'                    # don't want this on my mac temporarily
+alias lss='ls --color=always -AF && ls --color=always -AFd $(pwd)'
+alias lll='ls --color=always -AFhl | tail -n +2 && ls --color=always -AFhld $(pwd)'
 alias ls='ls --color=always -AF'    # ls with dirs differentiate from files
 alias ll='ls --color=always -AFhl'  # ls with details and file sizes
+alias cd='cd -P'                    # do not want this on mac
 alias dirs='dirs -p | tac | xargs'  # show dir stack matching prompt order
 alias curl='curl -O'                # always download associated file
 alias ctags='ctags -o -'            # print tags to stdout by default
@@ -365,7 +380,6 @@ if hash tput 2>/dev/null; then
   export LESS_TERMCAP_me=$'\e[0m'         # reset bold/blink
   export LESS_TERMCAP_se=$'\e[0m'         # reset reverse video
   export LESS_TERMCAP_ue=$'\e[0m'         # reset underline
-  export GROFF_NO_SGR=1                   # for konsole and gnome-terminal
 fi
 
 # List various options. The -X show bindings bound to shell commands (i.e. not builtin
@@ -443,9 +457,9 @@ _paths() {
 # See: https://superuser.com/a/352387/506762
 # NOTE: This relies on workflow where ~/scratch folders are symlinks pointing
 # to data storage hard disks. Otherwise need to hardcode server-specific folders.
-alias du='du -h'
-alias d0='du -h -d 1'  # single directory, see also r0 a0
-alias df='df -h'
+alias df='df -h'  # current disk usage
+alias du='du -h'  # current folder and subfolders
+alias d0='du -h -d 1'  # current folder only (see also 'r0' 'a0')
 sl() { find "$@" -maxdepth 1 -exec command du -hs {} \; 2>/dev/null | sort -sh; }
 sf() { sl "$@" -type f; }
 sd() { sl "$@" -type d; }
@@ -885,17 +899,11 @@ merge() {
 # Directory differences time differences
 # Here 'ds' is git status-style difference and 'dd' is custom directory difference
 # that compares modification times if both present or shows which files are missing.
-ds() {  # git status-style directory differences
-  [ $# -ne 2 ] && echo "Usage: ds DIR1 DIR2" && return 1
-  echo "Directory: $1"
-  echo "Directory: $2"
-  command diff -rq -x '.vimsession' "$1" "$2"
-}
-dd() {
-  [ $# -ne 2 ] && echo "Usage: dt DIR1 DIR2" && return 1
-  local dir dir1 dir2 cat1 cat2 cat3 cat4 cat5 file files flags
+_diff() {
+  [ $# -ne 3 ] && echo "Usage: dd[|1|2] DIR1 DIR2" && return 1
+  local arg dir dir1 dir2 cat1 cat2 cat3 cat4 cat5 file files flags
   flags=($(ignores 1))
-  dir1=${1%/} dir2=${2%/}
+  arg=${1--1} dir1=${2%/} dir2=${3%/}
   for dir in "$dir1" "$dir2"; do
     echo "Directory: $dir"
     ! [ -d "$dir" ] && echo "Error: $dir is not an existing directory." && return 1
@@ -905,23 +913,31 @@ dd() {
     file=${file/$dir1\//}
     file=${file/$dir2\//}
     if ! [ -e "$dir1/$file" ]; then
-      cat2+="File $dir2/$file is not in $dir1."$'\n'
+      [[ "$arg" =~ 0|1 ]] && cat1+="File '$dir1/$file' is missing."$'\n'
     elif ! [ -e "$dir2/$file" ]; then
-      cat1+="File $dir1/$file is not in $dir2."$'\n'
-    else
-      if [ "$dir1/$file" -nt "$dir2/$file" ]; then
-        cat3+="File $dir1/$file is newer."$'\n'
-      elif [ "$dir1/$file" -ot "$dir2/$file" ]; then
-        cat4+="File $dir2/$file is newer."$'\n'
-      else
-        cat5+="Files $dir1/$file in $dir2/$file have same age."$'\n'
-      fi
+      [[ "$arg" =~ 0|2 ]] && cat2+="File '$dir2/$file' is missing."$'\n'
+    elif [ "$dir1/$file" -nt "$dir2/$file" ]; then
+      [[ "$arg" =~ 0|1 ]] && cat3+="File '$dir1/$file' is newer."$'\n'
+    elif [ "$dir1/$file" -ot "$dir2/$file" ]; then
+      [[ "$arg" =~ 0|2 ]] && cat4+="File '$dir2/$file' is newer."$'\n'
+    else  # print identical files
+      [[ "$arg" =~ 3 ]] && cat5+="File '$dir1/$file' identical to '$dir2/$file'."$'\n'
     fi
   done < <(echo "$files" | sort)
   for cat in "$cat1" "$cat2" "$cat3" "$cat4" "$cat5"; do
     printf "%s" "$cat"
   done
 }
+ds() {  # git status-style directory differences
+  [ $# -ne 2 ] && echo "Usage: ds DIR1 DIR2" && return 1
+  printf "%s" "Directory: $1\nDirectory: $2\n"
+  command diff -rq -x '.vimsession' "$1" "$2"
+}
+dd() { _diff '' "$@"; }
+dd0() { _diff 0 "$@"; }
+dd1() { _diff 1 "$@"; }
+dd2() { _diff 2 "$@"; }
+dd3() { _diff 3 "$@"; }
 
 #-----------------------------------------------------------------------------
 # Remote session utilities {{{1
@@ -966,7 +982,7 @@ _address_port() {
   [ -z "$1" ] && host=${HOSTNAME%%.*} || host="$1"
   [ $# -gt 1 ] && echo 'Error: Too many input arguments.' && return 1
   case $host in
-    vortex*|velouria*|maelstrom*|uriah*)
+    cyclone*|vortex*|velouria*|UEA*)
       address=localhost
       port=2000
       ;;
@@ -1498,6 +1514,12 @@ graphicspath() {
 # Extract compressed files
 # NOTE: Shell actually passes *already expanded* glob pattern when you call it as
 # argument to a function; so, need to cat all input arguments with @ into list
+compress() {
+  for file in "$@"; do  # see: https://askubuntu.com/a/243753/712604
+    [[ "$file" =~ .pdf$ ]] || { echo "Error: Skipping non-pdf $file..."; continue; }
+    ps2pdf "$file" "${file%.pdf}-compressed.pdf"
+  done
+}
 extract() {
   for name in "$@"; do
     if [ -f "$name" ]; then
@@ -1789,7 +1811,7 @@ pdf2png() {
       && echo "Warning: Skipping ${file##*/} (must be .pdf)" && continue
     echo "Converting ${file##*/}..."
     convert -flatten \
-      -units PixelsPerInch -density 1200 -background white "$file" "${file%.pdf}.png"
+      -units PixelsPerInch -density 1000 -background white "$file" "${file%.pdf}.png"
   done
 }
 svg2png() {
@@ -1810,10 +1832,10 @@ echo 'done'
 # FZF fuzzy file completion tool {{{1
 #-----------------------------------------------------------------------------
 # Configure bindings and flags {{{2
-# NOTE: Only apply universal 'ignore' file to default command used by vim fzf file
-# searching utility. Exclude common external packages for e.g. :Files.
 # NOTE: General idea is <F1> and <F2> i.e. <Ctrl-,> and <Ctrl-.> should be tab-like
 # for command mode cycling. See top of .vimrc for details.
+# NOTE: Here only apply universal 'ignore' file to default command used by vim fzf file
+# searching utility. Exclude common external packages for e.g. :Files.
 # NOTE: Install with 'git clone https://github.com/lukelbd/fzf.git .fzf && pushd .fzf
 # && git switch config-edits'. Includes minor vim plugin fixes.
 # NOTE: Install with 'git clone https://github.com/lukelbd/fzf-marks.git .fzf-marks
@@ -2141,7 +2163,7 @@ _title_cwd() {
   local _ sub dir title
   title=$(_title_get)
   $_macos && [ -n "$title" ] || return 1
-  for sub in '' research shared school software; do
+  for sub in '' research shared software projects icloud; do
     [ -d "$HOME/$sub" ] || continue
     while read -r -d '' _ dir; do  # 'seconds.fraction' 'path'
       cd "$dir" && break

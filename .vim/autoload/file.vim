@@ -383,8 +383,9 @@ endfunction
 " NOTE: Here :Gedit returns to head after viewing a blob. Can also use e.g. :Mru
 " to return but this is faster. See https://github.com/tpope/vim-fugitive/issues/543
 " NOTE: Here file#rename adapated from Rename.vim. Avoids bug where cancelling the save
-" in the confirmation prompt still triggers BufWritePost and b:tabline_filechanged, and
-" prevents integration bug that triggers undefined b:gitgutter_was_enabled errors.
+" in the confirmation prompt still triggers BufWritePost and b:tabline_filechanged,
+" prevents integration bug that triggers undefined b:gitgutter_was_enabled errors, and
+" fixes bug where 'overwrite existing file' prompt triggered after renaming.
 function! file#update() abort
   let tabline_changed = exists('b:tabline_filechanged') ? b:tabline_filechanged : 0
   let statusline_changed = exists('b:statusline_filechanged') ? b:statusline_filechanged : 0
@@ -409,22 +410,24 @@ function! file#reload() abort
     redraw | echohl ErrorMsg | echom msg | echohl None
   endif
 endfunction
-function! file#rename(name, bang)
+function! file#rename(path, bang)
   let snr = utils#get_snr('vim-eunuch/plugin/eunuch.vim')
   if empty(snr) | return | endif
   let b:gitgutter_was_enabled = get(b:, 'gitgutter_was_enabled', 0)
-  let init = expand('%:p')
-  let dest = fnamemodify(init, ':h') . '/' . a:name
   let v:errmsg = ''  " reset message
+  let path0 = expand('%:p')  " initial path
+  let path1 = a:path =~# '/' ? a:path : expand('%:p:h') . '/' . a:path
   try
-    exe 'GMove' . a:bang . ' ' . dest
+    let cmd = a:path =~# '/' ? 'GMove' : 'GRename'
+    exe cmd . a:bang . ' ' . a:path
   catch /.*fugitive.*/
-    call call(snr . 'Move', [!empty(a:bang), dest])
+    call call(snr . 'Move', [!empty(a:bang), path1])
     if v:errmsg !~# '^$\|^E329\|^E108' | throw v:errmsg | endif
   endtry
-  let path = expand('%:p')  " resulting location
-  if path !=# init && filewritable(path) && filewritable(init)
-    silent exe 'bwipe! ' . init
-    if !empty(delete(init)) | throw 'Could not delete ' . init | endif
+  update!  " renamed file may not be associated with buffer so 'overwrite' (see above)
+  let path1 = expand('%:p')
+  if path0 !=# path1 && filewritable(path0) && filewritable(path1)
+    exe 'bwipe! ' . path0
+    if !empty(delete(path0)) | throw 'Could not delete ' . path0 | endif
   endif
 endfunction

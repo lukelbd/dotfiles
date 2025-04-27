@@ -257,66 +257,67 @@ function! switch#reveal(...) abort
     exe 'augroup reveal_' . bufnr() | exe 'au!'
     exe 'au BufEnter <buffer> let &g:foldopen = b:reveal_folds'
     exe 'au BufLeave <buffer> let &g:foldopen = b:reveal_cache[0]'
-    exe 'au CursorHold <buffer> call s:reveal_restore() | au! reveal_' . bufnr()
     exe 'augroup END'
   elseif !toggle  " remove augroup
-    exe 'silent! doautocmd reveal_' . bufnr() . ' CursorHold'
+    call s:reveal_restore() | silent! exe 'au! reveal_' . bufnr()
     unlet! b:reveal_cache
   endif
   call s:echo_state('Reveal mode', toggle, suppress)
 endfunction
 
 " Toggle folds with gitgutter hunks
-" NOTE: Auto disable whenever set nohlsearch is restore
+" NOTE: Automatically disable whenever set nohlsearch is restore
 function! s:get_changes() abort
-  let lnums = []
-  for [line1, line2, _] in fold#fold_source()
+  let lines = []
+  for [line1, line2, _] in fold#get_folds(-2)
     let flags = git#_get_hunks(line1, line2, 1)
     let flags .= edit#_get_errors(line1, line2)
-    if !empty(flags) | call add(lnums, line1) | endif
-  endfor | return lnums
+    if !empty(flags) | call add(lines, line1) | endif
+  endfor | return lines
 endfunction
 function! switch#changes(...) abort
   let winview = winsaveview()
-  let lnums = s:get_changes()
-  let state = empty(filter(copy(lnums), 'foldclosed(v:val) > 0'))
+  let lines = s:get_changes()
+  let state = empty(filter(copy(lines), 'foldclosed(v:val) > 0'))
   let toggle = a:0 > 0 ? a:1 : 1 - state
   let suppress = a:0 > 1 ? a:2 : 0
   if toggle  " :global previous search
     call fold#update_folds(0, 2)
-    for lnum in lnums | exe lnum . 'foldopen' | endfor
+    for lnum in lines | exe lnum . 'foldopen' | endfor
     call winrestview(winview) | exe 'normal! zzze'
   else  " keep hlsearch enabled
     call winrestview(winview)
     call fold#update_folds(0, 1)
   endif
-  call s:echo_state(len(lnums) . ' folds', toggle, suppress)
+  call s:echo_state(len(lines) . ' folds', toggle, suppress)
 endfunction
 
 " Toggle folds with search matches
-" NOTE: Auto disable whenever set nohlsearch is restore
+" NOTE: Automatically disable whenever set nohlsearch is restore
+" WARNING: Vim bug seems to cause exe line1 | call search() to randomly fail when
+" search starts on closed fold and match is on first line. Use cursor() instead
 function! s:get_matches() abort
-  let lnums = []
-  for [line1, line2, _] in fold#fold_source()
-    exe line1 | if search(@/, 'nW', line2) | call add(lnums, line1) | endif
-  endfor | return lnums
+  let folds = []
+  for [line1, line2, _] in fold#get_folds(-2)
+    call cursor(line1, 1) | if search(@/, 'cnW', line2) | call add(folds, line1) | endif
+  endfor | return folds
 endfunction
 function! switch#matches(...) abort
   let winview = winsaveview()
-  let lnums = s:get_matches()
-  let state = empty(filter(copy(lnums), 'foldclosed(v:val) > 0'))
+  let folds = s:get_matches()
+  let state = empty(filter(copy(folds), 'foldclosed(v:val) > 0'))
   let toggle = a:0 > 0 ? a:1 : 1 - state
   let suppress = a:0 > 1 ? a:2 : 0
   if toggle  " :global previous search
     call fold#update_folds(0, 2)
-    for lnum in lnums | exe lnum . 'foldopen' | endfor
+    for lnum in sort(folds) | exe lnum . 'foldopen' | endfor
     call winrestview(winview) | exe 'normal! zzze'
   else  " keep hlsearch enabled
     call winrestview(winview)
     call fold#update_folds(0, 1)
   endif
   call feedkeys("\<Cmd>set hlsearch\<CR>", 'n')
-  call s:echo_state(len(lnums) . ' folds', toggle, suppress)
+  call s:echo_state(len(folds) . ' folds', toggle, suppress)
 endfunction
 
 " Toggle spell check on and off

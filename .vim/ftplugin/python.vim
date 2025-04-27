@@ -19,15 +19,16 @@ let g:python_highlight_builtin_funcs_kwarg = 0  " avoid highlighting within kwar
 " Add mappings (see also vim.vim)
 noremap <expr> <buffer> <Plug>ExecuteMotion python#run_motion_expr()
 noremap <buffer> <Plug>ExecuteFile0 <Cmd>call python#run_general()<CR>
-noremap <buffer> <Plug>ExecuteFile1 <Cmd>call python#init_jupyter()<CR>
+noremap <buffer> <Plug>ExecuteFile1 <Cmd>call python#jupyter_setup()<CR>
 noremap <buffer> <Plug>ExecuteFile2 <Cmd>JupyterDisconnect<CR>
 
 " Insert docstring or translate dicts (see autoload/python.vim)
-noremap <buffer> g\| <Cmd>call python#insert_docstring()<CR>
-noremap <buffer> g(( <Cmd>call feedkeys('g(ib', 'm')<CR><Cmd>call feedkeys('csfc', 'tm')<CR>
-noremap <buffer> g)) <Cmd>call feedkeys('g)ic', 'm')<CR><Cmd>call feedkeys("cscfdict\r", 'tm')<CR>
-noremap <expr> <buffer> g( python#dict_to_kw_expr(1)
-noremap <expr> <buffer> g) python#dict_to_kw_expr(0)
+silent! unmap <buffer> g\|
+noremap <buffer> gD <Cmd>call python#insert_docstring()<CR>
+noremap <buffer> g(( <Cmd>call python#kwargs_to_dict(1)<CR>
+noremap <buffer> g)) <Cmd>call python#kwargs_to_dict(0)<CR>
+noremap <expr> <buffer> g( python#kwargs_to_dict_expr(1)
+noremap <expr> <buffer> g) python#kwargs_to_dict_expr(0)
 
 " Create string delimiters (include [frub] prefixes)
 " BracelessEnable +indent  " bug causes screen view to jump

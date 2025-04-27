@@ -1,7 +1,7 @@
 "------------------------------------------------------------------------------"
 " Improve shell script syntax {{{1
 "------------------------------------------------------------------------------"
-" Figure out shell type {{{2
+" Get shell type {{{2
 " TODO: Try heredoc highlighting from: .vim/after/syntax/perl/heredoc-perl.vim
 " and awk highlighting from: https://stackoverflow.com/a/13925238/4970632
 if !exists('b:is_kornshell') && !exists('b:is_bash')
@@ -23,7 +23,7 @@ if !exists('b:is_kornshell') && !exists('b:is_bash')
   endif
 endif
 
-" PBS supercomputer system {{{2
+" PBS supercomputer {{{2
 " NOTE: This was adapated from sbatch block below
 " See: https://unix.stackexchange.com/q/452461/112647
 syn region shPBSComment start='^#\(PBS\)' end="\n" oneline contains=shPBSKeyword,shPBSOption,shPBSValue
@@ -60,7 +60,7 @@ hi def link shPBSInterval Special
 hi def link shPBSDist Special
 hi def link shPBSEmail Special
 
-" Slurm and sbatch supercomputer system {{{2
+" SBATCH and SLURM supercomputer {{{2
 " NOTE: shSBATCHString are suspect.Shouldcould be narrowed down to more
 " specific regular expressions. Typical example is --mail-type or --begin.
 " See: https://github.com/SchedMD/slurm/blob/master/contribs/slurm_completion_help/slurm.vim
