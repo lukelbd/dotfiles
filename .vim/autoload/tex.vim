@@ -23,15 +23,15 @@ function! tex#fold_text(lnum, ...) abort
   let label = fold#fold_label(a:lnum, 0)
   let regex = '^\([%\t ]*\)\(.*\)$'
   let [_, indent, label; rest] = matchlist(label, regex)
-  let isframe = label =~# '^\\begingroup\|^\\begins*{\s*frame\*\?\s*}'
-  let isfloat = label =~# '^\\begin\s*{\s*\%(figure\|table\|center\)\*\?\s*}'
+  let isframe = label =~# '^\\\?begingroup\|^\\\?begin\s*{\s*frame\*\?\s*}'
+  let isfloat = label =~# '^\\\?begin\s*{\s*\%(figure\|table\|center\)\*\?\s*}'
   let iscomment = indent =~# '^\s*%'  " also support comments
   let [line1, line2] = [a:lnum + 1, a:lnum + nline]
   if isframe || isfloat
     let head = iscomment ? '^\s*%\s*' : '^\s*'
-    let tail = isframe ? '\\frametitle' : '\\label'
+    let tail = isframe ? 'frametitle' : 'label'
     for lnum in range(line1, min([line2, a:0 ? a:1 : line2]))
-      let bool = getline(lnum) =~# head . tail
+      let bool = getline(lnum) =~# head . '\\\?' . tail
       if bool | let label = fold#fold_label(lnum, 0) | break | endif
     endfor
   endif
