@@ -104,15 +104,15 @@ function! s:cite_sink(items) abort
   endif
 endfunction
 function! s:cite_source() abort
-  let gsed = has('macunix') ? '/usr/local/bin/gsed' : '/usr/bin/sed'
+  let sed = has('macunix') && executable('gsed') ? 'gsed' : 'sed'
   if !executable('bibtex-ls')  " see https://github.com/msprev/fzf-bibtex
     let msg = 'Error: Command bibtex-ls not found (required for citations)'
     redraw | echohl ErrorMsg | echom msg | echohl None | return []
-  elseif !executable(gsed)
+  elseif !executable(sed)
     let msg = 'Error: GNU sed not available (required for citations)'
     redraw | echohl ErrorMsg | echom msg | echohl None | return []
   endif
-  let cmd = 'grep -o ''^[^%]*'' ' . shellescape(@%) . ' | ' . gsed . ' -n '
+  let cmd = 'grep -o ''^[^%]*'' ' . shellescape(@%) . ' | ' . sed . ' -n '
     \ . '''s@^\s*\\\(bibliography\|nobibliography\|addbibresource\){\(.*\)}@\2@p'''
   let [bibs, warns] = [[], []]
   let paths = systemlist(cmd)
