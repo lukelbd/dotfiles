@@ -97,7 +97,7 @@ function! file#fzf_paths(bang, global, level, cmd, ...) abort
   let paths = call('parse#get_paths', [2, a:global, 1 + a:level] + reverse(input))
   let paths = empty(paths) ? input : reverse(paths)  " important paths at top instead of bottom
   let args = a:cmd ==# 'Files' ? [a:bang, paths] : [a:bang, a:cmd, paths]
-  return call(a:cmd ==# 'Files' ? 'file#fzf_files' : 'file#fzf_open', args)
+  return call(a:cmd ==# 'Files' ? 'file#fzf_files' : 'file#fzf_tab', args)
 endfunction
 function! file#fzf_input(cmd, base, ...) abort
   let base = file#fmt_base(a:base, 0)
@@ -203,7 +203,7 @@ function! file#fzf_files(bang, ...) abort
   let prompt = string('Files> ' . base)
   let options = {
     \ 'dir': fnamemodify(bases[0], ':p'),
-    \ 'sink*': function('file#fzf_open', [a:bang, 'Drop', bases[0]]),
+    \ 'sink*': function('file#fzf_tab', [a:bang, 'Drop', bases[0]]),
     \ 'source': source,
     \ 'options': opts . ' --tiebreak chunk,index --prompt=' . prompt,
   \ }
@@ -214,7 +214,7 @@ endfunction
 " NOTE: Use feedkeys() if only one selected or else new file template loading fails
 " NOTE: Since fzf executes asynchronously cannot do loop recursion inside the driver
 " function. See https://github.com/junegunn/fzf/issues/1577#issuecomment-492107554
-function! file#open_sink(cmd, ...) abort
+function! file#tab_sink(cmd, ...) abort
   for path in a:000
     if empty(path) | continue | endif
     if path =~# '[*?[\]]' | continue | endif  " unexpanded glob
@@ -225,7 +225,7 @@ function! file#open_sink(cmd, ...) abort
     exe a:cmd . ' ' . fnameescape(path)
   endfor
 endfunction
-function! file#fzf_open(bang, cmd, ...) abort
+function! file#fzf_tab(bang, cmd, ...) abort
   if a:0 == 1  " user invocation
     let [base, items] = ['', a:1]
   else  " fzf invocation (ignore binding)
@@ -263,16 +263,16 @@ function! file#fzf_open(bang, cmd, ...) abort
     let prompt = string(a:cmd . '> ' . base2)
     let options = {
       \ 'dir': base1,
-      \ 'sink*': function('file#fzf_open', [a:bang, a:cmd, base1]),
-      \ 'source': file#_glob_paths(base, 1, '') + [s:new_file],
+      \ 'sink*': function('file#fzf_tab', [a:bang, a:cmd, base1]),
+      \ 'source': add(file#_glob_paths(l:base, 1, ''), s:new_file),
       \ 'options': opts . ' --tiebreak chunk,index --prompt=' . prompt,
     \ }
     let paths = []  " only continue in recursion
-    call fzf#run(fzf#wrap('open', options, a:bang))
+    call fzf#run(fzf#wrap('tab', options, a:bang))
   endif
   if !empty(paths)
-    let arg = join(map([a:cmd] + paths, 'string(v:val)'), ', ')
-    call feedkeys("\<Cmd>call file#open_sink(" . arg . ")\<CR>", 'n')
+    let arg = join(map(insert(paths, a:cmd), 'string(v:val)'), ', ')
+    call feedkeys("\<Cmd>call file#tab_sink(" . arg . ")\<CR>", 'n')
   endif
 endfunction
 

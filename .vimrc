@@ -357,7 +357,7 @@ command! -bang -nargs=* -complete=file Vsplit
   \ call file#fzf_paths(<bang>0, 0, 0, 'botright vsplit', <f-args>)
 command! -bang -nargs=* -complete=file Split
   \ call file#fzf_paths(<bang>0, 0, 0, 'botright split', <f-args>)
-command! -bang -nargs=* -complete=file Open
+command! -bang -nargs=* -complete=file Tab
   \ call file#fzf_paths(<bang>0, 0, 0, 'Drop', <f-args>)
 nnoremap <C-e> <Cmd>call file#fzf_paths(0, 0, 0, 'Split')<CR>
 nnoremap <C-r> <Cmd>call file#fzf_paths(0, 0, 0, 'Vsplit')<CR>
@@ -371,8 +371,8 @@ nnoremap <C-g> <Cmd>exe fugitive#Command(0, 0, 0, 0, '', '') =~# '^echoerr' ? 'G
 " Open file with optional user input
 " NOTE: The <Leader> maps open up views of the current file directory
 for s:key in ['q', 'w', 'e', 'r'] | silent! exe 'unmap <Tab>' . s:key | endfor
-nnoremap <Tab>o <Cmd>call file#fzf_input('Open', parse#get_root())<CR>
-nnoremap <Tab>i <Cmd>call file#fzf_input('Open', expand('%:p:h'))<CR>
+nnoremap <Tab>o <Cmd>call file#fzf_input('Tab', parse#get_root())<CR>
+nnoremap <Tab>i <Cmd>call file#fzf_input('Tab', expand('%:p:h'))<CR>
 nnoremap <Tab>p <Cmd>call file#fzf_input('Files', parse#get_root())<CR>
 nnoremap <Tab>y <Cmd>call file#fzf_input('Files', expand('%:p:h'))<CR>
 nnoremap <Tab>e <Cmd>call file#fzf_input('Split', expand('%:p:h'))<CR>
@@ -1077,10 +1077,10 @@ vnoremap X "_X
 silent! au! expandtab_setup
 augroup tab_setup
   au!
-  au BufWinEnter * call switch#tabs(index(s:tab_filetypes, &l:filetype) >= 0, 1)
+  au BufWinEnter * call switch#expand(index(s:tab_filetypes, &l:filetype) >= 0, 1)
 augroup END
-command! -bar -nargs=? TabToggle call switch#tabs(<args>)
-nnoremap <Leader><Tab> <Cmd>call switch#tabs()<CR>
+command! -bar -nargs=? ExpandToggle call switch#expand(<args>)
+nnoremap <Leader><Tab> <Cmd>call switch#expand()<CR>
 nnoremap <expr> > '<Esc>' . edit#indent_lines_expr(0, v:count1)
 nnoremap <expr> < '<Esc>' . edit#indent_lines_expr(1, v:count1)
 vnoremap <expr> > edit#indent_lines_expr(0, v:count1)
