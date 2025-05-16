@@ -414,8 +414,9 @@ function! window#setup_csv() abort
   let winview = winsaveview() | keepjumps goto
   let delimiter = expand('%:e') ==# 'csv' ? ',' : ' '  " field delimiter
   let policy = delimiter ==# ',' ? 'quoted' : 'whitespace'  " see rainbow_csv/autoload
-  let char = matchstr(getline(1), '^[#%"]')
-  let char = empty(char) ? '#' : char
+  let char1 = matchstr(getline(1), '^[#%"]')
+  let char2 = matchstr(getline(2), '^[#%"]')
+  let char = char1 ==# char2 && !empty(char1) ? char1 : '#'
   let nr = search('^\s*[^' . char . ']', 'nW') - 1
   let cmd = nr > 1 && !foldlevel(1) ? 1 . ',' . nr . 'fold' : ''
   let head0 = search('^\s*\a', 'W')  " initial header check
