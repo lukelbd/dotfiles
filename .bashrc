@@ -2108,21 +2108,20 @@ if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda|mamb
   elif [ -f "$_conda/etc/profile.d/conda.sh" ]; then
     source "$_conda/etc/profile.d/conda.sh"
   else
-    export PATH="$_conda/bin:$PATH"
+    export PATH=$_conda/bin:$PATH
   fi
-  export MAMBA_EXE="$HOME/mambaforge/bin/mamba"
-  export MAMBA_ROOT_PREFIX="$HOME/mambaforge"
-  __mamba_setup=$("$MAMBA_EXE" shell hook --shell bash --root-prefix "$MAMBA_ROOT_PREFIX" 2> /dev/null)
+  export MAMBA_EXE=$HOME/mambaforge/bin/mamba
+  export MAMBA_ROOT_PREFIX=$HOME/mambaforge
+  __mamba_setup=$("$MAMBA_EXE" shell hook --shell bash --root-prefix "$MAMBA_ROOT_PREFIX"  2> /dev/null)
   if [ $? -eq 0 ]; then
     eval "$__mamba_setup"
   else
-    alias mamba="$MAMBA_EXE"  # fallback on help from mamba activate
+    alias mamba=$MAMBA_EXE  # fallback on help from mamba activate
   fi
   if ! [[ "$PATH" =~ condabin ]]; then
-    export PATH="$_conda/condabin:$PATH"
+    export PATH=$_conda/condabin:$PATH
   fi
-  mamba activate base  # calls '__conda_activate activate' which runs the
-  echo 'done'  # commands returned by '__conda_exe shell.posix activate'
+  "$MAMBA_EXE" activate base  # calls '__conda_activate activate' which runs the
 fi  # }}}
 
 # Enable shell integration {{{2
@@ -2253,16 +2252,3 @@ $_macos && [ -z "$OLDPWD" ] && [ "$PWD" == "$HOME" ] \
   && command curl https://icanhazdadjoke.com/ 2>/dev/null && echo
 alias forecast="command curl wttr.in"
 _bashrc_loaded=true
-
-# >>> mamba initialize >>>
-# !! Contents within this block are managed by 'mamba shell init' !!
-export MAMBA_EXE='/home/ldavis/mambaforge/bin/mamba';
-export MAMBA_ROOT_PREFIX='/home/ldavis/mambaforge';
-__mamba_setup="$("$MAMBA_EXE" shell hook --shell bash --root-prefix "$MAMBA_ROOT_PREFIX" 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__mamba_setup"
-else
-    alias mamba="$MAMBA_EXE"  # Fallback on help from mamba activate
-fi
-unset __mamba_setup
-# <<< mamba initialize <<<
