@@ -880,7 +880,22 @@ nnoremap gn mzgn
 nnoremap gN mzgN
 nnoremap <C-v> <Cmd>WrapToggle 0<CR>mz<C-v>
 vnoremap <C-v> <Esc><Cmd>WrapToggle 0<CR>mz<C-v>
+
+" Repair mouse clicks and shift mouse clicks
+" NOTE: Using :echom getchar() then <S-LeftMouse> yields <80><fc>^B<80><fd>L where
+" <80><fc>^B translates to shift modifier (80 stands for special non-ascii key code,
+" hex 'fc' is decimal '253' which stands for modifier, and '^B' has ASCII code 2 i.e.
+" the second modifier SHIFT, where '^C' is CTRL) and <80><fd>L translates to scroll
+" wheel press (hex 'fd' is decimal '254' which stands for special key, and 'L' has
+" ASCII code 76 which stands for scroll wheel pseudo-button up).
+" See: https://vi.stackexchange.com/a/35207/8084
+" See: https://github.com/vim/vim/src/keymap.h
+" See: https://www.ascii-code.com
 vnoremap <LeftMouse> <LeftMouse>my<Cmd>exe 'keepjumps normal! `z' . visualmode() . '`y' \| delmark y<CR>
+nmap <S-LeftMouse> v<LeftMouse>
+vmap <S-LeftMouse> <LeftMouse>
+map <S-ScrollWheelUp> <S-LeftMouse>
+map <S-ScrollWheelDown> <S-LeftMouse>
 
 " Navigate matches and regions without changing jumplist
 " NOTE: Sentence jumping mapped with textobj#sentence#move_[np] for most filetypes.
