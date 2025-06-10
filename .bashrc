@@ -2121,7 +2121,8 @@ if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda|mamb
   if ! [[ "$PATH" =~ condabin ]]; then
     export PATH=$_conda/condabin:$PATH
   fi
-  "$MAMBA_EXE" activate base  # calls '__conda_activate activate' which runs the
+  conda activate base  # calls '__conda_activate activate' which runs the
+  echo 'done'
 fi  # }}}
 
 # Enable shell integration {{{2
