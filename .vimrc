@@ -302,30 +302,28 @@ endfor
 "-----------------------------------------------------------------------------"
 " Files and buffers {{{1
 "-----------------------------------------------------------------------------"
-" Handle buffers and windows {{{2
-" NOTE: Here :Drop is similar to :tab drop but handles popup windows
+" Handle buffers and windows
+" NOTE: Here :Opens is similar to :tab drop but handles popup windows
 " NOTE: To avoid accidentally closing vim require :qa instead of mapping
-command! -bar -nargs=? Autosave call switch#autosave(<args>)
-command! -nargs=* -complete=file Drop call file#drop_file(<f-args>)
+command! -nargs=* -complete=file Opens call file#open_file(<f-args>)
+cnoreabbrev <expr> Open getcmdtype() ==# ':' && getcmdline() =~# '^\s*Open\>' ? 'Opens' : 'Open'
+cnoreabbrev <expr> File getcmdtype() ==# ':' && getcmdline() =~# '^\s*File\>' ? 'Files' : 'File'
 nnoremap q <Cmd>call window#close_panes()<CR>
+vnoremap <CR> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
 nnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><Cmd>echo<CR>
 vnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
-vnoremap <CR> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
-nnoremap <C-s> <Cmd>call file#update()<CR>
 nnoremap <C-q> <Cmd>call window#close_tab()<CR>
 nnoremap <C-w> <Cmd>call window#close_panes()<CR><Cmd>call window#close_pane()<CR>
-nnoremap <Leader>W <Cmd>call switch#autosave()<CR>
 
-" Refresh session or re-open previous files
+" Handle files and sessions
 " NOTE: Here :Mru shows tracked files during session, will replace current buffer.
-command! -bang -nargs=? Refresh runtime autoload/vim.vim
-  \ | call vim#config_refresh(<bang>0, <q-args>)
-command! -nargs=? Scripts echo 'Scripts matching ' . string(<q-args>) . ':'
-  \ | echo join(utils#get_scripts(<q-args>), "\n")
+command! -bar -nargs=? Autosave call switch#autosave(<args>)
+command! -bang -nargs=? Refresh runtime autoload/vim.vim | call vim#config_refresh(<bang>0, <q-args>)
+nnoremap <Leader>W <Cmd>call switch#autosave()<CR>
 nnoremap <leader>E <Cmd>call file#reload()<CR>
 nnoremap <Leader>r <Cmd>redraw! \| echo ''<CR>
 nnoremap <Leader>R <Cmd>Refresh<CR>
-let g:MRU_Open_File_Relative = 1
+nnoremap <C-s> <Cmd>call file#update()<CR>
 
 " Buffer selection and management
 " NOTE: Here :WipeBufs replaces :Wipeout plugin since has more sources
@@ -337,18 +335,20 @@ nnoremap <Leader>q <Cmd>ShowBufs<CR>
 nnoremap <Leader>Q <Cmd>WipeBufs<CR>
 nnoremap g{ <Cmd>call file#fzf_history('')<CR>
 nnoremap g} <Cmd>call file#fzf_recent()<CR>
+let g:MRU_Open_File_Relative = 1
 
 " General file related utilities {{{2
 " NOTE: Here toggle between local or global current directory
-command! -bar -nargs=? Local call switch#localdir(<args>)
+command! -nargs=? Scripts echo "Scripts matching '<args>':\n" . join(utils#get_scripts(<q-args>),  "\n")
 command! -nargs=? Paths call file#show_paths(<f-args>)
+command! -bar -nargs=? Local call switch#localdir(<args>)
 nnoremap zp <Cmd>Paths<CR>
 nnoremap zP <Cmd>Local<CR>
 nnoremap gp <Cmd>call file#show_cfile()<CR>
-nnoremap gP <Cmd>call call('file#drop_file', file#get_cfile())<CR>
+nnoremap gP <Cmd>call call('file#open_file', file#get_cfile())<CR>
 
 " Open file in current directory or some input directory
-" NOTE: Anything that is not :Files gets passed to :Drop command
+" NOTE: Anything that is not :Files gets passed to :Open command
 " nnoremap <C-g> <Cmd>Locate<CR>  " uses giant database from Unix 'locate'
 " command! -bang -nargs=* -complete=file Files call file#fzf_files(<bang>0, <f-args>)
 command! -bang -nargs=* -complete=file Files
@@ -358,13 +358,13 @@ command! -bang -nargs=* -complete=file Vsplit
 command! -bang -nargs=* -complete=file Split
   \ call file#fzf_paths(<bang>0, 0, 0, 'botright split', <f-args>)
 command! -bang -nargs=* -complete=file Tab
-  \ call file#fzf_paths(<bang>0, 0, 0, 'Drop', <f-args>)
+  \ call file#fzf_paths(<bang>0, 0, 0, 'Opens', <f-args>)
 nnoremap <C-e> <Cmd>call file#fzf_paths(0, 0, 0, 'Split')<CR>
 nnoremap <C-r> <Cmd>call file#fzf_paths(0, 0, 0, 'Vsplit')<CR>
 nnoremap <C-t> <Cmd>call file#fzf_paths(0, 0, 1, 'Vsplit')<CR>
 nnoremap <C-y> <Cmd>call file#fzf_paths(0, 0, 1, 'Files')<CR>
-nnoremap <F7> <Cmd>call file#fzf_paths(0, 0, 0, 'Drop')<CR>
-nnoremap <C-o> <Cmd>call file#fzf_paths(0, 0, 1, 'Drop')<CR>
+nnoremap <F7> <Cmd>call file#fzf_paths(0, 0, 0, 'Opens')<CR>
+nnoremap <C-o> <Cmd>call file#fzf_paths(0, 0, 1, 'Opens')<CR>
 nnoremap <C-p> <Cmd>call file#fzf_paths(0, 1, 1, 'Files')<CR>
 nnoremap <C-g> <Cmd>exe fugitive#Command(0, 0, 0, 0, '', '') =~# '^echoerr' ? 'Git' : 'GFiles'<CR>
 
@@ -1452,7 +1452,7 @@ let g:MRU_file = '~/.vim_mru_files'  " default (custom was ignored for some reas
 " in window. Figure out setqflist() filename and line using dedicated parsing funcs
 " NOTE: Use fzf#wrap to apply global settings, and never use fzf#run return value to
 " get results (will result in weird hard-to-debug issues due to async calling).
-" NOTE: 'Drop' opens selection in existing window, similar to switchbuf=useopen,usetab.
+" NOTE: 'Open' opens selection in existing window, similar to switchbuf=useopen,usetab.
 " However :Buffers still opens duplicate tabs even with fzf_buffers_jump=1.
 " NOTE: Specify ctags command below and set default 'tags' above accordingly, however
 " in this is only used if gutentags files unavailable (see tag.vim s:get_files)
@@ -1468,8 +1468,8 @@ let g:MRU_file = '~/.vim_mru_files'  " default (custom was ignored for some reas
 " call s:plug('ctrlpvim/ctrlp.vim')  " replaced with fzf
 " call s:plug('roosta/fzf-folds.vim')  " replaced with custom utility
 call s:plug('~/.fzf')  " fzf installation location, will add helptags and runtimepath
-call s:plug('junegunn/fzf.vim')  " pin to version supporting :Drop
-let g:fzf_action = {'ctrl-m': 'Drop', 'ctrl-e': 'split', 'ctrl-r': 'vsplit', 'ctrl-o': 'edit'}  " have file search and grep open to existing window if possible
+call s:plug('junegunn/fzf.vim')  " pin to version supporting :Opens
+let g:fzf_action = {'ctrl-m': 'Opens', 'ctrl-e': 'split', 'ctrl-r': 'vsplit', 'ctrl-o': 'edit'}  " have file search and grep open to existing window if possible
 let g:fzf_buffers_jump = 1  " jump to existing window if already open
 let g:fzf_history_dir = expand('~/.fzf-hist')  " navigate searches with ctrl-n, ctrl-p
 let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
@@ -1831,7 +1831,7 @@ call s:push(1, 'vim-scrollwrapped')
 call s:push(1, 'vim-toggle')
 let g:toggle_map = '\|'  " adjust toggle mapping (note this is repeatable)
 let g:scrollwrapped_nomap = 1  " instead have advanced window#scroll_infer maps
-let g:scrollwrapped_wrap_filetypes = s:info_filetypes + ['tex', 'text']
+let g:scrollwrapped_wrap_filetypes = s:info_filetypes + ['xml', 'tex', 'text']
 exe 'nnoremap + <C-a>' | exe 'nnoremap - <C-x>'
 exe 'vnoremap + <C-a>' | exe 'vnoremap - <C-x>'
 nnoremap g\| <Cmd>call toggle#toggle(1, 0, 1)<CR>
@@ -2267,7 +2267,7 @@ endif  " }}}
 " Lsp integration commands and mappings
 " See: https://github.com/python-lsp/python-lsp-server/issues/477
 " NOTE: LspDefinition accepts <mods> and stays in buffer for local definitions so g<CR>
-" behavior is close to 'Drop': https://github.com/prabirshrestha/vim-lsp/pull/776
+" behavior is close to 'Opens': https://github.com/prabirshrestha/vim-lsp/pull/776
 " NOTE: Highlighting under keywords required for reference jumping with [d and ]d but
 " monitor for updates: https://github.com/prabirshrestha/vim-lsp/issues/655
 " WARNING: foldexpr=lsp#ui#vim#folding#foldexpr() foldtext=lsp#ui#vim#folding#foldtext()
@@ -2580,7 +2580,7 @@ endif  " }}}
 " whenever entering buffers and make them buffer-local (see git.vim).
 " NOTE: All of the file-opening commands throughout fugitive funnel them through
 " commands like Gedit, Gtabedit, etc. So can prevent duplicate tabs by simply
-" overwriting this with custom tab-jumping :Drop command (see also git.vim).
+" overwriting this with custom tab-jumping :Opens command (see also git.vim).
 if s:has_plug('vim-fugitive')  " {{{
   augroup fugitive_setup
     au!

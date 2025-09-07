@@ -81,7 +81,7 @@ function! s:goto_lines(result) abort
   let item = get(a:result, 0, '')
   let items = split(item, "\t", 0)
   if empty(items) | return | endif  " empty string yields []
-  silent call file#drop_file(str2nr(items[0]))
+  silent call file#open_file(str2nr(items[0]))
   exe items[2] | exe 'normal! ^zvzz'
 endfunction
 function! grep#call_lines(global, level, regex, ...) abort
