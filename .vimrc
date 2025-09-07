@@ -335,8 +335,8 @@ command! -bar -bang -nargs=* History call file#fzf_history(<q-args>, <bang>0)
 command! -bar -bang -nargs=0 Recents call file#fzf_recent(<bang>0)
 nnoremap <Leader>q <Cmd>ShowBufs<CR>
 nnoremap <Leader>Q <Cmd>WipeBufs<CR>
+nnoremap g[ <Cmd>call file#fzf_recent()<CR>
 nnoremap g{ <Cmd>call file#fzf_history('')<CR>
-nnoremap g} <Cmd>call file#fzf_recent()<CR>
 
 " General file related utilities {{{2
 " NOTE: Here toggle between local or global current directory
@@ -490,7 +490,7 @@ nnoremap <F4> <Cmd>call window#next_stack(v:count1)<CR>
 " NOTE: Here :History includes v:oldfiles and open buffers
 for s:key in range(1, 10) | exe 'silent! unmap <Tab>' . s:key | endfor
 for s:key in ['.', ',', '>', '<'] | exe 'silent! xunmap z' . s:key | endfor
-nnoremap g[ <Cmd>exe v:count ? 'call window#move_tab(v:count)' : 'call window#fzf_move()'<CR>
+nnoremap g} <Cmd>exe v:count ? 'call window#move_tab(v:count)' : 'call window#fzf_move()'<CR>
 nnoremap g] <Cmd>exe v:count ? 'call window#goto_tab(v:count)' : 'call window#fzf_goto()'<CR>
 nnoremap g<Space> <Cmd>Windows<CR>
 nnoremap z<Space> <Cmd>Buffers<CR>
@@ -881,7 +881,7 @@ nnoremap gN mzgN
 nnoremap <C-v> <Cmd>WrapToggle 0<CR>mz<C-v>
 vnoremap <C-v> <Esc><Cmd>WrapToggle 0<CR>mz<C-v>
 
-" Repair mouse clicks and shift mouse clicks
+" Repair visual mode mouse clicks and selections
 " NOTE: Using :echom getchar() then <S-LeftMouse> yields <80><fc>^B<80><fd>L where
 " <80><fc>^B translates to shift modifier (80 stands for special non-ascii key code,
 " hex 'fc' is decimal '253' which stands for modifier, and '^B' has ASCII code 2 i.e.
