@@ -42,7 +42,7 @@ function! shell#help_page(...) abort
     let s:help_prev = page
   else
     if type !=# 'stdout'  " see above
-      silent quit! | silent call file#drop_file(bufname(bnr))
+      silent quit! | silent call file#open_file(bufname(bnr))
     endif
     let msg = 'Error: Help info ' . string(name) . ' not found'
     redraw | echohl ErrorMsg | unsilent echom msg | echohl None | return 1

@@ -155,7 +155,7 @@ function! file#fzf_recent(...) abort
   call map(files, {_, val -> RelativePath(val)})
   call map(files, {_, val -> val =~# '^icloud\>' ? '~/' . val : val})
   let options = {
-    \ 'sink': function('file#drop_file'),
+    \ 'sink': function('file#open_file'),
     \ 'source' : files,
     \ 'options': opts . ' --scheme=path --prompt=' . prompt,
   \ }
@@ -283,12 +283,12 @@ endfunction
 function! file#goto_file(...) abort
   try
     set eventignore=BufEnter,BufLeave
-    silent return call('file#drop_file', a:000)
+    silent return call('file#open_file', a:000)
   finally
     set eventignore=
   endtry
 endfunction
-function! file#drop_file(...) abort
+function! file#open_file(...) abort
   let path0 = expand('%:p')
   let opts = get(g:, 'tabline_skip_filetypes', [])
   let filt = 'index(opts, getbufvar(v:val, ''&filetype'')) == -1'

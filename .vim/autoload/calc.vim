@@ -29,7 +29,7 @@ function! calc#show_codi(...) abort
   endif
   if !empty(path)  " open calculator
     let path = fnamemodify(path, ':r') . '.py'
-    call file#drop_file(path)
+    call file#open_file(path)
     call feedkeys("\<Cmd>Codi!!\<CR>", 'n')
   endif
 endfunction

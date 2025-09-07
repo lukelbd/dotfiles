@@ -157,7 +157,7 @@ endfunction
 " NOTE: This fixes :Jumps issue where getbufline() output can be empty (filter assumes
 " this is non-empty) and because default flag --bind start:post:etc caused error.
 " NOTE: This overrides changelist from top-down by filtering out double and empty-line
-" entries or entries with invalid lines, then navigating using using drop_file and
+" entries or entries with invalid lines, then navigating using using open_file and
 " setpos('.', ...) instead of the native g,/g; keys. Compare with jumplist above.
 function! s:jump_sink(arg) abort  " first item is key binding
   return empty(a:arg) ? 1 : s:list_sink(0, a:arg[0])

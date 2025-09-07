@@ -22,7 +22,7 @@ function! mark#goto_mark(...) abort
     let cmd = 'redraw | echohl WarningMsg | echom ' . msg . ' | echohl None'
     call feedkeys("\<Cmd>" . cmd . "\<CR>", 'n')
   else  " note this does not affect jumplist
-    silent call file#drop_file(mrks[0].file)
+    silent call file#open_file(mrks[0].file)
     call setpos('.', mrks[0].pos)
     exe 'normal! ' . (&l:foldopen =~# 'mark\|all' ? 'zv' : '') . 'zzze'
   endif
