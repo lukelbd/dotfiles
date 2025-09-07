@@ -2112,16 +2112,17 @@ if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda|mamb
   fi
   export MAMBA_EXE=$HOME/mambaforge/bin/mamba
   export MAMBA_ROOT_PREFIX=$HOME/mambaforge
-  __mamba_setup=$("$MAMBA_EXE" shell hook --shell bash --root-prefix "$MAMBA_ROOT_PREFIX"  2> /dev/null)
+  __mamba_setup=$("$MAMBA_EXE" shell hook --shell bash --root-prefix "$MAMBA_ROOT_PREFIX" 2> /dev/null)
   if [ $? -eq 0 ]; then
-    eval "$__mamba_setup"
+    eval "$__mamba_setup"  # calls '__conda_activate activate' which runs the
+    mamba activate base  # commands returned by '__conda_exe shell.posix activate'
   else
-    alias mamba=$MAMBA_EXE  # fallback on help from mamba activate
+    alias mamba=$MAMBA_EXE  # backup in case above fails
+    conda activate base  # activate only possible with conda
   fi
   if ! [[ "$PATH" =~ condabin ]]; then
     export PATH=$_conda/condabin:$PATH
   fi
-  conda activate base  # calls '__conda_activate activate' which runs the
   echo 'done'
 fi  # }}}
 
