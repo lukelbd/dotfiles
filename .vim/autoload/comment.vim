@@ -125,13 +125,13 @@ function! s:object_comment(name, ...) abort
   call winrestview(winview)
   return [char, pos1, pos2]
 endfunction
-function! comment#object_comment_i(...) abort
+function! comment#textobj_comment_i(...) abort
   return call('s:object_comment', ['textobj#comment#select_i'] + a:000)
 endfunction
-function! comment#object_comment_a(...) abort
+function! comment#textobj_comment_a(...) abort
   return call('s:object_comment', ['textobj#comment#select_a'] + a:000)
 endfunction
-function! comment#object_comment_big_a(...) abort
+function! comment#textobj_comment_big_a(...) abort
   return call('s:object_comment', ['textobj#comment#select_big_a'] + a:000)
 endfunction
 

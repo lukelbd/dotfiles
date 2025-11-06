@@ -330,7 +330,7 @@ function! s:fold_source()
   for [line1, line2, level] in folds
     let [iline, jline, itext] = [line1, line2, getline(line1)]
     if itext =~# regex0 && itext !~# regex1 && getline(iline - 1) =~# regex1
-      let [_, pos1, pos2] = comment#object_comment_a(iline - 1)
+      let [_, pos1, pos2] = comment#textobj_comment_a(iline - 1)
       if pos2[1] > pos1[1] || pos2[2] == pos1[2] && pos2[2] > pos1[2]
         let iline = pos1[1]  " show comment header
       endif
@@ -392,16 +392,16 @@ endfunction
 " NOTE: Here, similar to how 'vaw' on last word on line includes preceding spaces
 " and elsewhere includes following spaces, have 'vaz' include space below folds of
 " same level if available or the space above if not available.
-function! fold#object_fold_i() abort
+function! fold#textobj_fold_i() abort
   return s:object_fold(0, 0)
 endfunction
-function! fold#object_fold_a() abort
+function! fold#textobj_fold_a() abort
   return s:object_fold(1, 0)
 endfunction
-function! fold#object_parent_i() abort
+function! fold#textobj_parent_i() abort
   return s:object_fold(0, 1)
 endfunction
-function! fold#object_parent_a() abort
+function! fold#textobj_parent_a() abort
   return s:object_fold(1, 1)
 endfunction
 function! s:object_fold(outer, ...) abort

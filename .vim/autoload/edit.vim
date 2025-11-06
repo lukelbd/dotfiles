@@ -228,16 +228,16 @@ function! edit#insert_delete(...) abort  " vint: -ProhibitUsingUndeclaredVariabl
   let keys = repeat("\<Delete>", cnt) | return keys
 endfunction
 
-" Get variable segment text objects
+" Standardize variable segment text objects
 " NOTE: Native plugin works well but includes \k iskeyword boundaries instead of
 " strictly alphanumeric characters. Workaround by temporarily changing iskeyword
-function! edit#object_segment_i() abort
-  return call('edit#object_segment', ['i'] + a:000)
+function! edit#textobj_segment_i() abort
+  return call('edit#textobj_segment', ['i'] + a:000)
 endfunction
-function! edit#object_segment_a() abort
-  return call('edit#object_segment', ['a'] + a:000)
+function! edit#textobj_segment_a() abort
+  return call('edit#textobj_segment', ['a'] + a:000)
 endfunction
-function! edit#object_segment(char, ...) abort
+function! edit#textobj_segment(char, ...) abort
   let name = 'textobj#variable_segment#select_' . a:char
   let keys = &l:iskeyword
   try

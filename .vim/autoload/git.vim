@@ -405,10 +405,10 @@ endfunction
 " Git gutter hunk objects (compare with fold.vim)
 " WARNING: Native gitgutter changes lines with 'G' which resets count and causes
 " utils#repeat_map() invocation of v:prevcount to use giant line number.
-function! git#object_hunk_i() abort
+function! git#textobj_hunk_i() abort
   return s:object_hunk(0)
 endfunction
-function! git#object_hunk_a() abort
+function! git#textobj_hunk_a() abort
   return s:object_hunk(1)
 endfunction
 function! s:object_hunk(...) abort

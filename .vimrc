@@ -18,6 +18,7 @@
 " F5 F6 F7 F8: <C-;> <C-'> <C-i> <C-m> (\e[15~ \e[17~ \e[18~ \e[19~)
 " F9 F10 F11 F12: Unset Unset Unset Unset (\e[20~ \e[21~ \e[23~ \e[24~)
 " SF1 SF2 SF3 SF4: <S-C-,> <S-C-.> <S-C-[> <S-C-]> (\e[1;2P \e[1;2Q \e[1;2R \e[1;2S)
+" See: :help restorescreen t_ti= t_te= suggestions
 " See: https://stackoverflow.com/a/12191699/4970632
 " See: https://github.com/c-bata/go-prompt/blob/82a9122/input.go#L94-L125
 " vint: -ProhibitSetNoCompatible
@@ -302,7 +303,7 @@ endfor
 "-----------------------------------------------------------------------------"
 " Files and buffers {{{1
 "-----------------------------------------------------------------------------"
-" Handle buffers and windows
+" Handle buffers and windows {{{2
 " NOTE: Here :Opens is similar to :tab drop but handles popup windows
 " NOTE: To avoid accidentally closing vim require :qa instead of mapping
 command! -nargs=* -complete=file Opens call file#open_file(<f-args>)
@@ -1929,28 +1930,28 @@ if s:has_plug('vim-textobj-user')  " {{{
     \ '\(\k\|[#&*:.-]\)\@<=\(\k\|[#&*:.-]\)\@!',
   \ ]
   let s:textobj_comment1 = {
-    \ 'select-i': 'i.', 'select-i-function': 'comment#object_comment_a',
-    \ 'select-a': 'a.', 'select-a-function': 'comment#object_comment_big_a',
+    \ 'select-i': 'i.', 'select-i-function': 'comment#textobj_comment_a',
+    \ 'select-a': 'a.', 'select-a-function': 'comment#textobj_comment_big_a',
   \ }
   let s:textobj_comment2 = {
-    \ 'select-i': 'i,', 'select-i-function': 'comment#object_comment_i',
-    \ 'select-a': 'a,', 'select-a-function': 'comment#object_comment_big_a',
+    \ 'select-i': 'i,', 'select-i-function': 'comment#textobj_comment_i',
+    \ 'select-a': 'a,', 'select-a-function': 'comment#textobj_comment_big_a',
   \ }
   let s:textobj_fold1 = {
-    \ 'select-i': 'iz', 'select-i-function': 'fold#object_fold_i',
-    \ 'select-a': 'az', 'select-a-function': 'fold#object_fold_a',
+    \ 'select-i': 'iz', 'select-i-function': 'fold#textobj_fold_i',
+    \ 'select-a': 'az', 'select-a-function': 'fold#textobj_fold_a',
   \ }
   let s:textobj_fold2 = {
-    \ 'select-i': 'iZ', 'select-i-function': 'fold#object_parent_i',
-    \ 'select-a': 'aZ', 'select-a-function': 'fold#object_parent_a',
+    \ 'select-i': 'iZ', 'select-i-function': 'fold#textobj_parent_i',
+    \ 'select-a': 'aZ', 'select-a-function': 'fold#textobj_parent_a',
   \ }
   let s:textobj_hunk = {
-    \ 'select-i': 'ih', 'select-i-function': 'git#object_hunk_i',
-    \ 'select-a': 'ah', 'select-a-function': 'git#object_hunk_a',
+    \ 'select-i': 'ih', 'select-i-function': 'git#textobj_hunk_i',
+    \ 'select-a': 'ah', 'select-a-function': 'git#textobj_hunk_a',
   \ }
   let s:textobj_alpha = {
-    \ 'select-i': 'ig',  'select-i-function': 'edit#object_segment_i',
-    \ 'select-a': 'ag',  'select-a-function': 'edit#object_segment_a',
+    \ 'select-i': 'ig',  'select-i-function': 'edit#textobj_segment_i',
+    \ 'select-a': 'ag',  'select-a-function': 'edit#textobj_segment_a',
   \ }
   let s:textobj_entire = {
     \ 'select-a': 'aE',  'select-a-function': 'textobj#entire#select_a',
