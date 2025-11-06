@@ -5,7 +5,7 @@
 " NOTE: Fugitive maps get re-applied when re-opening existing fugitive buffers due to
 " its FileType autocommands, so should not have issues modifying already-modified maps.
 " NOTE: Many mappings call script-local functions with strings like 'tabedit', and
-" initially tried replacing with 'Drop', but turns out these all call fugitive
+" initially tried replacing with 'Opens', but turns out these all call fugitive
 " internal commands like :Gtabedit and :Gedit (and there is no :Gdrop). So now
 " overwrite :Gtabedit in .vimrc. Also considered replacing 'tabedit' with 'drop' in
 " maps and having fugitive use :Gdrop, but was getting error where after tab switch
@@ -472,7 +472,7 @@ endfunction
 " NOTE: Fugitive commands permit overriding both option flags and sink entries
 " NOTE: Native fzf-vim :BCommits and :Commits commands include bindings inconsistent
 " with panel actions (hitting enter calls :edit, hitting ctrl-d runs split diff) so
-" here ensure enter triggers :Drop which calls edit only if in single-tab pane and
+" here ensure enter triggers :Opens which calls edit only if in single-tab pane and
 " override ctrl-d mapping and header help information with standard mappings.
 function! git#setup_opts() abort
   let b:fzf_winview = winsaveview()  " copied from fzf.vim
@@ -491,7 +491,7 @@ function! git#setup_sink(lines)
     let @" = hash | silent! let @* = hash | silent! let @+ = hash | return
   endif
   let cmd = get(get(g:, 'fzf_action', {}), a:lines[0], '')
-  let cmd = type(cmd) == 1 && !empty(cmd) ? cmd : 'Drop'
+  let cmd = type(cmd) == 1 && !empty(cmd) ? cmd : 'Opens'
   for idx in range(1, len(a:lines) - 1)
     let sha = matchstr(a:lines[idx], regex)
     if empty(sha) | continue | endif
@@ -527,7 +527,7 @@ function! git#setup_deltas() abort  " also used for general diff filetypes
   call fold#update_folds(0, 0)  " re-apply defaults after setting foldexpr
 endfunction
 function! git#setup_commands() abort
-  for cmd in ['drop', 'Drop']  " tab drop sinks
+  for cmd in ['drop', 'Opens']  " tab drop sinks
     exe 'command! -buffer -nargs=* -bang G' . cmd . ' Gtabedit <args>'
   endfor
   for cmd in ['diff', 'split', 'diffsplit']  " outdated commands
@@ -538,7 +538,7 @@ function! git#setup_commands() abort
   command! -buffer -bar -bang -nargs=? -range=-1 -complete=customlist,fugitive#Complete
     \ Git call s:call_git(0, <line1>, <count>, +"<range>", <bang>0, "<mods>", <q-args>)
   command! -buffer -bar -bang -range=-1 -nargs=* -complete=customlist,fugitive#EditComplete
-    \ Gtabedit exe fugitive#Open(<q-args> =~# '^+' ? 'edit' : 'Drop', <bang>0, '<mods>', <q-args>)
+    \ Gtabedit exe fugitive#Open(<q-args> =~# '^+' ? 'edit' : 'Opens', <bang>0, '<mods>', <q-args>)
   command! -buffer -bar -bang -nargs=* -range=% BCommits
     \ <line1>,<line2>call fzf#vim#buffer_commits(<q-args>, git#setup_opts(), <bang>0)
   command! -buffer -bar -bang -nargs=* -range=% -complete=file Commits

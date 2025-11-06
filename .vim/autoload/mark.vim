@@ -8,7 +8,7 @@
 let [s:sign_id, s:sign_marks] = [1, 1]
 let s:sign_colors = ['DarkYellow', 'DarkCyan', 'DarkMagenta', 'DarkBlue', 'DarkRed', 'DarkGreen']
 
-" Override fzf :Marks to implement :Drop switching
+" Override fzf :Marks to implement :Opens switching
 " NOTE: Normally the fzf function calls `A-Z, and while vim permits multi-file marks,
 " it does not have an option to open in existing tabs like 'showbufs' for loclist,
 function! mark#goto_mark(...) abort

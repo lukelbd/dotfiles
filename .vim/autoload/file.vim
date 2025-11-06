@@ -203,7 +203,7 @@ function! file#fzf_files(bang, ...) abort
   let prompt = string('Files> ' . base)
   let options = {
     \ 'dir': fnamemodify(bases[0], ':p'),
-    \ 'sink*': function('file#fzf_tab', [a:bang, 'Drop', bases[0]]),
+    \ 'sink*': function('file#fzf_tab', [a:bang, 'Opens', bases[0]]),
     \ 'source': source,
     \ 'options': opts . ' --tiebreak chunk,index --prompt=' . prompt,
   \ }
