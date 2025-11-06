@@ -161,6 +161,8 @@ endfunction
 " Generate table of tabs and paths
 " NOTE: This sorts by recent access to help replace :Buffers
 function! s:tab_source(...) abort
+  silent! exe 'redrawtabline'
+  let g:tabline_redraw = 0
   let nprocess = 20  " maximum tablines to process
   let ndigits = len(string(tabpagenr('$')))
   let lines = []
