@@ -691,19 +691,13 @@ open() {
 
 # Vim overrides and scrollback repair
 # See: https://apple.stackexchange.com/q/31872/214359
-# NOTE: Previously had manual overrides for various fold commands. But not
-# anymore, seems unnecessary with simple FastFold + native folding.
-# some reason folds are otherwise re-closed upon openening each file.
-# sed -i '/zt/a setlocal nofoldenable' "$path"  # disable folds after opening file
-# sed -i 'N;/normal! z[oc]/!P;D' "$path"  # remove previous fold commands
-# sed -i '/^[0-9]*,[0-9]*fold$/d' "$path"  # remove manual fold definitions
+# NOTE: Use 'session' for terminal vim sessions and 'sessions' for macvim
+# sessions across arbitrary directories and subdirectories.
 vi() {
-  HOME=/dev/null command vim -i NONE -u NONE "$@"
+  HOME=/dev/null command vim -i NONE -u NONE -p "$@"
 }
 vim() {
-  [ "${#files[@]}" -gt 0 ] && flags+=(-p)
-  command vim --cmd 'set restorescreen' -p "$@"
-  [[ " $* " =~ (--version|--help|-h) ]] && return
+  command vim -p "$@"
 }
 session() {
   local arg args name path root iroot  # flags and session file
@@ -722,6 +716,40 @@ session() {
   root=$(abspath "$path") root=${root%/*} iroot=${root/$HOME/\~}  # root directory
   sed -i "\\:^lcd \\($root\\|$iroot\\)\$:d" "$path"  # outdated lcd calls
   vim -S "$path" "${args[@]}"  # call above function
+}
+sessions() {
+  local path paths root roots
+  if ! command -v mvim >/dev/null 2>&1; then
+    echo "Error: 'mvim' not found. Install via MacVim Preferences → Advanced → Install Command Line Tool."
+    return 1
+  fi
+  if [ $# -gt 0 ]; then
+    roots=("$@")
+  elif [ -d "$HOME/research" ]; then  # professional
+    roots=("$HOME"/{research,career,data})
+  else  # personal
+    roots=("$HOME"/icloud)
+  fi
+  for root in "${roots[@]}"; do
+    if [ -d "$root" ]; then
+      mapfile -t -O "${#paths[@]}" paths \
+        < <(find "$root" -type f -name '.*.vimsession' -not -path '*/.git/*' -print | sort)
+    elif [ -f "$root" ] && [[ "$root" =~ \.vimsession$ ]]; then
+      paths+=("$(abspath "$root")")
+    elif [ -f ".${root}.vimsession" ]; then
+      paths+=("$(pwd)/.${root}.vimsession")
+    else
+      echo "Error: Ignoring invalid directory or session '$root'."
+    fi
+  done
+  for path in "${paths[@]}"; do
+    root=$(cd "$(dirname "$path")" && pwd)
+    echo "Opening session: $(basename "$root")/$(basename "$path")"
+    pushd "$root" &>/dev/null || { echo "Error: Failed to cd to directory '$root'."; continue; }
+    mvim -c "Session $(basename "$path")"
+    popd &>/dev/null || { echo "Error: Failed to cd to original directory."; continue; }
+    [ "$path" == "${paths[0]}" ] && sleep 0.2
+  done
 }
 
 #-----------------------------------------------------------------------------
