@@ -360,8 +360,8 @@ echo 'done'
 # For less/man/etc. colors see: https://unix.stackexchange.com/a/329092/112647
 _setup_message 'Utility setup'
 [ -r "$HOME/.dircolors.ansi" ] && eval "$(dircolors ~/.dircolors.ansi)"
-alias lss='ls --color=always -AF && ls --color=always -AFd $(pwd)'
-alias lll='ls --color=always -AFhl | tail -n +2 && ls --color=always -AFhld $(pwd)'
+alias lss='ls --color=always -AF && ls --color=always -AFd "$(pwd)"'
+alias lll='ls --color=always -AFhl | tail -n +2 && ls --color=always -AFhld "$(pwd)"'
 alias ls='ls --color=always -AF'    # ls with dirs differentiate from files
 alias ll='ls --color=always -AFhl'  # ls with details and file sizes
 alias cd='cd -P'                    # do not want this on mac
@@ -791,14 +791,36 @@ _find() {
   command find "${commands[0]}" "${header[@]}" \
     "${exclude[@]}" -name "${commands[@]:1}"  # arguments after directory
 }
-
-# Aliases and functions
-# TODO: Use vim-lsp rename utility instead? Figure out how to preview?
-# NOTE: The awk script builds a hash array (i.e. dictionary) that records number of
-# occurences of file paths (should be 1 but this is convenient way to record them).
 f0() { _find 0 "$@"; }  # custom find with ignore excludes and no hidden files
 f1() { _find 1 "$@"; }  # custom find with ignore excludes and hidden files
 f2() { _find 2 "$@"; }  # custom find with no excludes
+
+# Sort files by access date
+# NOTE: This was used to create a PDF Expert 'session' file containing the PDF windows
+# and tabs from PhD thesis that could be opened with 'Restore Session.workflow'.
+# Add this to your ~/.bashrc or ~/.zshrc
+recents() {
+  local date file paths
+  paths=("${@:-${PWD}}")
+  for path in "${paths[@]}"; do
+    [ -d "$path" ] || { echo "Warning: '$path' is not a directory."; continue; }
+    path=$(abspath "$path")
+    echo "Directory: $path"
+    mdfind -0 -onlyin "$path" \
+      "kMDItemLastUsedDate=* && kMDItemContentTypeTree != 'public.folder'" \
+    | while IFS= read -r -d '' file; do
+        date=$(mdls -raw -name kMDItemLastUsedDate "$file" 2>/dev/null)
+        if [ -n "$date" ] && [ "$date" != '(null)' ]; then
+          printf '%s\t%s\n' "$date" "${file#"${path}/"}"
+        fi
+      done | sort -r
+  done
+}
+
+# Language agnostic refactoring utility
+# TODO: Use vim-lsp rename utility instead? Figure out how to preview?
+# NOTE: The awk script builds a hash array (i.e. dictionary) that records number of
+# occurences of file paths (should be 1 but this is convenient way to record them).
 refactor() {
   local cmd file files result
   $_macos && cmd=gsed || cmd=sed
@@ -905,15 +927,13 @@ _diff() {
   [ $# -ne 3 ] && echo "Usage: dd[|1|2] DIR1 DIR2" && return 1
   local arg dir dir1 dir2 cat1 cat2 cat3 cat4 cat5 file files flags
   flags=($(ignores 1))
-  arg=${1--1} dir1=${2%/} dir2=${3%/}
-  for dir in "$dir1" "$dir2"; do
-    echo "Directory: $dir"
+  arg=${1:-0} dir1=${2%/} dir2=${3%/}
+  for dir in "1: $dir1" "2: $dir2"; do
+    echo "Directory $dir" && dir=${dir#* }
     ! [ -d "$dir" ] && echo "Error: $dir is not an existing directory." && return 1
     files+=$'\n'$(find "$dir" -mindepth 1 "${flags[@]}" -print)
   done
   while read -r file; do
-    file=${file/$dir1\//}
-    file=${file/$dir2\//}
     if ! [ -e "$dir1/$file" ]; then
       [[ "$arg" =~ 0|1 ]] && cat1+="File '$dir1/$file' is missing."$'\n'
     elif ! [ -e "$dir2/$file" ]; then
@@ -925,7 +945,7 @@ _diff() {
     else  # print identical files
       [[ "$arg" =~ 3 ]] && cat5+="File '$dir1/$file' identical to '$dir2/$file'."$'\n'
     fi
-  done < <(echo "$files" | sort)
+  done < <(echo "$files" | sed "s|${dir1}/||;s|${dir2}/||" | sort | uniq)
   for cat in "$cat1" "$cat2" "$cat3" "$cat4" "$cat5"; do
     printf "%s" "$cat"
   done
