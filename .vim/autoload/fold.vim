@@ -162,6 +162,7 @@ function! s:get_range(func, ...) abort
   let lmax = max([min([a:0 > 1 ? a:2 : line('$'), line('$')]), 1])
   let ilev = a:0 > 2 ? a:3 : &l:foldlevelstart + 1  " default to all valid folds
   let nmax = a:0 > 3 ? a:4 : a:0 == 1 ? a:1 : 0  " user-input maximum count
+  let cnt = 0
   exe lmin | let lnum = lmin
   while lmax < lmin ? lnum >= lmax : lnum <= lmax
     exe lnum | let result = call(a:func, [ilev])
@@ -179,6 +180,12 @@ function! s:get_range(func, ...) abort
     if level > 0 && nmax < 0 && foldclosed(line1) <= 0  " search inner folds
       call extend(folds, s:get_range(a:func, line1, line2, level + 1, nmax))
     endif
+    if cnt > lmax - lmin  " avoid infinite loops
+      let msg = 'line ' . lnum . ' fold ' . line1 . ':' . line2 . ':' . level . ' range ' . lmin . '-' . lmax
+      let msg = 'Warning: Error scanning ' . string(expand('%:t')) . ' folds: ' . msg
+      redraw | echohl WarningMsg | echom msg | echohl None | return folds
+    endif
+    let cnt += 1
     let lnum = lmax < lmin ? line1 - 1 : line2 + 1
   endwhile
   for [_, lnum] in reverse(closed) | exe lnum . 'foldclose' | endfor
@@ -565,7 +572,7 @@ function! fold#update_folds(force, ...) abort
     if a:force
       call SimpylFold#Recache()
     endif
-    if reset < 0
+    if reset < 0  " previous folds
       let folds = filter(map(fold#get_folds(-1), 'v:val[0]'), 'foldclosed(v:val) < 0')
     endif
     exe 'FastFoldUpdate' | let b:fastfold_queued = 0
@@ -594,7 +601,8 @@ function! fold#update_folds(force, ...) abort
   let keys = reveal ? 'zv' : ''  " default reveal setting
   if reset >= 0 || method0 !=# method1
     let &l:foldlevel = level1  " close higher level folds
-    for lnum in fold#get_matches() | exe lnum . 'foldopen' | endfor
+    let lines = fold#get_matches()
+    for line in lines | exe line . 'foldopen' | endfor
     let delta = closed0 < 0 && closed1 > 0 ? -1 : closed0 > 0 && closed1 < 0 ? 1 : 0
     let closes = repeat('zc', foldlevel(winview.lnum) - level0)
     let closes .= closed0 < 0 || refresh ? 'zc' : 'zczc'
@@ -602,7 +610,7 @@ function! fold#update_folds(force, ...) abort
     let keys .= reset == 2 && reveal ? closes : reset == 1 && delta < 0 ? 'zc' : ''
   endif
   exe winview.lnum | exe empty(keys) ? '' : 'silent! normal! ' . keys
-  for lnum in folds | exe foldlevel(lnum) ? lnum . 'foldopen' : '' | endfor
+  for line in folds | exe foldlevel(line) ? line . 'foldopen' : '' | endfor
   call winrestview(winview)
 endfunction
 
