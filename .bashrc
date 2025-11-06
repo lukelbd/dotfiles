@@ -251,7 +251,7 @@ case "${HOSTNAME%%.*}" in
       rvm use ruby 1>/dev/null  # test with ruby -ropen-uri -e 'eval open("https://git.io/vQhWq").read'
     fi
     ;;
-  monde)  # could use 'source set_pgi.sh' but instead do manually
+  monde*)  # could use 'source set_pgi.sh' but instead do manually
     _pgi_version='19.10'  # increment this as needed
     export PATH=/usr/bin:/usr/local/sbin:/usr/sbin  # general
     export PATH=/usr/local/bin:$PATH  # general
@@ -265,6 +265,8 @@ case "${HOSTNAME%%.*}" in
     export GFDL_WORK=/mdata1/ldavis/isca_work  # temporary working directory used in running the model
     export GFDL_DATA=/mdata1/ldavis/isca_data  # directory for storing model output
     export NCARG_ROOT=/usr/local  # ncl root
+    ;;
+  hali*)  # university server
     ;;
   euclid*)  # all netcdf/mpich utilities already in /usr/local/bin
     export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
@@ -984,6 +986,10 @@ _address_port() {
   case $host in
     cyclone*|vortex*|velouria*|UEA*)
       address=localhost
+      port=2000
+      ;;
+    hali)
+      address=pwe23cyu@hali.uea.ac.uk
       port=2000
       ;;
     monde)
