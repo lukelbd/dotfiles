@@ -181,7 +181,7 @@ endfunction
 " Helper functions for git gutter utilities
 " NOTE: Git gutter works by triggering on &updatetime after CursorHold only if
 " text was changed and starts async process. Here temporarily make synchronous.
-function! s:show_hunks(locs, max, msg, ...) abort
+function! s:echo_hunks(locs, max, msg, ...) abort
   if empty(a:locs)
     let msg = 'E490: No hunks found'
   elseif len(uniq(sort(a:locs))) == a:max
@@ -250,7 +250,7 @@ function! git#_get_hunks(line1, line2, ...) abort
   let delta .= cnts[2] ? '-' . cnts[2] : ''
   if !skip && !empty(locs) " show message
     let msg = 'Hunk(s): ' . delta
-    call s:show_hunks(locs, len(hunks), msg, 0)
+    call s:echo_hunks(locs, len(hunks), msg, 0)
   endif
   return delta
 endfunction
@@ -307,7 +307,7 @@ function! git#_exe_hunks(line1, line2, ...) abort
   call winrestview(winview)
   if !empty(ranges)  " show information
     let msg = cmd . ' hunk(s): ' . join(ranges, ', ')
-    call s:show_hunks(locs, len(hunks), msg, 1)
+    call s:echo_hunks(locs, len(hunks), msg, 1)
   endif
 endfunction
 " For optional range arguments
@@ -319,7 +319,43 @@ function! git#exe_hunks_expr(...) abort
   return utils#motion_func('git#exe_hunks', a:000, 1)
 endfunction
 
-" Update gitgutter hunks and show hunks under cursor
+" Git gutter hunk under cursor
+" NOTE: Compare to vim-lsp and ale.vim utilities. Here we do not auto-open
+" hunk difference popups since they are way bigger than those plugins.
+function! s:echo_hunk(hunk) abort
+  if empty(a:hunk) | return | endif
+  let [line1, line2] = [a:hunk[2], a:hunk[2] + max([a:hunk[3], 1]) - 1]
+  let [fold1, fold2] = [foldclosed(line1), foldclosedend(line2)]
+  return git#_get_hunks(fold1 > 0 ? fold1 : line1, fold2 > 0 ? fold2 : line2)
+endfunction
+function! s:current_hunk() abort
+  let hunks = s:get_hunks(1)
+  if empty(hunks) | return [] | endif
+  let hunk = []
+  for ihunk in hunks
+    if gitgutter#hunk#cursor_in_hunk(ihunk)
+      let hunk = ihunk | break
+    endif
+  endfor | return hunk
+endfunction
+function! git#current_hunk() abort
+  call map(popup_list(), 'popup_close(v:val)')
+  call switch#gitgutter(1, 1)  " turn on if possible
+  let hunks = s:get_hunks()
+  if empty(hunks) | return | endif
+  let hunk = s:current_hunk()
+  if empty(hunk)
+    let msg = 'Error: No hunk under cursor'
+    redraw | echohl ErrorMsg | echom msg | echohl None | return
+  endif
+  GitGutterPreviewHunk
+  call window#setup_preview()
+  let winids = popup_list()
+  if empty(winids) | return | endif
+  call s:echo_hunk(hunk)
+endfunction
+
+" Git gutter hunks humping
 " NOTE: Here skip hunks beneath current closed fold. This is consistent with native
 " vim behavior, since n/N do not open fold under cursor to access inner match even if
 " foldopen contains 'search' (but may open match in another fold). See also tags.vim
@@ -363,7 +399,7 @@ function! git#next_hunk(count, ...) abort
     redraw | echohl WarningMsg | echom msg | echohl None
   elseif !stage  " WARNING: 'G' changes v:count1 which messes up repeat.vim [G/]G
     exe &l:foldopen =~# 'block\|all' ? 'normal! zv' : ''
-    call s:show_hunk(hunk)
+    call s:echo_hunk(hunk)
   endif
 endfunction
 
@@ -400,72 +436,6 @@ function! git#next_conflict(count, ...) abort
     let msg = 'Error: No conflicts'
     redraw | echohl ErrorMsg | echom msg | echohl None | call winrestview(winview)
   endif
-endfunction
-
-" Git gutter hunk objects (compare with fold.vim)
-" WARNING: Native gitgutter changes lines with 'G' which resets count and causes
-" utils#repeat_map() invocation of v:prevcount to use giant line number.
-function! git#textobj_hunk_i() abort
-  return s:object_hunk(0)
-endfunction
-function! git#textobj_hunk_a() abort
-  return s:object_hunk(1)
-endfunction
-function! s:object_hunk(...) abort
-  let hunk = s:current_hunk()
-  if empty(hunk)
-    let msg = 'E490: No hunk found'
-    redraw | echohl ErrorMsg | echom msg | echohl None
-    return ['v', getpos('.'), getpos('.')]
-  endif
-  let [line1, line2] = [hunk[2], hunk[2] + hunk[3] - 1]
-  if a:0 && a:1
-    let inum = line('$')
-    let lnum = line2
-    while lnum < inum && empty(trim(getline(lnum + 1)))
-      let lnum += 1
-    endwhile
-    let line2 = lnum
-  endif
-  let pos1 = [0, line1, 1, 0]
-  let pos2 = [0, line2, col([line2, '$']), 0]
-  return ['V', pos1, pos2]
-endfunction
-
-" Show hunk under cursor
-" NOTE: Compare to vim-lsp and ale.vim utilities. Here we do not auto-open
-" hunk difference popups since they are way bigger than those plugins.
-function! s:show_hunk(hunk) abort
-  if empty(a:hunk) | return | endif
-  let [line1, line2] = [a:hunk[2], a:hunk[2] + max([a:hunk[3], 1]) - 1]
-  let [fold1, fold2] = [foldclosed(line1), foldclosedend(line2)]
-  return git#_get_hunks(fold1 > 0 ? fold1 : line1, fold2 > 0 ? fold2 : line2)
-endfunction
-function! s:current_hunk() abort
-  let hunks = s:get_hunks(1)
-  if empty(hunks) | return [] | endif
-  let hunk = []
-  for ihunk in hunks
-    if gitgutter#hunk#cursor_in_hunk(ihunk)
-      let hunk = ihunk | break
-    endif
-  endfor | return hunk
-endfunction
-function! git#current_hunk() abort
-  call map(popup_list(), 'popup_close(v:val)')
-  call switch#gitgutter(1, 1)  " turn on if possible
-  let hunks = s:get_hunks()
-  if empty(hunks) | return | endif
-  let hunk = s:current_hunk()
-  if empty(hunk)
-    let msg = 'Error: No hunk under cursor'
-    redraw | echohl ErrorMsg | echom msg | echohl None | return
-  endif
-  GitGutterPreviewHunk
-  call window#setup_preview()
-  let winids = popup_list()
-  if empty(winids) | return | endif
-  call s:show_hunk(hunk)
 endfunction
 
 " Helper functions for fugitive commands
@@ -543,4 +513,34 @@ function! git#setup_commands() abort
     \ <line1>,<line2>call fzf#vim#buffer_commits(<q-args>, git#setup_opts(), <bang>0)
   command! -buffer -bar -bang -nargs=* -range=% -complete=file Commits
     \ <line1>,<line2>call fzf#vim#commits(<q-args>, git#setup_opts(), <bang>0)
+endfunction
+
+" Git gutter hunk objects (compare with fold.vim textobj#fold)
+" WARNING: Native gitgutter changes lines with 'G' which resets count and causes
+" utils#repeat_map() invocation of v:prevcount to use giant line number.
+function! s:textobj_hunk(...) abort
+  let hunk = s:current_hunk()
+  if empty(hunk)
+    let msg = 'E490: No hunk found'
+    redraw | echohl ErrorMsg | echom msg | echohl None
+    return ['v', getpos('.'), getpos('.')]
+  endif
+  let [line1, line2] = [hunk[2], hunk[2] + hunk[3] - 1]
+  if a:0 && a:1
+    let inum = line('$')
+    let lnum = line2
+    while lnum < inum && empty(trim(getline(lnum + 1)))
+      let lnum += 1
+    endwhile
+    let line2 = lnum
+  endif
+  let pos1 = [0, line1, 1, 0]
+  let pos2 = [0, line2, col([line2, '$']), 0]
+  return ['V', pos1, pos2]
+endfunction
+function! git#textobj_hunk_i() abort
+  return s:textobj_hunk(0)
+endfunction
+function! git#textobj_hunk_a() abort
+  return s:textobj_hunk(1)
 endfunction

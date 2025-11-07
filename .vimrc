@@ -1616,12 +1616,13 @@ let g:surround_no_insert_mappings = 1  " use vim-succinct mappings
 " Text object definitions
 " NOTE: Also use vim-succinct to auto-convert every vim-surround delimiter
 " definition to 'inner'/'outer' delimiter inclusive/exclusive objects.
+" call s:plug('beloglazov/vim-textobj-quotes')  " multi-line string, but not docstrings
+" call s:plug('thalesmello/vim-textobj-multiline-str')  " multi-line string, adapted in python.vim
+" call s:plug('preservim/vim-textobj-sentence')  " use edit#textobj_sentence() instead
 " call s:plug('machakann/vim-textobj-functioncall')  " use custom object instead
 " call s:plug('vim-scripts/argtextobj.vim')  " use parameter instead
 " call s:plug('kana/vim-textobj-fold')  " use custom oject insead
 " call s:plug('bps/vim-textobj-python')  " use braceless 'm' instead
-" call s:plug('beloglazov/vim-textobj-quotes')  " multi-line string, but not docstrings
-" call s:plug('thalesmello/vim-textobj-multiline-str')  " multi-line string, adapted in python.vim
 call s:plug('kana/vim-textobj-user')  " general requirement
 call s:plug('kana/vim-textobj-line')  " entire line, object is 'l'
 call s:plug('kana/vim-textobj-entire')  " entire file, object is 'e'
@@ -1629,8 +1630,8 @@ call s:plug('kana/vim-textobj-indent')  " indentation, object is 'i' or 'I' and 
 call s:plug('sgur/vim-textobj-parameter')  " argument, object is '='
 call s:plug('glts/vim-textobj-comment')  " comment blocks, object is 'C' (see below)
 call s:plug('tkhren/vim-textobj-numeral')  " numerals, e.g. 1.1234e-10
-call s:plug('preservim/vim-textobj-sentence')  " sentence objects
 call s:plug('Julian/vim-textobj-variable-segment')  " underscore or colon segments
+let g:vim_textobj_parameter_mapping = 'k'  " i.e. 'keyword' or 'keyword argument'
 let g:textobj_numeral_no_default_key_mappings = 1  " defined in vim-succinct block
 let g:loaded_textobj_variable_segment = 1  " avoid default mappings (see below)
 let g:loaded_textobj_comment = 1  " avoid default mappings (see below)
@@ -1708,20 +1709,20 @@ let g:SimpylFold_docstring_preview = 0  " disable foldtext() override
 " call s:plug('AndrewRadev/inline_edit.vim')  " inline syntax highlighting
 " call s:plug('vim-python/python-syntax')  " nicer python syntax (copied instead)
 " call s:plug('chrisbra/csv.vim')  " csv syntax highlighting (vim now better)
-call s:plug('mechatroner/rainbow_csv')  " column highlighting
-call s:plug('vim-scripts/applescript.vim')  " applescript syntax support
-call s:plug('andymass/vim-matlab')  " recently updated vim-matlab fork from matchup author
-call s:plug('preservim/vim-markdown')  " see .vim/after/common.vim for kludge fix
-call s:plug('Rykka/riv.vim')  " restructured text, syntax folds
-call s:plug('tmux-plugins/vim-tmux')  " tmux syntax highlighting
-call s:plug('anntzer/vim-cython')  " cython syntax highlighting
-call s:plug('tpope/vim-liquid')  " liquid syntax highlighting
-call s:plug('cespare/vim-toml')  " toml syntax highlighting
-call s:plug('JuliaEditorSupport/julia-vim')  " julia syntax highlighting
 call s:plug('flazz/vim-colorschemes')  " macvim colorschemes
 call s:plug('fcpg/vim-fahrenheit')  " macvim colorschemes
 call s:plug('KabbAmine/yowish.vim')  " macvim colorschemes
 call s:plug('lilydjwg/colorizer')  " requires macvim or &t_Co == 256
+call s:plug('mechatroner/rainbow_csv')  " column highlighting
+call s:plug('vim-scripts/applescript.vim')  " applescript syntax support
+call s:plug('anntzer/vim-cython')  " cython syntax highlighting
+call s:plug('JuliaEditorSupport/julia-vim')  " julia syntax highlighting
+call s:plug('andymass/vim-matlab')  " recently updated vim-matlab fork from matchup author
+call s:plug('preservim/vim-markdown')  " see .vim/after/common.vim for kludge fix
+call s:plug('tpope/vim-liquid')  " liquid syntax highlighting
+call s:plug('tmux-plugins/vim-tmux')  " tmux syntax highlighting
+call s:plug('cespare/vim-toml')  " toml syntax highlighting
+call s:plug('Rykka/riv.vim')  " restructured text, syntax folds
 let g:no_csv_maps = 1  " use custom maps
 let g:csv_disable_fdt = 1  " use custom foldtext
 let g:colorizer_nomap = 1  " use custom mapping
@@ -1810,9 +1811,9 @@ let g:fugitive_no_maps = 1  " disable cmap <C-r><C-g> and nmap y<C-g>
 " NOTE: This should work for both fzf ':Tags' (uses 'tags' since relies on tagfiles()
 " for detection in autoload/vim.vim) and gutentags (uses only g:gutentags_ctags_tagfile
 " for both detection and writing).
+" call s:plug('preservim/tagbar')  " unnecessarily complex interface
 " call s:plug('xolox/vim-misc')  " dependency for easytags
 " call s:plug('xolox/vim-easytags')  " kind of old and not that useful honestly
-" call s:plug('preservim/tagbar')  " unnecessarily complex interface
 call s:plug('yegappan/taglist')  " simpler interface plus mult-file support
 call s:plug('ludovicchabant/vim-gutentags')  " slows things down without config
 let g:gutentags_enabled = 1
@@ -1917,18 +1918,14 @@ endif  " }}}
 " a new 'g@aw' operation to record '[ and '], then augments the positions to account
 " for concealed characters with new operator (via a supplementary textobj-user mapping)
 if s:has_plug('vim-textobj-user')  " {{{
-  augroup textobj_setup
-    au!
-    au VimEnter * call textobj#sentence#init()
-  augroup END
-  let g:vim_textobj_parameter_mapping = 'k'  " i.e. 'keyword' or 'keyword argument'
-  let g:textobj#sentence#select = 's'  " improved sentence text object
-  let g:textobj#sentence#move_p = '('  " improved sentence navigation
-  let g:textobj#sentence#move_n = ')'  " improved sentence navigation
-  let s:textobj_variable = [
-    \ '\(\k\|[#&*:.-]\)\@<!\(\k\|[#&*:.-]\)\@=',
-    \ '\(\k\|[#&*:.-]\)\@<=\(\k\|[#&*:.-]\)\@!',
-  \ ]
+  for s:key in ['.', ',', 'c', 'g', 'h', 'n', 's', 'z', 'C', 'E', 'Z']  " required after renaming
+    exe 'silent! unmap i' . s:key
+    exe 'silent! unmap a' . s:key
+  endfor
+  for s:mode in ['o', 'x']  " numeral mappings
+    exe s:mode . 'map in <Plug>(textobj-numeral-i)'
+    exe s:mode . 'map an <Plug>(textobj-numeral-a)'
+  endfor
   let s:textobj_comment1 = {
     \ 'select-i': 'i.', 'select-i-function': 'comment#textobj_comment_a',
     \ 'select-a': 'a.', 'select-a-function': 'comment#textobj_comment_big_a',
@@ -1936,6 +1933,10 @@ if s:has_plug('vim-textobj-user')  " {{{
   let s:textobj_comment2 = {
     \ 'select-i': 'i,', 'select-i-function': 'comment#textobj_comment_i',
     \ 'select-a': 'a,', 'select-a-function': 'comment#textobj_comment_big_a',
+  \ }
+  let s:textobj_entire = {
+    \ 'select-a': 'aE',  'select-a-function': 'textobj#entire#select_a',
+    \ 'select-i': 'iE',  'select-i-function': 'textobj#entire#select_i'
   \ }
   let s:textobj_fold1 = {
     \ 'select-i': 'iz', 'select-i-function': 'fold#textobj_fold_i',
@@ -1949,28 +1950,29 @@ if s:has_plug('vim-textobj-user')  " {{{
     \ 'select-i': 'ih', 'select-i-function': 'git#textobj_hunk_i',
     \ 'select-a': 'ah', 'select-a-function': 'git#textobj_hunk_a',
   \ }
-  let s:textobj_alpha = {
-    \ 'select-i': 'ig',  'select-i-function': 'edit#textobj_segment_i',
-    \ 'select-a': 'ag',  'select-a-function': 'edit#textobj_segment_a',
+  let s:textobj_group = {
+    \ 'select-i': 'ig',  'select-i-function': 'edit#textobj_group_i',
+    \ 'select-a': 'ag',  'select-a-function': 'edit#textobj_group_a',
   \ }
-  let s:textobj_entire = {
-    \ 'select-a': 'aE',  'select-a-function': 'textobj#entire#select_a',
-    \ 'select-i': 'iE',  'select-i-function': 'textobj#entire#select_i'
+  let s:textobj_sentence = {
+    \ 'select-i': 'is', '*select-i-function*': 'edit#textobj_sentence_i',
+    \ 'select-a': 'as', '*select-a-function*': 'edit#textobj_sentence_a',
   \ }
-  for s:key in ['.', ',', 'n', 'h', 'z', 'Z', 'E', 'C']  " required after renaming
-    exe 'silent! unmap i' . s:key
-    exe 'silent! unmap a' . s:key
-  endfor
-  for s:mode in ['o', 'x']  " numeral mappings
-    exe s:mode . 'map in <Plug>(textobj-numeral-i)'
-    exe s:mode . 'map an <Plug>(textobj-numeral-a)'
-  endfor
-  call succinct#add_objects('variable', {'v': join(s:textobj_variable, '\r')}, 0, 1)
+  let s:textobj_sentences = {
+    \ 'pattern': edit#textobj_sentence_regex(),
+    \ 'move-p': '(', 'move-n': ')', 'move-P': 'g(', 'move-N': 'g)',
+  \ }
+  let s:textobj_variable = [
+    \ '\(\k\|[#&*:.-]\)\@<!\(\k\|[#&*:.-]\)\@=',
+    \ '\(\k\|[#&*:.-]\)\@<=\(\k\|[#&*:.-]\)\@!',
+  \ ]
   call textobj#user#plugin('comment', {'c': s:textobj_comment1, 'C': s:textobj_comment2})
-  call textobj#user#plugin('fold', {'z': s:textobj_fold1, 'Z': s:textobj_fold2})
   call textobj#user#plugin('entire', {'-': s:textobj_entire})  " no <Plug> suffix
+  call textobj#user#plugin('fold', {'z': s:textobj_fold1, 'Z': s:textobj_fold2})
+  call textobj#user#plugin('group', {'-': s:textobj_group})  " no <Plug> suffix
   call textobj#user#plugin('hunk', {'-': s:textobj_hunk})  " no <Plug> suffix
-  call textobj#user#plugin('alpha', {'-': s:textobj_alpha})  " no <Plug> suffix
+  call textobj#user#plugin('sentence', {'select': s:textobj_sentence, 'move': s:textobj_sentences})  " no <Plug> suffix
+  call succinct#add_objects('variable', {'v': join(s:textobj_variable, '\r')}, 0, 1)
 endif  " }}}
 
 " Easy-align settings. Support case/esac block parentheses and seimcolons, chained

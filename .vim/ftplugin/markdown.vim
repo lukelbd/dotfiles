@@ -14,14 +14,9 @@ setlocal softtabstop=4
 " NOTE: This is designed for side-by-side terminal/viewer workflow. See also tex.vim
 function! s:open_markdown_file() abort
   update
-  if $TERM_PROGRAM ==? ''
-    let terminal = 'MacVim'
-  elseif $TERM_PROGRAM =~? 'Apple_Terminal'
-    let terminal = 'Terminal'
-  else
-    let terminal = $TERM_PROGRAM
-  endif
-  let cmd = 'open -a "Marked 2" ' . shellescape(@%) . ' && open -a "' . terminal . '"'
+  let cmd = has('gui') ? 'MacVim' : $TERM_PROGRAM
+  let cmd = cmd =~? 'Apple_Terminal' ? 'Terminal' : cmd
+  let cmd = 'open -a "Marked 2" ' . shellescape(@%) . ' && open -a "' . cmd . '"'
   call shell#job_win(cmd, 0)
 endfunction
 nnoremap <buffer> <Plug>ExecuteFile0 <Cmd>call <sid>open_markdown_file()<CR>

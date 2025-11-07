@@ -1,6 +1,20 @@
 "-----------------------------------------------------------------------------"
 " Utilities for formatting text
 "-----------------------------------------------------------------------------"
+" Abbreviations to exclude as sentences
+" TODO: Update and add scientific terms
+" See: https://github.com/preservim/vim-textobj-sentence/
+scriptencoding utf-8  " {{{
+let s:abbreviations = [
+  \ '[ABCDIMPSUabcdegimpsv]',
+  \ 'l[ab]', '[eRr]d', 'Ph', '[Ccp]l', '[Lli]n', '[cn]o',
+  \ '[Oe]p', '[DJMSh]r', '[MVv]s', '[CFMPScfpw]t',
+  \ 'alt', '[Ee]tc', 'div', 'es[pt]', '[Ll]td', 'min',
+  \ '[MD]rs', '[Aa]pt', '[Aa]ve?', '[Ss]tr?',
+  \ '[Aa]ssn', '[Bb]lvd', '[Dd]ept', 'incl', 'Inst', 'Prof', 'Univ',
+  \ 'Messrs',
+\ ]  " }}}
+
 " Auto-format with external plugin
 " NOTE: Not all servers support auto formatting. Seems 'pylsp' uses autopep8 consistent
 " with flake8 warnings. Use below function to print active servers.
@@ -228,26 +242,6 @@ function! edit#insert_delete(...) abort  " vint: -ProhibitUsingUndeclaredVariabl
   let keys = repeat("\<Delete>", cnt) | return keys
 endfunction
 
-" Standardize variable segment text objects
-" NOTE: Native plugin works well but includes \k iskeyword boundaries instead of
-" strictly alphanumeric characters. Workaround by temporarily changing iskeyword
-function! edit#textobj_segment_i() abort
-  return call('edit#textobj_segment', ['i'] + a:000)
-endfunction
-function! edit#textobj_segment_a() abort
-  return call('edit#textobj_segment', ['a'] + a:000)
-endfunction
-function! edit#textobj_segment(char, ...) abort
-  let name = 'textobj#variable_segment#select_' . a:char
-  let keys = &l:iskeyword
-  try
-    setlocal iskeyword=@,48-57,_,192-255
-    return call('textobj#variable_segment#select_i', a:000)
-  finally
-    let &l:iskeyword = keys
-  endtry
-endfunction
-
 " Search sort or reverse the input lines
 " NOTE: Adaptation of hard-to-remember :g command shortcut. Adapted
 " from super old post: https://vim.fandom.com/wiki/Reverse_order_of_lines
@@ -349,4 +343,51 @@ endfunction
 " For <expr> map accepting motion
 function! edit#search_replace_expr(...) abort
   return utils#motion_func('edit#search_replace', a:000)
+endfunction
+
+" Standardize variable segment text objects
+" NOTE: Native plugin works well but includes \k iskeyword boundaries instead of
+" strictly alphanumeric characters. Workaround by temporarily changing iskeyword
+function! s:textobj_group(char, ...) abort
+  let name = 'textobj#variable_segment#select_' . a:char
+  let keys = &l:iskeyword
+  try
+    setlocal iskeyword=@,48-57,_,192-255
+    return call('textobj#variable_segment#select_i', a:000)
+  finally
+    let &l:iskeyword = keys
+  endtry
+endfunction
+function! edit#textobj_group_i() abort
+  return call('s:textobj_group', ['i'] + a:000)
+endfunction
+function! edit#textobj_group_a() abort
+  return call('s:textobj_group', ['a'] + a:000)
+endfunction
+
+" Standardize sentence text objects
+" NOTE: This was adapted from original plugin to support sentence fragments terminated
+" with double newlines and sentences ending with newline followed by bullet points.
+" See: https://github.com/preservim/vim-textobj-sentence/
+function! s:textobj_sentence(pattern) abort
+  call search(a:pattern, 'bc')
+  let start = getpos('.')
+  call search(a:pattern, 'ce')
+  let end = getpos('.')
+  return ['v', start, end]
+endfunction
+function! edit#textobj_sentence_a() abort
+  return s:textobj_sentence(edit#textobj_sentence_regex() . '\_s*')
+endfunction
+function! edit#textobj_sentence_i() abort
+  return s:textobj_sentence(edit#textobj_sentence_regex())
+endfunction
+function! edit#textobj_sentence_regex(...) abort
+  let nostart = '%([“"‘''[:alnum:]–—()\[\],;:]\_s*)@2000<!'
+  let nostop = '%(<%(' . join(s:abbreviations, '|') . ')>)@10<!'
+  let start = nostart . '%(\_s+|%^)@<=[(\[“"‘'']*[[:upper:]][^.]'
+  let start = '(' . start . '|%(\s*\n\s*\n\s*|%^\_s*)@<=)'
+  let stop = '%([!?]|(' . nostop . '\.))+[)\]”"’'']*%(\_s+|%$)@='
+  let stop = '(' . stop . '|%(\s*\n\s*\n\s*|\_s*%$)@=)'
+  return '\v' . start . '\_.{-}' . stop
 endfunction

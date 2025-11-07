@@ -388,50 +388,6 @@ function! fold#fzf_folds(...) abort
   return fzf#run(fzf#wrap('folds', options, bang))
 endfunction
 
-" Fold text objects (compare with hunk.vim)
-" NOTE: Here, similar to how 'vaw' on last word on line includes preceding spaces
-" and elsewhere includes following spaces, have 'vaz' include space below folds of
-" same level if available or the space above if not available.
-function! fold#textobj_fold_i() abort
-  return s:object_fold(0, 0)
-endfunction
-function! fold#textobj_fold_a() abort
-  return s:object_fold(1, 0)
-endfunction
-function! fold#textobj_parent_i() abort
-  return s:object_fold(0, 1)
-endfunction
-function! fold#textobj_parent_a() abort
-  return s:object_fold(1, 1)
-endfunction
-function! s:object_fold(outer, ...) abort
-  let result = a:0 && a:1 ? fold#get_parent() : fold#get_fold()
-  let [line1, line2, level] = empty(result) ? [line('.'), line('.'), 0] : result
-  if !level || line2 <= line1
-    let msg = 'E490: No fold found'
-    redraw | echohl ErrorMsg | echom msg | echohl None
-    return ['v', getpos('.'), getpos('.')]
-  endif
-  if a:outer  " include lines below or above
-    let winview = winsaveview()
-    exe line2 | exe 'keepjumps normal! zj'
-    if line('.') > line2  " top of next fold
-      if foldlevel('.') == level
-        let line2 = line('.') - 1
-      endif
-    else  " bottom of previous fold
-      exe line1 | exe 'keepjumps normal! zk'
-      if line('.') < line1 && foldlevel('.') == level
-        let line1 = line('.') + 1
-      endif
-    endif
-    call winrestview(winview)
-  endif
-  let pos1 = [0, line1, 1, 0]
-  let pos2 = [0, line2, col([line2, '$']), 0]
-  return ['V', pos1, pos2]
-endfunction
-
 " Handle foldtext cache indices
 " NOTE: Here fold#get_folds() on cached fold line will return parent bounds if parent
 " fold is closed, but should still work / should not trigger 'continue' block, since
@@ -817,4 +773,48 @@ endfunction
 " For <expr> map accepting motion
 function! fold#toggle_folds_expr(...) abort
   return utils#motion_func('fold#toggle_folds', a:000, 1)
+endfunction
+
+" Fold text objects (compare with git.vim textobj#hunk)
+" NOTE: Here, similar to how 'vaw' on last word on line includes preceding spaces
+" and elsewhere includes following spaces, have 'vaz' include space below folds of
+" same level if available or the space above if not available.
+function! fold#textobj_fold_i() abort
+  return s:textobj_fold(0, 0)
+endfunction
+function! fold#textobj_fold_a() abort
+  return s:textobj_fold(1, 0)
+endfunction
+function! fold#textobj_parent_i() abort
+  return s:textobj_fold(0, 1)
+endfunction
+function! fold#textobj_parent_a() abort
+  return s:textobj_fold(1, 1)
+endfunction
+function! s:textobj_fold(outer, ...) abort
+  let result = a:0 && a:1 ? fold#get_parent() : fold#get_fold()
+  let [line1, line2, level] = empty(result) ? [line('.'), line('.'), 0] : result
+  if !level || line2 <= line1
+    let msg = 'E490: No fold found'
+    redraw | echohl ErrorMsg | echom msg | echohl None
+    return ['v', getpos('.'), getpos('.')]
+  endif
+  if a:outer  " include lines below or above
+    let winview = winsaveview()
+    exe line2 | exe 'keepjumps normal! zj'
+    if line('.') > line2  " top of next fold
+      if foldlevel('.') == level
+        let line2 = line('.') - 1
+      endif
+    else  " bottom of previous fold
+      exe line1 | exe 'keepjumps normal! zk'
+      if line('.') < line1 && foldlevel('.') == level
+        let line1 = line('.') + 1
+      endif
+    endif
+    call winrestview(winview)
+  endif
+  let pos1 = [0, line1, 1, 0]
+  let pos2 = [0, line2, col([line2, '$']), 0]
+  return ['V', pos1, pos2]
 endfunction
