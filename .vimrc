@@ -303,7 +303,18 @@ endfor
 "-----------------------------------------------------------------------------"
 " Files and buffers {{{1
 "-----------------------------------------------------------------------------"
-" Handle buffers and windows {{{2
+" Handle sessions {{{2
+" NOTE: Here :Mru shows tracked files during session and replaces current buffer.
+command! -bar -nargs=? Autosave call switch#autosave(<args>)
+command! -bang -nargs=? Refresh runtime autoload/vim.vim | call vim#config_refresh(<bang>0, <q-args>)
+nnoremap <Leader>W <Cmd>call switch#autosave()<CR>
+nnoremap <leader>E <Cmd>call file#reload()<CR>
+nnoremap <Leader>r <Cmd>redraw! \| echo ''<CR>
+nnoremap <Leader>R <Cmd>Refresh<CR>
+nnoremap <C-s> <Cmd>call file#update()<CR>
+let g:MRU_Open_File_Relative = 1
+
+" Handle files and sessions
 " NOTE: Here :Opens is similar to :tab drop but handles popup windows
 " NOTE: To avoid accidentally closing vim require :qa instead of mapping
 command! -nargs=* -complete=file Opens call file#open_file(<f-args>)
@@ -316,27 +327,15 @@ vnoremap <Esc> <Cmd>call map(popup_list(), 'popup_close(v:val)')<CR><C-c>
 nnoremap <C-q> <Cmd>call window#close_tab()<CR>
 nnoremap <C-w> <Cmd>call window#close_panes()<CR><Cmd>call window#close_pane()<CR>
 
-" Handle files and sessions
-" NOTE: Here :Mru shows tracked files during session, will replace current buffer.
-command! -bar -nargs=? Autosave call switch#autosave(<args>)
-command! -bang -nargs=? Refresh runtime autoload/vim.vim | call vim#config_refresh(<bang>0, <q-args>)
-nnoremap <Leader>W <Cmd>call switch#autosave()<CR>
-nnoremap <leader>E <Cmd>call file#reload()<CR>
-nnoremap <Leader>r <Cmd>redraw! \| echo ''<CR>
-nnoremap <Leader>R <Cmd>Refresh<CR>
-nnoremap <C-s> <Cmd>call file#update()<CR>
-
 " Buffer selection and management
 " NOTE: Here :WipeBufs replaces :Wipeout plugin since has more sources
+" NOTE: Here :History includes v:oldfiles and open buffers
 command! -bar -nargs=0 ShowBufs call file#show_bufs()
 command! -bar -nargs=0 WipeBufs call file#wipe_bufs()
 command! -bar -bang -nargs=* History call file#fzf_history(<q-args>, <bang>0)
 command! -bar -bang -nargs=0 Recents call file#fzf_recent(<bang>0)
 nnoremap <Leader>q <Cmd>ShowBufs<CR>
 nnoremap <Leader>Q <Cmd>WipeBufs<CR>
-nnoremap g[ <Cmd>call file#fzf_recent()<CR>
-nnoremap g{ <Cmd>call file#fzf_history('')<CR>
-let g:MRU_Open_File_Relative = 1
 
 " General file related utilities {{{2
 " NOTE: Here toggle between local or global current directory
@@ -648,10 +647,10 @@ augroup foldtext_setup
   au TextChanged,TextChangedI,InsertEnter * call fold#update_cache()
 augroup END
 command! -bar -bang -count -nargs=? UpdateFolds call fold#update_folds(<bang>0, <count>)
-nnoremap zv <Cmd>call fold#update_folds(0)<CR>zv
-vnoremap zv <Esc><Cmd>call fold#update_folds(0)<CR><Cmd>'<,'>foldopen!<CR>
+nnoremap zv zv
+vnoremap zv <Esc><Cmd>'<,'>foldopen!<CR>
 nnoremap zV <Cmd>call fold#update_folds(1)<CR><Cmd>echo 'Updated folds'<CR>zv
-vnoremap zV <Esc><Cmd>call fold#update_folds(1)<CR><Cmd>'<,'>foldopen!<CR>
+vnoremap zV <Esc><Cmd>call fold#update_folds(1)<CR><Cmd>echo 'Updated folds'<CR><Cmd>'<,'>foldopen!<CR>
 nnoremap zx <Cmd>call fold#update_folds(0, 0)<CR>
 vnoremap zx <Cmd>call fold#update_folds(0, 0)<CR>
 nnoremap zX <Cmd>for _ in range(v:count1) \| call fold#update_folds(0, 2) \| endfor<CR>
@@ -1924,7 +1923,7 @@ endif  " }}}
 " a new 'g@aw' operation to record '[ and '], then augments the positions to account
 " for concealed characters with new operator (via a supplementary textobj-user mapping)
 if s:has_plug('vim-textobj-user')  " {{{
-  for s:key in ['.', ',', 'c', 'g', 'h', 'n', 's', 'z', 'C', 'E', 'Z']  " required after renaming
+  for s:key in ['.', ',', 'g', 'h', 'n', 's', 'z', 'C', 'E', 'Z']  " required after renaming
     exe 'silent! unmap i' . s:key
     exe 'silent! unmap a' . s:key
   endfor
@@ -2163,14 +2162,14 @@ if s:has_plug('FastFold')  " {{{
   function! s:fold_setup() abort
     augroup fold_setup
       au!
-      au FileType,BufWinEnter,TabEnter * call fold#update_method()
+      au FileType,BufWinEnter * call fold#update_method()
       au TextChanged,TextChangedI * let b:fastfold_queued = 1
     augroup END
   endfunction
   function! s:fold_update() abort
     augroup fold_update
       au!
-      au BufWinEnter,TabEnter * call fold#update_folds(0)
+      au BufWinEnter * call fold#update_folds(0)
       au FileType * unlet! b:fastfold_queued | call fold#update_folds(0, 1)
     augroup END
   endfunction
@@ -2215,6 +2214,7 @@ if s:has_plug('FastFold')  " {{{
   call s:fold_init(1)  " setup fold method
   runtime plugin/fastfold.vim
   call s:fold_init(0)  " add custom updates
+  silent! nunmap zuz
 endif  " }}}
 
 " Lsp server settings {{{2
