@@ -487,20 +487,26 @@ nnoremap <F4> <Cmd>call window#next_stack(v:count1)<CR>
 
 " Tab selection and management
 " WARNING: FZF cannot create terminals when called inside expr mappings.
-" NOTE: Previously used e.g. '<tab>1' maps but not parse count on one keypress
-" NOTE: Here :History includes v:oldfiles and open buffers
+" NOTE: Vimscript % is remainder operator and below converts to positive modulus.
+function! s:get_tab(arg) abort
+  let [num, cnt] = [tabpagenr(), tabpagenr('$')]
+  return ((num + a:arg - 1) % cnt + cnt) % cnt + 1
+endfunction
 for s:key in range(1, 10) | exe 'silent! unmap <Tab>' . s:key | endfor
 for s:key in ['.', ',', '>', '<'] | exe 'silent! xunmap z' . s:key | endfor
-nnoremap g} <Cmd>exe v:count ? 'call window#move_tab(v:count)' : 'call window#fzf_move()'<CR>
-nnoremap g] <Cmd>exe v:count ? 'call window#goto_tab(v:count)' : 'call window#fzf_goto()'<CR>
+nnoremap g[ <Cmd>exe v:count ? <sid>get_tab(-v:count) . 'tabnext' : 'call file#fzf_recent()'<CR>
+nnoremap g{ <Cmd>exe v:count ? <sid>get_tab(-v:count) . 'tabmove' : 'call file#fzf_history("")'<CR>
+nnoremap g] <Cmd>exe v:count ? <sid>get_tab(v:count) . 'tabnext' : 'call window#fzf_goto()'<CR>
+nnoremap g} <Cmd>exe v:count ? <sid>get_tab(v:count) . 'tabmove' : 'call window#fzf_move()'<CR>
 nnoremap g<Space> <Cmd>Windows<CR>
 nnoremap z<Space> <Cmd>Buffers<CR>
 
 " Tab and window jumping
-nnoremap <Tab>[ <Cmd>exe max([tabpagenr() - v:count1, 1]) . 'tabnext'<CR>
-nnoremap <Tab>] <Cmd>exe min([tabpagenr() + v:count1, tabpagenr('$')]) . 'tabnext'<CR>
-nnoremap <Tab>{ <Cmd>call window#move_tab(tabpagenr() - v:count1)<CR>
-nnoremap <Tab>} <Cmd>call window#move_tab(tabpagenr() + v:count1)<CR>
+" NOTE: Previously used e.g. '<tab>1' maps but not parse count on one keypress
+nnoremap <Tab>[ <Cmd>exe <sid>get_tab(-v:count1) . 'tabnext'<CR><Cmd>call file#echo_path('tab')<CR>
+nnoremap <Tab>] <Cmd>exe <sid>get_tab(v:count1) . 'tabnext'<CR><Cmd>call file#echo_path('tab')<CR>
+nnoremap <Tab>{ <Cmd>exe (<sid>get_tab(-v:count1) - (v:count1 < tabpagenr())) . 'tabmove'<CR>
+nnoremap <Tab>} <Cmd>exe (<sid>get_tab(v:count1) - (v:count1 + tabpagenr() > tabpagenr('$'))) . 'tabmove'<CR>
 nnoremap <Tab>' <Cmd>silent! tabnext #<CR><Cmd>call file#echo_path('tab')<CR>
 nnoremap <Tab>; <Cmd>silent! wincmd p<CR><Cmd>call file#echo_path('window')<CR>
 nnoremap <Tab>j <Cmd>silent! wincmd j<CR>
