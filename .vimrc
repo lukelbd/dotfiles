@@ -370,7 +370,6 @@ nnoremap <C-g> <Cmd>exe fugitive#Command(0, 0, 0, 0, '', '') =~# '^echoerr' ? 'G
 
 " Open file with optional user input
 " NOTE: The <Leader> maps open up views of the current file directory
-for s:key in ['q', 'w', 'e', 'r'] | silent! exe 'unmap <Tab>' . s:key | endfor
 nnoremap <Tab>o <Cmd>call file#fzf_input('Tab', parse#get_root())<CR>
 nnoremap <Tab>i <Cmd>call file#fzf_input('Tab', expand('%:p:h'))<CR>
 nnoremap <Tab>p <Cmd>call file#fzf_input('Files', parse#get_root())<CR>
@@ -392,8 +391,6 @@ nnoremap <Leader><F5> <Cmd>Commands<CR>
 " Vim help and history windows
 " NOTE: For some reason even though :help :mes claims count N shows the N most recent
 " message, for some reason using 1 shows empty line and 2 shows previous plus newline.
-for s:key in ['[[', ']]'] | silent! exe 'unmap g' . s:key | endfor
-for s:key in [';;', '::'] | silent! exe 'unmap g' . s:key | endfor
 nnoremap <Leader>; <Cmd>let &cmdwinheight = window#get_height(0)<CR>q:
 nnoremap <Leader>/ <Cmd>let &cmdwinheight = window#get_height(0)<CR>q/
 nnoremap <Leader>: <Cmd>History:<CR>
@@ -466,9 +463,9 @@ augroup END
 
 " Navigate recent tabs
 " TODO: Return to behavior where CursorHold is required to add tag to stack.
+" WARNING: FZF cannot create terminals when called inside expr mappings.
 " WARNING: The g:tab_stack variable is used by tags#get_recents() to put recently
 " used tabs in stack at higher priority than others. Critical to keep variables.
-silent! au! recents_setup
 augroup tabs_setup
   au!
   au BufEnter,BufLeave * call window#update_stack(1)  " next update
@@ -483,25 +480,19 @@ nnoremap <S-F3> <Cmd>call window#next_stack(-v:count1, 1)<CR>
 nnoremap <S-F4> <Cmd>call window#next_stack(v:count1, 1)<CR>
 nnoremap <F3> <Cmd>call window#next_stack(-v:count1)<CR>
 nnoremap <F4> <Cmd>call window#next_stack(v:count1)<CR>
+nnoremap g[ <Cmd>exe v:count ? <sid>get_tab(-v:count) . 'tabnext' : 'call file#fzf_recent()'<CR>
+nnoremap g] <Cmd>exe v:count ? <sid>get_tab(v:count) . 'tabnext' : 'call window#fzf_goto()'<CR>
+nnoremap g{ <Cmd>exe v:count ? (<sid>get_tab(-v:count1) - (v:count < tabpagenr())) . 'tabmove' : 'call file#fzf_history("")'<CR>
+nnoremap g} <Cmd>exe v:count ? (<sid>get_tab(v:count1) - (v:count + tabpagenr() > tabpagenr('$'))) . 'tabmove' : 'call window#fzf_move()'<CR>
+nnoremap g<Space> <Cmd>Windows<CR>
+nnoremap z<Space> <Cmd>Buffers<CR>
 
-" Tab selection and management
-" WARNING: FZF cannot create terminals when called inside expr mappings.
+" Tab and window jumping
 " NOTE: Vimscript % is remainder operator and below converts to positive modulus.
 function! s:get_tab(arg) abort
   let [num, cnt] = [tabpagenr(), tabpagenr('$')]
   return ((num + a:arg - 1) % cnt + cnt) % cnt + 1
 endfunction
-for s:key in range(1, 10) | exe 'silent! unmap <Tab>' . s:key | endfor
-for s:key in ['.', ',', '>', '<'] | exe 'silent! xunmap z' . s:key | endfor
-nnoremap g[ <Cmd>exe v:count ? <sid>get_tab(-v:count) . 'tabnext' : 'call file#fzf_recent()'<CR>
-nnoremap g{ <Cmd>exe v:count ? <sid>get_tab(-v:count) . 'tabmove' : 'call file#fzf_history("")'<CR>
-nnoremap g] <Cmd>exe v:count ? <sid>get_tab(v:count) . 'tabnext' : 'call window#fzf_goto()'<CR>
-nnoremap g} <Cmd>exe v:count ? <sid>get_tab(v:count) . 'tabmove' : 'call window#fzf_move()'<CR>
-nnoremap g<Space> <Cmd>Windows<CR>
-nnoremap z<Space> <Cmd>Buffers<CR>
-
-" Tab and window jumping
-" NOTE: Previously used e.g. '<tab>1' maps but not parse count on one keypress
 nnoremap <Tab>[ <Cmd>exe <sid>get_tab(-v:count1) . 'tabnext'<CR><Cmd>call file#echo_path('tab')<CR>
 nnoremap <Tab>] <Cmd>exe <sid>get_tab(v:count1) . 'tabnext'<CR><Cmd>call file#echo_path('tab')<CR>
 nnoremap <Tab>{ <Cmd>exe (<sid>get_tab(-v:count1) - (v:count1 < tabpagenr())) . 'tabmove'<CR>
@@ -514,6 +505,7 @@ nnoremap <Tab>h <Cmd>silent! wincmd h<CR>
 nnoremap <Tab>l <Cmd>silent! wincmd l<CR>
 
 " Tab and window resizing
+" NOTE: Previously used e.g. '<tab>1' maps but not parse count on one keypress
 nnoremap <Tab><Space> <Cmd>call window#default_width() \| call window#default_height()<CR>
 nnoremap <Tab><Tab> <Cmd>call window#default_width() \| call window#default_height()<CR>
 nnoremap <Tab>1 <Cmd>call window#default_width(1) \| call window#default_height(1)<CR>
@@ -804,7 +796,6 @@ nnoremap ]Y <Cmd>exe v:count1 . 'pop!'<CR>
 " Line searching and grepping {{{2
 " NOTE: This is only useful when 'search' excluded from &foldopen. Use to quickly
 " jump over possibly-irrelevant matches without opening unrelated folds.
-for s:map in ['//', '/?', '?/', '??'] | silent! exe 'unmap g' . s:map | endfor
 command! -bang -nargs=* BLines call grep#call_lines(0, 0, <q-args>, <bang>0)
 command! -bang -nargs=* Lines call grep#call_lines(1, 0, <q-args>, <bang>0)
 nnoremap / <Cmd>let b:open_search = 0<CR>/
@@ -907,7 +898,6 @@ map <S-ScrollWheelDown> <S-LeftMouse>
 " NOTE: Sentence jumping mapped with textobj#sentence#move_[np] for most filetypes.
 " NOTE: Original vim idea is that these commands take us far away from cursor but
 " typically use scrolling to go far away. So now use CursorHold approach.
-for s:key in ['(', ')'] | exe 'silent! unmap ' . s:key | endfor
 nnoremap ; <Cmd>call switch#hlsearch(1 - v:hlsearch)<CR>
 vnoremap ; <Cmd>call switch#hlsearch(1 - v:hlsearch)<CR>
 noremap N <Cmd>call jump#next_search(-v:count1)<CR>
@@ -966,7 +956,6 @@ call utils#repeat_map('v', 'z=', 'VEqualDouble', '<Cmd>call comment#append_line(
 
 " Insert various comment blocks
 " NOTE: This disables repitition of title insertions
-for s:key in '.;:/?''"' | silent! exe 'unmap z.' . s:key | endfor
 let s:author = '"Author: Luke Davis (lukelbd@gmail.com)"'
 let s:edited = '"Edited: " . strftime("%Y-%m-%d")'
 call utils#repeat_map('n', 'g.;', 'HeadLine', '<Cmd>call comment#header_line("-", 77, 0)<CR>')
@@ -1170,7 +1159,6 @@ nnoremap <expr> O edit#insert_init('O')
 
 " Enter insert mode from visual mode
 " NOTE: Here 'I' goes to start of selection and 'A' end of selection
-exe 'silent! vunmap o' | exe 'silent! vunmap O'
 vnoremap <expr> gi '<Esc>' . edit#insert_init('i')
 vnoremap <expr> gI '<Esc>' . edit#insert_init('I')
 vnoremap <expr> ga '<Esc>' . edit#insert_init('a')
@@ -1204,8 +1192,6 @@ nnoremap g~ /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
 
 " Change case for word or motion
 " NOTE: Here 'zu' is analogous to 'zb' used for boolean toggle
-for s:key in ['u', 'U'] | silent! exe 'unmap g' . s:key | endfor
-for s:key in ['u', 'U'] | silent! exe 'unmap z' . repeat(s:key, 2) | endfor
 call utils#repeat_map('n', 'guU', 'TitleCase1', 'myguiw~h`y<Cmd>delmark y<CR>')
 call utils#repeat_map('n', 'gUu', 'TitleCase2', 'myguiw~h`y<Cmd>delmark y<CR>')
 nnoremap guu guiw
@@ -1923,20 +1909,16 @@ endif  " }}}
 " a new 'g@aw' operation to record '[ and '], then augments the positions to account
 " for concealed characters with new operator (via a supplementary textobj-user mapping)
 if s:has_plug('vim-textobj-user')  " {{{
-  for s:key in ['.', ',', 'g', 'h', 'n', 's', 'z', 'C', 'E', 'Z']  " required after renaming
-    exe 'silent! unmap i' . s:key
-    exe 'silent! unmap a' . s:key
-  endfor
   for s:mode in ['o', 'x']  " numeral mappings
     exe s:mode . 'map in <Plug>(textobj-numeral-i)'
     exe s:mode . 'map an <Plug>(textobj-numeral-a)'
   endfor
   let s:textobj_comment1 = {
-    \ 'select-i': 'i.', 'select-i-function': 'comment#textobj_comment_a',
-    \ 'select-a': 'a.', 'select-a-function': 'comment#textobj_comment_big_a',
+    \ 'select-i': 'i.', 'select-i-function': 'comment#textobj_comment_i',
+    \ 'select-a': 'a.', 'select-a-function': 'comment#textobj_comment_a',
   \ }
   let s:textobj_comment2 = {
-    \ 'select-i': 'i,', 'select-i-function': 'comment#textobj_comment_i',
+    \ 'select-i': 'i,', 'select-i-function': 'comment#textobj_comment_a',
     \ 'select-a': 'a,', 'select-a-function': 'comment#textobj_comment_big_a',
   \ }
   let s:textobj_entire = {
@@ -1984,7 +1966,7 @@ endif  " }}}
 " && and || symbols, trailing comments. See file empty.txt for easy-align tests.
 " NOTE: Use <Left> to stick delimiter to left instead of right and use * to align
 " by all delimiters instead of the default of 1 delimiter.
-" NOTE: Use :EasyAlign<Delim>is, id, or in for shallowest, deepest, or no indentation
+" NOTE: Use :EasyAlign<Delim>i[sdn] for shallowest, deepest, or no indentation
 " and use <Tab> in interactive mode to cycle through these.
 if s:has_plug('vim-easy-align')  " {{{
   augroup easy_align_setup
@@ -2003,9 +1985,22 @@ if s:has_plug('vim-easy-align')  " {{{
   let g:easy_align_ignore_groups = ['Comment', 'String']
 endif  " }}}
 
-" Comment toggle settings
-" NOTE: This disables several tcomment vim maps but keeps many others. Remove
-" unmap commands after restarting existing vim sessions.
+" Comment and data settings
+" NOTE: This disables several tcomment vim maps but keeps several others
+" NOTE: This supports various fixed-width formatted numberic files
+if s:has_plug('tcomment_vim')  " {{{
+  nnoremap g.. <Cmd>call comment#toggle_comment()<CR>
+  nnoremap g>> <Cmd>call comment#toggle_comment(1)<CR>
+  nnoremap g<< <Cmd>call comment#toggle_comment(0)<CR>
+  inoremap <C-g>c <Space><C-\><C-o>v:TCommentInline mode=#<CR><Delete>
+  inoremap <C-g>C <Space><C-\><C-o>:TCommentBlock mode=#<CR><Delete>
+  let g:tcomment_opleader1 = 'g.'  " default is 'gc'
+  let g:tcomment_mapleader1 = ''  " disables <C-_> insert mode maps
+  let g:tcomment_mapleader2 = ''  " disables <Leader><Space> normal mode maps
+  let g:tcomment_textobject_inlinecomment = ''  " default of 'ic' disables text object
+  let g:tcomment_mapleader_uncomment_anyway = 'g<'
+  let g:tcomment_mapleader_comment_anyway = 'g>'
+endif  " }}}
 if s:has_plug('rainbow_csv')  " {{{
   augroup csv_setup
     au!
@@ -2020,28 +2015,8 @@ if s:has_plug('rainbow_csv')  " {{{
     \ ['NONE', 'NONE'], ['Red', 'Red'], ['Blue', 'Blue'], ['Green', 'Green'],
     \ ['Magenta', 'Magenta'], ['Cyan', 'Cyan'], ['Yellow', 'Yellow'], ['Gray', 'Gray'],
     \ ['DarkRed', 'DarkRed'], ['DarkBlue', 'DarkBlue'], ['DarkGreen', 'DarkGreen'],
-    \ ['DarkMagenta', 'DarkMagenta'], ['DarkCyan', 'DarkCyan'],
-    \ ['DarkYellow', 'DarkYellow'], ['DarkGray', 'DarkGray']
+    \ ['DarkMagenta', 'DarkMagenta'], ['DarkCyan', 'DarkCyan'], ['DarkYellow', 'DarkYellow'], ['DarkGray', 'DarkGray']
   \ ]
-endif  " }}}
-if s:has_plug('tcomment_vim')  " {{{
-  for s:key1 in ['>', '<'] | for s:key2 in ['b', 'c', '>', '<>']
-    silent! exe 'unmap z' . s:key1 . s:key2
-  endfor | endfor
-  for s:key1 in add(range(1, 9), '') | for s:key2 in ['', 'b', 'c']
-    if !empty(s:key1 . s:key2) | silent! exe 'unmap z.' . s:key1 . s:key2 | endif
-  endfor | endfor
-  nnoremap g.. <Cmd>call comment#toggle_comment()<CR>
-  nnoremap g>> <Cmd>call comment#toggle_comment(1)<CR>
-  nnoremap g<< <Cmd>call comment#toggle_comment(0)<CR>
-  inoremap <C-g>c <Space><C-\><C-o>v:TCommentInline mode=#<CR><Delete>
-  inoremap <C-g>C <Space><C-\><C-o>:TCommentBlock mode=#<CR><Delete>
-  let g:tcomment_opleader1 = 'g.'  " default is 'gc'
-  let g:tcomment_mapleader1 = ''  " disables <C-_> insert mode maps
-  let g:tcomment_mapleader2 = ''  " disables <Leader><Space> normal mode maps
-  let g:tcomment_textobject_inlinecomment = ''  " default of 'ic' disables text object
-  let g:tcomment_mapleader_uncomment_anyway = 'g<'
-  let g:tcomment_mapleader_comment_anyway = 'g>'
 endif  " }}}
 
 " Tags and folds {{{2
@@ -2067,7 +2042,6 @@ if s:has_plug('taglist')  " {{{
   vnoremap z\ <Cmd>TlistToggle<CR>
 endif  " }}}
 if s:has_plug('vim-tags')  " {{{
-  exe 'silent! unmap gyy' | exe 'silent! unmap zyy'
   command! -bar -count -nargs=? TagToggle
     \ call switch#tags(<range> ? <count> : <args>)
   command! -nargs=* -complete=file ShowIgnores let s:arg = parse#get_ignores(2, 0, 0, <f-args>)
@@ -2134,9 +2108,6 @@ if s:has_plug('vim-gutentags')  " {{{
   let g:gutentags_generate_on_missing = 1  " update tags when no vimtags file found
   let g:gutentags_generate_on_empty_buffer = 0  " do not update tags when opening vim
   let g:gutentags_project_root_finder = 'parse#get_root'
-  " let g:gutentags_cache_dir = '~/.vim_tags_cache'  " alternative cache specification
-  " let g:gutentags_ctags_tagfile = 'tags'  " used with cache dir
-  " let g:gutentags_file_list_command = 'git ls-files'  " alternative to exclude ignores
 endif  " }}}
 
 " Vim syntax folding and fastfold settings
