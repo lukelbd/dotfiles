@@ -234,6 +234,7 @@ case "${HOSTNAME%%.*}" in
     export PATH=/Applications/Skim.app/Contents/MacOS:$PATH  # skim utilities
     export PATH=/Applications/Skim.app/Contents/SharedSupport:$PATH
     export PATH=/Applications/Calibre.app/Contents/MacOS:$PATH
+    export PATH=/Applications/Darktable.app/Contents/MacOS:$PATH
     export NCARG_ROOT=$HOME/builds/ncl-6.6.2  # or macports: /opt/local/lib/libgcc
     alias ncl="DYLD_LIBRARY_PATH=$_brew/lib/gcc/7/ ncl"  # brew libraries
     alias c++="$_brew/bin/c++-11"  # point to verion (see above)
@@ -674,10 +675,12 @@ open() {
     else
       case "$file" in
         *.pdf)                          app="Open PDFs.app" ;;
+        *.pts)                          app="PTGui.app" ;;
+        *.RAF,*.PEF,*.DNG)              app="FastRawViewer.app" ;;
         *.svg|*.jpg|*.jpeg|*.png|*.eps) app="Preview.app" ;;
         *.nc|*.nc[1-7]|*.df|*.hdf[1-5]) app="Panoply.app" ;;
         *.html|*.xml|*.htm|*.gif)       app="Safari.app" ;;
-        *.mov|*.mp4)                    app="VLC.app" ;;
+        *.mov|*.mp4)                    app="Elmedia Video Player.app" ;;
         *.pages|*.doc|*.docx)           app="Pages.app" ;;
         *.key|*.ppt|*.pptx)             app="Keynote.app" ;;
         *.md)                           app="Marked 2.app" ;;
