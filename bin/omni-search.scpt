@@ -1,6 +1,7 @@
-# This replaces the old Omnikey extension for Safari that became unusable with
-# version 13 (must grant safari app accessibility permissions for script to work).
+# Replace the old Omnikey extension that became unusable with Safari 13.
 # See: https://apple.stackexchange.com/a/346306/214359
+# NOTE: Must grant Safari accessibility permissions in order to use this script.
+# NOTE: Currently run this script with Karabiner Safari-specific keyboard shortcut.
 use AppleScript version "2.5"
 use framework "Foundation"
 use scripting additions
@@ -28,17 +29,19 @@ end tell
 
 set spaceOffset to offset of space in textValue
 if spaceOffset = 0 then return
-set token to text 1 thru (spaceOffset - 1) of textValue
-set query to text (spaceOffset + 1) thru -1 of textValue
+set userToken to text 1 thru (spaceOffset - 1) of textValue
+set userQuery to text (spaceOffset + 1) thru -1 of textValue
+set unicodeQuery to |⌘|'s NSString's stringWithString:userQuery
+set allowedChars to |⌘|'s NSCharacterSet's URLQueryAllowedCharacterSet()'s mutableCopy()
+allowedChars's removeCharactersInString:"&=+"
+set encodedQuery to unicodeQuery's stringByAddingPercentEncodingWithAllowedCharacters:allowedChars
 
-set nsQuery to |⌘|'s NSString's stringWithString:query
-set allowedPathCharacterSet to |⌘|'s NSCharacterSet's URLPathAllowedCharacterSet()
-set encodedQuery to nsQuery's stringByAddingPercentEncodingWithAllowedCharacters:allowedPathCharacterSet
-repeat with aShortcut in shortcuts
-  set {aToken, aURL} to contents of aShortcut
-  if aToken is token then
-    set queryURL to (|⌘|'s NSString's stringWithString:aURL)
+repeat with theShortcut in shortcuts
+  set {theToken, theURL} to contents of theShortcut
+  if theToken is userToken then
+    set queryURL to (|⌘|'s NSString's stringWithString:theURL)
     set searchURL to (queryURL's stringByReplacingOccurrencesOfString:"{search}" withString:encodedQuery)
+    delay 0.8
     tell application "Safari" to set URL of current tab of window 1 to (searchURL as text)
     exit repeat
   end if
