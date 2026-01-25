@@ -294,7 +294,7 @@ export PATH=$PATH:$HOME/nvim/bin  # neovim location
 export PATH=$PATH:$HOME/.iterm2  # iterm utilities
 export PATH=$PATH:$HOME/.local/bin  # pip install location
 export PATH=$PATH:$HOME/bin  # custom scripts
-$_macos && export PATH=$PATH:$HOME/mackup/Utilities  # custom scripts
+$_macos && export PATH=$PATH:$HOME/Utilities  # custom scripts
 
 # Various package stuff
 # NOTE: Could not get itermplot to work. Inline figures too small.
