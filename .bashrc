@@ -191,8 +191,8 @@ unalias -a  # critical (also use declare -F for definitions)
 # sudo chown -R $(whoami):admin /usr/local/* && sudo chmod -R g+rwx /usr/local/*
 # See: https://stackoverflow.com/a/50219099/4970631
 # NOTE: Use rvm below for scripting. Make sure this is the last PATH variable change.
-# Critical to install with rvm or get endless issues with MacPorts versus Homebrew
-# versions:: https://stackoverflow.com/a/3464303/4970632
+# Critical to install via rvm with '\curl -sSL https://get.rvm.io | bash -s stable --ruby'
+# or get endless MacPorts vs Homebrew issues: https://stackoverflow.com/a/3464303/4970632
 # NOTE: Tried exporting DYLD_FALLBACK_LIBRARY_PATH but it screwed up some python
 # modules so instead just always invoke ncl with temporarily set DYLD_LIBRARY_PATH.
 # Note ncl is realiased below and are careful to preserve any leading paths.
@@ -218,23 +218,25 @@ case "${HOSTNAME%%.*}" in
     [ -d /opt/homebrew ] && _brew=/opt/homebrew || _brew=/usr/local
     _macos=true _port=/opt/local
     unset MANPATH  # reset man path
-    export PATH=/usr/bin:/bin:/usr/sbin:/sbin  # defaults
-    export PATH=/Library/TeX/texbin:$PATH  # latex
-    export PATH=/opt/X11/bin:$PATH  # X11 utilities
-    export PATH=$_brew/bin:$_port/bin:$_port/sbin:$PATH  # homebrew macports
-    export PATH=$_brew/opt/coreutils/libexec/gnubin:$PATH  # gnu overrides
-    export PATH=$_brew/opt/findutils/libexec/gnubin:$PATH
-    export PATH=$_brew/opt/grep/libexec/gnubin:$PATH
-    export PATH=$_brew/opt/gawk/libexec/gnubin:$PATH
-    export PATH=$_brew/opt/gnu-sed/libexec/gnubin:$PATH
-    export PATH=$_brew/opt/gnu-tar/libexec/gnubin:$PATH
-    export PATH=/opt/pgi/osx86-64/2018/bin:$PATH  # pgi compilers
-    export PATH=$HOME/builds/matlab-r2019a/bin:$PATH  # local builds
-    export PATH=$HOME/builds/ncl-6.6.2/bin:$PATH
-    export PATH=/Applications/Skim.app/Contents/MacOS:$PATH  # skim utilities
-    export PATH=/Applications/Skim.app/Contents/SharedSupport:$PATH
-    export PATH=/Applications/Calibre.app/Contents/MacOS:$PATH
-    export PATH=/Applications/Darktable.app/Contents/MacOS:$PATH
+    export PATH=$_brew/bin:$_port/bin:$_port/sbin  # homebrew macports
+    export PATH=$PATH:$_brew/opt/coreutils/libexec/gnubin  # gnu overrides
+    export PATH=$PATH:$_brew/opt/findutils/libexec/gnubin  # gnu find
+    export PATH=$PATH:$_brew/opt/grep/libexec/gnubin  # gnu grep
+    export PATH=$PATH:$_brew/opt/gawk/libexec/gnubin  # gnu awk
+    export PATH=$PATH:$_brew/opt/gnu-sed/libexec/gnubin  # gnu sed
+    export PATH=$PATH:$_brew/opt/gnu-tar/libexec/gnubin  # gnu tar
+    export PATH=$PATH:/usr/bin:/bin:/usr/sbin:/sbin  # default directory
+    export PATH=$PATH:/opt/pgi/osx86-64/2018/bin  # pgi compilers
+    export PATH=$PATH:/opt/X11/bin  # X11 utilities
+    export PATH=$PATH:/Library/TeX/texbin  # TeX utilities
+    export PATH=$PATH:/Applications/Skim.app/Contents/SharedSupport  # skim utilities
+    export PATH=$PATH:/Applications/Skim.app/Contents/MacOS  # skim application
+    export PATH=$PATH:/Applications/Calibre.app/Contents/MacOS  # calibre application
+    export PATH=$PATH:/Applications/Darktable.app/Contents/MacOS  # darktable application
+    export PATH=$PATH:$HOME/.rvm/bin  # RVM utilties
+    export PATH=$PATH:$HOME/.rvm/gems/default/bin  # RVM gem utilities
+    export PATH=$PATH:$HOME/builds/matlab-r2019a/bin  # matlab build
+    export PATH=$PATH:$HOME/builds/ncl-6.6.2/bin  # ncl build
     export NCARG_ROOT=$HOME/builds/ncl-6.6.2  # or macports: /opt/local/lib/libgcc
     alias ncl="DYLD_LIBRARY_PATH=$_brew/lib/gcc/7/ ncl"  # brew libraries
     alias c++="$_brew/bin/c++-11"  # point to verion (see above)
@@ -245,39 +247,28 @@ case "${HOSTNAME%%.*}" in
     export LM_LICENSE_FILE=/opt/pgi/license.dat-COMMUNITY-18.10
     export PKG_CONFIG_PATH=/opt/local/bin/pkg-config
     export HDF5_USE_FILE_LOCKING=FALSE  # required for cdo (see above)
-    if [ -d ~/.rvm/bin ]; then  # install with: \curl -sSL https://get.rvm.io | bash -s stable --ruby
-      [ -s ~/.rvm/scripts/rvm ] && source ~/.rvm/scripts/rvm  # load RVM into a shell session *as a function*
-      export PATH=$PATH:$HOME/.rvm/bin:$HOME/.rvm/gems/default/bin
-      export rvm_silence_path_mismatch_check_flag=1
-      rvm use ruby 1>/dev/null  # test with ruby -ropen-uri -e 'eval open("https://git.io/vQhWq").read'
-    fi
     ;;
   monde*)  # could use 'source set_pgi.sh' but instead do manually
-    _pgi_version='19.10'  # increment this as needed
-    export PATH=/usr/bin:/usr/local/sbin:/usr/sbin  # general
-    export PATH=/usr/local/bin:$PATH  # general
-    export PATH=/usr/lib64/mpich/bin:/usr/lib64/qt-3.3/bin:$PATH  # pgi compilers
-    export PATH=/opt/pgi/linux86-64/$_pgi_version/bin:$PATH  # pgi utilities
+    export PATH=/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin  # default
+    export PATH=$PATH:/usr/lib64/mpich/bin:/usr/lib64/qt-3.3/bin  # pgi compilers
+    export PATH=$PATH:/opt/pgi/linux86-64/19.10/bin  # pgi utilities
     export PGI=/opt/pgi
     export LD_LIBRARY_PATH=/usr/lib64/mpich/lib:/usr/local/lib
-    export LM_LICENSE_FILE=/opt/pgi/license.dat-COMMUNITY-$_pgi_version
+    export LM_LICENSE_FILE=/opt/pgi/license.dat-COMMUNITY-19.10
     export GFDL_BASE=$HOME/isca  # isca environment
     export GFDL_ENV=monde  # configuration for emps-gv4
     export GFDL_WORK=/mdata1/ldavis/isca_work  # temporary working directory used in running the model
     export GFDL_DATA=/mdata1/ldavis/isca_data  # directory for storing model output
     export NCARG_ROOT=/usr/local  # ncl root
     ;;
-  hali*)  # university server
-    ;;
   euclid*)  # all netcdf/mpich utilities already in /usr/local/bin
     export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
-    export PATH=/opt/pgi/linux86-64/13.7/bin:/opt/Mathworks/bin:$PATH
+    export PATH=$PATH:/opt/pgi/linux86-64/13.7/bin:/opt/Mathworks/bin
     export LD_LIBRARY_PATH=/usr/local/lib
     ;;
   cheyenne*)  # cheyenne supercomputer (use 'sinteractive' for interactive mode)
-    INTEL=/glade/u/apps/ch/opt/netcdf/4.6.1/intel/17.0.1/lib  # compilers
     export TMPDIR=/glade/scratch/$USER/tmp  # see: https://www2.cisl.ucar.edu/user-support/storing-temporary-files-tmpdir
-    export LD_LIBRARY_PATH=$INTEL:$LD_LIBRARY_PATH  # compilers
+    export LD_LIBRARY_PATH=/glade/u/apps/ch/opt/netcdf/4.6.1/intel/17.0.1/lib:$LD_LIBRARY_PATH  # compilers
     _load_modules netcdf tmux intel impi  # cdo and nco via conda
     ;;
   midway*)  # chicago supercomputer
@@ -296,17 +287,19 @@ esac
 # NOTE: Install deno with mamba to get correct binaries. Using install script
 # can have issues with CentOS 7: https://github.com/denoland/deno/issues/1658
 export DENO_INSTALL=$HOME/.deno  # ddc.vim typescript dependency
-export PATH=$DENO_INSTALL/bin:$PATH  # deno commands (see https://deno.land)
-export PATH=$HOME/node/bin:$PATH  # node commands
-export PATH=$HOME/go/bin:$PATH  # go scripts
-export PATH=$HOME/nvim/bin:$PATH  # neovim location
-export PATH=$HOME/.iterm2:$PATH  # iterm utilities
-export PATH=$HOME/.local/bin:$PATH  # pip install location
-export PATH=$HOME/bin:$PATH  # custom scripts
+export PATH=$PATH:$DENO_INSTALL/bin  # deno commands (see https://deno.land)
+export PATH=$PATH:$HOME/node/bin  # node commands
+export PATH=$PATH:$HOME/go/bin  # go scripts
+export PATH=$PATH:$HOME/nvim/bin  # neovim location
+export PATH=$PATH:$HOME/.iterm2  # iterm utilities
+export PATH=$PATH:$HOME/.local/bin  # pip install location
+export PATH=$PATH:$HOME/bin  # custom scripts
+$_macos && export PATH=$PATH:$HOME/Utilities  # custom scripts
 
-# Various python stuff
+# Various package stuff
 # NOTE: Could not get itermplot to work. Inline figures too small.
 # NOTE: For download stats use 'condastats overall <package>' or 'pypistats <package>'.
+# NOTE: Test ruby with "ruby -ropen-uri -e 'eval open("https://git.io/vQhWq").read'"
 # As of 2023-03-21 for proplot get 51k all-time conda downloads and 10k 180-day proplot
 # downloads equals approximately (since 2019?) 80k pypi downloads?
 unset MPLBACKEND
@@ -315,6 +308,8 @@ export PYTHONUNBUFFERED=1  # must set this or python prevents print statements f
 export PYTHONBREAKPOINT=IPython.embed  # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
 export MAMBA_NO_BANNER=1  # suppress goofy banner as shown here: https://github.com/mamba-org/mamba/pull/444
 export MPLCONFIGDIR=$HOME/.matplotlib  # same on every machine
+export rvm_silence_path_mismatch_check_flag=1
+[ -s ~/.rvm/scripts/rvm ] && source ~/.rvm/scripts/rvm && rvm use ruby 1>/dev/null
 
 # Add custom research pathsw
 # NOTE: Paradigm is to put models in 'models', raw data in 'data' or scratch, shared
@@ -1039,10 +1034,6 @@ _address_port() {
       address=localhost
       port=2000
       ;;
-    hali)
-      address=pwe23cyu@hali.uea.ac.uk
-      port=2000
-      ;;
     monde)
       address=ldavis@monde.atmos.colostate.edu
       port=3000
@@ -1050,6 +1041,10 @@ _address_port() {
     euclid)
       address=ldavis@euclid.atmos.colostate.edu
       port=4000
+      ;;
+    hali)
+      address=pwe23cyu@hali.uea.ac.uk
+      port=2000
       ;;
     cheyenne*)
       address=davislu@cheyenne5.ucar.edu

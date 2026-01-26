@@ -76,7 +76,8 @@ for pair in \
   "$google"/My\ Drive:google \
   "$icloud":icloud \
   "$icloud"/Mackup:mackup \
-  "$icloud"/Mackup/Services:workflows \
+  "$icloud"/Mackup/Services:Services \
+  "$icloud"/Mackup/Utilities:Utilities \
   "$icloud"/Mackup/.mackup.cfg:.mackup.cfg
   do
   src=${pair%:*}
