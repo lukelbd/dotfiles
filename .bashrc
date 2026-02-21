@@ -556,7 +556,7 @@ export LC_ALL=en_US.UTF-8  # needed to make Vim syntastic work
 less() {
   local cmd
   cmd=$(command -v "$1" 2>/dev/null)
-  if [ -x "$cmd" ]; then
+  if ! [ -r "$1" ] && [ -n "$cmd" ]; then
     "$@" 2>&1 | command less  # pipe output of command
   else
     command less "$@"  # show files in less
