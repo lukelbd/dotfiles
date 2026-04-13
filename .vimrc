@@ -1198,6 +1198,8 @@ call utils#repeat_map('n', 'guU', 'TitleCase1', 'myguiw~h`y<Cmd>delmark y<CR>')
 call utils#repeat_map('n', 'gUu', 'TitleCase2', 'myguiw~h`y<Cmd>delmark y<CR>')
 nnoremap guu guiw
 nnoremap gUU gUiw
+vnoremap guu gu
+vnoremap gUU gU
 vnoremap guU gu<Esc>`<~h
 vnoremap gUu gu<Esc>`<~h
 
