@@ -164,7 +164,8 @@ let b:succinct_snippets = {
 " brackets for filling later since synmtax is dependent on citation engine.
 " Delimiter definitions:  " {{{
 " \ 'G': '\hidecontent{\includegraphics{\r}}',
-" \ 'P': '\begin{minipage}{\linewidth}\r\end{minipage}',
+  \ 'P': '\begin{minipage}{\linewidth}\r\end{minipage}',
+  \ 'Y': '\begin{python}\r\end{python}',
 let b:succinct_delims = {
   \ '.': '\1Command: \\r..*\r\\&{\1\r\1\r..*\r}\1',
   \ ',': '\1Environment: \begin{\r..*\r\\begin{&}\1\r\1\r..*\r\\end{&}\1',
@@ -228,9 +229,8 @@ let b:succinct_delims = {
   \ 'T': '\begin{table}\n\centering\r\end{table}',
   \ 'U': '\uncover<+->{%\r\}',
   \ 'V': '\begin{verbatim}\r\end{verbatim}',
-  \ 'W': '\mathsf{\r}',
   \ 'X': '\fbox{\parbox{\textwidth}{\r}}\medskip',
-  \ 'Y': '\begin{python}\r\end{python}',
+  \ 'Y': '\mathsf{\r}',
   \ 'Z': '\begin{columns}\r\end{columns}',
   \ 'd': '\dot{\r}',
   \ 'e': '\emph{\r}',
@@ -249,8 +249,7 @@ let b:succinct_delims = {
   \ 't': '\1Alignment: \r..*\r\\begin{tabular}{&}\1\r\1\r..*\r\\end{tabular}\1',
   \ 'u': '\underline{\r}',
   \ 'v': '\verb$\r$',
-  \ 'w': '\text{\r}',
   \ 'x': '\boxed{\r}',
-  \ 'y': '\pyth$\r$',
+  \ 'y': '\text{\r}',
   \ 'z': '\begin{column}{0.5\textwidth}\r\end{column}',
 \ }  " }}}
