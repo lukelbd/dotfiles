@@ -25,6 +25,8 @@
 # so will not have clashes. See: https://stackoverflow.com/a/45947604/4970632
 # NOTE: Here 'doq' required for 'vim-pydocstring' auto docstring utility.
 # See: https://github.com/heavenshell/vim-pydocstring
+# NOTE: Recent conda managed vim bug causes clipboard to fail. Possible
+# relevant issue: https://github.com/orbstack/orbstack/issues/1799
 name: base
 channels:
   - conda-forge
@@ -36,7 +38,7 @@ dependencies:
   - bc
   - git
   - pre-commit
-  - vim
+  - vim<9.1.1858
   - deno
   - tmux
   - nco
@@ -76,7 +78,7 @@ dependencies:
   - executing>=1.0.0
   - jupyter_contrib_nbextensions
   - jupyter_nbextensions_configurator
-  - jupyter-resource-usage<1.0.0
+  - jupyter-resource-usage
   - jupyterlab
   - jupyterlab_server
   - jupyter-lsp
