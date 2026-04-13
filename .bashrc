@@ -218,7 +218,7 @@ case "${HOSTNAME%%.*}" in
     [ -d /opt/homebrew ] && _brew=/opt/homebrew || _brew=/usr/local
     _macos=true _port=/opt/local
     unset MANPATH  # reset man path
-    export PATH=$_brew/bin:$_port/bin:$_port/sbin  # homebrew macports
+    export PATH=$HOME/bin:$_port/bin:$_port/sbin:$_brew/bin  # macports homebrew
     export PATH=$PATH:$_brew/opt/coreutils/libexec/gnubin  # gnu overrides
     export PATH=$PATH:$_brew/opt/findutils/libexec/gnubin  # gnu find
     export PATH=$PATH:$_brew/opt/grep/libexec/gnubin  # gnu grep
@@ -249,7 +249,7 @@ case "${HOSTNAME%%.*}" in
     export HDF5_USE_FILE_LOCKING=FALSE  # required for cdo (see above)
     ;;
   monde*)  # could use 'source set_pgi.sh' but instead do manually
-    export PATH=/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin  # default
+    export PATH=$HOME/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin  # default
     export PATH=$PATH:/usr/lib64/mpich/bin:/usr/lib64/qt-3.3/bin  # pgi compilers
     export PATH=$PATH:/opt/pgi/linux86-64/19.10/bin  # pgi utilities
     export PGI=/opt/pgi
@@ -262,7 +262,7 @@ case "${HOSTNAME%%.*}" in
     export NCARG_ROOT=/usr/local  # ncl root
     ;;
   euclid*)  # all netcdf/mpich utilities already in /usr/local/bin
-    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+    export PATH=$HOME/bin:/usr/local/bin:/usr/bin:/bin:$PATH  # default
     export PATH=$PATH:/opt/pgi/linux86-64/13.7/bin:/opt/Mathworks/bin
     export LD_LIBRARY_PATH=/usr/local/lib
     ;;
@@ -272,7 +272,7 @@ case "${HOSTNAME%%.*}" in
     _load_modules netcdf tmux intel impi  # cdo and nco via conda
     ;;
   midway*)  # chicago supercomputer
-    export PATH=$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin
+    export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin  # default
     export PROMPT_COMMAND=${PROMPT_COMMAND//printf*\";/}  # remove print statement
     _load_modules mlk intel  # cdo and nco via conda
     ;;
@@ -293,7 +293,6 @@ export PATH=$PATH:$HOME/go/bin  # go scripts
 export PATH=$PATH:$HOME/nvim/bin  # neovim location
 export PATH=$PATH:$HOME/.iterm2  # iterm utilities
 export PATH=$PATH:$HOME/.local/bin  # pip install location
-export PATH=$PATH:$HOME/bin  # custom scripts
 $_macos && export PATH=$PATH:$HOME/Utilities  # custom scripts
 
 # Various package stuff
