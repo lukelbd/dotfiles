@@ -484,8 +484,10 @@ nnoremap g[ <Cmd>exe v:count ? <sid>get_tab(-v:count) . 'tabnext' : 'call file#f
 nnoremap g] <Cmd>exe v:count ? <sid>get_tab(v:count) . 'tabnext' : 'call window#fzf_goto()'<CR>
 nnoremap g{ <Cmd>exe v:count ? (<sid>get_tab(-v:count1) - (v:count < tabpagenr())) . 'tabmove' : 'call file#fzf_history("")'<CR>
 nnoremap g} <Cmd>exe v:count ? (<sid>get_tab(v:count1) - (v:count + tabpagenr() > tabpagenr('$'))) . 'tabmove' : 'call window#fzf_move()'<CR>
-nnoremap g<Space> <Cmd>Windows<CR>
-nnoremap z<Space> <Cmd>Buffers<CR>
+nnoremap g<Space> <Cmd>exe v:count ? v:count . 'tabnext' : 'Windows'<CR>
+nnoremap z<Space> <Cmd>exe v:count ? empty(glob(expand('#' . v:count . ':p')))
+  \ ? "echoerr 'Error: Buffer path ''" . expand('#' . v:count) . "'' (" . v:count . ") does not exist.'"
+  \ : 'Opens ' . fnameescape(expand('#' . v:count)) : 'Buffers'<CR>
 
 " Tab and window jumping
 " NOTE: Vimscript % is remainder operator and below converts to positive modulus.
