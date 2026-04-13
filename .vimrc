@@ -513,14 +513,14 @@ nnoremap <Tab><Tab> <Cmd>call window#default_width() \| call window#default_heig
 nnoremap <Tab>1 <Cmd>call window#default_width(1) \| call window#default_height(1)<CR>
 nnoremap <Tab>2 <Cmd>call window#default_width(0.5) \| call window#default_height(0.5)<CR>
 nnoremap <Tab>3 <Cmd>call window#default_width(0) \| call window#default_height(0)<CR>
-nnoremap <Tab>9 <Cmd>call window#change_height(-3 * v:count1)<CR>
-nnoremap <Tab>0 <Cmd>call window#change_height(3 * v:count1)<CR>
-nnoremap <Tab>( <Cmd>call window#change_height(-6 * v:count1)<CR>
-nnoremap <Tab>) <Cmd>call window#change_height(6 * v:count1)<CR>
-nnoremap <Tab>, <Cmd>call window#change_width(-5 * v:count1)<CR>
-nnoremap <Tab>. <Cmd>call window#change_width(5 * v:count1)<CR>
-nnoremap <Tab>< <Cmd>call window#change_width(-10 * v:count1)<CR>
-nnoremap <Tab>> <Cmd>call window#change_width(10 * v:count1)<CR>
+nnoremap <Tab>, <Cmd>call window#change_height(-3 * v:count1)<CR>
+nnoremap <Tab>. <Cmd>call window#change_height(3 * v:count1)<CR>
+nnoremap <Tab>< <Cmd>call window#change_height(-6 * v:count1)<CR>
+nnoremap <Tab>> <Cmd>call window#change_height(6 * v:count1)<CR>
+nnoremap <Tab>9 <Cmd>call window#change_width(-5 * v:count1)<CR>
+nnoremap <Tab>0 <Cmd>call window#change_width(5 * v:count1)<CR>
+nnoremap <Tab>( <Cmd>call window#change_width(-10 * v:count1)<CR>
+nnoremap <Tab>) <Cmd>call window#change_width(10 * v:count1)<CR>
 
 " General motions and scrolling {{{2
 " NOTE: Use parentheses since g0/g$ are navigation and z0/z9 used for color schemes
