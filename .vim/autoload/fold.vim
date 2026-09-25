@@ -747,10 +747,10 @@ endfunction
 function! fold#_toggle_folds(line1, line2, ...) abort
   let winview = winsaveview()
   let state = s:toggle_state(a:line1, a:line2)
-  call fold#update_folds(0)
+  let toggle = a:0 > 0 && a:1 >= 0 ? a:1 : 1 - state
+  if toggle | call fold#update_folds(0) | endif
   let levels = map(range(a:line1, a:line2), 'foldlevel(v:val)')
   let folds = fold#get_folds(a:line1, a:line2, max(levels))
-  let toggle = a:0 > 0 && a:1 >= 0 ? a:1 : 1 - state
   let cnt = a:0 > 1 ? a:2 : v:count1
   for [line1, line2; rest] in folds
     let line1 = max([line1, a:line1])  " possibly select

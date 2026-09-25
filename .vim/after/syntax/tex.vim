@@ -61,7 +61,7 @@ syntax region texTableZone transparent
   \ keepend contains=@texFoldGroup,@Spell fold
 syntax region texTabular transparent
   \ start='\\begin\s*{\s*tabular\s*}' end='\\end\s*{\s*tabular\s*}'
-  \ keepend contains=@texFoldGroup,@NoSpell fold
+  \ keepend contains=@texFoldGroup,@Spell fold
 syntax cluster texFoldGroup add=texAlertZone
 syntax cluster texFoldGroup add=texBlockZone
 syntax cluster texFoldGroup add=texCenterZone

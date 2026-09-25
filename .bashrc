@@ -220,8 +220,8 @@ case "${HOSTNAME%%.*}" in
     _macos=true
     unset MANPATH  # reset man path
     [ -d /opt/homebrew ] && _base=/opt/homebrew || _base=/usr/local
-    export PATH=/opt/homebrew/bin:/usr/local/bin  # homebrew
-    export PATH=$PATH:/opt/local/bin:/opt/local/sbin  # macports
+    export PATH=$HOME/bin:/opt/local/bin:/opt/local/sbin  # macports
+    export PATH=$PATH:/opt/homebrew/bin:/usr/local/bin  # homebrew
     export PATH=$PATH:$_base/opt/coreutils/libexec/gnubin  # gnu overrides
     export PATH=$PATH:$_base/opt/findutils/libexec/gnubin  # gnu find
     export PATH=$PATH:$_base/opt/util-linux/bin  # gnu column
@@ -255,7 +255,7 @@ case "${HOSTNAME%%.*}" in
     export HDF5_USE_FILE_LOCKING=FALSE  # required for cdo (see above)
     ;;
   monde*)  # could use 'source set_pgi.sh' but instead do manually
-    export PATH=/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin  # default
+    export PATH=$HOME/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin  # default
     export PATH=$PATH:/usr/lib64/mpich/bin:/usr/lib64/qt-3.3/bin  # pgi compilers
     export PATH=$PATH:/opt/pgi/linux86-64/19.10/bin  # pgi utilities
     export PGI=/opt/pgi
@@ -268,7 +268,7 @@ case "${HOSTNAME%%.*}" in
     export NCARG_ROOT=/usr/local  # ncl root
     ;;
   euclid*)  # all netcdf/mpich utilities already in /usr/local/bin
-    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+    export PATH=$HOME/bin:/usr/local/bin:/usr/bin:/bin:$PATH  # default
     export PATH=$PATH:/opt/pgi/linux86-64/13.7/bin:/opt/Mathworks/bin
     export LD_LIBRARY_PATH=/usr/local/lib
     ;;
@@ -278,7 +278,7 @@ case "${HOSTNAME%%.*}" in
     _load_modules netcdf tmux intel impi  # cdo and nco via conda
     ;;
   midway*)  # chicago supercomputer
-    export PATH=$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin
+    export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin  # default
     export PROMPT_COMMAND=${PROMPT_COMMAND//printf*\";/}  # remove print statement
     _load_modules mlk intel  # cdo and nco via conda
     ;;
@@ -299,7 +299,6 @@ export PATH=$PATH:$HOME/go/bin  # go scripts
 export PATH=$PATH:$HOME/nvim/bin  # neovim location
 export PATH=$PATH:$HOME/.iterm2  # iterm utilities
 export PATH=$PATH:$HOME/.local/bin  # pip install location
-export PATH=$PATH:$HOME/bin  # custom scripts
 $_macos && export PATH=$PATH:$HOME/Utilities  # custom scripts
 
 # Various package stuff
@@ -562,7 +561,7 @@ export LC_ALL=en_US.UTF-8  # needed to make Vim syntastic work
 less() {
   local cmd
   cmd=$(command -v "$1" 2>/dev/null)
-  if [ -x "$cmd" ]; then
+  if ! [ -r "$1" ] && [ -n "$cmd" ]; then
     "$@" 2>&1 | command less  # pipe output of command
   else
     command less "$@"  # show files in less
@@ -736,8 +735,9 @@ sessions() {
   fi
   for root in "${roots[@]}"; do
     if [ -d "$root" ]; then
-      mapfile -t -O "${#paths[@]}" paths \
-        < <(find "$root" -type f -name '.*.vimsession' -not -path '*/.git/*' -print | sort)
+      mapfile -t -O "${#paths[@]}" paths < <( \
+        find "$root" -type f -name '.*.vimsession' -not -name '.monde.*' -not -path '*/.git/*' -print | sort \
+      )
     elif [ -f "$root" ] && [[ "$root" =~ \.vimsession$ ]]; then
       paths+=("$(abspath "$root")")
     elif [ -f ".${root}.vimsession" ]; then
@@ -916,25 +916,25 @@ error() { f0 "${1:-.}" '*' -a -type f -print -a -exec grep -i -n '\berror:' {} \
 warning() { f0 "${1:-.}" '*' -a -type f -print -a -exec grep -i -n '\bwarning:' {} \;; }
 
 # Git difference utilities {{{2
-# Here 'fs' is git status-style comparison, 'fd' git diff-style comparison, and 'merge'
-# combines files, adapted from this answer: https://stackoverflow.com/a/9123563/4970632
+# Here 'gs' is git status-style comparison, 'gd' git diff-style comparison, and 'gm'
+# merges files, adapted from this answer: https://stackoverflow.com/a/9123563/4970632
 # NOTE: The --textconv option described here: https://stackoverflow.com/a/52201926/4970632
 # NOTE: Tried using :(exclude) and :! but does not work with no-index. See following:
 # https://stackoverflow.com/a/58845608/4970632 and https://stackoverflow.com/a/53475515/4970632
 hash colordiff 2>/dev/null && alias diff='command colordiff'  # use --name-status to compare directories
-fs() {  # git status-style file differences  # shellcheck disable=2034
+gs() {  # git status-style file differences  # shellcheck disable=2034
   local flags=($(ignores 0))
   command git --no-pager diff \
     --textconv --no-index --color=always --name-status "$@" 2>&1 \
     | grep -v "${flags[@]}"
 }
-fd() {  # git diff-style file differences
+gd() {  # git diff-style file differences
   command git --no-pager diff \
     --textconv --no-index --color=always "$@" 2>&1 \
     | grep -v -e 'warning:' \
     | tac | sed -e '/Binary files/,+3d' | tac
 }
-merge() {
+gm() {
   [ $# -ne 2 ] && echo "Usage: merge FILE1 FILE2" && return 1
   [[ ! -r $1 || ! -r $2 ]] && echo "Error: File(s) are not readable." && return 1
   local ext out  # no extension

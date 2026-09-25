@@ -159,7 +159,18 @@ function! s:get_size(width, ...) abort
 endfunction
 
 " Generate table of tabs and paths
-" NOTE: This sorts by recent access to help replace :Buffers
+" NOTE: This sorts by recent access to help replace :Buffers and includes
+" both status flags and change statistics.
+function! s:tab_sink(item) abort
+  if !type(a:item) | return [a:item, 0] | endif
+  let parts = split(a:item, '\(\d\@<=:\|:\s\@=\)')
+  if len(parts) < 5 | return [0, 0] | endif
+  let [tnr, wnr, line, path; rest] = parts
+  let regex = '\s\+\(\[.\]\s*\)*\([+-~]\d\+\)*$'  " flags or stats
+  let string = substitute(trim(join(rest, ':')), regex, '', 'g')
+  redraw | echom 'Tab: ' . string
+  return [str2nr(tnr), str2nr(wnr)]
+endfunction
 function! s:tab_source(...) abort
   silent! exe 'redrawtabline'
   let g:tabline_redraw = 0
@@ -198,44 +209,28 @@ function! s:tab_source(...) abort
   endfor | return lines
 endfunction
 
-" Helper functions for selecting tabs
-" NOTE: This handles fzf output lines
-function! window#goto_tab(item) abort
-  if empty(a:item) | return | endif
-  let [tnr, wnr] = type(a:item) ? s:tab_sink(a:item) : [a:item, 0]
-  if tnr == 0 | return | endif
-  exe tnr ? tnr . 'tabnext' : ''
-  exe wnr ? wnr . 'wincmd w' : ''
-endfunction
-function! window#move_tab(item) abort
-  if empty(a:item) | return | endif
-  let [tnr, _] = type(a:item) ? s:tab_sink(a:item) : [a:item, 0]
-  if tnr == tabpagenr() | return | endif
-  let tnr = tnr > tabpagenr() ? tnr : tnr - 1
-  exe 'tabmove ' . min([max([tnr, 0]), tabpagenr('$')])
-endfunction
-function! s:tab_sink(item) abort
-  if !type(a:item) | return [a:item, 0] | endif
-  let parts = split(a:item, '\(\d\@<=:\|:\s\@=\)')
-  if len(parts) < 5 | return [0, 0] | endif
-  let [tnr, wnr, lnr, path; rest] = parts
-  let flags = '\s\+\(\[.\]\s*\)*'  " tabline flags
-  let stats = '\([+-~]\d\+\)*'  " statusline stats
-  let name = substitute(trim(join(rest, ':')), flags . stats . '$', '', 'g')
-  redraw | echom 'Tab: ' . name
-  return [str2nr(tnr), str2nr(wnr)]  " str2nr() returns 0 on error
-endfunction
-
 " Go to or move to selected tab
 " NOTE: This displays a list with the tab number file and git status, then positions
 " preview window on cursor line.
+function! s:goto_tab(item) abort
+  if empty(a:item) | return | endif
+  let [tnr, wnr] = type(a:item) ? s:tab_sink(a:item) : [a:item, 0]
+  exe empty(tnr) ? '' : tnr . 'tabnext'
+  exe empty(wnr) ? '' : wnr . 'wincmd w'
+endfunction
+function! s:move_tab(item) abort
+  if empty(a:item) | return | endif
+  let [num, _] = type(a:item) ? s:tab_sink(a:item) : [a:item, 0]
+  let num = num < tabpagenr() ? num - 1 : num
+  exe num == tabpagenr() ? '' : num . 'tabmove'
+endfunction
 function! window#fzf_goto(...) abort
   let bang = a:0 ? a:1 : 0
   let opts = fzf#vim#with_preview({'placeholder': '{4}:{3..}'})
   let opts = join(map(get(opts, 'options', []), 'fzf#shellescape(v:val)'), ' ')
   let opts .= " -d : --with-nth 1,5.. --preview-window '+{3}-/2' --tiebreak index"
   let options = {
-    \ 'sink': function('window#goto_tab'),
+    \ 'sink': function('s:goto_tab'),
     \ 'source' : s:tab_source(1),
     \ 'options': opts . ' --prompt="Goto> "',
   \ }
@@ -247,7 +242,7 @@ function! window#fzf_move(...) abort
   let opts = join(map(get(opts, 'options', []), 'fzf#shellescape(v:val)'), ' ')
   let opts .= " -d : --with-nth 1,5.. --preview-window '+{3}-/2' --tiebreak index"
   let options = {
-    \ 'sink': function('window#move_tab'),
+    \ 'sink': function('s:move_tab'),
     \ 'source' : s:tab_source(1),
     \ 'options': opts . ' --prompt="Move> "',
   \ }
