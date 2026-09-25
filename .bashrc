@@ -675,7 +675,7 @@ open() {
       case "$file" in
         *.pdf)                          app="Open PDFs.app" ;;
         *.pts)                          app="PTGui.app" ;;
-        *.RAF,*.PEF,*.DNG)              app="FastRawViewer.app" ;;
+        *.RAF|*.PEF|*.DNG|*.dng)        app="FastRawViewer.app" ;;
         *.svg|*.jpg|*.jpeg|*.png|*.eps) app="Preview.app" ;;
         *.nc|*.nc[1-7]|*.df|*.hdf[1-5]) app="Panoply.app" ;;
         *.html|*.xml|*.htm|*.gif)       app="Safari.app" ;;

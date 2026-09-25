@@ -2446,6 +2446,7 @@ if s:has_plug('ale')  " {{{
     \ 'help': [],
     \ 'json': ['jsonlint'],
     \ 'jsonc': ['jsonlint'],
+    \ 'lua': ['luacheck'],
     \ 'python': ['python', 'flake8'],
     \ 'rst': [],
     \ 'sh': ['shellcheck', 'bashate'],
