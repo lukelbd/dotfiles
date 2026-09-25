@@ -181,8 +181,8 @@ unalias -a  # critical (also use declare -F for definitions)
 #   brew install --HEAD universal-ctags/universal-ctags/universal-ctags
 # * Installed cdo, nco, and R with conda. Installed ncl by installing compilers
 #   with homebrew and downloading pre-compiled binary from ncar.
-# * Installed gnu utils with 'brew install coreutils findutils gnu-sed gnutls grep
-#   gnu-tar gawk'. Found paths with: https://apple.stackexchange.com/q/69223/214359
+# * Installed gnu utils with 'brew install coreutils findutils gnu-sed gnutls grep gawk
+#   gnu-tar linux-utils'. Found paths with: https://apple.stackexchange.com/q/69223/214359
 #   Also installed access to macOS 'trash' using 'brew install trash'.
 # NOTE: Logging into network WiFi sometimes converts hostname to automatic names, e.g.
 # DESKTOP-NNN.ColoState.EDU or eduroam-NNN-NNN. Repair with 'sudo hostname HOST'
@@ -215,16 +215,19 @@ _load_modules() {
 }
 case "${HOSTNAME%%.*}" in
   cyclone*|vortex*|velouria*|UEA*)  # macbook
-    [ -d /opt/homebrew ] && _brew=/opt/homebrew || _brew=/usr/local
-    _macos=true _port=/opt/local
+    _macos=true
     unset MANPATH  # reset man path
-    export PATH=$_brew/bin:$_port/bin:$_port/sbin  # homebrew macports
-    export PATH=$PATH:$_brew/opt/coreutils/libexec/gnubin  # gnu overrides
-    export PATH=$PATH:$_brew/opt/findutils/libexec/gnubin  # gnu find
-    export PATH=$PATH:$_brew/opt/grep/libexec/gnubin  # gnu grep
-    export PATH=$PATH:$_brew/opt/gawk/libexec/gnubin  # gnu awk
-    export PATH=$PATH:$_brew/opt/gnu-sed/libexec/gnubin  # gnu sed
-    export PATH=$PATH:$_brew/opt/gnu-tar/libexec/gnubin  # gnu tar
+    [ -d /opt/homebrew ] && _base=/opt/homebrew || _base=/usr/local
+    export PATH=/opt/homebrew/bin:/usr/local/bin  # homebrew
+    export PATH=$PATH:/opt/local/bin:/opt/local/sbin  # macports
+    export PATH=$PATH:$_base/opt/coreutils/libexec/gnubin  # gnu overrides
+    export PATH=$PATH:$_base/opt/findutils/libexec/gnubin  # gnu find
+    export PATH=$PATH:$_base/opt/util-linux/bin  # gnu column
+    export PATH=$PATH:$_base/opt/util-linux/sbin  # gnu findfs
+    export PATH=$PATH:$_base/opt/grep/libexec/gnubin  # gnu grep
+    export PATH=$PATH:$_base/opt/gawk/libexec/gnubin  # gnu awk
+    export PATH=$PATH:$_base/opt/gnu-sed/libexec/gnubin  # gnu sed
+    export PATH=$PATH:$_base/opt/gnu-tar/libexec/gnubin  # gnu tar
     export PATH=$PATH:/usr/bin:/bin:/usr/sbin:/sbin  # default directory
     export PATH=$PATH:/opt/pgi/osx86-64/2018/bin  # pgi compilers
     export PATH=$PATH:/opt/X11/bin  # X11 utilities
@@ -233,16 +236,17 @@ case "${HOSTNAME%%.*}" in
     export PATH=$PATH:/Applications/Skim.app/Contents/MacOS  # skim application
     export PATH=$PATH:/Applications/Calibre.app/Contents/MacOS  # calibre application
     export PATH=$PATH:/Applications/Darktable.app/Contents/MacOS  # darktable application
+    export PATH=$PATH:/Applications/Hugin/tools_mac  # darktable application
     export PATH=$PATH:$HOME/.rvm/bin  # RVM utilties
     export PATH=$PATH:$HOME/.rvm/gems/default/bin  # RVM gem utilities
     export PATH=$PATH:$HOME/builds/matlab-r2019a/bin  # matlab build
     export PATH=$PATH:$HOME/builds/ncl-6.6.2/bin  # ncl build
     export NCARG_ROOT=$HOME/builds/ncl-6.6.2  # or macports: /opt/local/lib/libgcc
-    alias ncl="DYLD_LIBRARY_PATH=$_brew/lib/gcc/7/ ncl"  # brew libraries
-    alias c++="$_brew/bin/c++-11"  # point to verion (see above)
-    alias cpp="$_brew/bin/cpp-11"  # point to verion (see above)
-    alias gcc="$_brew/bin/gcc-11"  # point to verion (see above)
-    alias gfortran="$_brew/bin/gfortran-11"  # alias already present but why not
+    alias ncl="DYLD_LIBRARY_PATH=$_base/lib/gcc/7/ ncl"  # brew libraries
+    alias c++="$_base/bin/c++-11"  # point to verion (see above)
+    alias cpp="$_base/bin/cpp-11"  # point to verion (see above)
+    alias gcc="$_base/bin/gcc-11"  # point to verion (see above)
+    alias gfortran="$_base/bin/gfortran-11"  # alias already present but why not
     alias locate=/usr/bin/locate  # coreutils version fails
     export LM_LICENSE_FILE=/opt/pgi/license.dat-COMMUNITY-18.10
     export PKG_CONFIG_PATH=/opt/local/bin/pkg-config
