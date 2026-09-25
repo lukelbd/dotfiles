@@ -8,6 +8,8 @@
 # and running a sudo command. See: https://apple.stackexchange.com/a/453855/214359
 # NOTE: This overrides defaults in /etc/profile in /etc/bashrc. Check out the system
 # default setting before using this and make sure your $PATH is populated.
+# NOTE: To permit pushing to github via HTTPS on macbook use 'mamba install gh' then
+# 'gh auth login'. See: https://cli.github.com/manual/gh_auth_login
 # NOTE: To permit pulling from github use ssh-keygen -R github.com and to SSH between
 # servers see: https://github.blog/2023-03-23-we-updated-our-rsa-ssh-host-key/
 # https://thegeekstuff.com/2008/11/3-steps-to-perform-ssh-login-without-password-using-ssh-keygen-ssh-copy-id/
