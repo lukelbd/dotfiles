@@ -1262,14 +1262,14 @@ nmap \\P <Plug>ReplaceWithRegisterLine
 " Sort or reverse lines using variety of :sort arguments
 " Here 'i' ignores case, 'n' is numeric, 'f' is by float
 " See: https://superuser.com/a/189956/506762
-vnoremap <expr> \a edit#sort_lines_expr()
-nnoremap <expr> \a edit#sort_lines_expr()
-vnoremap <expr> \A edit#sort_lines_expr('i')
-nnoremap <expr> \A edit#sort_lines_expr('i')
-vnoremap <expr> \n edit#sort_lines_expr('n')
+nnoremap <expr> \A edit#sort_lines_expr()
+vnoremap <expr> \A edit#sort_lines_expr()
+nnoremap <expr> \a edit#sort_lines_expr('i')
+vnoremap <expr> \a edit#sort_lines_expr('i')
 nnoremap <expr> \n edit#sort_lines_expr('n')
-vnoremap <expr> \f edit#sort_lines_expr('f')
+vnoremap <expr> \n edit#sort_lines_expr('n')
 nnoremap <expr> \f edit#sort_lines_expr('f')
+vnoremap <expr> \f edit#sort_lines_expr('f')
 
 " Reverse or filter to unique lines
 " Here 'i' ignores case, 'u' is unique sort
