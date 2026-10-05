@@ -348,7 +348,10 @@ CHR            37;44  # character device
 # Basic
 .bmp  32
 .exr  32
+.heic 32
+.JPEG 32
 .jpeg 32
+.JPG  32
 .jpg  32
 .pbm  32
 .pcx  32
@@ -370,8 +373,6 @@ CHR            37;44  # character device
 .DNG  01;32
 .dng  01;32
 .IIQ  01;32
-.JPEG 01;32
-.JPG  01;32
 .NEF  01;32
 .ORF  01;32
 .PEF  01;32
