@@ -26,7 +26,7 @@ nnoremap <buffer> <Plug>ExecuteFile0 <Cmd>call <sid>open_markdown_file()<CR>
 " See: http://fletcher.github.io/MultiMarkdown-4/criticmarkup.html
 let b:succinct_delims = {
   \ 't': '<\1<\1>\r</\1\1>',
-  \ 'i': '*\r*',
+  \ 'i': '_\r_',
   \ 'o': '**\r**',
   \ '-': '<s>\r</s>',
   \ 'e': '{==\r==}',

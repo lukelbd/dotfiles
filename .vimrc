@@ -1925,10 +1925,6 @@ if s:has_plug('vim-textobj-user')  " {{{
     \ 'select-i': 'i,', 'select-i-function': 'comment#textobj_comment_a',
     \ 'select-a': 'a,', 'select-a-function': 'comment#textobj_comment_big_a',
   \ }
-  let s:textobj_entire = {
-    \ 'select-a': 'aE',  'select-a-function': 'textobj#entire#select_a',
-    \ 'select-i': 'iE',  'select-i-function': 'textobj#entire#select_i'
-  \ }
   let s:textobj_fold1 = {
     \ 'select-i': 'iz', 'select-i-function': 'fold#textobj_fold_i',
     \ 'select-a': 'az', 'select-a-function': 'fold#textobj_fold_a',
@@ -1937,13 +1933,17 @@ if s:has_plug('vim-textobj-user')  " {{{
     \ 'select-i': 'iZ', 'select-i-function': 'fold#textobj_parent_i',
     \ 'select-a': 'aZ', 'select-a-function': 'fold#textobj_parent_a',
   \ }
-  let s:textobj_hunk = {
-    \ 'select-i': 'ih', 'select-i-function': 'git#textobj_hunk_i',
-    \ 'select-a': 'ah', 'select-a-function': 'git#textobj_hunk_a',
+  let s:textobj_entire = {
+    \ 'select-a': 'aE',  'select-a-function': 'textobj#entire#select_a',
+    \ 'select-i': 'iE',  'select-i-function': 'textobj#entire#select_i'
   \ }
   let s:textobj_group = {
     \ 'select-i': 'ig',  'select-i-function': 'edit#textobj_group_i',
     \ 'select-a': 'ag',  'select-a-function': 'edit#textobj_group_a',
+  \ }
+  let s:textobj_hunk = {
+    \ 'select-i': 'ih', 'select-i-function': 'git#textobj_hunk_i',
+    \ 'select-a': 'ah', 'select-a-function': 'git#textobj_hunk_a',
   \ }
   let s:textobj_sentence = {
     \ 'select-i': 'is', '*select-i-function*': 'edit#textobj_sentence_i',
@@ -1958,8 +1958,8 @@ if s:has_plug('vim-textobj-user')  " {{{
     \ '\(\k\|[#&*:.-]\)\@<=\(\k\|[#&*:.-]\)\@!',
   \ ]
   call textobj#user#plugin('comment', {'c': s:textobj_comment1, 'C': s:textobj_comment2})
-  call textobj#user#plugin('entire', {'-': s:textobj_entire})  " no <Plug> suffix
   call textobj#user#plugin('fold', {'z': s:textobj_fold1, 'Z': s:textobj_fold2})
+  call textobj#user#plugin('entire', {'-': s:textobj_entire})  " no <Plug> suffix
   call textobj#user#plugin('group', {'-': s:textobj_group})  " no <Plug> suffix
   call textobj#user#plugin('hunk', {'-': s:textobj_hunk})  " no <Plug> suffix
   call textobj#user#plugin('sentence', {'select': s:textobj_sentence, 'move': s:textobj_sentences})  " no <Plug> suffix

@@ -163,9 +163,12 @@ let b:succinct_snippets = {
 " \citep. Solution is to add \renewcommand to preamble and do not auto-insert empty
 " brackets for filling later since synmtax is dependent on citation engine.
 " Delimiter definitions:  " {{{
+" \ 'l': '\url{\r}',
+" \ 'z': '\begin{column}{0.5\textwidth}\r\end{column}',
 " \ 'G': '\hidecontent{\includegraphics{\r}}',
-  \ 'P': '\begin{minipage}{\linewidth}\r\end{minipage}',
-  \ 'Y': '\begin{python}\r\end{python}',
+" \ 'P': '\begin{minipage}{\linewidth}\r\end{minipage}',
+" \ 'Y': '\begin{python}\r\end{python}',
+" \ 'Z': '\begin{columns}\r\end{columns}',
 let b:succinct_delims = {
   \ '.': '\1Command: \\r..*\r\\&{\1\r\1\r..*\r}\1',
   \ ',': '\1Environment: \begin{\r..*\r\\begin{&}\1\r\1\r..*\r\\end{&}\1',
@@ -220,7 +223,7 @@ let b:succinct_delims = {
   \ 'J': '\underset{}{\r}',
   \ 'K': '\overset{}{\r}',
   \ 'L': '\1Link: \r..*\r\\href{&}{\1\r\1\r..*\r}\1',
-  \ 'M': '\footcite{\r}',
+  \ 'M': '\citep{\r}',
   \ 'N': '\citet{\r}',
   \ 'O': '\mathbf{\r}',
   \ 'P': '\captionof{figure}{\r}',
@@ -231,7 +234,6 @@ let b:succinct_delims = {
   \ 'V': '\begin{verbatim}\r\end{verbatim}',
   \ 'X': '\fbox{\parbox{\textwidth}{\r}}\medskip',
   \ 'Y': '\mathsf{\r}',
-  \ 'Z': '\begin{columns}\r\end{columns}',
   \ 'd': '\dot{\r}',
   \ 'e': '\emph{\r}',
   \ 'f': '\begin{figure}\n\centering\r\end{figure}',
@@ -240,9 +242,8 @@ let b:succinct_delims = {
   \ 'i': '\textit{\r}',
   \ 'j': '_{\r}',
   \ 'k': '^{\r}',
-  \ 'l': '\url{\r}',
-  \ 'm': '\cite{\r}',
-  \ 'n': '\citep{\r}',
+  \ 'm': '\footcite{\r}',
+  \ 'n': '\cite{\r}',
   \ 'o': '\textbf{\r}',
   \ 'p': '\caption{\r}',
   \ 's': '\begin{frame}\r\end{frame}',
@@ -251,5 +252,4 @@ let b:succinct_delims = {
   \ 'v': '\verb$\r$',
   \ 'x': '\boxed{\r}',
   \ 'y': '\text{\r}',
-  \ 'z': '\begin{column}{0.5\textwidth}\r\end{column}',
 \ }  " }}}
