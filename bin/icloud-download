@@ -1,0 +1,47 @@
+#!/usr/bin/env python3
+
+# Install
+# 1. Install dependency: `pip3 install --user pyicloud`
+# 2. Sign in to iCloud: `icloud --username your@email.com`
+# 3. Copy file to somewhere in your `PATH`
+# 4. Add `alias icloud-download="ICLOUD_EMAIL=your@email.com icloud-download"`
+#    to ~/.profile or ~/.bashrc, etc
+# 5. Use via eg. `icloud-download Documents/folder`
+#    which will download `folder` to your current directory
+
+import os
+import sys
+
+from pyicloud import PyiCloudService
+
+
+def get_files(item, path):
+    if item.type == 'file':
+        yield (item, path)
+        return
+    for name in item.dir():
+        yield from get_files(item[name], f'{path}/{name}')
+
+
+def main():
+    path = sys.argv[1]
+    root = path.rpartition('/')[0]
+    api = PyiCloudService(os.environ['ICLOUD_EMAIL'])
+    item = api.drive
+    for f in path.split('/'):
+        item = item[f]
+    for file, path in get_files(item, path):
+        loc = os.path.relpath(path, root)
+        dir = os.path.dirname(loc)
+        os.makedirs(dir, exist_ok=True)
+        if os.path.exists(loc):
+            print(f'Path {loc} already exists, skipping')
+            continue
+        download = file.open(stream=True)
+        print('Downloading', loc)
+        with open(loc, 'wb') as f:
+            f.write(download.raw.read())
+
+
+if __name__ == '__main__':
+    main()
