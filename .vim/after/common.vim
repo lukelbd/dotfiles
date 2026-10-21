@@ -44,7 +44,7 @@ for s:suffix in ['g', 's', 'S', '%']  " instead use <C-g> to insert literals
   exe 'silent! iunmap <buffer><C-g>' . s:suffix
 endfor
 for s:prefix in ['<Nop>', '<C-w>', '<C-g>', '<buffer><Nop>', '<buffer><C-w>', '<buffer><C-g>', '<buffer><C-r>']
-  for s:suffix in ['@', '"', "'", '/', '?', 'g', '"', "'", '<C-w>', '<C-g>', '<C-r>']
+  for s:suffix in ['@', '"', "'", '/', '?', 'g', 'f', 'gf', '"', "'", '<C-w>', '<C-g>', '<C-r>']
     exe 'silent! nunmap ' . s:prefix . s:suffix
     exe 'silent! xunmap ' . s:prefix . s:suffix
   endfor

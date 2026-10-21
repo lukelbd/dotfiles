@@ -317,7 +317,7 @@ function! syntax#update_groups() abort
     highlight BracelessIndent ctermfg=NONE ctermbg=NONE cterm=inverse
     syntax sync minlines=100 | exe exists('*SetCellHighlighting') ? 'call SetCellHighlighting()' : ''
   endif
-  syntax match Marker /\%({{{\d\?\|}}}\d\?\)\s*$/ containedin=.*Comment.*
+  syntax match Marker /\%({{{\d\?\|}}}\d\?\)\ze\s*\n/ containedin=.*Comment.*
   syntax match Shebang /^\%1l#!.*$/ contains=@NoSpell
   syntax match Hyperlink
     \ =\v<(((https?|ftp|gopher)://|(mailto|file|news):)[^' 	<>"]+|(www|web|w3)[a-z0-9_-]*\.[a-z0-9._-]+\.[^'  <>"]+)[a-zA-Z0-9/]=

@@ -1,6 +1,7 @@
 #------------------------------------------------------------------------------
 # Configuration file. Note color.ui = always required for piping output
-# to other commands e.g. parsing git-status output. For syntax help see:
+# to other commands e.g. parsing git-status output. To setup macos for
+# git use 'mamba install gh' then 'gh auth login'. For syntax help see:
 # https://stackoverflow.com/a/16136745/4970632
 # https://stackoverflow.com/q/2421011/4970632
 #------------------------------------------------------------------------------
