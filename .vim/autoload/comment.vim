@@ -119,7 +119,7 @@ function! s:next_comment(count, regex)
 endfunction
 function! comment#toggle_comment(...) abort
   call tcomment#ResetOption()
-  if v:count > 0 | call tcomment#SetOption('count', v:count) | endif
+  call tcomment#SetOption('count', v:count)
   let suffix = !a:0 ? 'gcc' : a:1 ? 'Commentc' : 'Uncommentc'
   let w:tcommentPos = getpos('.')
   let &operatorfunc = 'TCommentOpFunc_' . suffix
