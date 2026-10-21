@@ -8,3 +8,4 @@ create_default_packages:
   - pip
   - ipykernel
 show_channel_urls: true
+solver: libmamba
