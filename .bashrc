@@ -1449,23 +1449,26 @@ jupyter-convert() {
   # flags+=(--no-input)  # remove code (useful for huge files, but harder to understand)
   # flags+=(--no-prompt)  # remove prompt (possibly cleaner, but harder to understand)
   # flags+=(--TemplateExporter.extra_template_basedirs=$HOME/.jupyter)  # set in config
-  local ext fmt zips base input output flags
-  fmt=html  # 'html_toc' for table of contents
-  ext=${fmt%_*}  # extension
-  flags+=(--to "$fmt")
-  flags+=(--template classic)  # 'lab' for no centering, 'custom' for failed toc fix
+  local dest path paths flag flags src suffix
+  flag=html  # 'html_toc' for table of contents
+  flags=(--to "$flag" --tepmlate classic)  # lab: no centering, custom: failed toc fix
   flags+=(--ExtractOutputPreprocessor.enabled=False)  # embed figures in html file
-  for input in "$@"; do
-    base=$(abspath ${input%/*})  # default base directory
-    [ -d "${base%/notebooks}/meetings" ] && base=${base%/notebooks}/meetings
-    [ -r "$input" ] || { echo "Error: Notebook $input does not exist."; return 1; }
-    [[ "$input" =~ .*\.ipynb ]] || { echo "Error: Invalid filename $input."; return 1; }
-    output=${input%.ipynb}_$(date +%Y-%m-%d).$ext
-    output=${output##*/}  # strip directory
-    jupyter nbconvert "${flags[@]}" --output-dir "$base" --output "$output" "$input" || return 1
-    zips=("${output/.${ext}/}"*)  # include _files subfolder
-    if [ "${#zips[@]}" -gt 1 ] && pushd "$base"; then
-      zip -r "${output/.${ext}/.zip}" "${zips[@]}"
+  for path in "$@"; do
+    unset suffix
+    src=$(abspath "$path")
+    src=${src%/*}  # strip basename
+    [ -d "${src%/notebooks}/meetings" ] && src=${src%/notebooks}/meetings
+    [ -r "$path" ] || { echo "Error: Notebook $path does not exist."; return 1; }
+    [[ "$path" =~ .*\.ipynb ]] || { echo "Error: Invalid filename $path."; return 1; }
+    [[ "$path" =~ [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] ]] || suffix=_$(date +%Y-%m-%d)
+    dest=${path%.ipynb}${suffix}.${flag%_*}
+    dest=${dest##*/}  # strip directories
+    echo jupyter nbconvert "${flags[@]}" --output-dir "$src" --output "$dest" "$path" || return 1
+    jupyter nbconvert "${flags[@]}" --output-dir "$src" --output "$dest" "$path" || return 1
+    paths=("${dest/.${flag%_*}/}"*/)  # include _files subfolder
+    if [ "${#paths[@]}" -gt 1 ] && pushd "$src"; then
+      echo "Compressing directories: ${paths[*]}."
+      echo zip -r "${dest/.${flag%_*}/.zip}" "${paths[@]}"
       popd || continue
     fi
   done
