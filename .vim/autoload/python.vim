@@ -42,12 +42,12 @@ function! python#doc_alias(item) abort
   let winview = winsaveview()
   let parts = split(a:item, '\.', 1)
   let module = parts[0]
-  let regex = '\(\k\|\.\)\+'
+  let regex = '\b\(\k\|\.\)\+'
   if search('import\s\+' . regex . '\s\+as\s\+' . module, 'w')
     let name = matchlist(getline('.'), 'import\s\+\(' . regex . '\)\s\+as')[1]
     if !empty(name) | let module = name | endif
   endif
-  if search('from\s\+' . regex . '\s\+import\s\+(\?\(' . regex . '\(,\s*\n*\s*\)\?\)*' . module)
+  if search('from\s\+' . regex . '\s\+import\s\+\((\_s*\)\?\(' . regex . '\(,\_s*\)\?\)*' . module)
     let package = matchlist(getline('.'), 'from\s\+\(' . regex . '\)\s\+import')[1]
     if !empty(package) | let module = package . '.' . module | endif
   endif
